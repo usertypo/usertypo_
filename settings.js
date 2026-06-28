@@ -55,6 +55,11 @@ const DEFAULTS = {
         quickRestart:       'Tab',
         quickRestartCustomKey: '',
     },
+    liveFeed: {
+        liveWpm:            true,
+        liveAccuracy:       true,
+        liveBurst:          false,
+    },
     lookFeel: {
         colorTheme:         'usertypo_',
     }

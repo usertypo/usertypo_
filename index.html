@@ -848,16 +848,22 @@
                         <div class="relative w-[80vw] max-w-none mx-auto h-[32px] mt-[16px]">
                             <div
                                 class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-0 flex items-baseline gap-[16px] pointer-events-auto">
-                                <div class="flex items-baseline gap-[4px]">
+                                <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="wpm-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
-                                <div class="w-px h-[16px] bg-white/10 relative top-0.5"></div>
-                                <div class="flex items-baseline gap-[4px]">
+                                <div id="live-wpm-divider" class="w-px h-[16px] bg-white/10 relative top-0.5"></div>
+                                <div id="live-acc-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="acc-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
+                                </div>
+                                <div id="live-acc-divider" class="w-px h-[16px] bg-white/10 relative top-0.5 hidden"></div>
+                                <div id="live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
+                                    <span id="burst-display"
+                                        class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
                                 </div>
                             </div>
                         </div>
@@ -1369,6 +1375,7 @@
         const caret = document.getElementById('caret');
         const wpmDisplay = document.getElementById('wpm-display');
         const accDisplay = document.getElementById('acc-display');
+        const burstDisplay = document.getElementById('burst-display');
         const wordProgressDisplay = document.getElementById('word-progress');
         const zenElements = document.querySelectorAll('.zen-element');
         const configBar = document.getElementById('config-bar');
@@ -2693,6 +2700,29 @@
             isTyping = true;
             startTime = Date.now();
             document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
+
+            // Apply live feed visibility from settings
+            const lf = (window.usertypo_settings && window.usertypo_settings.liveFeed) || {};
+            const showWpm = lf.liveWpm !== false;
+            const showAcc = lf.liveAccuracy !== false;
+            const showBurst = lf.liveBurst === true;
+
+            document.getElementById('live-wpm-wrapper').classList.toggle('hidden', !showWpm);
+            document.getElementById('live-acc-wrapper').classList.toggle('hidden', !showAcc);
+            document.getElementById('live-burst-wrapper').classList.toggle('hidden', !showBurst);
+
+            // Smart dividers: only show between two visible adjacent stats
+            const wpmDivider = document.getElementById('live-wpm-divider');
+            const accDivider = document.getElementById('live-acc-divider');
+            // WPM divider sits between WPM and ACC — show only if both visible
+            wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
+            // ACC divider sits between ACC and BURST — show only if both visible
+            accDivider.classList.toggle('hidden', !(showAcc && showBurst));
+            // Edge case: WPM on, ACC off, burst on → need a divider between WPM and burst
+            if (showWpm && !showAcc && showBurst) {
+                wpmDivider.classList.remove('hidden');
+            }
+
             hideZenElements();
             caret.classList.remove('animate-breath');
 
@@ -3045,6 +3075,28 @@
                 acc = Math.round(Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100));
             }
 
+            let burst = 0;
+            if (currentWordStartTime) {
+                const burstElapsedMins = (currentTime - currentWordStartTime) / 60000;
+                // Add a small floor to prevent infinite burst speed on the first keystroke
+                const calcMins = Math.max(burstElapsedMins, 0.5 / 60);
+                const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
+                if (currentWordEl) {
+                    const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
+                    burst = Math.round((correctInCurrentWord / 5) / calcMins);
+                }
+            } else if (typeof wordTimestamps !== 'undefined' && wordTimestamps.length > 0) {
+                const lastWord = wordTimestamps[wordTimestamps.length - 1];
+                const burstElapsedMins = (lastWord.endTime - lastWord.startTime) / 60000;
+                if (burstElapsedMins > 0) {
+                    const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
+                    if (lastWordEl) {
+                        const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
+                        burst = Math.round((correctInLastWord / 5) / burstElapsedMins);
+                    }
+                }
+            }
+
             if (testMode === 'time' && !testComplete) {
                 let remaining = testAmount - elapsedSeconds;
                 if (remaining <= 0) {
@@ -3061,6 +3113,7 @@
 
             wpmDisplay.innerText = Math.max(0, wpm);
             accDisplay.innerText = acc + "%";
+            if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
         }
 
         let testInactivityTimer = null;
