@@ -816,9 +816,12 @@
                     </div>
 
                     <!-- Word progress / Timer (One row above) -->
-                    <div class="relative w-[80vw] max-w-none mx-auto h-[32px] mb-[16px]">
-                        <div class="typing-stat opacity-0 transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] leading-none absolute left-0 bottom-0"
+                    <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[32px] mb-[16px]">
+                        <div class="typing-stat opacity-0 transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                             id="word-progress"></div>
+                        <div class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[8px] bg-white/10 rounded-full overflow-hidden hidden" id="word-progress-bar-container">
+                            <div id="word-progress-bar" class="h-full bg-primary transition-all duration-300 ease-linear" style="width: 0%; box-shadow: 0 0 10px rgba(0, 208, 255, 0.8);"></div>
+                        </div>
                     </div>
 
 
@@ -846,7 +849,7 @@
 
                         <!-- Stats (One row below) -->
                         <div class="relative w-[80vw] max-w-none mx-auto h-[32px] mt-[16px]">
-                            <div
+                            <div id="live-stats-container"
                                 class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-0 flex items-baseline gap-[16px] pointer-events-auto">
                                 <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="wpm-display"
@@ -2723,6 +2726,35 @@
                 wpmDivider.classList.remove('hidden');
             }
 
+            // Apply Timer / Progress Style and Opacity
+            const timerStyle = lf.timerStyle || 'Number';
+            const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+            
+            const timerProgressWrapper = document.getElementById('timer-progress-wrapper');
+            const wordProgressText = document.getElementById('word-progress');
+            const wordProgressBarContainer = document.getElementById('word-progress-bar-container');
+            const liveStatsContainer = document.getElementById('live-stats-container');
+            
+            if (timerStyle === 'Off') {
+                timerProgressWrapper.style.display = 'none';
+            } else {
+                timerProgressWrapper.style.display = '';
+                
+                if (timerStyle === 'Bar') {
+                    wordProgressText.classList.add('hidden');
+                    wordProgressBarContainer.classList.remove('hidden');
+                } else {
+                    wordProgressText.classList.remove('hidden');
+                    wordProgressBarContainer.classList.add('hidden');
+                }
+            }
+
+            // Apply opacity to all live stats elements
+            timerProgressWrapper.style.opacity = timerOpacity.toString();
+            if (liveStatsContainer) {
+                liveStatsContainer.style.opacity = timerOpacity.toString();
+            }
+
             hideZenElements();
             caret.classList.remove('animate-breath');
 
@@ -3097,6 +3129,9 @@
                 }
             }
 
+            const progressBar = document.getElementById('word-progress-bar');
+            let progressPercent = 0;
+
             if (testMode === 'time' && !testComplete) {
                 let remaining = testAmount - elapsedSeconds;
                 if (remaining <= 0) {
@@ -3109,6 +3144,14 @@
                 } else {
                     wordProgressDisplay.innerText = remaining;
                 }
+                progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / testAmount) * 100));
+            } else if (testMode === 'words' && !testComplete) {
+                wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${testAmount}`;
+                progressPercent = Math.min(100, Math.max(0, (currentWordIndex / testAmount) * 100));
+            }
+
+            if (progressBar) {
+                progressBar.style.width = `${progressPercent}%`;
             }
 
             wpmDisplay.innerText = Math.max(0, wpm);

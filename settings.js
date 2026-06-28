@@ -59,6 +59,8 @@ const DEFAULTS = {
         liveWpm:            true,
         liveAccuracy:       true,
         liveBurst:          false,
+        timerStyle:         'Number',
+        timerOpacity:       '0.5',
     },
     lookFeel: {
         colorTheme:         'usertypo_',
