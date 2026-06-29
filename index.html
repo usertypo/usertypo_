@@ -87,14 +87,17 @@
         .custom-scrollbar::-webkit-scrollbar {
             height: 6px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.02);
             border-radius: 4px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: rgba(0, 208, 255, 0.2);
             border-radius: 4px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 208, 255, 0.4);
         }
@@ -819,19 +822,25 @@
                     <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[32px] mb-[16px]">
                         <div class="typing-stat opacity-0 transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                             id="word-progress"></div>
-                        <div class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[8px] bg-white/10 rounded-full overflow-hidden hidden" id="word-progress-bar-container">
-                            <div id="word-progress-bar" class="h-full bg-primary transition-all duration-300 ease-linear" style="width: 0%; box-shadow: 0 0 10px rgba(0, 208, 255, 0.8);"></div>
+                        <div class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
+                            id="word-progress-bar-container">
+                            <div id="word-progress-bar"
+                                class="h-full bg-primary transition-all duration-300 ease-linear"
+                                style="width: 0%; box-shadow: 0 0 10px rgba(0, 208, 255, 0.8);"></div>
                         </div>
                     </div>
 
 
                     <!-- Difficulty Fail Overlay -->
-                    <div id="difficulty-fail-overlay" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-surface/90 border border-error/30 shadow-2xl max-w-sm text-center animate-fade-in-up">
+                    <div id="difficulty-fail-overlay"
+                        class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div
+                            class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-surface/90 border border-error/30 shadow-2xl max-w-sm text-center animate-fade-in-up">
                             <span class="material-symbols-outlined text-error text-[48px]">cancel</span>
                             <h2 id="fail-title" class="text-xl font-bold text-white">Test Failed</h2>
                             <p id="fail-message" class="text-sm text-slate-400"></p>
-                            <button onclick="dismissFailAndRestart()" class="mt-2 px-6 py-2 rounded-lg bg-primary/20 text-primary text-sm font-semibold border border-primary/30 hover:bg-primary/30 transition-all">
+                            <button onclick="dismissFailAndRestart()"
+                                class="mt-2 px-6 py-2 rounded-lg bg-primary/20 text-primary text-sm font-semibold border border-primary/30 hover:bg-primary/30 transition-all">
                                 Try Again
                             </button>
                         </div>
@@ -862,7 +871,8 @@
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
-                                <div id="live-acc-divider" class="w-px h-[16px] bg-white/10 relative top-0.5 hidden"></div>
+                                <div id="live-acc-divider" class="w-px h-[16px] bg-white/10 relative top-0.5 hidden">
+                                </div>
                                 <div id="live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
                                     <span id="burst-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
@@ -872,10 +882,11 @@
                         </div>
 
                         <!-- Visual Keymap (fixed-height wrapper prevents layout shift) -->
-                        <div class="mt-8 mb-2 hidden transition-opacity duration-300"
-                            id="dynamic-keymap-container" style="height: 184px;">
+                        <div class="mt-8 mb-2 hidden transition-opacity duration-300" id="dynamic-keymap-container"
+                            style="height: 184px;">
                             <div id="dynamic-keymap"
-                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2"></div>
+                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                            </div>
                         </div>
 
                     </div>
@@ -892,14 +903,15 @@
                             -
                             command line</span>
                     </div>
-                    
+
                     <!-- Capslock Warning Indicator (Redesigned) -->
-                    <div id="capslock-warning" class="opacity-0 transition-opacity duration-150 mt-10 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                        <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                    <div id="capslock-warning"
+                        class="opacity-0 transition-opacity duration-150 mt-10 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                        <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps
+                        Lock
                     </div>
 
-                    <!-- Centering spacer to visibly balance the top progress/config components -->
-                    <div class="h-10 md:h-14 w-full shrink-0 pointer-events-none"></div>
+                    <!-- Centering spacer removed to prevent scroll on 3-line tests -->
                 </div>
             </main>
 
@@ -1178,8 +1190,7 @@
 
     </div> <!-- End SPA Container -->
 
-    <div id="notifications-modal"
-        class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
+    <div id="notifications-modal" class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
         <div class="glass-panel bg-surface/85 !backdrop-blur-sm shadow-[20px_0_50px_rgba(0,0,0,0.5)] w-[90vw] max-w-5xl h-[85vh] rounded-3xl p-8 transform scale-95 opacity-0 transition-all duration-300 flex flex-col gap-6 border border-white/10 relative"
             id="notifications-box">
             <div class="flex items-center gap-4 border-b border-white/10 pb-4 shrink-0">
@@ -1866,7 +1877,14 @@
         function restartTest() {
             if (isRestarting) return;
             isRestarting = true;
-            document.querySelectorAll('.typing-stat').forEach(el => el.classList.add('opacity-0'));
+            document.querySelectorAll('.typing-stat').forEach(el => {
+                el.style.opacity = '';
+                el.classList.add('opacity-0');
+            });
+            const tpw = document.getElementById('timer-progress-wrapper');
+            if (tpw) tpw.style.opacity = '';
+            const lsc = document.getElementById('live-stats-container');
+            if (lsc) lsc.style.opacity = '';
 
             textContainer.style.opacity = '0';
 
@@ -1898,6 +1916,16 @@
                 clearInterval(updateInterval);
                 wpmDisplay.innerText = "0";
                 accDisplay.innerText = "0%";
+                if (burstDisplay) burstDisplay.innerText = "0";
+
+                const progressBar = document.getElementById('word-progress-bar');
+                if (progressBar) {
+                    progressBar.style.transition = 'none';
+                    progressBar.style.width = '0%';
+                    // Force a reflow so the browser applies the 0% width instantly
+                    void progressBar.offsetWidth;
+                    progressBar.style.transition = '';
+                }
 
                 if (testMode === 'time') {
                     wordProgressDisplay.innerHTML = testAmount.toString();
@@ -2633,14 +2661,14 @@
             if (!kl.keymapMode || kl.keymapMode === 'Off') return;
 
             const keys = document.querySelectorAll('.keymap-key');
-            
+
             // Handle Dynamic Legend
             if (kl.keymapLegend === 'Dynamic') {
                 const isShiftExpected = generatedWords[currentWordIndex] && generatedWords[currentWordIndex][currentCharIndex] && generatedWords[currentWordIndex][currentCharIndex].match(/[A-Z]/);
                 const isShiftPressed = (pressedKey === 'Shift' && isKeyDown) || window.event?.shiftKey;
-                
+
                 const isUpper = kl.keymapMode === 'Next' ? isShiftExpected : isShiftPressed;
-                
+
                 keys.forEach(k => {
                     const mainTextEl = k.querySelector('.keymap-main-text');
                     if (mainTextEl && mainTextEl.innerText.length === 1) {
@@ -2658,7 +2686,7 @@
                     const chars = k.dataset.chars || '';
                     const special = k.dataset.special || '';
                     let matches = false;
-                    
+
                     if (pressedKey.length === 1 && chars.includes(pressedKey)) matches = true;
                     if (pressedKey === ' ' && special === 'Space') matches = true;
                     if (pressedKey === 'Backspace' && special === 'Backspace') matches = true;
@@ -2729,17 +2757,17 @@
             // Apply Timer / Progress Style and Opacity
             const timerStyle = lf.timerStyle || 'Number';
             const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
-            
+
             const timerProgressWrapper = document.getElementById('timer-progress-wrapper');
             const wordProgressText = document.getElementById('word-progress');
             const wordProgressBarContainer = document.getElementById('word-progress-bar-container');
             const liveStatsContainer = document.getElementById('live-stats-container');
-            
+
             if (timerStyle === 'Off') {
-                timerProgressWrapper.style.display = 'none';
+                timerProgressWrapper.style.visibility = 'hidden';
             } else {
-                timerProgressWrapper.style.display = '';
-                
+                timerProgressWrapper.style.visibility = 'visible';
+
                 if (timerStyle === 'Bar') {
                     wordProgressText.classList.add('hidden');
                     wordProgressBarContainer.classList.remove('hidden');
@@ -2913,10 +2941,10 @@
             const appBody = document.getElementById('app-body');
             appBody.classList.remove('overflow-hidden', 'h-screen');
             appBody.classList.add('min-h-screen');
-            
+
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
+
             // Reset animation state: remove old animation, force reflow, then apply
             const animCards = statsView.querySelectorAll('.stats-animate-card');
             animCards.forEach(card => {
@@ -3040,7 +3068,24 @@
             clearInterval(updateInterval);
             wpmDisplay.innerText = "0";
             accDisplay.innerText = "0%";
-            document.querySelectorAll('.typing-stat').forEach(el => el.classList.add('opacity-0'));
+            if (burstDisplay) burstDisplay.innerText = "0";
+
+            const progressBar = document.getElementById('word-progress-bar');
+            if (progressBar) {
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
+                void progressBar.offsetWidth;
+                progressBar.style.transition = '';
+            }
+
+            document.querySelectorAll('.typing-stat').forEach(el => {
+                el.style.opacity = '';
+                el.classList.add('opacity-0');
+            });
+            const tpw = document.getElementById('timer-progress-wrapper');
+            if (tpw) tpw.style.opacity = '';
+            const lsc = document.getElementById('live-stats-container');
+            if (lsc) lsc.style.opacity = '';
 
             if (testMode === 'time') {
                 wordProgressDisplay.innerHTML = testAmount.toString();
@@ -3108,7 +3153,9 @@
             }
 
             let burst = 0;
-            if (currentWordStartTime) {
+            if (lastKeystrokeTime && (currentTime - lastKeystrokeTime) > 1000) {
+                burst = 0; // Decay to 0 after 1 second of inactivity
+            } else if (currentWordStartTime) {
                 const burstElapsedMins = (currentTime - currentWordStartTime) / 60000;
                 // Add a small floor to prevent infinite burst speed on the first keystroke
                 const calcMins = Math.max(burstElapsedMins, 0.5 / 60);
@@ -3132,7 +3179,9 @@
             const progressBar = document.getElementById('word-progress-bar');
             let progressPercent = 0;
 
-            if (testMode === 'time' && !testComplete) {
+            if (testComplete) {
+                progressPercent = 100;
+            } else if (testMode === 'time') {
                 let remaining = testAmount - elapsedSeconds;
                 if (remaining <= 0) {
                     remaining = 0;
@@ -3145,9 +3194,13 @@
                     wordProgressDisplay.innerText = remaining;
                 }
                 progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / testAmount) * 100));
-            } else if (testMode === 'words' && !testComplete) {
+            } else if (testMode === 'words') {
                 wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${testAmount}`;
-                progressPercent = Math.min(100, Math.max(0, (currentWordIndex / testAmount) * 100));
+                let currentWordProgress = 0;
+                if (typeof generatedWords !== 'undefined' && generatedWords[currentWordIndex]) {
+                    currentWordProgress = Math.min(1, Math.max(0, currentCharIndex / generatedWords[currentWordIndex].length));
+                }
+                progressPercent = Math.min(100, Math.max(0, ((currentWordIndex + currentWordProgress) / testAmount) * 100));
             }
 
             if (progressBar) {
@@ -3182,7 +3235,7 @@
                         if (isTyping && !testComplete) {
                             restartTest();
                         }
-                    }, 1800000); // 30 minutes
+                    }, 15000); // 15 seconds
                 }
             }
 
@@ -3962,7 +4015,7 @@
 
             const wBase = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
             const rBase = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
-            
+
             const testDurationSec = wordTimestamps.length > 0 ? (wordTimestamps[wordTimestamps.length - 1].endTime - startTime) / 1000 : wBase.length;
             const maxX = Math.max(wBase.length, testDurationSec, 1);
 
@@ -4330,7 +4383,7 @@
                 tooltip.innerHTML = tipHTML;
                 const tipW = 140;
                 let tx = cx + 15;
-                
+
                 // Clamp tooltip within the visible card boundaries
                 const containerScrollL = container.scrollLeft;
                 const containerVisibleW = container.clientWidth;

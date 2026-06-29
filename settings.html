@@ -365,9 +365,9 @@
             flex-shrink: 0;
         }
         .toggle-track.on {
-            background: rgba(0,208,255,0.3);
-            border-color: rgba(0,208,255,0.4);
-            box-shadow: 0 0 8px rgba(0,208,255,0.2);
+            background: #00d0ff;
+            border-color: #00d0ff;
+            box-shadow: 0 0 8px rgba(0,208,255,0.4);
         }
         .toggle-thumb {
             position: absolute;
@@ -379,8 +379,8 @@
         }
         .toggle-track.on .toggle-thumb {
             transform: translateX(18px);
-            background: #00d0ff;
-            box-shadow: 0 0 6px rgba(0,208,255,0.6);
+            background: #ffffff;
+            box-shadow: 0 0 6px rgba(255,255,255,0.8);
         }
 
         /* â”€â”€â”€ Option Buttons â”€â”€â”€ */
@@ -4408,12 +4408,10 @@
                         }
                     });
 
-                    // 2. Update the saved HTML strings in subStack to prevent reverting on 'Back'
+                    // 2. Update the actual DOM elements in subStack to prevent reverting on 'Back'
                     if (typeof subStack !== 'undefined') {
-                        subStack = subStack.map(htmlStr => {
-                            const temp = document.createElement('div');
-                            temp.innerHTML = htmlStr;
-                            temp.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
+                        subStack.forEach(panel => {
+                            panel.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                                 card.querySelectorAll('.opt-btn').forEach(b => {
                                     b.classList.toggle('active', b.textContent === btn.textContent);
                                 });
@@ -4422,7 +4420,6 @@
                                     if (selectBtn) selectBtn.textContent = btn.textContent;
                                 }
                             });
-                            return temp.innerHTML;
                         });
                     }
                 }
