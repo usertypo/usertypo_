@@ -2728,6 +2728,7 @@
         });
 
         function startTest() {
+            window.testFailedThreshold = false;
             isTyping = true;
             startTime = Date.now();
             document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
@@ -2862,10 +2863,24 @@
             const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
             const elapsedMinutes = Math.max((currentTime - startTime) / 60000, 2 / 60);
 
-            const wpm = Math.max(0, Math.round((validChars / 5) / elapsedMinutes));
-            const rawWpm = Math.max(0, Math.round((totalKeystrokes / 5) / elapsedMinutes));
+            const config = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
+            const resSettings = config.resultsAndGraphs || { decimalPrecision: false, alwaysShowCPS: false, minWPM: 'Off', minAccuracy: '75%', minBurst: 'Off' };
+
+            const exactWpm = (validChars / 5) / elapsedMinutes;
+            const exactRawWpm = (totalKeystrokes / 5) / elapsedMinutes;
+            const wpm = Math.max(0, Math.round(exactWpm));
+            const rawWpm = Math.max(0, Math.round(exactRawWpm));
             const acc = totalKeystrokes > 0 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100) : 0;
             const accDisplayVal = Math.round(acc);
+
+            let wpmDisplay = resSettings.decimalPrecision ? Math.max(0, exactWpm).toFixed(2) : wpm.toString();
+            let accStr = resSettings.decimalPrecision ? acc.toFixed(2) : accDisplayVal.toString();
+            let rawWpmStr = resSettings.decimalPrecision ? Math.max(0, exactRawWpm).toFixed(2) : rawWpm.toString();
+
+            if (resSettings.alwaysShowCPS) {
+                const cps = (Math.max(0, exactWpm) * 5 / 60);
+                wpmDisplay += `<span class="text-3xl ml-3 opacity-60 font-semibold tracking-normal text-slate-500" style="text-shadow: none;">(${cps.toFixed(1)} CPS)</span>`;
+            }
 
             // Consistency: simulate based on accuracy and WPM variance
             let consistency = Math.min(100, Math.max(0, Math.round(acc * 0.85 + Math.random() * 5)));
@@ -2873,14 +2888,54 @@
             else if (acc >= 80) consistency = Math.min(95, Math.max(50, Math.round(65 + Math.random() * 15)));
             else consistency = Math.min(80, Math.max(20, Math.round(40 + Math.random() * 20)));
 
-            document.getElementById('stats-wpm').innerText = wpm;
-            document.getElementById('stats-acc').innerText = accDisplayVal;
-            document.getElementById('stats-time').innerText = elapsedSeconds;
+            // Check Thresholds
+            let failedReason = null;
+            if (resSettings.minWPM && resSettings.minWPM !== 'Off') {
+                let minWpmVal = parseFloat(resSettings.minWPM);
+                if (!isNaN(minWpmVal) && exactWpm < minWpmVal) {
+                    failedReason = `Test failed: WPM below ${minWpmVal} threshold`;
+                }
+            }
+            if (!failedReason && resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
+                let minAccVal = parseFloat(resSettings.minAccuracy.replace('%', ''));
+                if (!isNaN(minAccVal) && acc < minAccVal) {
+                    failedReason = `Test failed: Accuracy below ${minAccVal}% threshold`;
+                }
+            }
+
+            if (failedReason) {
+                wpmDisplay = '--';
+                accStr = '--';
+                rawWpmStr = '--';
+                consistency = '--';
+                wpmHistory = [];
+                rawHistory = [];
+                window.testFailedThreshold = true;
+
+                // Show notification
+                const toast = document.getElementById('save-toast');
+                if (toast) {
+                    document.getElementById('toast-msg').textContent = failedReason;
+                    document.getElementById('toast-icon').textContent = 'error';
+                    document.getElementById('toast-icon').className = 'material-symbols-outlined text-error text-[18px]';
+                    toast.classList.add('visible');
+                    setTimeout(() => {
+                        toast.classList.remove('visible');
+                        setTimeout(() => {
+                            document.getElementById('toast-icon').className = 'material-symbols-outlined text-primary text-[18px]';
+                        }, 350);
+                    }, 3500);
+                }
+            }
+
+            document.getElementById('stats-wpm').innerHTML = wpmDisplay;
+            document.getElementById('stats-acc').innerText = accStr;
+            document.getElementById('stats-time').innerText = failedReason ? '--' : elapsedSeconds;
             document.getElementById('stats-consistency').innerText = consistency;
-            document.getElementById('stats-raw-wpm').innerText = rawWpm;
-            document.getElementById('stats-errors').innerText = errorsMade;
-            document.getElementById('stats-correct').innerText = validChars;
-            document.getElementById('stats-total-chars').innerText = totalChars;
+            document.getElementById('stats-raw-wpm').innerText = rawWpmStr;
+            document.getElementById('stats-errors').innerText = failedReason ? '--' : errorsMade;
+            document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
+            document.getElementById('stats-total-chars').innerText = failedReason ? '--' : totalChars;
 
             // WPM comparison: percentage difference vs previous test
             const diffSpan = document.getElementById('stats-wpm-diff');
@@ -2969,11 +3024,18 @@
                 const infoBtn = document.getElementById('graph-info-btn');
                 if (infoBtn) infoBtn.classList.remove('info-active');
 
+                const config = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
+                const defaultMode = (config.resultsAndGraphs && config.resultsAndGraphs.defaultGraphView === 'Advanced') ? 'advanced' : 'basic';
+
                 initGraphPillIndicator();
-                graphMode = 'basic';
-                toggleGraphMode('basic');
-                renderBasicGraph();
-                updateLegendForMode('basic');
+                graphMode = defaultMode;
+                toggleGraphMode(defaultMode);
+                if (defaultMode === 'advanced') {
+                    renderAdvancedGraph();
+                } else {
+                    renderBasicGraph();
+                }
+                updateLegendForMode(defaultMode);
             }, 50);
 
             // Wire up pill button click handlers
@@ -3297,6 +3359,8 @@
             const old = container.querySelector('svg.dynamic-graph');
             if (old) old.remove();
 
+            if (window.testFailedThreshold) return;
+
             // Fallback demo data
             const wData = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
             const rData = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
@@ -3312,8 +3376,11 @@
             const rawMax = Math.max(...wData, ...rData, 10) * 1.05;
             const yMax = Math.ceil(rawMax / 30) * 30;
             const yStep = yMax / 3;
+            const startZero = (window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero === true;
+            const smoothLines = (window.usertypo_settings || {}).resultsAndGraphs?.smoothGraphLines !== false;
+
             const maxVal = yMax;
-            const minVal = 0;
+            const minVal = startZero ? 0 : Math.max(0, Math.min(...wData, ...rData) - 10);
 
             const xOf = i => PAD.left + (i / Math.max(n - 1, 1)) * gW;
             const yOf = v => PAD.top + gH - ((v - minVal) / (maxVal - minVal)) * gH;
@@ -3323,6 +3390,10 @@
                 if (arr.length < 2) return '';
                 const pts = arr.map((v, i) => ({ x: xOf(i), y: yOf(v) }));
                 let d = `M ${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+                if (!smoothLines) {
+                    for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x.toFixed(2)},${pts[i].y.toFixed(2)}`;
+                    return d;
+                }
                 for (let i = 0; i < pts.length - 1; i++) {
                     const cp1x = pts[i].x + (pts[i + 1].x - (i > 0 ? pts[i - 1].x : pts[i].x)) / 6;
                     const cp1y = pts[i].y + (pts[i + 1].y - (i > 0 ? pts[i - 1].y : pts[i].y)) / 6;
@@ -3956,6 +4027,12 @@
             const tooltip = document.getElementById('graph-tooltip');
             if (!container) return;
 
+            if (window.testFailedThreshold) {
+                const old = container.querySelector('svg.dynamic-graph');
+                if (old) old.remove();
+                return;
+            }
+
             container.style.overflowX = 'auto';
             container.style.overflowY = 'hidden';
 
@@ -4054,14 +4131,22 @@
             const yMax = Math.ceil(rawMax / 30) * 30;
             const yStep = yMax / 3;
 
+            const startZero = (window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero === true;
+            const smoothLines = (window.usertypo_settings || {}).resultsAndGraphs?.smoothGraphLines !== false;
+            const minVal = startZero ? 0 : Math.max(0, Math.min(...wData, ...rData) - 10);
+
             const xOf = sec => PAD.left + (sec / maxX) * gW;
             const xOfIndex = i => xOf(times[i]);
-            const yOf = v => PAD.top + gH - ((v) / yMax) * gH;
+            const yOf = v => PAD.top + gH - ((v - minVal) / (yMax - minVal)) * gH;
 
             function smoothPath(arr) {
                 if (arr.length < 2) return '';
                 const pts = arr.map((v, i) => ({ x: xOfIndex(i), y: yOf(v) }));
                 let d = `M ${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+                if (!smoothLines) {
+                    for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x.toFixed(2)},${pts[i].y.toFixed(2)}`;
+                    return d;
+                }
                 for (let i = 0; i < pts.length - 1; i++) {
                     const cp1x = pts[i].x + (pts[i + 1].x - (i > 0 ? pts[i - 1].x : pts[i].x)) / 6;
                     const cp1y = pts[i].y + (pts[i + 1].y - (i > 0 ? pts[i - 1].y : pts[i].y)) / 6;
@@ -4408,6 +4493,22 @@
     </script>
     <!-- Audio Manager -->
     <script src="audio.js"></script>
+
+    <!-- Save Toast -->
+    <div id="save-toast"
+        style="position:fixed;bottom:2rem;right:2rem;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.35s ease;">
+        <div class="flex items-center gap-3 px-5 py-3 rounded-2xl glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
+            style="backdrop-filter:blur(20px); background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);">
+            <span class="material-symbols-outlined text-primary text-[18px]" id="toast-icon">check_circle</span>
+            <span class="text-sm font-semibold text-slate-100" id="toast-msg">Settings saved</span>
+        </div>
+    </div>
+    <style>
+        #save-toast.visible {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+    </style>
 
     <!-- Apply saved settings globally -->
     <script src="settings.js"></script>

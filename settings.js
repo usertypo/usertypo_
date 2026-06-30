@@ -36,34 +36,44 @@ const DEFAULTS = {
         soundPack: 'Steelseries Apex Pro V2',
     },
     testRules: {
-        difficulty:         'Normal',
-        stopOnError:        'Off',
-        confidenceMode:     'Off',
-        freedomMode:        false,
-        indicateTypos:      'Off',
-        lazyMode:           false,
-        strictSpace:        false,
+        difficulty: 'Normal',
+        stopOnError: 'Off',
+        confidenceMode: 'Off',
+        freedomMode: false,
+        indicateTypos: 'Off',
+        lazyMode: false,
+        strictSpace: false,
         requiredCorrectEnd: false,
-        capslockWarning:    true,
-        oppositeShift:      false,
+        capslockWarning: true,
+        oppositeShift: false,
     },
     keyboardLayout: {
-        keymapMode:         'Off',       // Off | Static | React | Next
-        keymapStyle:        'Staggered', // Staggered | Alice | Matrix | Split
-        keymapLayout:       'QWERTY',
-        keymapLegend:       'Lowercase',
-        quickRestart:       'Tab',
+        keymapMode: 'Off',       // Off | Static | React | Next
+        keymapStyle: 'Staggered', // Staggered | Alice | Matrix | Split
+        keymapLayout: 'QWERTY',
+        keymapLegend: 'Lowercase',
+        quickRestart: 'Tab',
         quickRestartCustomKey: '',
     },
+    resultsAndGraphs: {
+        decimalPrecision: false,
+        alwaysShowCPS: false,
+        defaultGraphView: 'Basic',
+        smoothGraphLines: true,
+        startGraphFromZero: false,
+        minWPM: 'Off',
+        minAccuracy: '75%',
+        minBurst: 'Off'
+    },
     liveFeed: {
-        liveWpm:            true,
-        liveAccuracy:       true,
-        liveBurst:          false,
-        timerStyle:         'Number',
-        timerOpacity:       '0.5',
+        liveWpm: true,
+        liveAccuracy: true,
+        liveBurst: false,
+        timerStyle: 'Number',
+        timerOpacity: '0.5',
     },
     lookFeel: {
-        colorTheme:         'usertypo_',
+        colorTheme: 'usertypo_',
     }
 };
 
@@ -155,184 +165,184 @@ function getByPath(obj, path) {
  */
 const THEME_PALETTES = {
     'usertypo_': {
-        bgMain:        '#020016',
-        bgSecondary:   '#1a1d23',
-        textPrimary:   '#e2e8f0',
-        textMuted:     '#64748b',
+        bgMain: '#020016',
+        bgSecondary: '#1a1d23',
+        textPrimary: '#e2e8f0',
+        textMuted: '#64748b',
         accentPrimary: '#00d0ff',
-        accentHover:   '#33d9ff',
-        error:         '#ff3333',
+        accentHover: '#33d9ff',
+        error: '#ff3333',
     },
     'Minecraft': {
-        bgMain:        '#3b3328',
-        bgSecondary:   '#55493b',
-        textPrimary:   '#55ff55',
-        textMuted:     '#8b8b6a',
+        bgMain: '#3b3328',
+        bgSecondary: '#55493b',
+        textPrimary: '#55ff55',
+        textMuted: '#8b8b6a',
         accentPrimary: '#55d4d8',
-        accentHover:   '#7eebed',
-        error:         '#ff3333',
+        accentHover: '#7eebed',
+        error: '#ff3333',
     },
     'Spider-Man': {
-        bgMain:        '#0b0c10',
-        bgSecondary:   '#454e59',
-        textPrimary:   '#e23636',
-        textMuted:     '#8892a0',
+        bgMain: '#0b0c10',
+        bgSecondary: '#454e59',
+        textPrimary: '#e23636',
+        textMuted: '#8892a0',
         accentPrimary: '#2b76c8',
-        accentHover:   '#4a90d9',
-        error:         '#f6ad55',
+        accentHover: '#4a90d9',
+        error: '#ff3333',
     },
     'Batman': {
-        bgMain:        '#0a0a0a',
-        bgSecondary:   '#404040',
-        textPrimary:   '#c4c4c4',
-        textMuted:     '#737373',
+        bgMain: '#0a0a0a',
+        bgSecondary: '#404040',
+        textPrimary: '#c4c4c4',
+        textMuted: '#737373',
         accentPrimary: '#f1c40f',
-        accentHover:   '#f4d03f',
-        error:         '#e74c3c',
+        accentHover: '#f4d03f',
+        error: '#e74c3c',
     },
     'Iron Man': {
-        bgMain:        '#4a0e0e',
-        bgSecondary:   '#8a3131',
-        textPrimary:   '#ffffff',
-        textMuted:     '#c47a7a',
+        bgMain: '#4a0e0e',
+        bgSecondary: '#8a3131',
+        textPrimary: '#ffffff',
+        textMuted: '#c47a7a',
         accentPrimary: '#fadb5f',
-        accentHover:   '#fce588',
-        error:         '#5bc0eb',
+        accentHover: '#fce588',
+        error: '#ff3333',
     },
     'The Joker': {
-        bgMain:        '#1a0f2e',
-        bgSecondary:   '#4c3b73',
-        textPrimary:   '#d4c1f9',
-        textMuted:     '#8a74b8',
+        bgMain: '#1a0f2e',
+        bgSecondary: '#4c3b73',
+        textPrimary: '#d4c1f9',
+        textMuted: '#8a74b8',
         accentPrimary: '#2ecc71',
-        accentHover:   '#58d68d',
-        error:         '#e74c3c',
+        accentHover: '#58d68d',
+        error: '#e74c3c',
     },
     'Superman': {
-        bgMain:        '#051b3b',
-        bgSecondary:   '#35527a',
-        textPrimary:   '#f7f7f7',
-        textMuted:     '#8aa3c8',
+        bgMain: '#051b3b',
+        bgSecondary: '#35527a',
+        textPrimary: '#f7f7f7',
+        textMuted: '#8aa3c8',
         accentPrimary: '#e23636',
-        accentHover:   '#e85c5c',
-        error:         '#fadb5f',
+        accentHover: '#e85c5c',
+        error: '#ff3333',
     },
     'Wolverine': {
-        bgMain:        '#1a1a1a',
-        bgSecondary:   '#595959',
-        textPrimary:   '#f2ca00',
-        textMuted:     '#999966',
+        bgMain: '#1a1a1a',
+        bgSecondary: '#595959',
+        textPrimary: '#f2ca00',
+        textMuted: '#999966',
         accentPrimary: '#004b87',
-        accentHover:   '#0066b3',
-        error:         '#cc0000',
+        accentHover: '#0066b3',
+        error: '#cc0000',
     },
     'Cyberpunk': {
-        bgMain:        '#0f0f12',
-        bgSecondary:   '#535a6b',
-        textPrimary:   '#e60067',
-        textMuted:     '#8b8fa3',
+        bgMain: '#0f0f12',
+        bgSecondary: '#535a6b',
+        textPrimary: '#e60067',
+        textMuted: '#8b8fa3',
         accentPrimary: '#00ffcc',
-        accentHover:   '#33ffd6',
-        error:         '#f1c40f',
+        accentHover: '#33ffd6',
+        error: '#ff3333',
     },
     'Matrix': {
-        bgMain:        '#000000',
-        bgSecondary:   '#003b00',
-        textPrimary:   '#00ff41',
-        textMuted:     '#267a3a',
+        bgMain: '#000000',
+        bgSecondary: '#003b00',
+        textPrimary: '#00ff41',
+        textMuted: '#267a3a',
         accentPrimary: '#ffffff',
-        accentHover:   '#ccffcc',
-        error:         '#ff003c',
+        accentHover: '#ccffcc',
+        error: '#ff003c',
     },
     'Synthwave': {
-        bgMain:        '#2b213a',
-        bgSecondary:   '#604d7c',
-        textPrimary:   '#ff9e64',
-        textMuted:     '#9a86b8',
+        bgMain: '#2b213a',
+        bgSecondary: '#604d7c',
+        textPrimary: '#ff9e64',
+        textMuted: '#9a86b8',
         accentPrimary: '#f7768e',
-        accentHover:   '#f99aab',
-        error:         '#7dcfff',
+        accentHover: '#f99aab',
+        error: '#ff3333',
     },
     'Space Cadet': {
-        bgMain:        '#171a21',
-        bgSecondary:   '#4f5b66',
-        textPrimary:   '#a7adba',
-        textMuted:     '#6d7a88',
+        bgMain: '#171a21',
+        bgSecondary: '#4f5b66',
+        textPrimary: '#a7adba',
+        textMuted: '#6d7a88',
         accentPrimary: '#8bd49c',
-        accentHover:   '#a8e0b5',
-        error:         '#ec5f67',
+        accentHover: '#a8e0b5',
+        error: '#ec5f67',
     },
     'Matcha': {
-        bgMain:        '#f4f4f0',
-        bgSecondary:   '#c2c7b4',
-        textPrimary:   '#4d5c44',
-        textMuted:     '#8a9480',
+        bgMain: '#f4f4f0',
+        bgSecondary: '#c2c7b4',
+        textPrimary: '#4d5c44',
+        textMuted: '#8a9480',
         accentPrimary: '#798c6c',
-        accentHover:   '#92a585',
-        error:         '#d97373',
+        accentHover: '#92a585',
+        error: '#d97373',
     },
     'Lavender': {
-        bgMain:        '#f5f3fa',
-        bgSecondary:   '#c8c0db',
-        textPrimary:   '#5f4b8b',
-        textMuted:     '#9486b0',
+        bgMain: '#f5f3fa',
+        bgSecondary: '#c8c0db',
+        textPrimary: '#5f4b8b',
+        textMuted: '#9486b0',
         accentPrimary: '#9b86cc',
-        accentHover:   '#b3a1d9',
-        error:         '#e07a5f',
+        accentHover: '#b3a1d9',
+        error: '#e07a5f',
     },
     'Oceanic': {
-        bgMain:        '#102a43',
-        bgSecondary:   '#334e68',
-        textPrimary:   '#82c0cc',
-        textMuted:     '#5a8a96',
+        bgMain: '#102a43',
+        bgSecondary: '#334e68',
+        textPrimary: '#82c0cc',
+        textMuted: '#5a8a96',
         accentPrimary: '#486581',
-        accentHover:   '#627d99',
-        error:         '#ff6b6b',
+        accentHover: '#627d99',
+        error: '#ff6b6b',
     },
     'Campfire': {
-        bgMain:        '#2c2826',
-        bgSecondary:   '#695d56',
-        textPrimary:   '#fca311',
-        textMuted:     '#a09080',
+        bgMain: '#2c2826',
+        bgSecondary: '#695d56',
+        textPrimary: '#fca311',
+        textMuted: '#a09080',
         accentPrimary: '#e5e5e5',
-        accentHover:   '#ffffff',
-        error:         '#d90429',
+        accentHover: '#ffffff',
+        error: '#d90429',
     },
     'Cherry Blossom': {
-        bgMain:        '#2e1a24',
-        bgSecondary:   '#7a5061',
-        textPrimary:   '#ffb8d1',
-        textMuted:     '#b0859a',
+        bgMain: '#2e1a24',
+        bgSecondary: '#7a5061',
+        textPrimary: '#ffb8d1',
+        textMuted: '#b0859a',
         accentPrimary: '#ff5c93',
-        accentHover:   '#ff85ad',
-        error:         '#e52b50',
+        accentHover: '#ff85ad',
+        error: '#e52b50',
     },
     'Abyss': {
-        bgMain:        '#000000',
-        bgSecondary:   '#444444',
-        textPrimary:   '#cccccc',
-        textMuted:     '#777777',
+        bgMain: '#000000',
+        bgSecondary: '#444444',
+        textPrimary: '#cccccc',
+        textMuted: '#777777',
         accentPrimary: '#ffffff',
-        accentHover:   '#dddddd',
-        error:         '#ff4444',
+        accentHover: '#dddddd',
+        error: '#ff4444',
     },
     'Paper': {
-        bgMain:        '#ffffff',
-        bgSecondary:   '#b3b3b3',
-        textPrimary:   '#333333',
-        textMuted:     '#888888',
+        bgMain: '#ffffff',
+        bgSecondary: '#b3b3b3',
+        textPrimary: '#333333',
+        textMuted: '#888888',
         accentPrimary: '#000000',
-        accentHover:   '#333333',
-        error:         '#cc0000',
+        accentHover: '#333333',
+        error: '#cc0000',
     },
     'Dracula': {
-        bgMain:        '#282a36',
-        bgSecondary:   '#6272a4',
-        textPrimary:   '#f8f8f2',
-        textMuted:     '#8892a8',
+        bgMain: '#282a36',
+        bgSecondary: '#6272a4',
+        textPrimary: '#f8f8f2',
+        textMuted: '#8892a8',
         accentPrimary: '#bd93f9',
-        accentHover:   '#caa8fc',
-        error:         '#ff5555',
+        accentHover: '#caa8fc',
+        error: '#ff5555',
     },
 };
 
@@ -386,21 +396,21 @@ function applyThemeSettings(settings) {
     const p = THEME_PALETTES[themeName] || THEME_PALETTES['usertypo_'];
 
     // Derived colors
-    const accentDark  = _darkenColor(p.accentPrimary, 30);
+    const accentDark = _darkenColor(p.accentPrimary, 30);
     const accentLight = _shadeColor(p.accentPrimary, 20);
-    const bgDark      = _darkenColor(p.bgMain, 20);
-    const bgLight     = _shadeColor(p.bgSecondary, 15);
-    const accentRGB   = _hexToRGB(p.accentPrimary);
-    const bgSecRGB    = _hexToRGB(p.bgSecondary);
-    const errorRGB    = _hexToRGB(p.error);
-    const textPriRGB  = _hexToRGB(p.textPrimary);
-    const bgMainRGB   = _hexToRGB(p.bgMain);
+    const bgDark = _darkenColor(p.bgMain, 20);
+    const bgLight = _shadeColor(p.bgSecondary, 15);
+    const accentRGB = _hexToRGB(p.accentPrimary);
+    const bgSecRGB = _hexToRGB(p.bgSecondary);
+    const errorRGB = _hexToRGB(p.error);
+    const textPriRGB = _hexToRGB(p.textPrimary);
+    const bgMainRGB = _hexToRGB(p.bgMain);
 
     // Logo colors: typ_ uses accent, user uses textPrimary, o stays red
-    const logoTypColor  = accentLight; // typ_ layer
+    const logoTypColor = accentLight; // typ_ layer
     const logoUserColor = p.textPrimary; // user layer
-    const logoTypRGB    = _hexToRGB(logoTypColor);
-    const logoUserRGB   = _hexToRGB(logoUserColor);
+    const logoTypRGB = _hexToRGB(logoTypColor);
+    const logoUserRGB = _hexToRGB(logoUserColor);
 
     const css = `
         /* ── Tailwind color class overrides ── */
@@ -570,15 +580,198 @@ function applyThemeSettings(settings) {
 
         /* ── Sign-in page side logo layers ── */
         .side-user-layer { background-color: ${logoUserColor} !important; }
-        .side-t-layer, .side-y-layer, .side-p-layer { background-color: ${p.textMuted} !important; }
-        .side-o-layer { background-color: ${p.textMuted} !important; }
-        @keyframes color-typ { to { background-color: ${logoTypColor} !important; } }
-        @keyframes color-user { to { background-color: ${logoUserColor} !important; } }
-        @keyframes color-o { to { background-color: #ff3344 !important; } }
+        .side-t-layer, .side-y-layer, .side-p-layer { background-color: ${p.textMuted}; }
+        .side-o-layer { background-color: ${p.textMuted}; }
+        @keyframes color-typ { to { background-color: ${logoTypColor}; } }
+        @keyframes color-user { to { background-color: ${logoUserColor}; } }
+        @keyframes color-o { to { background-color: #ff3344; } }
 
         /* ── Sign-in caret ── */
         .signin-caret, [style*="background-color: #95efff"] {
             background-color: ${p.accentPrimary} !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           COMPREHENSIVE THEME OVERRIDES — covers ALL hardcoded colors
+           across every page (index, signin, settings, userstats, etc.)
+           ═══════════════════════════════════════════════════════════════ */
+
+        /* ── Menu bar active state (all pages) ── */
+        .menu-btn.is-active {
+            color: ${p.accentPrimary} !important;
+            text-shadow: 0 0 15px rgba(${accentRGB}, 0.8) !important;
+        }
+
+        /* ── Caret ::after (default underscore) ── */
+        #caret::after {
+            background-color: ${p.accentPrimary} !important;
+            box-shadow: 0 0 6px rgba(${accentRGB}, 0.5) !important;
+        }
+
+        /* ── Caret filter glow ── */
+        #caret {
+            filter: drop-shadow(0 0 8px rgba(${accentRGB}, 0.8)) !important;
+        }
+
+        /* ── Tailwind JIT drop-shadow overrides ── */
+        .drop-shadow-\\[0_0_5px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\] { filter: drop-shadow(0 0 5px rgba(${accentRGB}, 0.4)) !important; }
+        .drop-shadow-\\[0_0_8px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { filter: drop-shadow(0 0 8px rgba(${accentRGB}, 0.8)) !important; }
+
+        /* ── Tailwind JIT text-shadow overrides ── */
+        .\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
+        .group:hover .group-hover\\:\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
+
+        /* ── Tailwind JIT bg-[#00d0ff] overrides ── */
+        .bg-\\[\\#00d0ff\\] { background-color: ${p.accentPrimary} !important; }
+        .bg-\\[\\#00d0ff\\]\\\/40 { background-color: rgba(${accentRGB}, 0.4) !important; }
+        .bg-\\[\\#00d0ff\\]\\\/60 { background-color: rgba(${accentRGB}, 0.6) !important; }
+        .bg-\\[\\#00d0ff\\]\\\/20 { background-color: rgba(${accentRGB}, 0.2) !important; }
+        .hover\\:bg-\\[\\#00d0ff\\]:hover { background-color: ${p.accentPrimary} !important; }
+
+        /* ── Inline style color overrides ── */
+        [style*="background-color: #020016"] { background-color: ${p.bgMain} !important; }
+        [style*="background-color:#020016"] { background-color: ${p.bgMain} !important; }
+        [style*="color:#00d0ff"] { color: ${p.accentPrimary} !important; }
+        [style*="color: #00d0ff"] { color: ${p.accentPrimary} !important; }
+        [style*="background:#00d0ff"] { background: ${p.accentPrimary} !important; }
+        [style*="background: #00d0ff"] { background: ${p.accentPrimary} !important; }
+        [style*="background-color: #00d0ff"] { background-color: ${p.accentPrimary} !important; }
+        [style*="background-color:#00d0ff"] { background-color: ${p.accentPrimary} !important; }
+        [style*="border-color"][style*="0,208,255"] { border-color: rgba(${accentRGB}, 0.4) !important; }
+        [style*="border-color"][style*="0, 208, 255"] { border-color: rgba(${accentRGB}, 0.4) !important; }
+        [style*="text-shadow"][style*="0, 208, 255"] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.6) !important; }
+
+        /* ── Inline box-shadow overrides ── */
+        [style*="box-shadow"][style*="0,208,255"],
+        [style*="box-shadow"][style*="0, 208, 255"] {
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
+        }
+
+        /* ── Config bar inline style override ── */
+        #config-bar > div[style] {
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
+            border-color: rgba(${accentRGB}, 0.4) !important;
+        }
+
+        /* ── Progress bar glow ── */
+        #word-progress-bar { box-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
+
+        /* ── Stats hero card ── */
+        #stats-hero-card { border-color: rgba(${accentRGB}, 0.1) !important; }
+
+        /* ── Pill indicator (signin + general) ── */
+        .tab-pill-indicator {
+            background: rgba(${accentRGB}, 0.18) !important;
+            border-color: rgba(${accentRGB}, 0.5) !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.25) !important;
+        }
+
+        /* ── caretBreath animation (signin) ── */
+        @keyframes caretBreath {
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(${accentRGB}, 1); }
+            50% { opacity: 0.3; box-shadow: 0 0 4px rgba(${accentRGB}, 0.2); }
+        }
+
+        /* ── Sign-in field styles ── */
+        .field-wrap input:focus { border-bottom-color: rgba(${accentRGB}, 0.5) !important; }
+        .field-wrap input:focus ~ label,
+        .field-wrap input:not(:placeholder-shown) ~ label { color: ${p.accentPrimary} !important; }
+        .field-wrap::after { background: ${p.accentPrimary} !important; box-shadow: 0 0 8px rgba(${accentRGB}, 0.6) !important; }
+
+        /* ── Sign-in primary button ── */
+        .btn-primary { border-color: rgba(${accentRGB}, 0.5) !important; }
+        .btn-primary::before { background: linear-gradient(135deg, rgba(${accentRGB}, 0.08) 0%, rgba(${accentRGB}, 0.18) 100%) !important; }
+        .btn-primary:hover {
+            border-color: rgba(${accentRGB}, 0.9) !important;
+            box-shadow: 0 0 20px rgba(${accentRGB}, 0.25), 0 0 40px rgba(${accentRGB}, 0.1) !important;
+        }
+
+        /* ── Sign-in accent links ── */
+        .white-link.accent { color: ${p.accentPrimary} !important; }
+        .white-link.accent:hover { text-shadow: 0 0 14px rgba(${accentRGB}, 0.8) !important; }
+
+        /* ── Sign-in side underscore ── */
+        .side-underscore {
+            background-color: ${logoTypColor} !important;
+            box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7) !important;
+        }
+        @keyframes side-caret-typing {
+            0% { left: 132px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            20%, 25% { left: 176px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            45%, 50% { left: 225px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            70%, 75% { left: 274px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            95%, 100% { left: 326px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); }
+        }
+        @keyframes side-underscore-breath {
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); }
+            50% { opacity: 0.3; box-shadow: 0 0 4px rgba(${logoTypRGB}, 0.2); }
+        }
+
+        /* ── Sign-in side logo glow animation ── */
+        @keyframes glow-typ {
+            to { filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)); }
+        }
+
+        /* ── Userstats page ── */
+        .neon-border-glow { box-shadow: 0 0 15px rgba(${accentRGB}, 0.1) !important; }
+        .cyan-glow-text { text-shadow: 0 0 8px rgba(${accentRGB}, 0.5) !important; }
+        @keyframes neonPulse {
+            0%, 100% { border-color: rgba(${accentRGB}, 0.35); }
+            50% { border-color: rgba(${accentRGB}, 0.7); box-shadow: inset 0 0 30px rgba(${accentRGB}, 0.1); }
+        }
+        .featured-hover:hover {
+            box-shadow: 0 0 0 1px rgba(${accentRGB}, 0.32), 0 0 38px rgba(${accentRGB}, 0.13) !important;
+            border-color: rgba(${accentRGB}, 0.32) !important;
+        }
+        .file-upload-zone {
+            border-color: rgba(${accentRGB}, 0.5) !important;
+            background: rgba(${accentRGB}, 0.04) !important;
+            box-shadow: inset 0 0 20px rgba(${accentRGB}, 0.06) !important;
+        }
+
+        /* ── Settings page accent colors ── */
+        .sidebar-tab.active .tab-icon { color: ${p.accentPrimary} !important; }
+        .sidebar-tab:hover .tab-icon { color: ${p.accentPrimary} !important; }
+        .sub-setting-label { color: ${p.accentPrimary} !important; }
+        .setting-value-display { color: ${p.accentPrimary} !important; }
+        .card-tab.active { color: ${p.accentPrimary} !important; }
+        .sub-setting-arrow { color: ${p.accentPrimary} !important; }
+        .sidebar-search-input:focus { color: ${p.accentPrimary} !important; }
+
+        /* ── Settings page sub-setting-card ── */
+        .sub-setting-card {
+            border-color: rgba(${accentRGB}, 0.3) !important;
+            box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
+            background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;
+        }
+
+        /* ── Settings range slider ── */
+        input[type="range"]::-webkit-slider-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"] {
+            background-image: linear-gradient(${p.accentPrimary}, ${p.accentPrimary}), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+        }
+
+        /* ── Settings select chevron SVG ── */
+        .setting-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23${p.accentPrimary.slice(1)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        }
+
+        /* ── SVG graph colors ── */
+        [stroke="#00d0ff"] { stroke: ${p.accentPrimary} !important; }
+        [fill="#00d0ff"] { fill: ${p.accentPrimary} !important; }
+        [stop-color="#00d0ff"] { stop-color: ${p.accentPrimary} !important; }
+
+        /* ── Leaderboards panel glow ── */
+        .leaderboard-panel {
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
+            border-color: rgba(${accentRGB}, 0.4) !important;
         }
     `;
 
@@ -586,8 +779,10 @@ function applyThemeSettings(settings) {
     if (!tag) {
         tag = document.createElement('style');
         tag.id = 'usertypo-theme-css';
-        (document.head || document.documentElement).appendChild(tag);
     }
+    // Always append to end of head to override inline page styles
+    if (document.head) document.head.appendChild(tag);
+    
     tag.textContent = css;
 }
 
@@ -651,7 +846,9 @@ const SMOOTHNESS_DURATION = {
  *   underscore → horizontal bar under the character
  *   outline    → hollow box around the character
  */
-function buildCaretCSS(style, smoothness) {
+function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
+    accentHex = accentHex || '#00d0ff';
+    accentRGB = accentRGB || '0, 208, 255';
     const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
@@ -664,10 +861,10 @@ function buildCaretCSS(style, smoothness) {
                 #caret {
                     transition: ${transition} !important;
                     width: 2.5px !important;
-                    background-color: #00d0ff;
+                    background-color: ${accentHex};
                     border: none !important;
                     border-radius: 2px;
-                    box-shadow: 0 0 8px rgba(0,208,255,0.6);
+                    box-shadow: 0 0 8px rgba(${accentRGB},0.6);
                 }
                 #caret::after { display: none !important; }
             `;
@@ -677,7 +874,7 @@ function buildCaretCSS(style, smoothness) {
             css = `
                 #caret {
                     transition: ${transition} !important;
-                    background-color: rgba(0,208,255,0.25);
+                    background-color: rgba(${accentRGB},0.25);
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
@@ -702,9 +899,9 @@ function buildCaretCSS(style, smoothness) {
                     left: 0;
                     right: 0;
                     height: 2.5px;
-                    background-color: #00d0ff;
+                    background-color: ${accentHex};
                     border-radius: 9999px;
-                    box-shadow: 0 0 6px rgba(0,208,255,0.5);
+                    box-shadow: 0 0 6px rgba(${accentRGB},0.5);
                 }
             `;
             break;
@@ -714,9 +911,9 @@ function buildCaretCSS(style, smoothness) {
                 #caret {
                     transition: ${transition} !important;
                     background-color: transparent;
-                    border: 2px solid rgba(0,208,255,0.6) !important;
+                    border: 2px solid rgba(${accentRGB},0.6) !important;
                     border-radius: 3px;
-                    box-shadow: 0 0 6px rgba(0,208,255,0.25);
+                    box-shadow: 0 0 6px rgba(${accentRGB},0.25);
                 }
                 #caret::after { display: none !important; }
             `;
@@ -761,6 +958,8 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
             body[data-tape-mode="word"] #typing-area,
             body[data-tape-mode="letter"] #typing-area {
                 white-space: nowrap !important;
+                -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+                mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             }
         `;
     }
@@ -780,10 +979,14 @@ function applyCursorSettings(settings) {
     if (!styleEl) {
         styleEl = document.createElement('style');
         styleEl.id = 'usertypo-cursor-settings-css';
-        (document.head || document.documentElement).appendChild(styleEl);
     }
+    if (document.head) document.head.appendChild(styleEl);
 
-    styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness)
+    const _themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const _palette = THEME_PALETTES[_themeName] || THEME_PALETTES['usertypo_'];
+    const _caretAccent = _palette.accentPrimary;
+    const _caretRGB = _hexToRGB(_caretAccent);
+    styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
         + buildLayoutCSS(settings.cursor.smoothLineScroll, settings.cursor.tapeMode);
 
     // ── Data attributes on <body> ──
@@ -833,16 +1036,16 @@ function applyTestRulesSettings(settings) {
     if (!document.body) return;
 
     const tr = settings.testRules;
-    document.body.setAttribute('data-difficulty',           tr.difficulty);
-    document.body.setAttribute('data-stop-on-error',        tr.stopOnError);
-    document.body.setAttribute('data-confidence-mode',      tr.confidenceMode);
-    document.body.setAttribute('data-freedom-mode',         String(!!tr.freedomMode));
-    document.body.setAttribute('data-indicate-typos',       tr.indicateTypos);
-    document.body.setAttribute('data-lazy-mode',            String(!!tr.lazyMode));
-    document.body.setAttribute('data-strict-space',         String(!!tr.strictSpace));
+    document.body.setAttribute('data-difficulty', tr.difficulty);
+    document.body.setAttribute('data-stop-on-error', tr.stopOnError);
+    document.body.setAttribute('data-confidence-mode', tr.confidenceMode);
+    document.body.setAttribute('data-freedom-mode', String(!!tr.freedomMode));
+    document.body.setAttribute('data-indicate-typos', tr.indicateTypos);
+    document.body.setAttribute('data-lazy-mode', String(!!tr.lazyMode));
+    document.body.setAttribute('data-strict-space', String(!!tr.strictSpace));
     document.body.setAttribute('data-required-correct-end', String(!!tr.requiredCorrectEnd));
-    document.body.setAttribute('data-capslock-warning',     String(!!tr.capslockWarning));
-    document.body.setAttribute('data-opposite-shift',       String(!!tr.oppositeShift));
+    document.body.setAttribute('data-capslock-warning', String(!!tr.capslockWarning));
+    document.body.setAttribute('data-opposite-shift', String(!!tr.oppositeShift));
 }
 
 /**
@@ -854,7 +1057,7 @@ function applyKeyboardLayoutSettings(settings) {
 
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
     document.body.setAttribute('data-quick-restart', kl.quickRestart || 'Tab');
-    
+
     // Re-render keymap if function exists
     if (typeof window.renderKeymap === 'function') {
         window.renderKeymap();
@@ -1122,7 +1325,7 @@ window.keymapLayouts = {
     ]
 };
 
-window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
+window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
     const settings = loadSettings();
     const kl = settings.keyboardLayout || {};
     let layout = kl.keymapLayout || 'QWERTY';
@@ -1131,7 +1334,7 @@ window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
 
     const containers = document.querySelectorAll('#dynamic-keymap');
     if (containers.length === 0) return;
-    
+
     // In settings view, if we're tweaking it, show it. In test view, if Off, hide it.
     // The container might be handled differently in index.html vs settings.html
     // We'll let the parent hide the container in index.html, but renderKeymap handles drawing.
@@ -1139,7 +1342,7 @@ window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
     const layoutData = window.keymapLayouts[layout] || window.keymapLayouts['QWERTY'];
 
     let html = '';
-    
+
     const isPunctuationKey = (k, s) => {
         const puncChars = '`~-_=+\\[]{}|;\':",./<>?'.split('');
         return puncChars.includes(k) || (s && puncChars.includes(s));
@@ -1156,7 +1359,7 @@ window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
             let k = keyObj.k;
             let s = keyObj.s || '';
             let isLetter = k.length === 1 && /^[a-zA-Z]$/i.test(k);
-            
+
             let isVisible = true;
             if (usePunctuation) {
                 isVisible = true; // Full keyboard
@@ -1178,11 +1381,11 @@ window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
             let keyText = keyObj.k;
             let shiftText = keyObj.s || '';
             let isModifier = keyText.length > 1 && keyText !== 'Space';
-            
+
             // Check visibility requirement
             let isLetter = keyText.length === 1 && /^[a-zA-Z]$/i.test(keyText);
             let isVisible = true;
-            
+
             if (usePunctuation) {
                 isVisible = true; // Full keyboard
             } else if (useNumbers) {
@@ -1205,7 +1408,7 @@ window.renderKeymap = function(useNumbers = true, usePunctuation = true) {
             }
 
             const visibilityClass = isVisible ? '' : 'hidden';
-            
+
             // Add data-chars attribute containing both normal and shifted chars
             const safeK = (keyObj.k || '').replace(/"/g, '&quot;');
             const safeS = (keyObj.s || '').replace(/"/g, '&quot;');
