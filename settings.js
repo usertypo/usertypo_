@@ -66,11 +66,15 @@ const DEFAULTS = {
         minBurst: 'Off'
     },
     liveFeed: {
-        liveWpm: true,
-        liveAccuracy: true,
-        liveBurst: false,
-        timerStyle: 'Number',
-        timerOpacity: '0.5',
+        liveWpm:            true,
+        liveAccuracy:       true,
+        liveBurst:          false,
+        timerStyle:         'Number',
+        timerOpacity:       '0.5',
+    },
+    resultsGraphs: {
+        decimalPrecision:   false,
+        alwaysShowCps:      false,
     },
     lookFeel: {
         colorTheme: 'usertypo_',
