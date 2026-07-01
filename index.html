@@ -2867,7 +2867,7 @@
             const elapsedMinutes = Math.max((currentTime - startTime) / 60000, 2 / 60);
 
             const config = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
-            const resSettings = config.resultsGraphs || { decimalPrecision: false, alwaysShowCps: false, minWPM: 'Off', minAccuracy: '75%', minBurst: 'Off' };
+            const resSettings = config.resultsAndGraphs || { decimalPrecision: false, alwaysShowCPS: false, minWPM: 'Off', minAccuracy: '75%', minBurst: 'Off' };
 
             const exactWpm = (validChars / 5) / elapsedMinutes;
             const exactRawWpm = (totalKeystrokes / 5) / elapsedMinutes;
@@ -2887,7 +2887,7 @@
             let rawWpmStr = formatDecimal(exactRawWpm);
 
             const cpsEl = document.getElementById('stats-cps');
-            if (resSettings.alwaysShowCps) {
+            if (resSettings.alwaysShowCPS) {
                 const cps = (Math.max(0, exactWpm) * 5 / 60);
                 if (cpsEl) {
                     cpsEl.textContent = `${cps.toFixed(1)} CPS`;

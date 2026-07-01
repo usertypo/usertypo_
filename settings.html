@@ -2547,7 +2547,7 @@
                                                         <p class="text-xs text-slate-500">Show two decimal places (e.g.
                                                             104.52 WPM)</p>
                                                     </div>
-                                                    <div class="toggle-track" data-setting="resultsGraphs.decimalPrecision" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track" data-setting="resultsAndGraphs.decimalPrecision" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2577,7 +2577,7 @@
                                                         <p class="text-xs text-slate-500">Display characters per second
                                                             alongside WPM</p>
                                                     </div>
-                                                    <div class="toggle-track" data-setting="resultsGraphs.alwaysShowCps" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track" data-setting="resultsAndGraphs.alwaysShowCPS" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2620,7 +2620,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
+                                                    <div class="flex gap-2 flex-wrap" data-setting="resultsAndGraphs.defaultGraphView"><button class="opt-btn active"
                                                             onclick="selectOpt(this)">Basic</button><button
                                                             class="opt-btn" onclick="selectOpt(this)">Advanced</button>
                                                     </div>
@@ -2652,7 +2652,7 @@
                                                         <p class="text-xs text-slate-500">Use bezier curves instead of
                                                             sharp angles</p>
                                                     </div>
-                                                    <div class="toggle-track on" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track on" data-setting="resultsAndGraphs.smoothGraphLines" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2683,7 +2683,7 @@
                                                         <p class="text-xs text-slate-500">Y-axis begins at zero instead
                                                             of auto-scaling</p>
                                                     </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track" data-setting="resultsAndGraphs.startGraphFromZero" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>

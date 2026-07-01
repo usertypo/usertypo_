@@ -72,10 +72,6 @@ const DEFAULTS = {
         timerStyle:         'Number',
         timerOpacity:       '0.5',
     },
-    resultsGraphs: {
-        decimalPrecision:   false,
-        alwaysShowCps:      false,
-    },
     lookFeel: {
         colorTheme: 'usertypo_',
     }
