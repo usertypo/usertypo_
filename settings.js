@@ -74,6 +74,7 @@ const DEFAULTS = {
     },
     lookFeel: {
         colorTheme: 'usertypo_',
+        fontFamily: 'SUSE Mono',
     }
 };
 
@@ -395,6 +396,9 @@ function applyThemeSettings(settings) {
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
     const p = THEME_PALETTES[themeName] || THEME_PALETTES['usertypo_'];
 
+    // ── Font Family ──
+    const fontFamily = settings.lookFeel?.fontFamily || 'Roboto Mono';
+
     // Derived colors
     const accentDark = _darkenColor(p.accentPrimary, 30);
     const accentLight = _shadeColor(p.accentPrimary, 20);
@@ -413,6 +417,19 @@ function applyThemeSettings(settings) {
     const logoUserRGB = _hexToRGB(logoUserColor);
 
     const css = `
+        /* ── Dynamic Font Family ── */
+        html, body,
+        input, button, select, textarea,
+        h1, h2, h3, h4, h5, h6,
+        p, span, a, label, li, td, th, div,
+        .font-mono, .font-sans,
+        .opt-btn, .setting-select, .search-input, .danger-btn,
+        [class*="font-"] {
+            font-family: '${fontFamily}', monospace !important;
+        }
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+        }
         /* ── Tailwind color class overrides ── */
         /* Primary / Accent */
         .text-primary { color: ${p.accentPrimary} !important; }
