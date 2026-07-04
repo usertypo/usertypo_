@@ -2831,7 +2831,7 @@
 
         let canSkipStats = true;
 
-        function endTest() {
+        function endTest(forcedFailedReason = null) {
             canSkipStats = false;
             setTimeout(() => { canSkipStats = true; }, 1000);
             isTyping = false;
@@ -2914,17 +2914,17 @@
             else consistency = Math.min(80, Math.max(20, Math.round(40 + Math.random() * 20)));
 
             // Check Thresholds
-            let failedReason = null;
-            if (resSettings.minWPM && resSettings.minWPM !== 'Off') {
+            let failedReason = forcedFailedReason;
+            if (!failedReason && resSettings.minWPM && resSettings.minWPM !== 'Off') {
                 let minWpmVal = parseFloat(resSettings.minWPM);
                 if (!isNaN(minWpmVal) && exactWpm < minWpmVal) {
-                    failedReason = `Test failed: WPM below ${minWpmVal} threshold`;
+                    failedReason = `Test failed wpm less than ${minWpmVal}`;
                 }
             }
             if (!failedReason && resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
-                let minAccVal = parseFloat(resSettings.minAccuracy.replace('%', ''));
+                let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
                 if (!isNaN(minAccVal) && acc < minAccVal) {
-                    failedReason = `Test failed: Accuracy below ${minAccVal}% threshold`;
+                    failedReason = `Test failed accuracy less than ${minAccVal}`;
                 }
             }
 
@@ -3298,6 +3298,27 @@
             wpmDisplay.innerText = Math.max(0, wpm);
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
+            window.lastBurstVal = burst;
+
+            // Live Threshold Check
+            const config = window.usertypo_settings || {};
+            const resSettings = config.resultsAndGraphs || {};
+
+            if (!testComplete) {
+                let liveFailedReason = null;
+
+                if (resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
+                    let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
+                    if (!isNaN(minAccVal) && acc < minAccVal) {
+                        liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
+                    }
+                }
+
+                if (liveFailedReason) {
+                    testComplete = true;
+                    setTimeout(() => { if (!isRestarting) endTest(liveFailedReason); }, 10);
+                }
+            }
         }
 
         let testInactivityTimer = null;

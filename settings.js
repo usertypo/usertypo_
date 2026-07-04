@@ -66,11 +66,11 @@ const DEFAULTS = {
         minBurst: 'Off'
     },
     liveFeed: {
-        liveWpm:            true,
-        liveAccuracy:       true,
-        liveBurst:          false,
-        timerStyle:         'Number',
-        timerOpacity:       '0.5',
+        liveWpm: true,
+        liveAccuracy: true,
+        liveBurst: false,
+        timerStyle: 'Number',
+        timerOpacity: '0.5',
     },
     lookFeel: {
         colorTheme: 'usertypo_',
@@ -799,7 +799,7 @@ function applyThemeSettings(settings) {
     }
     // Always append to end of head to override inline page styles
     if (document.head) document.head.appendChild(tag);
-    
+
     tag.textContent = css;
 }
 
@@ -1450,3 +1450,243 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
 
     containers.forEach(c => c.innerHTML = html);
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. CUSTOM POPOVER LOGIC — with CSS overrides for transparent styling
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Inject CSS to force transparent styling on custom popovers
+// This overrides any Tailwind classes in the HTML (bg-slate-900, border-primary, etc.)
+(function injectCustomPopoverCSS() {
+    const style = document.createElement('style');
+    style.id = 'custom-popover-override-css';
+    style.textContent = `
+        /* Force transparent popover card — no blue at all */
+        .custom-popover {
+            background: rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            /* Open to the RIGHT of the button, not below */
+            top: 50% !important;
+            left: 100% !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: translateY(-50%) !important;
+            margin-top: 0 !important;
+            margin-left: 8px !important;
+        }
+
+        /* Force transparent input — no blue border or background */
+        .custom-popover input {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+            -moz-appearance: textfield !important;
+            appearance: textfield !important;
+        }
+        .custom-popover input:focus {
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove number input spinners/arrows */
+        .custom-popover input::-webkit-outer-spin-button,
+        .custom-popover input::-webkit-inner-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0 !important;
+        }
+
+        /* Force transparent Apply button — no blue */
+        .custom-popover button {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+        }
+        .custom-popover button:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* Make sure parent cards don't clip the popover */
+        .custom-popover-wrapper {
+            position: relative;
+        }
+        .setting-card, .sub-setting-card, .sub-setting-content, .glass-card {
+            overflow: visible !important;
+        }
+    `;
+    if (document.head) {
+        document.head.appendChild(style);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => document.head.appendChild(style));
+    }
+})();
+
+// Toggle popover open/close
+window.toggleCustomPopover = function (btn) {
+    const popover = btn.nextElementSibling;
+    const isShowing = popover.classList.contains('opacity-100');
+
+    // Close all other popovers first
+    document.querySelectorAll('.custom-popover').forEach(p => {
+        p.classList.remove('opacity-100', 'pointer-events-auto');
+        p.classList.add('opacity-0', 'pointer-events-none');
+    });
+
+    if (!isShowing) {
+        popover.classList.remove('opacity-0', 'pointer-events-none');
+        popover.classList.add('opacity-100', 'pointer-events-auto');
+        const inp = popover.querySelector('input');
+        if (inp) inp.focus();
+    }
+};
+
+// Apply custom value
+window.applyCustomPopover = function (btn, path, isFlex = false) {
+    const popover = btn.closest('.custom-popover');
+    const input = popover.querySelector('input');
+    const val = input.value.trim();
+
+    if (!val) {
+        popover.classList.remove('opacity-100', 'pointer-events-auto');
+        popover.classList.add('opacity-0', 'pointer-events-none');
+        return;
+    }
+
+    let finalVal = isFlex ? 'Flex:' + val : val;
+
+    const settings = loadSettings();
+    setByPath(settings, path, finalVal);
+    saveSettings(settings);
+    if (typeof triggerSave === 'function') triggerSave();
+
+    // UI update — set button text to the entered value
+    const container = btn.closest('[data-setting]');
+    if (container) {
+        // Reset all buttons in this group
+        container.querySelectorAll('.opt-btn').forEach(b => {
+            b.classList.remove('active');
+            if (b.hasAttribute('data-original-text')) {
+                b.textContent = b.getAttribute('data-original-text');
+            }
+        });
+
+        // Set the trigger button (the one right before the popover div) as active
+        const optBtn = popover.previousElementSibling;
+        if (optBtn) {
+            optBtn.classList.add('active');
+            // Save original text so we can restore it later
+            if (!optBtn.hasAttribute('data-original-text')) {
+                optBtn.setAttribute('data-original-text', optBtn.textContent.trim());
+            }
+            // Show the custom number on the button
+            optBtn.textContent = val;
+        }
+    }
+
+    // Close the popover
+    popover.classList.remove('opacity-100', 'pointer-events-auto');
+    popover.classList.add('opacity-0', 'pointer-events-none');
+    input.value = '';
+};
+
+// Close popover when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-popover-wrapper')) {
+        document.querySelectorAll('.custom-popover').forEach(p => {
+            p.classList.remove('opacity-100', 'pointer-events-auto');
+            p.classList.add('opacity-0', 'pointer-events-none');
+        });
+    }
+});
+
+// Monkey-patch selectOpt to reset custom button text when a regular option is picked
+(function patchSelectOpt() {
+    function doPatch() {
+        if (typeof window.selectOpt !== 'function') return;
+        const _origSelectOpt = window.selectOpt;
+        window.selectOpt = function (btn) {
+            // Before calling original, reset any custom buttons in this group
+            const container = btn.closest('[data-setting]');
+            if (container) {
+                container.querySelectorAll('.opt-btn').forEach(b => {
+                    if (b.hasAttribute('data-original-text')) {
+                        b.textContent = b.getAttribute('data-original-text');
+                        b.removeAttribute('data-original-text');
+                    }
+                });
+            }
+            _origSelectOpt(btn);
+        };
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(doPatch, 100));
+    } else {
+        setTimeout(doPatch, 100);
+    }
+})();
+
+// On page load, restore custom values on buttons from saved settings
+(function restoreCustomButtonValues() {
+    function doRestore() {
+        const settings = loadSettings();
+        const thresholdPaths = [
+            { path: 'resultsAndGraphs.minWPM', labels: ['Custom'] },
+            { path: 'resultsAndGraphs.minAccuracy', labels: ['Custom'] },
+            { path: 'resultsAndGraphs.minBurst', labels: ['Fixed', 'Flex'] }
+        ];
+
+        thresholdPaths.forEach(({ path, labels }) => {
+            const saved = getByPath(settings, path);
+            if (!saved || saved === 'Off') return;
+
+            const container = document.querySelector(`[data-setting="${path}"]`);
+            if (!container) return;
+
+            // Check if any regular button matches
+            let matchedRegular = false;
+            container.querySelectorAll('.opt-btn').forEach(b => {
+                if (!b.closest('.custom-popover-wrapper')) {
+                    const btnText = b.textContent.trim();
+                    if (btnText === String(saved)) matchedRegular = true;
+                }
+            });
+            if (matchedRegular) return;
+
+            // It's a custom value — find the right trigger button
+            container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
+                const btnLabel = triggerBtn.textContent.trim();
+
+                if (path === 'resultsAndGraphs.minBurst') {
+                    if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
+                        triggerBtn.setAttribute('data-original-text', 'Flex');
+                        triggerBtn.textContent = String(saved).split(':')[1];
+                        // Remove active from others, set this active
+                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                        triggerBtn.classList.add('active');
+                    } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
+                        triggerBtn.setAttribute('data-original-text', 'Fixed');
+                        triggerBtn.textContent = saved;
+                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                        triggerBtn.classList.add('active');
+                    }
+                } else {
+                    if (btnLabel === 'Custom') {
+                        triggerBtn.setAttribute('data-original-text', 'Custom');
+                        triggerBtn.textContent = saved;
+                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                        triggerBtn.classList.add('active');
+                    }
+                }
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(doRestore, 200));
+    } else {
+        setTimeout(doRestore, 200);
+    }
+})();

@@ -1813,17 +1813,28 @@
                                                         <div class="flex flex-col gap-4">
                                                             <div class="grid grid-cols-5 gap-2"
                                                                 data-setting="lookFeel.fontFamily">
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Cutive</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Cutive Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">JetBrains Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Kode Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Roboto</button>
-                                                                <button class="opt-btn active" onclick="selectOpt(this)">Roboto Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">SUSE</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">SUSE Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Ubuntu</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Ubuntu Sans Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Xanh Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Cutive</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Cutive
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">JetBrains Mono</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Kode
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Roboto</button>
+                                                                <button class="opt-btn active"
+                                                                    onclick="selectOpt(this)">Roboto Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">SUSE</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">SUSE
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Ubuntu</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Ubuntu
+                                                                    Sans Mono</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Xanh
+                                                                    Mono</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2557,7 +2568,9 @@
                                                         <p class="text-xs text-slate-500">Show two decimal places (e.g.
                                                             104.52 WPM)</p>
                                                     </div>
-                                                    <div class="toggle-track" data-setting="resultsAndGraphs.decimalPrecision" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track"
+                                                        data-setting="resultsAndGraphs.decimalPrecision"
+                                                        onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2587,7 +2600,9 @@
                                                         <p class="text-xs text-slate-500">Display characters per second
                                                             alongside WPM</p>
                                                     </div>
-                                                    <div class="toggle-track" data-setting="resultsAndGraphs.alwaysShowCPS" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track"
+                                                        data-setting="resultsAndGraphs.alwaysShowCPS"
+                                                        onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2630,7 +2645,9 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap" data-setting="resultsAndGraphs.defaultGraphView"><button class="opt-btn active"
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="resultsAndGraphs.defaultGraphView"><button
+                                                            class="opt-btn active"
                                                             onclick="selectOpt(this)">Basic</button><button
                                                             class="opt-btn" onclick="selectOpt(this)">Advanced</button>
                                                     </div>
@@ -2662,7 +2679,9 @@
                                                         <p class="text-xs text-slate-500">Use bezier curves instead of
                                                             sharp angles</p>
                                                     </div>
-                                                    <div class="toggle-track on" data-setting="resultsAndGraphs.smoothGraphLines" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track on"
+                                                        data-setting="resultsAndGraphs.smoothGraphLines"
+                                                        onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2693,7 +2712,9 @@
                                                         <p class="text-xs text-slate-500">Y-axis begins at zero instead
                                                             of auto-scaling</p>
                                                     </div>
-                                                    <div class="toggle-track" data-setting="resultsAndGraphs.startGraphFromZero" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track"
+                                                        data-setting="resultsAndGraphs.startGraphFromZero"
+                                                        onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -2735,9 +2756,23 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
-                                                            onclick="selectOpt(this)">Off</button><button
-                                                            class="opt-btn" onclick="selectOpt(this)">Custom</button>
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="resultsAndGraphs.minWPM">
+                                                        <button class="opt-btn active"
+                                                            onclick="selectOpt(this)">Off</button>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Custom</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="Value...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minWPM')">Apply</button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">
@@ -2762,14 +2797,26 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap">
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="resultsAndGraphs.minAccuracy">
                                                         <button class="opt-btn" onclick="selectOpt(this)">Off</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">50%</button>
                                                         <button class="opt-btn active"
                                                             onclick="selectOpt(this)">75%</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">100%</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Custom</button>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Custom</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="Value...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minAccuracy')">Apply</button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">
@@ -2794,11 +2841,36 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
-                                                            onclick="selectOpt(this)">Off</button><button
-                                                            class="opt-btn"
-                                                            onclick="selectOpt(this)">Fixed</button><button
-                                                            class="opt-btn" onclick="selectOpt(this)">Flex</button>
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="resultsAndGraphs.minBurst">
+                                                        <button class="opt-btn active"
+                                                            onclick="selectOpt(this)">Off</button>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Fixed</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="WPM...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst')">Apply</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Flex</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="Flex %...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst', true)">Apply</button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -4447,14 +4519,14 @@
                 if (subTitle && parentContainer) {
                     const allToggles = Array.from(parentContainer.querySelectorAll('.toggle-track'));
                     const toggleIndex = allToggles.indexOf(track);
-                    
+
                     if (toggleIndex !== -1) {
                         // 1. Update the original DOM elements (hidden in category-content)
                         document.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                             const toggles = card.querySelectorAll('.toggle-track');
                             if (toggles[toggleIndex]) toggles[toggleIndex].classList.toggle('on', isOn);
                         });
-    
+
                         // 2. Update the actual DOM elements in subStack to prevent reverting on 'Back'
                         if (typeof subStack !== 'undefined') {
                             subStack.forEach(panel => {
