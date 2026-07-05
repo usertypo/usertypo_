@@ -2401,7 +2401,35 @@
                     }
                 }
 
+                // ── Min Burst: per-word speed threshold (instant fail) ──
+                const _burstCfg = (window.usertypo_settings || {}).resultsAndGraphs || {};
+                const _minBurstVal = _burstCfg.minBurst;
+                if (_minBurstVal && _minBurstVal !== 'Off' && currentWordIndex >= 1) {
+                    const justRecorded = wordTimestamps[wordTimestamps.length - 1];
+                    if (justRecorded && justRecorded.endTime > justRecorded.startTime) {
+                        const wordLen = (justRecorded.word || '').length;
+                        const elMin = Math.max((justRecorded.endTime - justRecorded.startTime) / 60000, 0.5 / 60);
+                        const wordBurst = (wordLen / 5) / elMin;
 
+                        let burstThreshold;
+                        if (String(_minBurstVal).startsWith('Flex:')) {
+                            const base = parseFloat(String(_minBurstVal).split(':')[1]);
+                            // Scale down for longer words: short words (≤4 chars) use full threshold,
+                            // longer words get progressively easier. Floor at 30% of base.
+                            const scale = Math.max(0.3, Math.pow(4 / Math.max(wordLen, 1), 0.4));
+                            burstThreshold = base * scale;
+                        } else {
+                            burstThreshold = parseFloat(_minBurstVal);
+                        }
+
+                        if (!isNaN(burstThreshold) && wordBurst < burstThreshold) {
+                            testComplete = true;
+                            const failMsg = `Test failed due to burst wpm less than ${Math.round(burstThreshold)}`;
+                            setTimeout(() => { if (!isRestarting) endTest(failMsg); }, 10);
+                            return;
+                        }
+                    }
+                }
 
                 currentWordIndex++;
                 currentCharIndex = 0;
@@ -3308,9 +3336,22 @@
                 let liveFailedReason = null;
 
                 if (resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
-                    let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
-                    if (!isNaN(minAccVal) && acc < minAccVal) {
-                        liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
+                    // 2-word grace period for accuracy
+                    if (currentWordIndex >= 2) {
+                        let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
+                        if (!isNaN(minAccVal) && acc < minAccVal) {
+                            liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
+                        }
+                    }
+                }
+
+                if (resSettings.minWPM && resSettings.minWPM !== 'Off') {
+                    // 5-word grace period
+                    if (currentWordIndex >= 5) {
+                        let minWpmVal = parseFloat(resSettings.minWPM);
+                        if (!isNaN(minWpmVal) && wpm < minWpmVal) {
+                            liveFailedReason = `Test failed wpm less than ${minWpmVal}`;
+                        }
                     }
                 }
 

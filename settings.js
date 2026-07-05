@@ -74,7 +74,7 @@ const DEFAULTS = {
     },
     lookFeel: {
         colorTheme: 'usertypo_',
-        fontFamily: 'SUSE Mono',
+        fontFamily: 'JetBrains Mono',
     }
 };
 
@@ -1461,13 +1461,14 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
     const style = document.createElement('style');
     style.id = 'custom-popover-override-css';
     style.textContent = `
-        /* Force transparent popover card — no blue at all */
+        /* Force glass-card style popover — matches menu bar glassmorphism */
         .custom-popover {
-            background: rgba(0, 0, 0, 0.4) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1),
+                        0 8px 32px rgba(0, 0, 0, 0.2) !important;
             /* Open to the RIGHT of the button, not below */
             top: 50% !important;
             left: 100% !important;
@@ -1478,18 +1479,18 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
             margin-left: 8px !important;
         }
 
-        /* Force transparent input — no blue border or background */
+        /* Glass-style input — subtle translucent look */
         .custom-popover input {
-            background: rgba(0, 0, 0, 0.2) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
+            background: rgba(0, 0, 0, 0.20) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: #fff !important;
             -moz-appearance: textfield !important;
             appearance: textfield !important;
         }
         .custom-popover input:focus {
-            border-color: rgba(255, 255, 255, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
             outline: none !important;
-            box-shadow: none !important;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
         }
 
         /* Remove number input spinners/arrows */
@@ -1499,14 +1500,15 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
             margin: 0 !important;
         }
 
-        /* Force transparent Apply button — no blue */
+        /* Glass-style Apply button */
         .custom-popover button {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: #fff !important;
         }
         .custom-popover button:hover {
-            background: rgba(255, 255, 255, 0.15) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Make sure parent cards don't clip the popover */
@@ -1599,6 +1601,19 @@ document.addEventListener('click', (e) => {
             p.classList.remove('opacity-100', 'pointer-events-auto');
             p.classList.add('opacity-0', 'pointer-events-none');
         });
+    }
+});
+
+// Apply on Enter key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const popover = e.target.closest('.custom-popover');
+        if (popover && e.target.tagName.toLowerCase() === 'input') {
+            const applyBtn = popover.querySelector('button');
+            if (applyBtn) {
+                applyBtn.click();
+            }
+        }
     }
 });
 
