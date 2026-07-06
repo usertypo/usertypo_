@@ -28,6 +28,7 @@ const DEFAULTS = {
         paceCaretStyle: 'line',      // line | block | underscore | outline
         smoothLineScroll: true,
         tapeMode: 'off',       // off | letter | word
+        tapeModeInRooms: 'letter', // off | letter | word — room test view only
     },
     soundscape: {
         clickSounds: false,
@@ -96,6 +97,10 @@ function loadSettings() {
     // Migrate old boolean errorSounds to new string options ('beep', 'mute', 'off')
     if (settings.soundscape && typeof settings.soundscape.errorSounds === 'boolean') {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
+    }
+
+    if (settings.cursor && settings.cursor.tapeModeInRooms === undefined) {
+        settings.cursor.tapeModeInRooms = 'letter';
     }
 
     // Migrate quickRestart from testRules to keyboardLayout
@@ -991,11 +996,25 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
 }
 
 
+function isRoomPage() {
+    return !!document.getElementById('room-typing-area');
+}
+
+function getEffectiveTapeMode(settings) {
+    const cursor = settings?.cursor || {};
+    if (isRoomPage()) {
+        return String(cursor.tapeModeInRooms || 'letter').toLowerCase();
+    }
+    return String(cursor.tapeMode || 'off').toLowerCase();
+}
+
 /**
  * The main applier. Call on ANY page to push saved settings into live CSS.
  */
 function applyCursorSettings(settings) {
     if (!settings) settings = loadSettings();
+
+    const effectiveTapeMode = getEffectiveTapeMode(settings);
 
     // ── Inject / update the dynamic <style> tag ──
     let styleEl = document.getElementById('usertypo-cursor-settings-css');
@@ -1010,7 +1029,7 @@ function applyCursorSettings(settings) {
     const _caretAccent = _palette.accentPrimary;
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
-        + buildLayoutCSS(settings.cursor.smoothLineScroll, settings.cursor.tapeMode);
+        + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode);
 
     // ── Data attributes on <body> ──
     if (document.body) {
@@ -1018,7 +1037,7 @@ function applyCursorSettings(settings) {
         document.body.setAttribute('data-caret-smoothness', settings.cursor.caretSmoothness);
         document.body.setAttribute('data-adaptive-smoothness', String(settings.cursor.adaptiveSmoothness));
         document.body.setAttribute('data-smooth-line-scroll', String(settings.cursor.smoothLineScroll));
-        document.body.setAttribute('data-tape-mode', settings.cursor.tapeMode);
+        document.body.setAttribute('data-tape-mode', effectiveTapeMode);
         document.body.setAttribute('data-pace-caret-mode', settings.cursor.paceCaretMode);
         document.body.setAttribute('data-pace-caret-style', settings.cursor.paceCaretStyle);
     }
@@ -1215,6 +1234,10 @@ function persistFromOpt(btn) {
     applyKeyboardLayoutSettings(settings);
     applyThemeSettings(settings);
 
+    if (path.startsWith('liveFeed.') && typeof window.applyRoomLiveFeedSettings === 'function') {
+        window.applyRoomLiveFeedSettings();
+    }
+
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         // slight delay to let the soundpack load if it changed
         setTimeout(() => window.playKeystrokeSound('a'), 100);
@@ -1232,6 +1255,10 @@ function persistFromToggle(track) {
     applySoundscapeSettings(settings);
     applyTestRulesSettings(settings);
     applyKeyboardLayoutSettings(settings);
+
+    if (path.startsWith('liveFeed.') && typeof window.applyRoomLiveFeedSettings === 'function') {
+        window.applyRoomLiveFeedSettings();
+    }
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         if (path === 'soundscape.errorSounds') {

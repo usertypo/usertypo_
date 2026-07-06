@@ -885,9 +885,15 @@
                 <div class="flex-1 flex flex-col justify-center min-w-0 overflow-hidden" style="margin-top: 0px;">
 
                     <!-- Word progress / Timer -->
-                    <div id="room-timer-wrapper" class="relative w-full max-w-none mx-auto h-[32px] mb-[16px] shrink-0">
-                        <div class="typing-stat opacity-50 transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
+                    <div id="room-timer-progress-wrapper" class="relative w-full max-w-none mx-auto h-[32px] mb-[16px] shrink-0">
+                        <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                             id="room-word-progress"></div>
+                        <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
+                            id="room-word-progress-bar-container">
+                            <div id="room-word-progress-bar"
+                                class="h-full bg-primary transition-all duration-300 ease-linear"
+                                style="width: 0%; box-shadow: 0 0 10px rgba(0, 208, 255, 0.8);"></div>
+                        </div>
                     </div>
 
                     <!-- Main typing area -->
@@ -904,18 +910,38 @@
                         <div class="relative w-full max-w-none mx-auto h-[32px] mt-[16px]">
                             <div id="room-live-stats"
                                 class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-0 flex items-baseline gap-[16px] pointer-events-auto">
-                                <div class="flex items-baseline gap-[4px]">
+                                <div id="room-live-wpm-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="room-wpm-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
-                                <div class="w-px h-[16px] bg-white/10 relative top-0.5"></div>
-                                <div class="flex items-baseline gap-[4px]">
+                                <div id="room-live-wpm-divider" class="w-px h-[16px] bg-white/10 relative top-0.5"></div>
+                                <div id="room-live-acc-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="room-acc-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
+                                <div id="room-live-acc-divider" class="w-px h-[16px] bg-white/10 relative top-0.5 hidden"></div>
+                                <div id="room-live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
+                                    <span id="room-burst-display"
+                                        class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Visual Keymap -->
+                        <div class="mt-8 mb-2 hidden transition-opacity duration-300" id="room-keymap-container"
+                            style="height: 184px;">
+                            <div id="dynamic-keymap"
+                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                            </div>
+                        </div>
+
+                        <!-- Capslock Warning -->
+                        <div id="room-capslock-warning"
+                            class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                            <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
                         </div>
                     </div>
                 </div>
@@ -974,6 +1000,7 @@
             </button>
         </div>
     </div>
+    <script src="audio.js"></script>
     <script src="settings.js"></script>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1414,6 +1441,12 @@
         let totalKeystrokes = 0;
         let errorsMade = 0;
 
+        // Telemetry for burst / indicate typos
+        let typedCharsMap = {};
+        let wordTimestamps = [];
+        let currentWordStartTime = null;
+        let lastKeystrokeTime = null;
+
         // Graph data for consistency calculation
         let wpmHistory = [];
         let lastSecondKeystrokes = 0;
@@ -1426,7 +1459,160 @@
         const caret = document.getElementById('caret');
         const wpmDisplay = document.getElementById('room-wpm-display');
         const accDisplay = document.getElementById('room-acc-display');
+        const burstDisplay = document.getElementById('room-burst-display');
         const wordProgressDisplay = document.getElementById('room-word-progress');
+
+        // --- TEST RULES HELPERS ---
+        function getTestRule(key) {
+            const s = window.usertypo_settings;
+            if (s && s.testRules && s.testRules[key] !== undefined) return s.testRules[key];
+            const defaults = {
+                difficulty: 'Normal', stopOnError: 'Off', confidenceMode: 'Off',
+                freedomMode: false, indicateTypos: 'Off', lazyMode: false,
+                strictSpace: false, requiredCorrectEnd: false, capslockWarning: true,
+                oppositeShift: false
+            };
+            return defaults[key];
+        }
+
+        function updateCapslockWarning(e) {
+            if (!getTestRule('capslockWarning')) return;
+            const warning = document.getElementById('room-capslock-warning');
+            if (!warning) return;
+            const capsOn = e.getModifierState && e.getModifierState('CapsLock');
+            sessionStorage.setItem('usertypo_capslock', capsOn ? 'true' : 'false');
+            if (capsOn) {
+                warning.classList.remove('opacity-0');
+                warning.classList.add('opacity-100');
+            } else {
+                warning.classList.remove('opacity-100');
+                warning.classList.add('opacity-0');
+            }
+        }
+
+        function applyRoomLiveFeedSettings() {
+            const lf = (window.usertypo_settings && window.usertypo_settings.liveFeed) || {};
+            const showWpm = lf.liveWpm !== false;
+            const showAcc = lf.liveAccuracy !== false;
+            const showBurst = lf.liveBurst === true;
+
+            document.getElementById('room-live-wpm-wrapper')?.classList.toggle('hidden', !showWpm);
+            document.getElementById('room-live-acc-wrapper')?.classList.toggle('hidden', !showAcc);
+            document.getElementById('room-live-burst-wrapper')?.classList.toggle('hidden', !showBurst);
+
+            const wpmDivider = document.getElementById('room-live-wpm-divider');
+            const accDivider = document.getElementById('room-live-acc-divider');
+            if (wpmDivider) wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
+            if (accDivider) accDivider.classList.toggle('hidden', !(showAcc && showBurst));
+            if (showWpm && !showAcc && showBurst && wpmDivider) wpmDivider.classList.remove('hidden');
+
+            // Progress always visible in rooms; if turned off in settings, fall back to Number style
+            let timerStyle = lf.timerStyle || 'Number';
+            if (timerStyle === 'Off') timerStyle = 'Number';
+
+            const timerWrapper = document.getElementById('room-timer-progress-wrapper');
+            const wordProgressText = document.getElementById('room-word-progress');
+            const wordProgressBarContainer = document.getElementById('room-word-progress-bar-container');
+            const liveStatsContainer = document.getElementById('room-live-stats');
+
+            if (timerWrapper) timerWrapper.style.visibility = 'visible';
+
+            if (timerStyle === 'Bar') {
+                wordProgressText?.classList.add('hidden');
+                wordProgressBarContainer?.classList.remove('hidden');
+            } else {
+                wordProgressText?.classList.remove('hidden');
+                wordProgressBarContainer?.classList.add('hidden');
+            }
+
+            const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+            if (timerWrapper) timerWrapper.style.opacity = timerOpacity.toString();
+
+            // Live stats opacity is applied only when visible (after typing starts)
+            if (liveStatsContainer && isTyping) {
+                liveStatsContainer.classList.remove('opacity-0');
+                liveStatsContainer.style.opacity = timerOpacity.toString();
+            }
+        }
+
+        function showRoomLiveStats() {
+            const lf = (window.usertypo_settings && window.usertypo_settings.liveFeed) || {};
+            const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+            const liveStats = document.getElementById('room-live-stats');
+            if (!liveStats) return;
+            liveStats.classList.remove('opacity-0');
+            liveStats.style.opacity = timerOpacity.toString();
+        }
+
+        window.applyRoomLiveFeedSettings = applyRoomLiveFeedSettings;
+
+        function updateKeymapHighlight(pressedKey = null, isKeyDown = false) {
+            const kl = window.usertypo_settings?.keyboardLayout || {};
+            if (!kl.keymapMode || kl.keymapMode === 'Off') return;
+
+            const keys = document.querySelectorAll('#test-view .keymap-key');
+
+            if (kl.keymapLegend === 'Dynamic') {
+                const isShiftExpected = generatedWords[currentWordIndex] && generatedWords[currentWordIndex][currentCharIndex] && generatedWords[currentWordIndex][currentCharIndex].match(/[A-Z]/);
+                const isShiftPressed = (pressedKey === 'Shift' && isKeyDown) || window.event?.shiftKey;
+                const isUpper = kl.keymapMode === 'Next' ? isShiftExpected : isShiftPressed;
+
+                keys.forEach(k => {
+                    const mainTextEl = k.querySelector('.keymap-main-text');
+                    if (mainTextEl && mainTextEl.innerText.length === 1) {
+                        mainTextEl.innerText = isUpper ? mainTextEl.innerText.toUpperCase() : mainTextEl.innerText.toLowerCase();
+                    }
+                });
+            }
+
+            if (kl.keymapMode === 'Static') return;
+
+            if (kl.keymapMode === 'React') {
+                if (!pressedKey) return;
+                keys.forEach(k => {
+                    const chars = k.dataset.chars || '';
+                    const special = k.dataset.special || '';
+                    let matches = false;
+
+                    if (pressedKey.length === 1 && chars.includes(pressedKey)) matches = true;
+                    if (pressedKey === ' ' && special === 'Space') matches = true;
+                    if (pressedKey === 'Backspace' && special === 'Backspace') matches = true;
+                    if (pressedKey === 'Tab' && special === 'Tab') matches = true;
+                    if (pressedKey === 'Enter' && special === 'Enter') matches = true;
+                    if (pressedKey === 'Shift' && special === 'Shift') matches = true;
+                    if (pressedKey === 'CapsLock' && special === 'Caps') matches = true;
+
+                    if (matches) {
+                        k.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        k.classList.remove('bg-primary/10');
+                    } else {
+                        k.classList.remove('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        k.classList.add('bg-primary/10');
+                    }
+                });
+            } else if (kl.keymapMode === 'Next') {
+                if (!generatedWords[currentWordIndex]) return;
+                const expectedChar = generatedWords[currentWordIndex][currentCharIndex] || ' ';
+                keys.forEach(k => {
+                    const chars = k.dataset.chars || '';
+                    const special = k.dataset.special || '';
+                    if (chars.includes(expectedChar) || (expectedChar === ' ' && special === 'Space')) {
+                        k.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        k.classList.remove('bg-primary/10');
+                    } else {
+                        k.classList.remove('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        k.classList.add('bg-primary/10');
+                    }
+                });
+            }
+        }
+
+        document.addEventListener('keyup', (e) => {
+            const testView = document.getElementById('test-view');
+            if (testView && !testView.classList.contains('hidden') && testView.style.display !== 'none') {
+                updateKeymapHighlight(e.key, false);
+            }
+        });
 
         // ── WORD GENERATION (same as index.html) ──
         let lastGeneratedBaseWord = "";
@@ -1489,8 +1675,8 @@
 
         function getTapeMode() {
             return document.body.getAttribute('data-tape-mode')
-                || window.usertypo_settings?.cursor?.tapeMode
-                || 'off';
+                || window.usertypo_settings?.cursor?.tapeModeInRooms
+                || 'letter';
         }
 
         function applyTapeScroll() {
@@ -1642,17 +1828,20 @@
             caret.style.width = `${rect.width}px`;
 
             if (isTyping) caret.classList.remove('animate-breath');
+
+            if (window.usertypo_settings?.keyboardLayout?.keymapMode === 'Next') {
+                updateKeymapHighlight();
+            }
         }
 
         // ── TEST START / END ──
         function startTest() {
             isTyping = true;
             startTime = Date.now();
-            const liveStats = document.getElementById('room-live-stats');
-            if (liveStats) {
-                liveStats.classList.remove('opacity-0');
-                liveStats.classList.add('opacity-50');
-            }
+
+            applyRoomLiveFeedSettings();
+            showRoomLiveStats();
+
             caret.classList.remove('animate-breath');
 
             let lastTickSecond = 0;
@@ -1673,27 +1862,7 @@
                     const avgWpm = Math.max(0, Math.round((validChars / 5) / elapsedMin));
                     wpmHistory.push(avgWpm);
 
-                    // Track keystrokes per second
                     lastSecondKeystrokes = totalKeystrokes;
-                }
-
-                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                
-                if (roomMode === 'time') {
-                    // Time mode: check if time is up
-                    let remaining = roomTestTime - elapsedSeconds;
-                    if (remaining <= 0) {
-                        remaining = 0;
-                        wordProgressDisplay.innerText = remaining;
-                        if (!testComplete) {
-                            testComplete = true;
-                            setTimeout(() => { if (testComplete) endTest(); }, 60);
-                        }
-                    } else {
-                        wordProgressDisplay.innerText = remaining;
-                    }
-                } else {
-                    wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${roomTestWords}`;
                 }
             }, 500);
         }
@@ -1772,6 +1941,7 @@
 
             const currentTime = Date.now();
             const elapsedMinutes = (currentTime - startTime) / 60000;
+            const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
 
             let wpm = 0;
             if (elapsedMinutes > 0) {
@@ -1784,18 +1954,72 @@
                 acc = Math.round(Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100));
             }
 
+            let burst = 0;
+            if (lastKeystrokeTime && (currentTime - lastKeystrokeTime) > 1000) {
+                burst = 0;
+            } else if (currentWordStartTime) {
+                const burstElapsedMins = (currentTime - currentWordStartTime) / 60000;
+                const calcMins = Math.max(burstElapsedMins, 0.5 / 60);
+                const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
+                if (currentWordEl) {
+                    const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
+                    burst = Math.round((correctInCurrentWord / 5) / calcMins);
+                }
+            } else if (wordTimestamps.length > 0) {
+                const lastWord = wordTimestamps[wordTimestamps.length - 1];
+                const burstElapsedMins = (lastWord.endTime - lastWord.startTime) / 60000;
+                if (burstElapsedMins > 0) {
+                    const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
+                    if (lastWordEl) {
+                        const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
+                        burst = Math.round((correctInLastWord / 5) / burstElapsedMins);
+                    }
+                }
+            }
+
+            const progressBar = document.getElementById('room-word-progress-bar');
+            let progressPercent = 0;
+
+            if (testComplete) {
+                progressPercent = 100;
+            } else if (roomMode === 'time') {
+                let remaining = roomTestTime - elapsedSeconds;
+                if (remaining <= 0) {
+                    remaining = 0;
+                    wordProgressDisplay.innerText = remaining;
+                    if (!testComplete) {
+                        testComplete = true;
+                        setTimeout(() => { if (testComplete) endTest(); }, 60);
+                    }
+                } else {
+                    wordProgressDisplay.innerText = remaining;
+                }
+                progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / roomTestTime) * 100));
+            } else if (roomMode === 'words') {
+                wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${roomTestWords}`;
+                let currentWordProgress = 0;
+                if (generatedWords[currentWordIndex]) {
+                    currentWordProgress = Math.min(1, Math.max(0, currentCharIndex / generatedWords[currentWordIndex].length));
+                }
+                progressPercent = Math.min(100, Math.max(0, ((currentWordIndex + currentWordProgress) / roomTestWords) * 100));
+            }
+
+            if (progressBar) progressBar.style.width = `${progressPercent}%`;
+
             wpmDisplay.innerText = Math.max(0, wpm);
             accDisplay.innerText = acc + "%";
+            if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
 
             if (isTyping) setMyLiveWpm(Math.max(0, wpm));
         }
 
-        // ── KEYBOARD INPUT (copied from index.html, no shortcuts) ──
+        // ── KEYBOARD INPUT (settings-aware, mirrors index.html test rules) ──
         document.addEventListener('keydown', (e) => {
-            // Only process when test view is visible
             const testView = document.getElementById('test-view');
             if (testView.classList.contains('hidden') || testView.style.display === 'none') return;
-            if (testComplete) return;
+
+            updateCapslockWarning(e);
+            updateKeymapHighlight(e.key, true);
 
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -1808,8 +2032,16 @@
                     return;
                 }
                 e.preventDefault();
-                if (!testComplete && currentCharIndex === 0) return;
+                if (!testComplete && currentCharIndex === 0) {
+                    if (getTestRule('strictSpace') && isTyping) {
+                        errorsMade++;
+                        totalKeystrokes++;
+                    }
+                    return;
+                }
             }
+
+            if (testComplete) return;
 
             if (e.ctrlKey || e.altKey || e.metaKey || e.key.length > 1 && e.key !== 'Backspace') return;
 
@@ -1821,7 +2053,20 @@
             const wordEl = document.getElementById(`word-${currentWordIndex}`);
 
             if (e.key === 'Backspace') {
+                if (window.playKeystrokeSound) window.playKeystrokeSound('Backspace');
+
+                const confMode = getTestRule('confidenceMode');
+                if (confMode === 'Max') return;
+
                 if (currentCharIndex > 0) {
+                    if (confMode === 'On') {
+                        const prevCharEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
+                        if (prevCharEl && !prevCharEl.classList.contains('extra') &&
+                            prevCharEl.classList.contains('text-primary')) {
+                            return;
+                        }
+                    }
+
                     currentCharIndex--;
                     const charEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
                     if (charEl.classList.contains('extra')) {
@@ -1830,28 +2075,30 @@
                         charEl.className = 'char text-slate-500 transition-all duration-150';
                         const origChar = generatedWords[currentWordIndex][currentCharIndex];
                         charEl.innerText = origChar;
+                        charEl.style.position = '';
                     }
                 } else if (currentWordIndex > 0) {
-                    // Go back to previous word if it has errors
+                    const freedom = getTestRule('freedomMode');
                     const prevWordIdx = currentWordIndex - 1;
                     const prevWordEl = document.getElementById(`word-${prevWordIdx}`);
                     const prevWordText = generatedWords[prevWordIdx];
 
-                    let hasError = false;
-                    for (let i = 0; i < prevWordText.length; i++) {
-                        const charEl = document.getElementById(`char-${prevWordIdx}-${i}`);
-                        if (charEl && (charEl.classList.contains('error-underline') || charEl.classList.contains('text-error'))) {
-                            hasError = true;
-                            break;
+                    if (!freedom) {
+                        let hasError = false;
+                        for (let i = 0; i < prevWordText.length; i++) {
+                            const charEl = document.getElementById(`char-${prevWordIdx}-${i}`);
+                            if (charEl && (charEl.classList.contains('error-underline') || charEl.classList.contains('text-error'))) {
+                                hasError = true;
+                                break;
+                            }
+                            if (charEl && charEl.classList.contains('text-slate-500')) {
+                                hasError = true;
+                                break;
+                            }
                         }
-                        if (charEl && charEl.classList.contains('text-slate-500')) {
-                            hasError = true;
-                            break;
-                        }
+                        if (prevWordEl.querySelectorAll('.extra').length > 0) hasError = true;
+                        if (!hasError) return;
                     }
-                    if (prevWordEl.querySelectorAll('.extra').length > 0) hasError = true;
-
-                    if (!hasError) return;
 
                     currentWordIndex--;
                     let skipIndex = -1;
@@ -1872,10 +2119,41 @@
                         currentCharIndex = prevWordEl.children.length;
                     }
                 }
+
+                handleScroll();
             }
-            else if (e.key === ' ') {
+            else if (e.key === ' ' && !(getTestRule('strictSpace') && currentCharIndex > 0 && currentCharIndex < currentWord.length)) {
                 e.preventDefault();
                 totalKeystrokes++;
+                if (window.playKeystrokeSound) window.playKeystrokeSound(' ');
+
+                const stopOnErr = getTestRule('stopOnError');
+                if (stopOnErr === 'Word') {
+                    const curWordText = generatedWords[currentWordIndex];
+                    let wordHasError = false;
+                    for (let i = 0; i < Math.min(currentCharIndex, curWordText.length); i++) {
+                        const cEl = document.getElementById(`char-${currentWordIndex}-${i}`);
+                        if (cEl && cEl.classList.contains('text-error')) {
+                            wordHasError = true;
+                            break;
+                        }
+                    }
+                    if (wordEl && wordEl.querySelectorAll('.extra').length > 0) wordHasError = true;
+                    if (currentCharIndex < curWordText.length) wordHasError = true;
+                    if (wordHasError) return;
+                }
+
+                const spaceNow = Date.now();
+                if (currentWordStartTime !== null) {
+                    wordTimestamps.push({
+                        wordIndex: currentWordIndex,
+                        word: generatedWords[currentWordIndex],
+                        startTime: currentWordStartTime,
+                        endTime: spaceNow
+                    });
+                }
+                currentWordStartTime = null;
+                lastKeystrokeTime = spaceNow;
 
                 const currentWordText = generatedWords[currentWordIndex];
                 for (let i = currentCharIndex; i < currentWordText.length; i++) {
@@ -1888,10 +2166,22 @@
 
                 currentWordIndex++;
                 currentCharIndex = 0;
+
+                if (roomMode === 'words' && currentWordIndex >= roomTestWords) {
+                    testComplete = true;
+                    setTimeout(() => { if (testComplete) endTest(); });
+                    return;
+                }
+
+                handleScroll();
             }
             else if (e.key.length === 1) {
                 e.preventDefault();
                 totalKeystrokes++;
+
+                const ksNow = Date.now();
+                if (currentWordStartTime === null) currentWordStartTime = ksNow;
+                lastKeystrokeTime = ksNow;
 
                 if (currentCharIndex < currentWord.length) {
                     const charEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
@@ -1900,13 +2190,38 @@
                     charEl.className = 'char transition-all duration-150';
 
                     if (e.key === expectedChar) {
+                        if (window.playKeystrokeSound) window.playKeystrokeSound(e.key);
                         charEl.classList.add('text-primary', 'drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
                     } else {
+                        if (window.playErrorSound) window.playErrorSound(e.key);
                         charEl.classList.add('text-error', 'drop-shadow-[0_0_7px_rgba(255,80,80,0.75)]');
                         errorsMade++;
+
+                        if (!typedCharsMap[currentWordIndex]) typedCharsMap[currentWordIndex] = {};
+                        typedCharsMap[currentWordIndex][currentCharIndex] = e.key;
+
+                        const indicate = getTestRule('indicateTypos');
+                        if (indicate === 'Replace') {
+                            charEl.innerText = e.key;
+                        } else if (indicate === 'Below') {
+                            charEl.style.position = 'relative';
+                            const belowEl = document.createElement('div');
+                            belowEl.className = 'absolute top-full left-1/2 -translate-x-1/2 text-[14px] text-error/80 font-mono font-bold mt-0.5 leading-none z-10';
+                            belowEl.innerText = e.key;
+                            charEl.appendChild(belowEl);
+                        }
+
+                        if (getTestRule('stopOnError') === 'Letter') {
+                            charEl.className = 'char text-slate-500 transition-all duration-150';
+                            updateLineLayout();
+                            updateCaretPosition();
+                            updateStats();
+                            return;
+                        }
                     }
                 } else {
                     if (currentCharIndex >= currentWord.length + 15) return;
+                    if (window.playErrorSound) window.playErrorSound(e.key);
                     const extraCharEl = document.createElement('span');
                     extraCharEl.innerText = e.key;
                     extraCharEl.id = `char-${currentWordIndex}-${currentCharIndex}`;
@@ -1916,8 +2231,7 @@
                 }
                 currentCharIndex++;
             }
-            
-            // Check for words mode completion
+
             if (roomMode === 'words' && !testComplete) {
                 if (currentWordIndex >= roomTestWords) {
                     testComplete = true;
@@ -1942,10 +2256,6 @@
             updateLineLayout();
             updateCaretPosition();
             updateStats();
-
-            if (roomMode === 'words') {
-                wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${roomTestWords}`;
-            }
         });
 
         // ── VIEW TRANSITIONS ──
@@ -2050,10 +2360,28 @@
         }
 
         function initRoomTest() {
+            const settings = typeof loadSettings === 'function' ? loadSettings() : (window.usertypo_settings || {});
+
             if (typeof applyCursorSettings === 'function') {
-                try {
-                    applyCursorSettings(typeof loadSettings === 'function' ? loadSettings() : undefined);
-                } catch (_) { /* settings not ready */ }
+                try { applyCursorSettings(settings); } catch (_) { /* settings not ready */ }
+            }
+            if (typeof applySoundscapeSettings === 'function') {
+                try { applySoundscapeSettings(settings); } catch (_) { }
+            }
+            if (typeof applyTestRulesSettings === 'function') {
+                try { applyTestRulesSettings(settings); } catch (_) { }
+            }
+            if (typeof applyKeyboardLayoutSettings === 'function') {
+                try { applyKeyboardLayoutSettings(settings); } catch (_) { }
+            }
+
+            const savedCaps = sessionStorage.getItem('usertypo_capslock');
+            if (savedCaps === 'true' && getTestRule('capslockWarning')) {
+                const warning = document.getElementById('room-capslock-warning');
+                if (warning) {
+                    warning.classList.remove('opacity-0');
+                    warning.classList.add('opacity-100');
+                }
             }
 
             // Reset state
@@ -2064,19 +2392,28 @@
             errorsMade = 0;
             currentWordIndex = 0;
             currentCharIndex = 0;
+            typedCharsMap = {};
+            wordTimestamps = [];
+            currentWordStartTime = null;
+            lastKeystrokeTime = null;
             wpmHistory = [];
             lastSecondKeystrokes = 0;
             clearInterval(updateInterval);
 
             wpmDisplay.innerText = "0";
             accDisplay.innerText = "0%";
+            if (burstDisplay) burstDisplay.innerText = "0";
+            const progressBar = document.getElementById('room-word-progress-bar');
+            if (progressBar) progressBar.style.width = '0%';
             setRoomProgressDisplay();
 
             const liveStats = document.getElementById('room-live-stats');
             if (liveStats) {
                 liveStats.classList.add('opacity-0');
-                liveStats.classList.remove('opacity-50');
+                liveStats.style.opacity = '';
             }
+
+            applyRoomLiveFeedSettings();
 
             // Reset leaderboard
             initRoomLbState();
@@ -2096,6 +2433,22 @@
             }
 
             renderText();
+
+            const kl = settings.keyboardLayout || {};
+            const keymapContainer = document.getElementById('room-keymap-container');
+            if (keymapContainer) {
+                if (kl.keymapMode && kl.keymapMode !== 'Off') {
+                    keymapContainer.classList.remove('hidden');
+                    setTimeout(() => keymapContainer.classList.remove('opacity-0'), 10);
+                    if (typeof window.renderKeymap === 'function') {
+                        window.renderKeymap(roomUseNums, roomUsePunct);
+                        updateKeymapHighlight();
+                    }
+                } else {
+                    keymapContainer.classList.add('opacity-0');
+                    setTimeout(() => keymapContainer.classList.add('hidden'), 300);
+                }
+            }
 
             const primeTapeLayout = () => {
                 if (typingArea.clientWidth === 0) {
