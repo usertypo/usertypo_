@@ -943,10 +943,11 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
 function buildLayoutCSS(smoothLineScroll, tapeMode) {
     let css = '';
 
-    // Scroll transition speed
+    // Scroll transition speed (same for normal + tape mode — matches index.html feel)
     if (smoothLineScroll) {
         css += `
-            #text-container {
+            #text-container,
+            #room-text-container {
                 transition: filter 0.3s ease-in-out,
                             opacity 0.5s ease-in-out,
                             transform 0.25s cubic-bezier(0.2, 0, 0.2, 1) !important;
@@ -954,7 +955,8 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
         `;
     } else {
         css += `
-            #text-container {
+            #text-container,
+            #room-text-container {
                 transition: filter 0.3s ease-in-out,
                             opacity 0.5s ease-in-out,
                             transform 0s !important;
@@ -966,14 +968,18 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
     if (tapeMode === 'word' || tapeMode === 'letter') {
         css += `
             body[data-tape-mode="word"] #text-container,
-            body[data-tape-mode="letter"] #text-container {
+            body[data-tape-mode="letter"] #text-container,
+            body[data-tape-mode="word"] #room-text-container,
+            body[data-tape-mode="letter"] #room-text-container {
                 flex-wrap: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 width: max-content !important;
             }
             body[data-tape-mode="word"] #typing-area,
-            body[data-tape-mode="letter"] #typing-area {
+            body[data-tape-mode="letter"] #typing-area,
+            body[data-tape-mode="word"] #room-typing-area,
+            body[data-tape-mode="letter"] #room-typing-area {
                 white-space: nowrap !important;
                 -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
                 mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
@@ -1102,7 +1108,7 @@ function setupAdaptiveSmoothness(enabled) {
     if (!enabled) return;
 
     _adaptiveInterval = setInterval(() => {
-        const wpmEl = document.getElementById('wpm-display');
+        const wpmEl = document.getElementById('wpm-display') || document.getElementById('room-wpm-display');
         if (!wpmEl) return;
 
         const wpm = parseInt(wpmEl.textContent) || 0;

@@ -105,6 +105,15 @@
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        /* Exact match for open header sidebar menu */
+        .panel-surface {
+            background-color: rgba(26, 29, 35, 0.85) !important;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
         
         .menu-btn { 
             transition: all 0.2s ease; 
@@ -195,7 +204,7 @@
 
 
     <aside id="sidebar-menu"
-        class="fixed top-0 left-0 h-[100dvh] w-[280px] z-[100] glass-panel rounded-r-3xl flex flex-col transform -translate-x-full transition-transform duration-500 slide-ease border-l-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)] bg-surface/85 !backdrop-blur-sm">
+        class="fixed top-0 left-0 h-[100dvh] w-[280px] z-[100] panel-surface rounded-r-3xl flex flex-col transform -translate-x-full transition-transform duration-500 slide-ease border-l-0">
         <div class="p-6 pb-8">
             <span class="material-symbols-outlined text-[24px] text-primary"
                 style="text-shadow: 0 0 10px rgba(0,208,255,0.6);">menu</span>
@@ -249,7 +258,7 @@
 
         <div class="p-4 pb-6">
             <a href="userstats.html"
-                class="glass-card border border-white/5 bg-black/20 rounded-2xl p-3 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group">
+                class="panel-surface border border-white/5 rounded-2xl p-3 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-background-dark font-black text-lg shadow-[0_0_15px_rgba(0,208,255,0.4)]">
@@ -317,7 +326,7 @@
                 </button>
             </div>
             <!-- Friends List Container -->
-            <div class="glass-panel rounded-2xl flex flex-col flex-1 overflow-hidden relative opacity-0 animate-fade-in-up [animation-delay:300ms]"
+            <div class="panel-surface rounded-2xl flex flex-col flex-1 overflow-hidden relative opacity-0 animate-fade-in-up [animation-delay:300ms]"
                 id="friends-list-container">
                 <div id="custom-scroll-track"
                     class="absolute top-16 bottom-2 right-1.5 w-1 z-[20] opacity-0 translate-x-4 transition-all duration-300 pointer-events-none">
@@ -747,9 +756,9 @@
         </div>
         <!-- Right Column: Chat Window -->
         <div id="chat-window"
-            class="flex w-full flex-col h-full lg:h-auto lg:ml-6 glass-panel rounded-2xl overflow-hidden flex-shrink-0 chat-transition chat-collapsed">
+            class="flex w-full flex-col h-full lg:h-auto lg:ml-6 panel-surface rounded-2xl overflow-hidden flex-shrink-0 chat-transition chat-collapsed">
             <!-- Chat Header -->
-            <div class="flex items-center justify-between p-4 border-b border-white/10 bg-white/5 shrink-0">
+            <div class="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="relative">
                         <div id="chat-header-avatar"
@@ -835,7 +844,7 @@
                 </div>
             </div>
             <!-- Chat Input -->
-            <div class="p-4 border-t border-white/10 bg-black/20">
+            <div class="p-4 border-t border-white/10 shrink-0">
                 <div class="relative flex items-center">
                     <button class="absolute left-3 text-slate-400 hover:text-white transition-colors">
                         <span class="material-symbols-outlined text-xl">add_circle</span>
@@ -868,13 +877,13 @@
         <div id="room-options"
             class="flex flex-col gap-2 opacity-0 pointer-events-none translate-y-4 transition-all duration-300 mb-2">
             <button id="create-room-btn"
-                class="glass-panel flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all shadow-lg hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
+                class="panel-surface flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
                 <span
                     class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">add_circle</span>
                 Create a Room
             </button>
             <button id="join-room-btn"
-                class="glass-panel flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all shadow-lg hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
+                class="panel-surface flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
                 <span
                     class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">login</span>
                 Join a Room
@@ -882,7 +891,7 @@
         </div>
         <!-- Main Button -->
         <button id="room-toggle-btn"
-            class="w-14 h-14 flex items-center justify-center rounded-full glass-panel transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
+            class="w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
             title="Rooms">
             <span class="material-symbols-outlined text-primary text-3xl transition-transform duration-300"
                 id="room-toggle-icon">groups</span>
@@ -893,10 +902,10 @@
     <div id="add-friends-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <!-- Backdrop -->
-        <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"></div>
+        <div id="modal-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="glass-panel w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10"
+        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
             id="modal-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-white tracking-tight">Add Friends</h2>
@@ -932,10 +941,10 @@
     <div id="join-room-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <!-- Backdrop -->
-        <div id="join-room-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"></div>
+        <div id="join-room-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="glass-panel w-full max-w-sm rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10"
+        <div class="panel-surface w-full max-w-sm rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
             id="join-room-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-white tracking-tight">Join Room</h2>
@@ -945,19 +954,21 @@
                 </button>
             </div>
 
-            <p class="text-slate-400 text-sm mb-6">Enter the Room ID provided by your friend to join their private
+            <p class="text-slate-400 text-sm mb-6">Enter the 4-digit Room ID provided by your friend to join their private
                 match.</p>
 
             <div class="flex flex-col gap-4">
                 <div class="relative">
                     <span
                         class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/70 text-xl">meeting_room</span>
-                    <input type="text" placeholder="e.g. ROOM-1234"
-                        class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all font-mono tracking-widest uppercase">
+                    <input type="text" id="join-room-pin-input" inputmode="numeric" maxlength="4"
+                        placeholder="e.g. 1234" autocomplete="off"
+                        class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all font-mono tracking-[0.3em] text-center">
                 </div>
-                <button
-                    class="w-full bg-primary text-background-dark font-bold py-3 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all">
-                    Join Match
+                <button id="submit-join-room-btn"
+                    class="w-full bg-primary text-background-dark font-bold py-3 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
+                    <span>Join Match</span>
+                    <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
                 </button>
             </div>
         </div>
@@ -967,10 +978,10 @@
     <div id="create-room-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <!-- Backdrop -->
-        <div id="create-room-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"></div>
+        <div id="create-room-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="glass-panel w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10"
+        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
             id="create-room-content">
             <div id="create-room-form">
                 <div class="flex items-center justify-between mb-6">
@@ -986,7 +997,7 @@
                     <div>
                         <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Room
                             Name</label>
-                        <input type="text" placeholder="My Private Match"
+                        <input type="text" id="create-room-name-input" placeholder="My Private Match"
                             class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all">
                     </div>
 
@@ -1052,13 +1063,11 @@
                         <label
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Settings</label>
                         <div class="flex items-center w-full gap-2">
-                            <!-- Selected State Example -->
                             <div id="btn-punct"
-                                class="flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group">
+                                class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
                                 <span class="material-symbols-outlined text-[18px]">alternate_email</span>
-                                <span class="text-sm font-semibold">punctuation</span>
+                                <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">punctuation</span>
                             </div>
-                            <!-- Unselected State Example -->
                             <div id="btn-num"
                                 class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
                                 <span class="material-symbols-outlined text-[18px]">123</span>
@@ -1070,8 +1079,9 @@
 
                     <!-- Submit Action -->
                     <button id="submit-create-room-btn"
-                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all">
-                        Create Match Room
+                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
+                        <span>Create Match Room</span>
+                        <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
                     </button>
                 </div>
             </div>
@@ -1129,6 +1139,22 @@
                 });
             }
 
+            function isModalVisible(modal) {
+                return modal && !modal.classList.contains('opacity-0') && !modal.classList.contains('pointer-events-none');
+            }
+
+            function setPageBackgroundInert(inert) {
+                document.querySelectorAll('body > *').forEach(el => {
+                    if (el.id && el.id.endsWith('-modal')) return;
+                    if (inert) el.setAttribute('inert', '');
+                    else el.removeAttribute('inert');
+                });
+            }
+
+            function releaseInertIfNoModals(...modals) {
+                if (!modals.some(isModalVisible)) setPageBackgroundInert(false);
+            }
+
             // --- ADD FRIENDS MODAL LOGIC ---
             const addFriendsBtn = document.getElementById('add-friends-btn');
             const addFriendsModal = document.getElementById('add-friends-modal');
@@ -1140,14 +1166,15 @@
                 addFriendsModal.classList.remove('opacity-0', 'pointer-events-none');
                 modalContent.classList.remove('scale-95');
                 modalContent.classList.add('scale-100');
+                setPageBackgroundInert(true);
             }
 
             function closeModal() {
                 modalContent.classList.remove('scale-100');
                 modalContent.classList.add('scale-95');
-                // Wait for the scale transition before fully hiding
                 setTimeout(() => {
                     addFriendsModal.classList.add('opacity-0', 'pointer-events-none');
+                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
                 }, 100);
             }
 
@@ -1285,6 +1312,20 @@
             const closeJoinModalBtn = document.getElementById('close-join-modal-btn');
             const joinRoomBackdrop = document.getElementById('join-room-backdrop');
             const joinRoomContent = document.getElementById('join-room-content');
+            const joinRoomPinInput = document.getElementById('join-room-pin-input');
+            const submitJoinRoomBtn = document.getElementById('submit-join-room-btn');
+
+            function navigateToJoinedRoom(pin) {
+                const code = String(pin).replace(/\D/g, '').slice(0, 4);
+                if (code.length !== 4) return;
+                window.location.href = `room.html?join=1&room=${code}`;
+            }
+
+            function handleJoinPinInput() {
+                if (!joinRoomPinInput) return;
+                const digits = joinRoomPinInput.value.replace(/\D/g, '').slice(0, 4);
+                if (joinRoomPinInput.value !== digits) joinRoomPinInput.value = digits;
+            }
 
             function openJoinModal() {
                 // close the menu first if open
@@ -1294,9 +1335,15 @@
                     if (roomToggleBtn) roomToggleBtn.classList.remove('scale-110', 'shadow-[0_0_20px_rgba(0,208,255,0.4)]', 'border-primary/50');
                 }
 
+                if (joinRoomPinInput) {
+                    joinRoomPinInput.value = '';
+                    setTimeout(() => joinRoomPinInput.focus(), 100);
+                }
+
                 joinRoomModal.classList.remove('opacity-0', 'pointer-events-none');
                 joinRoomContent.classList.remove('scale-95');
                 joinRoomContent.classList.add('scale-100');
+                setPageBackgroundInert(true);
             }
 
             function closeJoinModal() {
@@ -1304,12 +1351,26 @@
                 joinRoomContent.classList.add('scale-95');
                 setTimeout(() => {
                     joinRoomModal.classList.add('opacity-0', 'pointer-events-none');
+                    if (joinRoomPinInput) joinRoomPinInput.value = '';
+                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
                 }, 100);
             }
 
             if (joinRoomBtn) joinRoomBtn.addEventListener('click', openJoinModal);
             if (closeJoinModalBtn) closeJoinModalBtn.addEventListener('click', closeJoinModal);
             if (joinRoomBackdrop) joinRoomBackdrop.addEventListener('click', closeJoinModal);
+            if (joinRoomPinInput) {
+                joinRoomPinInput.addEventListener('input', handleJoinPinInput);
+                joinRoomPinInput.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                    joinRoomPinInput.value = pasted.replace(/\D/g, '').slice(0, 4);
+                    handleJoinPinInput();
+                });
+            }
+            if (submitJoinRoomBtn) {
+                submitJoinRoomBtn.addEventListener('click', () => navigateToJoinedRoom(joinRoomPinInput?.value || ''));
+            }
 
             // --- CREATE ROOM MODAL LOGIC ---
             const createRoomBtn = document.getElementById('create-room-btn');
@@ -1332,9 +1393,12 @@
                     if (roomToggleBtn) roomToggleBtn.classList.remove('scale-110', 'shadow-[0_0_20px_rgba(0,208,255,0.4)]', 'border-primary/50');
                 }
 
+                resetCreateRoomForm();
+
                 createRoomModal.classList.remove('opacity-0', 'pointer-events-none');
                 createRoomContent.classList.remove('scale-95');
                 createRoomContent.classList.add('scale-100');
+                setPageBackgroundInert(true);
             }
 
             function closeCreateModal() {
@@ -1342,7 +1406,7 @@
                 createRoomContent.classList.add('scale-95');
                 setTimeout(() => {
                     createRoomModal.classList.add('opacity-0', 'pointer-events-none');
-                    // Reset to form view
+                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
                     setTimeout(() => {
                         createRoomForm.classList.remove('hidden');
                         createRoomConfirmation.classList.add('hidden');
@@ -1354,6 +1418,38 @@
             if (createRoomBtn) createRoomBtn.addEventListener('click', openCreateModal);
             if (closeCreateModalBtn) closeCreateModalBtn.addEventListener('click', closeCreateModal);
             if (createRoomBackdrop) createRoomBackdrop.addEventListener('click', closeCreateModal);
+
+            if (createRoomContent) {
+                createRoomContent.addEventListener('keydown', (e) => {
+                    if (e.key !== 'Enter' || !isModalVisible(createRoomModal)) return;
+                    if (createRoomConfirmation && !createRoomConfirmation.classList.contains('hidden')) return;
+                    if (e.target.closest('#close-create-modal-btn')) return;
+                    e.preventDefault();
+                    submitCreateRoomBtn?.click();
+                });
+            }
+
+            if (joinRoomContent) {
+                joinRoomContent.addEventListener('keydown', (e) => {
+                    if (e.key !== 'Enter' || !isModalVisible(joinRoomModal)) return;
+                    if (e.target.closest('#close-join-modal-btn')) return;
+                    e.preventDefault();
+                    navigateToJoinedRoom(joinRoomPinInput?.value || '');
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                if (isModalVisible(createRoomModal) && createRoomForm && !createRoomForm.classList.contains('hidden')) {
+                    e.preventDefault();
+                    submitCreateRoomBtn?.click();
+                    return;
+                }
+                if (isModalVisible(joinRoomModal)) {
+                    e.preventDefault();
+                    navigateToJoinedRoom(joinRoomPinInput?.value || '');
+                }
+            });
 
             // --- MODE SELECTION LOGIC ---
             let currentMode = 'time';
@@ -1472,6 +1568,11 @@
                     // Generate a random room ID
                     const roomId = Math.floor(1000 + Math.random() * 9000);
 
+                    const roomNameInput = document.getElementById('create-room-name-input');
+                    const roomName = roomNameInput && roomNameInput.value.trim()
+                        ? roomNameInput.value.trim()
+                        : `Room-${roomId}`;
+
                     // Navigate to room.html with config params
                     const params = new URLSearchParams({
                         mode: currentMode,
@@ -1479,7 +1580,8 @@
                         lang: selectedLang,
                         punct: usePunct,
                         nums: useNums,
-                        room: roomId
+                        room: roomId,
+                        name: roomName
                     });
                     window.location.href = `room.html?${params.toString()}`;
                 });
@@ -1506,6 +1608,40 @@
 
             if (toggleBtnPunct) toggleBtnPunct.addEventListener('click', () => toggleModalSetting(toggleBtnPunct));
             if (toggleBtnNum) toggleBtnNum.addEventListener('click', () => toggleModalSetting(toggleBtnNum));
+
+            function resetCreateRoomForm() {
+                const roomNameInput = document.getElementById('create-room-name-input');
+                if (roomNameInput) roomNameInput.value = '';
+
+                setRoomMode('time');
+
+                if (roomAmountContainer) {
+                    const btns = roomAmountContainer.querySelectorAll('button');
+                    btns.forEach(btn => {
+                        btn.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
+                        if (btn.textContent.trim() === 'Custom') {
+                            btn.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
+                        } else {
+                            btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
+                            btn.classList.remove('border-dashed');
+                        }
+                    });
+                    const thirtyBtn = Array.from(btns).find(b => b.textContent.trim() === '30');
+                    if (thirtyBtn) {
+                        thirtyBtn.classList.remove('bg-white/10', 'text-slate-200', 'border-transparent');
+                        thirtyBtn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
+                    }
+                }
+
+                if (customInputContainer) customInputContainer.classList.add('hidden');
+                if (customInput) customInput.value = '';
+
+                [toggleBtnPunct, toggleBtnNum].forEach(btn => {
+                    if (btn && btn.classList.contains('text-primary')) {
+                        toggleModalSetting(btn);
+                    }
+                });
+            }
 
             // --- CUSTOM SCROLLBAR LOGIC ---
             const friendsListContainer = document.getElementById('friends-list-container');
