@@ -990,24 +990,6 @@
                             class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all">
                     </div>
 
-                    <!-- Timer Selection -->
-                    <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
-                            (Seconds)</label>
-                        <div class="flex flex-wrap gap-2">
-                            <button
-                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">15</button>
-                            <button
-                                class="flex-1 bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]">30</button>
-                            <button
-                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">60</button>
-                            <button
-                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">120</button>
-                            <button
-                                class="flex-1 bg-white/5 hover:bg-white/10 text-slate-400 py-2 rounded-lg text-sm transition-colors border border-white/10 border-dashed">Custom</button>
-                        </div>
-                    </div>
-
                     <!-- Language Selection -->
                     <div class="relative">
                         <label
@@ -1024,6 +1006,45 @@
                         </select>
                         <span
                             class="material-symbols-outlined absolute right-4 bottom-2.5 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+
+                    <!-- Mode Selection -->
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Mode</label>
+                        <div class="flex items-center w-full gap-2">
+                            <div id="btn-mode-time" data-mode="time"
+                                class="flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group">
+                                <span class="material-symbols-outlined text-[18px]">schedule</span>
+                                <span class="text-sm font-semibold">Time</span>
+                            </div>
+                            <div id="btn-mode-words" data-mode="words"
+                                class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
+                                <span class="material-symbols-outlined text-[18px]">format_align_left</span>
+                                <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Words</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amount Selection -->
+                    <div>
+                        <label id="room-amount-label" class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
+                            (Seconds)</label>
+                        <div class="flex flex-wrap gap-2" id="room-amount-container">
+                            <button
+                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">15</button>
+                            <button
+                                class="flex-1 bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]">30</button>
+                            <button
+                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">60</button>
+                            <button
+                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">120</button>
+                            <button
+                                class="flex-1 bg-white/5 hover:bg-white/10 text-slate-400 py-2 rounded-lg text-sm transition-colors border border-white/10 border-dashed">Custom</button>
+                        </div>
+                        <div id="room-custom-input-container" class="hidden mt-2 relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">edit</span>
+                            <input type="number" id="room-custom-input" placeholder="Enter custom amount..." class="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 focus:outline-none focus:border-primary/50 focus:bg-white/5 text-sm transition-all font-semibold font-mono">
+                        </div>
                     </div>
 
                     <!-- Test Options -->
@@ -1334,16 +1355,133 @@
             if (closeCreateModalBtn) closeCreateModalBtn.addEventListener('click', closeCreateModal);
             if (createRoomBackdrop) createRoomBackdrop.addEventListener('click', closeCreateModal);
 
+            // --- MODE SELECTION LOGIC ---
+            let currentMode = 'time';
+            const btnModeTime = document.getElementById('btn-mode-time');
+            const btnModeWords = document.getElementById('btn-mode-words');
+            const roomAmountLabel = document.getElementById('room-amount-label');
+            const roomAmountContainer = document.getElementById('room-amount-container');
+            
+            function setRoomMode(mode) {
+                currentMode = mode;
+                
+                // Update mode buttons styling
+                if (mode === 'time') {
+                    btnModeTime.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
+                    btnModeTime.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
+                    
+                    btnModeWords.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
+                    btnModeWords.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
+                    
+                    roomAmountLabel.innerText = 'Test Timer (Seconds)';
+                    
+                    if (roomAmountContainer) {
+                        const btns = roomAmountContainer.querySelectorAll('button');
+                        if (btns.length >= 4) {
+                            btns[0].innerText = '15';
+                            btns[1].innerText = '30';
+                            btns[2].innerText = '60';
+                            btns[3].innerText = '120';
+                        }
+                    }
+                } else {
+                    btnModeWords.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
+                    btnModeWords.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
+                    
+                    btnModeTime.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
+                    btnModeTime.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
+                    
+                    roomAmountLabel.innerText = 'Test Length (Words)';
+                    
+                    if (roomAmountContainer) {
+                        const btns = roomAmountContainer.querySelectorAll('button');
+                        if (btns.length >= 4) {
+                            btns[0].innerText = '10';
+                            btns[1].innerText = '25';
+                            btns[2].innerText = '50';
+                            btns[3].innerText = '100';
+                        }
+                    }
+                }
+            }
+            
+            if (btnModeTime) btnModeTime.addEventListener('click', () => setRoomMode('time'));
+            if (btnModeWords) btnModeWords.addEventListener('click', () => setRoomMode('words'));
+
+            // --- AMOUNT BUTTON SELECTION LOGIC ---
+            const customInputContainer = document.getElementById('room-custom-input-container');
+            const customInput = document.getElementById('room-custom-input');
+            
+            if (roomAmountContainer) {
+                const timerBtns = roomAmountContainer.querySelectorAll('button');
+                timerBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        // Reset all timer buttons
+                        timerBtns.forEach(b => {
+                            b.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
+                            if (b.textContent.trim() === 'Custom') {
+                                b.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
+                            } else {
+                                b.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
+                                b.classList.remove('border-dashed');
+                            }
+                        });
+                        // Activate clicked button
+                        btn.classList.remove('bg-white/10', 'bg-white/5', 'text-slate-200', 'text-slate-400', 'border-transparent', 'border-white/10', 'border-dashed');
+                        btn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
+                        
+                        if (btn.textContent.trim() === 'Custom') {
+                            customInputContainer.classList.remove('hidden');
+                            customInput.focus();
+                        } else {
+                            customInputContainer.classList.add('hidden');
+                        }
+                    });
+                });
+            }
+
             if (submitCreateRoomBtn) {
                 submitCreateRoomBtn.addEventListener('click', () => {
-                    // Generate random 4 digit room code
-                    const randomId = Math.floor(1000 + Math.random() * 9000);
-                    generatedRoomIdSpan.textContent = randomId;
+                    // Collect room configuration from the form
+                    let selectedAmount = currentMode === 'time' ? 30 : 50;
+                    
+                    if (roomAmountContainer) {
+                        roomAmountContainer.querySelectorAll('button').forEach(btn => {
+                            if (btn.classList.contains('bg-primary')) {
+                                if (btn.textContent.trim() === 'Custom') {
+                                    const val = parseInt(customInput.value);
+                                    if (!isNaN(val) && val > 0) selectedAmount = val;
+                                } else {
+                                    const val = parseInt(btn.textContent);
+                                    if (!isNaN(val)) selectedAmount = val;
+                                }
+                            }
+                        });
+                    }
 
-                    // Switch views
-                    createRoomForm.classList.add('hidden');
-                    createRoomConfirmation.classList.remove('hidden');
-                    createRoomConfirmation.classList.add('flex');
+                    // Get language
+                    const langSelect = document.getElementById('create-room-language') || createRoomForm.querySelector('select');
+                    const selectedLang = langSelect ? langSelect.value : 'english';
+
+                    // Get punctuation and numbers state
+                    const punctBtn = document.getElementById('btn-punct');
+                    const numBtn = document.getElementById('btn-num');
+                    const usePunct = punctBtn && punctBtn.classList.contains('text-primary') ? '1' : '0';
+                    const useNums = numBtn && numBtn.classList.contains('text-slate-400') ? '0' : '1';
+
+                    // Generate a random room ID
+                    const roomId = Math.floor(1000 + Math.random() * 9000);
+
+                    // Navigate to room.html with config params
+                    const params = new URLSearchParams({
+                        mode: currentMode,
+                        amount: selectedAmount,
+                        lang: selectedLang,
+                        punct: usePunct,
+                        nums: useNums,
+                        room: roomId
+                    });
+                    window.location.href = `room.html?${params.toString()}`;
                 });
             }
 
@@ -1368,7 +1506,6 @@
 
             if (toggleBtnPunct) toggleBtnPunct.addEventListener('click', () => toggleModalSetting(toggleBtnPunct));
             if (toggleBtnNum) toggleBtnNum.addEventListener('click', () => toggleModalSetting(toggleBtnNum));
-
 
             // --- CUSTOM SCROLLBAR LOGIC ---
             const friendsListContainer = document.getElementById('friends-list-container');
