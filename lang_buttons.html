@@ -1,0 +1,461 @@
+                                                <div class="relative mb-3">
+                                                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none">search</span>
+                                                    <input type="text" id="lang-search-input" placeholder="Search languages..."
+                                                        class="w-full bg-slate-950/60 border border-slate-700/50 rounded-lg py-2 pl-9 pr-3 text-sm text-slate-200 outline-none focus:border-primary transition-colors"
+                                                        oninput="filterLangButtons(this.value)">
+                                                </div>
+                                                <div class="lang-group" data-lang-group="natural">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="material-symbols-outlined text-primary text-[14px]">translate</span>
+                                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natural Languages</span>
+                                                        <span class="text-[10px] text-slate-600">(342)</span>
+                                                    </div>
+                                                    <div class="grid grid-cols-5 gap-2 mb-4">
+                                                    <button class="opt-btn lang-btn" data-lang-file="afrikaans" onclick="selectLangOpt(this)">Afrikaans</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="afrikaans_10k" onclick="selectLangOpt(this)">Afrikaans 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="afrikaans_1k" onclick="selectLangOpt(this)">Afrikaans 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="albanian" onclick="selectLangOpt(this)">Albanian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="albanian_1k" onclick="selectLangOpt(this)">Albanian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="amharic" onclick="selectLangOpt(this)">Amharic</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="amharic_1k" onclick="selectLangOpt(this)">Amharic 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="amharic_5k" onclick="selectLangOpt(this)">Amharic 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="arabic" onclick="selectLangOpt(this)">Arabic</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="arabic_10k" onclick="selectLangOpt(this)">Arabic 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="arabic_egypt" onclick="selectLangOpt(this)">Arabic Egypt</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="arabic_egypt_1k" onclick="selectLangOpt(this)">Arabic Egypt 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="arabic_morocco" onclick="selectLangOpt(this)">Arabic Morocco</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="armenian" onclick="selectLangOpt(this)">Armenian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="armenian_1k" onclick="selectLangOpt(this)">Armenian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="armenian_western" onclick="selectLangOpt(this)">Armenian Western</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="armenian_western_1k" onclick="selectLangOpt(this)">Armenian Western 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="azerbaijani" onclick="selectLangOpt(this)">Azerbaijani</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="azerbaijani_1k" onclick="selectLangOpt(this)">Azerbaijani 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bangla" onclick="selectLangOpt(this)">Bangla</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bangla_10k" onclick="selectLangOpt(this)">Bangla 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bangla_letters" onclick="selectLangOpt(this)">Bangla Letters</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bashkir" onclick="selectLangOpt(this)">Bashkir</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian" onclick="selectLangOpt(this)">Belarusian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_100k" onclick="selectLangOpt(this)">Belarusian 100k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_10k" onclick="selectLangOpt(this)">Belarusian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_1k" onclick="selectLangOpt(this)">Belarusian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_25k" onclick="selectLangOpt(this)">Belarusian 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_50k" onclick="selectLangOpt(this)">Belarusian 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_5k" onclick="selectLangOpt(this)">Belarusian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_lacinka" onclick="selectLangOpt(this)">Belarusian Lacinka</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="belarusian_lacinka_1k" onclick="selectLangOpt(this)">Belarusian Lacinka 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bosnian" onclick="selectLangOpt(this)">Bosnian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bosnian_4k" onclick="selectLangOpt(this)">Bosnian 4k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bulgarian" onclick="selectLangOpt(this)">Bulgarian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bulgarian_1k" onclick="selectLangOpt(this)">Bulgarian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bulgarian_latin" onclick="selectLangOpt(this)">Bulgarian Latin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="bulgarian_latin_1k" onclick="selectLangOpt(this)">Bulgarian Latin 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="catalan" onclick="selectLangOpt(this)">Catalan</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="catalan_1k" onclick="selectLangOpt(this)">Catalan 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_simplified" onclick="selectLangOpt(this)">Chinese Simplified</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_simplified_10k" onclick="selectLangOpt(this)">Chinese Simplified 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_simplified_1k" onclick="selectLangOpt(this)">Chinese Simplified 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_simplified_50k" onclick="selectLangOpt(this)">Chinese Simplified 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_simplified_5k" onclick="selectLangOpt(this)">Chinese Simplified 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="chinese_traditional" onclick="selectLangOpt(this)">Chinese Traditional</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="croatian" onclick="selectLangOpt(this)">Croatian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="croatian_1k" onclick="selectLangOpt(this)">Croatian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="czech" onclick="selectLangOpt(this)">Czech</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="czech_10k" onclick="selectLangOpt(this)">Czech 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="czech_1k" onclick="selectLangOpt(this)">Czech 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="danish" onclick="selectLangOpt(this)">Danish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="danish_10k" onclick="selectLangOpt(this)">Danish 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="danish_1k" onclick="selectLangOpt(this)">Danish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="dutch" onclick="selectLangOpt(this)">Dutch</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="dutch_10k" onclick="selectLangOpt(this)">Dutch 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="dutch_1k" onclick="selectLangOpt(this)">Dutch 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english" onclick="selectLangOpt(this)">English</button>
+                                                    <button class="opt-btn lang-btn active" data-lang-file="english_10k" onclick="selectLangOpt(this)">English 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_1k" onclick="selectLangOpt(this)">English 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_25k" onclick="selectLangOpt(this)">English 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_450k" onclick="selectLangOpt(this)">English 450k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_5k" onclick="selectLangOpt(this)">English 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_commonly_misspelled" onclick="selectLangOpt(this)">English Commonly Misspelled</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_contractions" onclick="selectLangOpt(this)">English Contractions</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_doubleletter" onclick="selectLangOpt(this)">English Doubleletter</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_medical" onclick="selectLangOpt(this)">English Medical</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_old" onclick="selectLangOpt(this)">English Old</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="english_shakespearean" onclick="selectLangOpt(this)">English Shakespearean</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto" onclick="selectLangOpt(this)">Esperanto</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_10k" onclick="selectLangOpt(this)">Esperanto 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_1k" onclick="selectLangOpt(this)">Esperanto 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_25k" onclick="selectLangOpt(this)">Esperanto 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_36k" onclick="selectLangOpt(this)">Esperanto 36k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_h_sistemo" onclick="selectLangOpt(this)">Esperanto H Sistemo</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_h_sistemo_10k" onclick="selectLangOpt(this)">Esperanto H Sistemo 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_h_sistemo_1k" onclick="selectLangOpt(this)">Esperanto H Sistemo 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_h_sistemo_25k" onclick="selectLangOpt(this)">Esperanto H Sistemo 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_h_sistemo_36k" onclick="selectLangOpt(this)">Esperanto H Sistemo 36k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_x_sistemo" onclick="selectLangOpt(this)">Esperanto X Sistemo</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_x_sistemo_10k" onclick="selectLangOpt(this)">Esperanto X Sistemo 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_x_sistemo_1k" onclick="selectLangOpt(this)">Esperanto X Sistemo 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_x_sistemo_25k" onclick="selectLangOpt(this)">Esperanto X Sistemo 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="esperanto_x_sistemo_36k" onclick="selectLangOpt(this)">Esperanto X Sistemo 36k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="estonian" onclick="selectLangOpt(this)">Estonian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="estonian_10k" onclick="selectLangOpt(this)">Estonian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="estonian_1k" onclick="selectLangOpt(this)">Estonian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="estonian_5k" onclick="selectLangOpt(this)">Estonian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="euskera" onclick="selectLangOpt(this)">Euskera</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="filipino" onclick="selectLangOpt(this)">Filipino</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="filipino_1k" onclick="selectLangOpt(this)">Filipino 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="finnish" onclick="selectLangOpt(this)">Finnish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="finnish_10k" onclick="selectLangOpt(this)">Finnish 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="finnish_1k" onclick="selectLangOpt(this)">Finnish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french" onclick="selectLangOpt(this)">French</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french_10k" onclick="selectLangOpt(this)">French 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french_1k" onclick="selectLangOpt(this)">French 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french_2k" onclick="selectLangOpt(this)">French 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french_600k" onclick="selectLangOpt(this)">French 600k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="french_bitoduc" onclick="selectLangOpt(this)">French Bitoduc</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="frisian" onclick="selectLangOpt(this)">Frisian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="frisian_1k" onclick="selectLangOpt(this)">Frisian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="friulian" onclick="selectLangOpt(this)">Friulian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="galician" onclick="selectLangOpt(this)">Galician</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="georgian" onclick="selectLangOpt(this)">Georgian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="german" onclick="selectLangOpt(this)">German</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="german_10k" onclick="selectLangOpt(this)">German 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="german_1k" onclick="selectLangOpt(this)">German 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="german_250k" onclick="selectLangOpt(this)">German 250k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greek" onclick="selectLangOpt(this)">Greek</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greek_10k" onclick="selectLangOpt(this)">Greek 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greek_1k" onclick="selectLangOpt(this)">Greek 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greek_25k" onclick="selectLangOpt(this)">Greek 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greek_5k" onclick="selectLangOpt(this)">Greek 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greeklish" onclick="selectLangOpt(this)">Greeklish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greeklish_10k" onclick="selectLangOpt(this)">Greeklish 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greeklish_1k" onclick="selectLangOpt(this)">Greeklish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greeklish_25k" onclick="selectLangOpt(this)">Greeklish 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="greeklish_5k" onclick="selectLangOpt(this)">Greeklish 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="gujarati" onclick="selectLangOpt(this)">Gujarati</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="gujarati_1k" onclick="selectLangOpt(this)">Gujarati 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hausa" onclick="selectLangOpt(this)">Hausa</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hausa_1k" onclick="selectLangOpt(this)">Hausa 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hawaiian" onclick="selectLangOpt(this)">Hawaiian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hawaiian_1k" onclick="selectLangOpt(this)">Hawaiian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hebrew" onclick="selectLangOpt(this)">Hebrew</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hebrew_10k" onclick="selectLangOpt(this)">Hebrew 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hebrew_1k" onclick="selectLangOpt(this)">Hebrew 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hebrew_5k" onclick="selectLangOpt(this)">Hebrew 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hindi" onclick="selectLangOpt(this)">Hindi</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hindi_1k" onclick="selectLangOpt(this)">Hindi 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hinglish" onclick="selectLangOpt(this)">Hinglish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hungarian" onclick="selectLangOpt(this)">Hungarian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hungarian_1k" onclick="selectLangOpt(this)">Hungarian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="hungarian_2k" onclick="selectLangOpt(this)">Hungarian 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="icelandic" onclick="selectLangOpt(this)">Icelandic</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="icelandic_1k" onclick="selectLangOpt(this)">Icelandic 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="indonesian" onclick="selectLangOpt(this)">Indonesian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="indonesian_10k" onclick="selectLangOpt(this)">Indonesian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="indonesian_1k" onclick="selectLangOpt(this)">Indonesian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="irish" onclick="selectLangOpt(this)">Irish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="italian" onclick="selectLangOpt(this)">Italian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="italian_1k" onclick="selectLangOpt(this)">Italian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="italian_280k" onclick="selectLangOpt(this)">Italian 280k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="italian_60k" onclick="selectLangOpt(this)">Italian 60k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="italian_7k" onclick="selectLangOpt(this)">Italian 7k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="japanese_hiragana" onclick="selectLangOpt(this)">Japanese Hiragana</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="japanese_katakana" onclick="selectLangOpt(this)">Japanese Katakana</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="japanese_romaji" onclick="selectLangOpt(this)">Japanese Romaji</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="japanese_romaji_1k" onclick="selectLangOpt(this)">Japanese Romaji 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="jyutping" onclick="selectLangOpt(this)">Jyutping</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kabyle" onclick="selectLangOpt(this)">Kabyle</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kabyle_10k" onclick="selectLangOpt(this)">Kabyle 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kabyle_1k" onclick="selectLangOpt(this)">Kabyle 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kabyle_2k" onclick="selectLangOpt(this)">Kabyle 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kabyle_5k" onclick="selectLangOpt(this)">Kabyle 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kannada" onclick="selectLangOpt(this)">Kannada</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kazakh" onclick="selectLangOpt(this)">Kazakh</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kazakh_1k" onclick="selectLangOpt(this)">Kazakh 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="khmer" onclick="selectLangOpt(this)">Khmer</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kinyarwanda" onclick="selectLangOpt(this)">Kinyarwanda</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="korean" onclick="selectLangOpt(this)">Korean</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="korean_1k" onclick="selectLangOpt(this)">Korean 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="korean_5k" onclick="selectLangOpt(this)">Korean 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kurdish_central" onclick="selectLangOpt(this)">Kurdish Central</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kurdish_central_2k" onclick="selectLangOpt(this)">Kurdish Central 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kurdish_central_4k" onclick="selectLangOpt(this)">Kurdish Central 4k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kyrgyz" onclick="selectLangOpt(this)">Kyrgyz</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="kyrgyz_1k" onclick="selectLangOpt(this)">Kyrgyz 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="latin" onclick="selectLangOpt(this)">Latin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="latvian" onclick="selectLangOpt(this)">Latvian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="latvian_1k" onclick="selectLangOpt(this)">Latvian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lithuanian" onclick="selectLangOpt(this)">Lithuanian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lithuanian_1k" onclick="selectLangOpt(this)">Lithuanian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lithuanian_3k" onclick="selectLangOpt(this)">Lithuanian 3k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="macedonian" onclick="selectLangOpt(this)">Macedonian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="macedonian_10k" onclick="selectLangOpt(this)">Macedonian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="macedonian_1k" onclick="selectLangOpt(this)">Macedonian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="macedonian_75k" onclick="selectLangOpt(this)">Macedonian 75k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="malagasy" onclick="selectLangOpt(this)">Malagasy</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="malagasy_1k" onclick="selectLangOpt(this)">Malagasy 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="malay" onclick="selectLangOpt(this)">Malay</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="malay_1k" onclick="selectLangOpt(this)">Malay 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="malayalam" onclick="selectLangOpt(this)">Malayalam</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="maltese" onclick="selectLangOpt(this)">Maltese</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="maltese_1k" onclick="selectLangOpt(this)">Maltese 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="maori_1k" onclick="selectLangOpt(this)">Maori 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="marathi" onclick="selectLangOpt(this)">Marathi</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="mongolian" onclick="selectLangOpt(this)">Mongolian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="mongolian_10k" onclick="selectLangOpt(this)">Mongolian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="myanmar_burmese" onclick="selectLangOpt(this)">Myanmar Burmese</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="nepali" onclick="selectLangOpt(this)">Nepali</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="nepali_1k" onclick="selectLangOpt(this)">Nepali 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="nepali_romanized" onclick="selectLangOpt(this)">Nepali Romanized</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal" onclick="selectLangOpt(this)">Norwegian Bokmal</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal_10k" onclick="selectLangOpt(this)">Norwegian Bokmal 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal_150k" onclick="selectLangOpt(this)">Norwegian Bokmal 150k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal_1k" onclick="selectLangOpt(this)">Norwegian Bokmal 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal_5k" onclick="selectLangOpt(this)">Norwegian Bokmal 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_bokmal_600k" onclick="selectLangOpt(this)">Norwegian Bokmal 600k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk" onclick="selectLangOpt(this)">Norwegian Nynorsk</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk_100k" onclick="selectLangOpt(this)">Norwegian Nynorsk 100k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk_10k" onclick="selectLangOpt(this)">Norwegian Nynorsk 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk_1k" onclick="selectLangOpt(this)">Norwegian Nynorsk 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk_400k" onclick="selectLangOpt(this)">Norwegian Nynorsk 400k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="norwegian_nynorsk_5k" onclick="selectLangOpt(this)">Norwegian Nynorsk 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="occitan" onclick="selectLangOpt(this)">Occitan</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="occitan_10k" onclick="selectLangOpt(this)">Occitan 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="occitan_1k" onclick="selectLangOpt(this)">Occitan 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="occitan_2k" onclick="selectLangOpt(this)">Occitan 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="occitan_5k" onclick="selectLangOpt(this)">Occitan 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="oromo" onclick="selectLangOpt(this)">Oromo</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="oromo_1k" onclick="selectLangOpt(this)">Oromo 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="oromo_5k" onclick="selectLangOpt(this)">Oromo 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="pashto" onclick="selectLangOpt(this)">Pashto</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="persian" onclick="selectLangOpt(this)">Persian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="persian_1k" onclick="selectLangOpt(this)">Persian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="persian_20k" onclick="selectLangOpt(this)">Persian 20k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="persian_5k" onclick="selectLangOpt(this)">Persian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="persian_romanized" onclick="selectLangOpt(this)">Persian Romanized</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="pinyin" onclick="selectLangOpt(this)">Pinyin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="pinyin_10k" onclick="selectLangOpt(this)">Pinyin 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="pinyin_1k" onclick="selectLangOpt(this)">Pinyin 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish" onclick="selectLangOpt(this)">Polish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_10k" onclick="selectLangOpt(this)">Polish 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_200k" onclick="selectLangOpt(this)">Polish 200k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_20k" onclick="selectLangOpt(this)">Polish 20k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_2k" onclick="selectLangOpt(this)">Polish 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_40k" onclick="selectLangOpt(this)">Polish 40k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="polish_5k" onclick="selectLangOpt(this)">Polish 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese" onclick="selectLangOpt(this)">Portuguese</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_1k" onclick="selectLangOpt(this)">Portuguese 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_320k" onclick="selectLangOpt(this)">Portuguese 320k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_3k" onclick="selectLangOpt(this)">Portuguese 3k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_550k" onclick="selectLangOpt(this)">Portuguese 550k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_5k" onclick="selectLangOpt(this)">Portuguese 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="portuguese_acentos_e_cedilha" onclick="selectLangOpt(this)">Portuguese Acentos E Cedilha</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian" onclick="selectLangOpt(this)">Romanian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_100k" onclick="selectLangOpt(this)">Romanian 100k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_10k" onclick="selectLangOpt(this)">Romanian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_1k" onclick="selectLangOpt(this)">Romanian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_200k" onclick="selectLangOpt(this)">Romanian 200k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_25k" onclick="selectLangOpt(this)">Romanian 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_50k" onclick="selectLangOpt(this)">Romanian 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="romanian_5k" onclick="selectLangOpt(this)">Romanian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian" onclick="selectLangOpt(this)">Russian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_10k" onclick="selectLangOpt(this)">Russian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_1k" onclick="selectLangOpt(this)">Russian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_25k" onclick="selectLangOpt(this)">Russian 25k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_375k" onclick="selectLangOpt(this)">Russian 375k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_50k" onclick="selectLangOpt(this)">Russian 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_5k" onclick="selectLangOpt(this)">Russian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_abbreviations" onclick="selectLangOpt(this)">Russian Abbreviations</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_contractions" onclick="selectLangOpt(this)">Russian Contractions</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="russian_contractions_1k" onclick="selectLangOpt(this)">Russian Contractions 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="sanskrit" onclick="selectLangOpt(this)">Sanskrit</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="sanskrit_roman" onclick="selectLangOpt(this)">Sanskrit Roman</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="santali" onclick="selectLangOpt(this)">Santali</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="serbian" onclick="selectLangOpt(this)">Serbian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="serbian_10k" onclick="selectLangOpt(this)">Serbian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="serbian_latin" onclick="selectLangOpt(this)">Serbian Latin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="serbian_latin_10k" onclick="selectLangOpt(this)">Serbian Latin 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="shona" onclick="selectLangOpt(this)">Shona</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="shona_1k" onclick="selectLangOpt(this)">Shona 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="sinhala" onclick="selectLangOpt(this)">Sinhala</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovak" onclick="selectLangOpt(this)">Slovak</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovak_10k" onclick="selectLangOpt(this)">Slovak 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovak_1k" onclick="selectLangOpt(this)">Slovak 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovenian" onclick="selectLangOpt(this)">Slovenian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovenian_1k" onclick="selectLangOpt(this)">Slovenian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="slovenian_5k" onclick="selectLangOpt(this)">Slovenian 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="spanish" onclick="selectLangOpt(this)">Spanish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="spanish_10k" onclick="selectLangOpt(this)">Spanish 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="spanish_1k" onclick="selectLangOpt(this)">Spanish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="spanish_650k" onclick="selectLangOpt(this)">Spanish 650k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swahili_1k" onclick="selectLangOpt(this)">Swahili 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swedish" onclick="selectLangOpt(this)">Swedish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swedish_1k" onclick="selectLangOpt(this)">Swedish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swedish_diacritics" onclick="selectLangOpt(this)">Swedish Diacritics</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swiss_german" onclick="selectLangOpt(this)">Swiss German</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swiss_german_1k" onclick="selectLangOpt(this)">Swiss German 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="swiss_german_2k" onclick="selectLangOpt(this)">Swiss German 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tamil" onclick="selectLangOpt(this)">Tamil</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tamil_1k" onclick="selectLangOpt(this)">Tamil 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tamil_old" onclick="selectLangOpt(this)">Tamil Old</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tanglish" onclick="selectLangOpt(this)">Tanglish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar" onclick="selectLangOpt(this)">Tatar</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_1k" onclick="selectLangOpt(this)">Tatar 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_5k" onclick="selectLangOpt(this)">Tatar 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_9k" onclick="selectLangOpt(this)">Tatar 9k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean" onclick="selectLangOpt(this)">Tatar Crimean</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_10k" onclick="selectLangOpt(this)">Tatar Crimean 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_15k" onclick="selectLangOpt(this)">Tatar Crimean 15k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_1k" onclick="selectLangOpt(this)">Tatar Crimean 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_5k" onclick="selectLangOpt(this)">Tatar Crimean 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_cyrillic" onclick="selectLangOpt(this)">Tatar Crimean Cyrillic</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_cyrillic_10k" onclick="selectLangOpt(this)">Tatar Crimean Cyrillic 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_cyrillic_15k" onclick="selectLangOpt(this)">Tatar Crimean Cyrillic 15k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_cyrillic_1k" onclick="selectLangOpt(this)">Tatar Crimean Cyrillic 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tatar_crimean_cyrillic_5k" onclick="selectLangOpt(this)">Tatar Crimean Cyrillic 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="telugu" onclick="selectLangOpt(this)">Telugu</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="telugu_1k" onclick="selectLangOpt(this)">Telugu 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai" onclick="selectLangOpt(this)">Thai</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_10k" onclick="selectLangOpt(this)">Thai 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_1k" onclick="selectLangOpt(this)">Thai 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_20k" onclick="selectLangOpt(this)">Thai 20k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_50k" onclick="selectLangOpt(this)">Thai 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_5k" onclick="selectLangOpt(this)">Thai 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="thai_60k" onclick="selectLangOpt(this)">Thai 60k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tibetan" onclick="selectLangOpt(this)">Tibetan</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="tibetan_1k" onclick="selectLangOpt(this)">Tibetan 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="turkish" onclick="selectLangOpt(this)">Turkish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="turkish_1k" onclick="selectLangOpt(this)">Turkish 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="turkish_5k" onclick="selectLangOpt(this)">Turkish 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="udmurt" onclick="selectLangOpt(this)">Udmurt</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian" onclick="selectLangOpt(this)">Ukrainian</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_10k" onclick="selectLangOpt(this)">Ukrainian 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_1k" onclick="selectLangOpt(this)">Ukrainian 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_50k" onclick="selectLangOpt(this)">Ukrainian 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_endings" onclick="selectLangOpt(this)">Ukrainian Endings</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_latynka" onclick="selectLangOpt(this)">Ukrainian Latynka</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_latynka_10k" onclick="selectLangOpt(this)">Ukrainian Latynka 10k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_latynka_1k" onclick="selectLangOpt(this)">Ukrainian Latynka 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_latynka_50k" onclick="selectLangOpt(this)">Ukrainian Latynka 50k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="ukrainian_latynka_endings" onclick="selectLangOpt(this)">Ukrainian Latynka Endings</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="urdish" onclick="selectLangOpt(this)">Urdish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="urdu" onclick="selectLangOpt(this)">Urdu</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="urdu_1k" onclick="selectLangOpt(this)">Urdu 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="urdu_5k" onclick="selectLangOpt(this)">Urdu 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="uzbek" onclick="selectLangOpt(this)">Uzbek</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="uzbek_1k" onclick="selectLangOpt(this)">Uzbek 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="uzbek_70k" onclick="selectLangOpt(this)">Uzbek 70k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="vietnamese" onclick="selectLangOpt(this)">Vietnamese</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="vietnamese_1k" onclick="selectLangOpt(this)">Vietnamese 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="vietnamese_5k" onclick="selectLangOpt(this)">Vietnamese 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="welsh" onclick="selectLangOpt(this)">Welsh</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="welsh_1k" onclick="selectLangOpt(this)">Welsh 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="xhosa" onclick="selectLangOpt(this)">Xhosa</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="xhosa_3k" onclick="selectLangOpt(this)">Xhosa 3k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="yiddish" onclick="selectLangOpt(this)">Yiddish</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="yoruba_1k" onclick="selectLangOpt(this)">Yoruba 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="zulu" onclick="selectLangOpt(this)">Zulu</button>
+                                                    </div>
+                                                </div>
+                                                <div class="lang-group" data-lang-group="code">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="material-symbols-outlined text-primary text-[14px]">code</span>
+                                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Code Languages</span>
+                                                        <span class="text-[10px] text-slate-600">(67)</span>
+                                                    </div>
+                                                    <div class="grid grid-cols-5 gap-2 mb-4">
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_abap" onclick="selectLangOpt(this)">ABAP</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_abap_1k" onclick="selectLangOpt(this)">ABAP 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_arduino" onclick="selectLangOpt(this)">Arduino</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_assembly" onclick="selectLangOpt(this)">Assembly</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_bash" onclick="selectLangOpt(this)">Bash</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_brainfck" onclick="selectLangOpt(this)">Brainfck</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_c" onclick="selectLangOpt(this)">C</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_c++" onclick="selectLangOpt(this)">C++</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_clojure" onclick="selectLangOpt(this)">Clojure</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_cobol" onclick="selectLangOpt(this)">COBOL</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_common_lisp" onclick="selectLangOpt(this)">Common Lisp</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_csharp" onclick="selectLangOpt(this)">C#</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_css" onclick="selectLangOpt(this)">CSS</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_cuda" onclick="selectLangOpt(this)">CUDA</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_dart" onclick="selectLangOpt(this)">Dart</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_elixir" onclick="selectLangOpt(this)">Elixir</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_erlang" onclick="selectLangOpt(this)">Erlang</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_fortran" onclick="selectLangOpt(this)">Fortran</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_fsharp" onclick="selectLangOpt(this)">F#</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_gdscript" onclick="selectLangOpt(this)">GDScript</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_gdscript_2" onclick="selectLangOpt(this)">GDScript 2</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_gleam" onclick="selectLangOpt(this)">Gleam</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_go" onclick="selectLangOpt(this)">Go</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_haskell" onclick="selectLangOpt(this)">Haskell</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_html" onclick="selectLangOpt(this)">HTML</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_java" onclick="selectLangOpt(this)">Java</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_javascript" onclick="selectLangOpt(this)">Javascript</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_javascript_1k" onclick="selectLangOpt(this)">Javascript 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_javascript_react" onclick="selectLangOpt(this)">Javascript React</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_jule" onclick="selectLangOpt(this)">Jule</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_julia" onclick="selectLangOpt(this)">Julia</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_kotlin" onclick="selectLangOpt(this)">Kotlin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_latex" onclick="selectLangOpt(this)">Latex</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_lua" onclick="selectLangOpt(this)">Lua</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_luau" onclick="selectLangOpt(this)">Luau</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_matlab" onclick="selectLangOpt(this)">Matlab</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_nim" onclick="selectLangOpt(this)">Nim</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_nix" onclick="selectLangOpt(this)">Nix</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_ocaml" onclick="selectLangOpt(this)">OCaml</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_odin" onclick="selectLangOpt(this)">Odin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_ook" onclick="selectLangOpt(this)">Ook</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_opencl" onclick="selectLangOpt(this)">OpenCL</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_pascal" onclick="selectLangOpt(this)">Pascal</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_perl" onclick="selectLangOpt(this)">Perl</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_php" onclick="selectLangOpt(this)">PHP</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_powershell" onclick="selectLangOpt(this)">Powershell</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_python" onclick="selectLangOpt(this)">Python</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_python_1k" onclick="selectLangOpt(this)">Python 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_python_2k" onclick="selectLangOpt(this)">Python 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_python_5k" onclick="selectLangOpt(this)">Python 5k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_r" onclick="selectLangOpt(this)">R</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_r_2k" onclick="selectLangOpt(this)">R 2k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_rockstar" onclick="selectLangOpt(this)">Rockstar</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_ruby" onclick="selectLangOpt(this)">Ruby</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_rust" onclick="selectLangOpt(this)">Rust</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_scala" onclick="selectLangOpt(this)">Scala</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_sql" onclick="selectLangOpt(this)">SQL</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_swift" onclick="selectLangOpt(this)">Swift</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_systemverilog" onclick="selectLangOpt(this)">Systemverilog</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_typescript" onclick="selectLangOpt(this)">Typescript</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_typst" onclick="selectLangOpt(this)">Typst</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_v" onclick="selectLangOpt(this)">V</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_vim" onclick="selectLangOpt(this)">Vim</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_vimscript" onclick="selectLangOpt(this)">Vimscript</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_visual_basic" onclick="selectLangOpt(this)">Visual Basic</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_yoptascript" onclick="selectLangOpt(this)">Yoptascript</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="code_zig" onclick="selectLangOpt(this)">Zig</button>
+                                                    </div>
+                                                </div>
+                                                <div class="lang-group" data-lang-group="special">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="material-symbols-outlined text-primary text-[14px]">star</span>
+                                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Special & Fun</span>
+                                                        <span class="text-[10px] text-slate-600">(19)</span>
+                                                    </div>
+                                                    <div class="grid grid-cols-5 gap-2">
+                                                    <button class="opt-btn lang-btn" data-lang-file="docker_file" onclick="selectLangOpt(this)">Docker File</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="git" onclick="selectLangOpt(this)">Git</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="klingon" onclick="selectLangOpt(this)">Klingon</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="klingon_1k" onclick="selectLangOpt(this)">Klingon 1k</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="league_of_legends" onclick="selectLangOpt(this)">League Of Legends</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lojban_cmavo" onclick="selectLangOpt(this)">Lojban Cmavo</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lojban_gismu" onclick="selectLangOpt(this)">Lojban Gismu</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="lorem_ipsum" onclick="selectLangOpt(this)">Lorem Ipsum</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="pig_latin" onclick="selectLangOpt(this)">Pig Latin</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="quenya" onclick="selectLangOpt(this)">Quenya</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="toki_pona" onclick="selectLangOpt(this)">Toki Pona</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="toki_pona_ku_lili" onclick="selectLangOpt(this)">Toki Pona Ku Lili</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="toki_pona_ku_suli" onclick="selectLangOpt(this)">Toki Pona Ku Suli</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="twitch_emotes" onclick="selectLangOpt(this)">Twitch Emotes</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="typing_of_the_dead" onclick="selectLangOpt(this)">Typing Of The Dead</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="viossa" onclick="selectLangOpt(this)">Viossa</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="viossa_njutro" onclick="selectLangOpt(this)">Viossa Njutro</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="wordle" onclick="selectLangOpt(this)">Wordle</button>
+                                                    <button class="opt-btn lang-btn" data-lang-file="wordle_1k" onclick="selectLangOpt(this)">Wordle 1k</button>
+                                                    </div>
+                                                </div>
