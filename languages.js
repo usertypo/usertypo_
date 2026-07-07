@@ -472,6 +472,9 @@ const _langCache = {};
 async function loadLanguage(filename) {
     if (!filename || filename === 'Off') return wordList;
 
+    // Normalize: UI buttons use _Xk naming but actual files use _XT naming
+    filename = filename.replace(/_(\d+)k$/i, '_$1T');
+
     // Check cache first
     if (_langCache[filename]) {
         wordList = _langCache[filename];
@@ -480,7 +483,7 @@ async function loadLanguage(filename) {
     }
 
     try {
-        const resp = await fetch('lan/' + filename + '.json');
+        const resp = await fetch('lang/' + filename + '.json');
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
 
