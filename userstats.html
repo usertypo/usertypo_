@@ -163,7 +163,7 @@
         class="fixed top-0 left-0 h-[100dvh] w-[280px] z-[100] glass-panel rounded-r-3xl flex flex-col transform -translate-x-full transition-transform duration-500 slide-ease border-l-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)] bg-surface/85 !backdrop-blur-sm">
         <div class="p-6 pb-8">
             <span class="material-symbols-outlined text-[24px] text-primary"
-                style="text-shadow: 0 0 10px rgba(0,208,255,0.6);">menu</span>
+                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb),0.6);">menu</span>
         </div>
         <nav class="flex-1 px-4 flex flex-col gap-2">
             <a href="index.html"
@@ -440,15 +440,15 @@
                     <svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 200">
                         <defs>
                             <lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                                <stop offset="0%" stop-color="#6cdaff" stop-opacity="0.3"></stop>
-                                <stop offset="100%" stop-color="#6cdaff" stop-opacity="0"></stop>
+                                <stop offset="0%" stop-color="var(--theme-primary-light, #6cdaff)" stop-opacity="0.3"></stop>
+                                <stop offset="100%" stop-color="var(--theme-primary-light, #6cdaff)" stop-opacity="0"></stop>
                             </lineargradient>
                         </defs>
                         <path
                             d="M0,180 Q50,150 100,160 T200,120 T300,140 T400,90 T500,110 T600,70 T700,85 T800,50 L800,200 L0,200 Z"
                             fill="url(#chartGradient)"></path>
                         <path d="M0,180 Q50,150 100,160 T200,120 T300,140 T400,90 T500,110 T600,70 T700,85 T800,50"
-                            fill="none" stroke="#6cdaff" stroke-width="3"></path>
+                            fill="none" stroke="var(--theme-primary-light, #6cdaff)" stroke-width="3"></path>
                         <path d="M0,100 Q100,95 200,98 T400,92 T600,95 T800,90" fill="none" stroke="#aaabb0"
                             stroke-dasharray="4" stroke-width="2"></path>
                     </svg>
@@ -541,7 +541,7 @@
                                     Speed</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-[#00d0ff] rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div class="h-8 bg-primary rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
                                     style="width: 86%;">116 WPM</div>
                             </div>
                         </div>
@@ -555,7 +555,7 @@
                                     class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Accuracy</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-[#00d0ff]/60 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div class="h-8 bg-primary/60 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
                                     style="width: 99%;">98.6%</div>
                             </div>
                         </div>
@@ -569,7 +569,7 @@
                                     class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Frequency</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-[#00d0ff]/40 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div class="h-8 bg-primary/40 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
                                     style="width: 55%;">5.1 Hz</div>
                             </div>
                         </div>
@@ -583,7 +583,7 @@
                                     Vol.</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-[#00d0ff]/20 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div class="h-8 bg-primary/20 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
                                     style="width: 40%;">8</div>
                             </div>
                         </div>
@@ -647,7 +647,7 @@
                                     stroke-width="4"></circle>
                                 <circle cx="18" cy="18" fill="none" r="16" stroke="#23262c" stroke-dasharray="25 100"
                                     stroke-dashoffset="0" stroke-width="4"></circle>
-                                <circle cx="18" cy="18" fill="none" r="16" stroke="#6cdaff" stroke-dasharray="65 100"
+                                <circle cx="18" cy="18" fill="none" r="16" stroke="var(--theme-primary-light, #6cdaff)" stroke-dasharray="65 100"
                                     stroke-dashoffset="-25" stroke-width="4"></circle>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center">

@@ -573,7 +573,7 @@
         class="fixed top-0 left-0 h-[100dvh] w-[280px] z-[100] glass-panel rounded-r-3xl flex flex-col transform -translate-x-full transition-transform duration-500 slide-ease border-l-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)] bg-surface/85 !backdrop-blur-sm">
         <div class="p-6 pb-8">
             <span class="material-symbols-outlined text-[24px] text-primary"
-                style="text-shadow: 0 0 10px rgba(0,208,255,0.6);">menu</span>
+                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb),0.6);">menu</span>
         </div>
 
         <nav class="flex-1 px-4 flex flex-col gap-2">
@@ -684,7 +684,7 @@
                 <aside id="config-bar"
                     class="fixed right-0 top-1/2 -translate-y-1/2 z-30 group zen-element transition-all duration-500">
                     <div class="border border-r-0 !border-r-0 rounded-l-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[200px] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm"
-                        style="border-color: rgba(0,208,255,0.4); box-shadow: 0 0 12px rgba(0,208,255,0.35), 0 8px 32px rgba(0,0,0,0.3);">
+                        style="border-color: rgba(var(--theme-primary-rgb), 0.4); box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.35), 0 8px 32px rgba(0,0,0,0.3);">
 
                         <div class="inner-content opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full flex flex-col min-w-[144px] pointer-events-none"
                             id="inner-config-content">
@@ -836,7 +836,7 @@
                             id="word-progress-bar-container">
                             <div id="word-progress-bar"
                                 class="h-full bg-primary transition-all duration-300 ease-linear"
-                                style="width: 0%; box-shadow: 0 0 10px rgba(0, 208, 255, 0.8);"></div>
+                                style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);"></div>
                         </div>
                     </div>
 
@@ -942,7 +942,7 @@
                 <div class="flex-1 flex flex-col gap-6 min-w-0">
                     <div class="flex flex-row gap-6">
                         <div class="flex-1 glass-panel rounded-xl p-8 relative overflow-hidden h-[18.75rem] opacity-0 stats-animate-card [animation-delay:200ms]"
-                            style="border: 1px solid rgba(0, 208, 255, 0.1);" id="stats-hero-card">
+                            style="border: 1px solid rgba(var(--theme-primary-rgb), 0.1);" id="stats-hero-card">
                             <div
                                 class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-primary to-transparent opacity-80">
                             </div>
@@ -963,7 +963,7 @@
                                     <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full"></div>
                                     <h1 id="stats-wpm"
                                         class="text-9xl font-black text-primary relative z-10 leading-none tracking-tighter"
-                                        style="text-shadow: 0 0 30px rgba(0, 208, 255, 0.4);">105</h1>
+                                        style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.4);">105</h1>
                                     <div id="stats-cps"
                                         class="absolute -bottom-6 left-1 text-2xl font-bold text-white tracking-wider hidden"
                                         style="text-shadow: none;"></div>
@@ -1042,7 +1042,7 @@
                                         <div class="h-px bg-white/5 w-full"></div>
                                         <div class="flex justify-between items-center px-4 py-2">
                                             <span class="text-[9px] font-bold text-primary uppercase tracking-widest"
-                                                style="text-shadow: 0 0 10px rgba(0, 208, 255, 0.6);">Global Rank</span>
+                                                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.6);">Global Rank</span>
                                             <span
                                                 class="text-[10px] font-black text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,208,255,0.4)]">#12,402</span>
                                         </div>
@@ -1085,7 +1085,7 @@
                             <!-- Floating tooltip moved outside graph-container to prevent clipping -->
                             <div id="graph-tooltip"
                                 class="absolute pointer-events-none z-50 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold"
-                                style="background:rgba(10,10,30,0.85);border:1px solid rgba(0,208,255,0.3);backdrop-filter:blur(8px);display:none;white-space:nowrap;line-height:1.8;">
+                                style="background:rgba(10,10,30,0.85);border:1px solid rgba(var(--theme-primary-rgb),0.3);backdrop-filter:blur(8px);display:none;white-space:nowrap;line-height:1.8;">
                             </div>
                             <!-- Dynamic Graph Container -->
                             <div class="flex-1 relative w-full" id="graph-container"
@@ -1105,7 +1105,7 @@
                                 <span class="flex items-center gap-1.5" style="color:#ff3333;">â—<span
                                         class="text-slate-500" style="font-size:9px;">Errors</span></span>
                                 <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm"
-                                        style="background:linear-gradient(90deg,rgba(0,208,255,0.12),rgba(0,208,255,0.45));border:1px solid rgba(0,208,255,0.15);"></span><span
+                        style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span
                                         class="text-slate-500" style="font-size:9px;">Difficulty</span></span>
                             </div>
 
@@ -3531,8 +3531,8 @@
             svg.innerHTML = `
                 <defs>
                     <linearGradient id="wpmFillGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%"   stop-color="#00d0ff" stop-opacity="${basicGradTopOp}"/>
-                        <stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>
+                        <stop offset="0%"   stop-color="var(--theme-primary, #00d0ff)" stop-opacity="${basicGradTopOp}"/>
+                        <stop offset="100%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0"/>
                     </linearGradient>
                     <clipPath id="fillReveal">
                         <rect id="fillRevealRect" x="${PAD.left}" y="${PAD.top}" width="0" height="${gH + 2}"/>
@@ -3570,9 +3570,9 @@
 
                 <!-- WPM curved line -->
                 <path id="wpm-line" class="line-wpm" d="${wpmPathD}"
-                    fill="none" stroke="#00d0ff" stroke-width="3"
+                    fill="none" stroke="var(--theme-primary, #00d0ff)" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round"
-                    style="filter:drop-shadow(0 0 4px rgba(0,208,255,0.55));"/>
+                    style="filter:drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), 0.55));"/>
 
                 <!-- Scrubber vertical line -->
                 <line id="graph-scrubber"
@@ -3581,8 +3581,8 @@
                     style="display:none;"/>
 
                 <!-- Hover balls -->
-                <circle id="ball-wpm" r="5" fill="#00d0ff"
-                    style="display:none;filter:drop-shadow(0 0 5px rgba(0,208,255,0.9));"/>
+                <circle id="ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)"
+                    style="display:none;filter:drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.9));"/>
                 <circle id="ball-raw" r="4" fill="#64748b" opacity="0.85"
                     style="display:none;"/>
 
@@ -3721,7 +3721,7 @@
 
                 tooltip.innerHTML =
                     `<div style="color:#94a3b8;margin-bottom:1px;">${sec}s</div>` +
-                    `<div style="color:#00d0ff;">${wv} <span style="font-weight:400;font-size:9px;">wpm</span></div>` +
+                    `<div style="color:var(--theme-primary, #00d0ff);">${wv} <span style="font-weight:400;font-size:9px;">wpm</span></div>` +
                     `<div style="color:#64748b;">${rv} <span style="font-weight:400;font-size:9px;">raw</span></div>` +
                     `<div style="color:#ff6060;">${errs} <span style="font-weight:400;font-size:9px;">err</span></div>`;
 
@@ -3790,7 +3790,7 @@
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-primary rounded"></span><span class="text-slate-400">WPM</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5" style="border-top: 2px solid #64748b; height:0; display:inline-block;"></span><span class="text-slate-500">Raw</span></span>
                     <span class="flex items-center gap-1.5" style="color:#ff3333;">â—<span class="text-slate-500" style="font-size:9px;">Errors</span></span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(0,208,255,0.12),rgba(0,208,255,0.45));border:1px solid rgba(0,208,255,0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
             } else {
                 legend.innerHTML = `
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-primary rounded"></span><span class="text-slate-400">WPM</span></span>
@@ -3801,7 +3801,7 @@
                     <span class="flex items-center gap-1.5" style="color:#ff4466;">âœ•<span class="text-slate-500" style="font-size:9px;">Missed</span></span>
                     <span class="flex items-center gap-1.5" style="color:#ff3333;font-size:14px;font-weight:700;">+<span class="text-slate-500" style="font-size:9px;font-weight:400;">Extra</span></span>
                     <span class="flex items-center gap-1.5" style="color:#ffaa44;">â– <span class="text-slate-500" style="font-size:9px;">Pause</span></span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(0,208,255,0.12),rgba(0,208,255,0.45));border:1px solid rgba(0,208,255,0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
             }
         }
 
@@ -3922,14 +3922,14 @@
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">radio_button_checked</span> The Indicators</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;">
                         <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">â—<span style="color:#64748b;font-size:10px;">Errors</span></span>
-                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(0,208,255,0.12),rgba(0,208,255,0.45));border:1px solid rgba(0,208,255,0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></span>
                     </div>
                     <div class="graph-info-label">Red Dots (Errors)</div>
                     <div class="graph-info-desc">These marks show exactly when you made a mistake. If you see a cluster of red dots, it's a sign that you were likely rushing or struggling with a specific sequence of letters at that moment.</div>
                     <div class="graph-info-label">Blue Background (Difficulty)</div>
                     <div class="graph-info-desc">This represents the "Heat" or difficulty of the words you were typing.<br>
                         <span style="color:#5ed4f5;">Light/Transparent Blue:</span> You were typing short, simple words.<br>
-                        <span style="color:#00d0ff;">Deep/Vivid Blue:</span> You were tackling longer, more complex words that required more focus.</div>
+                        <span style="color:var(--theme-primary, #00d0ff);">Deep/Vivid accent:</span> You were tackling longer, more complex words that required more focus.</div>
 
                     <div class="graph-info-divider"></div>
 
@@ -3948,7 +3948,7 @@
                 `;
             } else {
                 container.innerHTML = `
-                    <div class="graph-info-desc" style="color:#cbd5e1;margin-bottom:12px;">The Advanced Graph is designed for power users who want to dive deep into the "DNA" of their typing style. While the basic graph shows <em style="color:#e2e8f0;">what</em> happened, this graph shows <em style="color:#00d0ff;">why</em> it happened.</div>
+                    <div class="graph-info-desc" style="color:#cbd5e1;margin-bottom:12px;">The Advanced Graph is designed for power users who want to dive deep into the "DNA" of their typing style. While the basic graph shows <em style="color:#e2e8f0;">what</em> happened, this graph shows <em style="color:var(--theme-primary, #00d0ff);">why</em> it happened.</div>
 
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">graphic_eq</span> 1. Rhythm & Cadence</div>
                     <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;margin-bottom:8px;"><span style="display:inline-block;width:16px;height:8px;border-radius:2px;background:rgba(100,116,139,0.3);border:1px solid rgba(100,116,139,0.5);"></span><span style="color:#64748b;">Cadence</span></div>
@@ -3959,11 +3959,11 @@
                     <div class="graph-info-divider"></div>
 
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">gradient</span> 2. Word Difficulty Heatmap</div>
-                    <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;margin-bottom:8px;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(0,208,255,0.12),rgba(0,208,255,0.45));border:1px solid rgba(0,208,255,0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></div>
+                    <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;margin-bottom:8px;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></div>
                     <div class="graph-info-desc">The background is divided into vertical blocks, each representing a single word you typed:<br>
                         <span style="color:#5ed4f5;">Easy (Light):</span> Short, common words (like "the", "to").<br>
                         <span style="color:#33b5d9;">Medium (Noticeable):</span> Average-length words.<br>
-                        <span style="color:#00d0ff;font-weight:600;">Hard (Bright/Vivid):</span> Long or complex words (6+ letters).<br>
+                        <span style="color:var(--theme-primary, #00d0ff);font-weight:600;">Hard (Bright/Vivid):</span> Long or complex words (6+ letters).<br>
                     This helps you see if your speed drops specifically when you hit harder words.</div>
 
                     <div class="graph-info-divider"></div>
@@ -3994,7 +3994,7 @@
                     <div class="graph-info-divider"></div>
 
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">text_select_start</span> 4. Bigram Analysis (Hover)</div>
-                    <div class="graph-info-desc">When you hover over a word section, the tooltip will show you your slowest bigram. A "bigram" is a pair of letters (like <span style="color:#00d0ff;font-family:'Roboto Mono',monospace;">'th'</span> or <span style="color:#00d0ff;font-family:'Roboto Mono',monospace;">'qu'</span>).</div>
+                    <div class="graph-info-desc">When you hover over a word section, the tooltip will show you your slowest bigram. A "bigram" is a pair of letters (like <span style="color:var(--theme-primary, #00d0ff);font-family:'Roboto Mono',monospace;">'th'</span> or <span style="color:var(--theme-primary, #00d0ff);font-family:'Roboto Mono',monospace;">'qu'</span>).</div>
                     <div class="graph-info-desc">If you see <span style="color:#ffaa44;font-family:'Roboto Mono',monospace;">"Slow: 'ou' in 'house'"</span>, it tells you that your fingers struggled specifically with the transition between the <span style="color:#e2e8f0;">'o'</span> and the <span style="color:#e2e8f0;">'u'</span> keys.</div>
 
                     <div class="graph-info-tip">
@@ -4273,8 +4273,8 @@
                 const gradId = `diffGrad${idx}`;
                 const clipId = `diffClip${idx}`;
                 heatDefs += `<linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">`;
-                heatDefs += `<stop offset="0%" stop-color="#00d0ff" stop-opacity="${topOp}"/>`;
-                heatDefs += `<stop offset="100%" stop-color="#00d0ff" stop-opacity="0"/>`;
+                heatDefs += `<stop offset="0%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="${topOp}"/>`;
+                heatDefs += `<stop offset="100%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0"/>`;
                 heatDefs += `</linearGradient>`;
                 heatDefs += `<clipPath id="${clipId}"><rect x="${clippedX1.toFixed(1)}" y="${PAD.top}" width="${rectW.toFixed(1)}" height="${gH + 2}"/></clipPath>`;
                 heatSvg += `<path d="${smoothFillPath(wData)}" fill="url(#${gradId})" clip-path="url(#${clipId})"/>`;
@@ -4388,11 +4388,11 @@
                     <path class="ribbon-fade" d="${ribbonD}" fill="url(#ribbonGrad)" stroke="rgba(100,116,139,0.3)" stroke-width="0.5"/>
                 </g>
                 <path class="ribbon-fade" d="${smoothPath(rData)}" fill="none" stroke="rgba(100,116,139,0.45)" stroke-width="1.5" stroke-dasharray="4 3" stroke-linecap="round"/>
-                <path id="adv-wpm-line" class="adv-line-wpm" d="${wpmPathD}" fill="none" stroke="#00d0ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(0,208,255,0.55));"/>
+                <path id="adv-wpm-line" class="adv-line-wpm" d="${wpmPathD}" fill="none" stroke="var(--theme-primary, #00d0ff)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), 0.55));"/>
                 <g class="marker-fade">${errorSvg}</g>
 
                 <line id="adv-scrubber" x1="0" y1="${PAD.top}" x2="0" y2="${PAD.top + gH}" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 2" style="display:none;"/>
-                <circle id="adv-ball-wpm" r="5" fill="#00d0ff" style="display:none;filter:drop-shadow(0 0 5px rgba(0,208,255,0.9));"/>
+                <circle id="adv-ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)" style="display:none;filter:drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.9));"/>
                 <rect id="adv-graph-hit" x="${PAD.left}" y="${PAD.top}" width="${gW}" height="${gH}" fill="transparent"/>
             `;
 
@@ -4497,7 +4497,7 @@
 
                 let tipHTML =
                     `<div style="color:#94a3b8;margin-bottom:1px;">${secVal}s</div>` +
-                    `<div style="color:#00d0ff;">${wv} <span style="font-weight:400;font-size:9px;">wpm</span></div>` +
+                    `<div style="color:var(--theme-primary, #00d0ff);">${wv} <span style="font-weight:400;font-size:9px;">wpm</span></div>` +
                     `<div style="color:#64748b;">${rv} <span style="font-weight:400;font-size:9px;">raw</span></div>`;
 
                 if (realErrors.length > 0) {

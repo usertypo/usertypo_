@@ -531,14 +531,14 @@
     <div style="position:fixed;inset:0;z-index:0;background:#020016;"></div>
     <!-- Radial cyan glow -->
     <div style="position:fixed;inset:0;z-index:0;pointer-events:none;
-                background:radial-gradient(ellipse 70% 55% at 50% 38%,rgba(0,208,255,.05) 0%,transparent 72%);"></div>
+                background:radial-gradient(ellipse 70% 55% at 50% 38%,rgba(var(--theme-primary-rgb),.05) 0%,transparent 72%);"></div>
 
     <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â SIDEBAR Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <aside id="sidebar-menu"
         class="fixed top-0 left-0 h-[100dvh] w-[280px] z-[100] glass-panel rounded-r-3xl flex flex-col transform -translate-x-full transition-transform duration-500 slide-ease border-l-0 shadow-[20px_0_50px_rgba(0,0,0,0.5)] bg-surface/85 !backdrop-blur-sm">
         <div class="p-6 pb-8">
             <span class="material-symbols-outlined text-[24px] text-primary"
-                style="text-shadow: 0 0 10px rgba(0,208,255,0.6);">menu</span>
+                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb),0.6);">menu</span>
         </div>
 
         <nav class="flex-1 px-4 flex flex-col gap-2">
@@ -682,7 +682,7 @@
                 <div id="view-scroll-track"
                     class="absolute top-2 bottom-2 right-[-24px] w-1.5 z-[20] opacity-0 translate-x-4 transition-all duration-300 pointer-events-none">
                     <div id="view-scroll-thumb"
-                        class="absolute top-0 right-0 w-full bg-[#00d0ff]/40 hover:bg-[#00d0ff] shadow-[0_0_15px_rgba(0,208,255,0.4)] backdrop-blur-md rounded-full cursor-pointer pointer-events-auto transition-colors duration-200">
+                        class="absolute top-0 right-0 w-full bg-primary/40 hover:bg-primary shadow-[0_0_15px_rgba(0,208,255,0.4)] backdrop-blur-md rounded-full cursor-pointer pointer-events-auto transition-colors duration-200">
                     </div>
                 </div>
                 <div id="form-side" class="fade-target">
@@ -971,7 +971,7 @@
                 startY = e.clientY;
                 startScrollTop = formSide.scrollTop;
                 document.body.style.userSelect = 'none';
-                viewThumb.classList.add('bg-[#00d0ff]');
+                viewThumb.classList.add('bg-primary');
             });
 
             document.addEventListener('mousemove', (e) => {
@@ -993,7 +993,7 @@
                 if (isDragging) {
                     isDragging = false;
                     document.body.style.userSelect = '';
-                    viewThumb.classList.remove('bg-[#00d0ff]');
+                    viewThumb.classList.remove('bg-primary');
                 }
             });
 

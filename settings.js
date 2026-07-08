@@ -421,7 +421,92 @@ function applyThemeSettings(settings) {
     const logoTypRGB = _hexToRGB(logoTypColor);
     const logoUserRGB = _hexToRGB(logoUserColor);
 
+    // Contrasting text color for labels on primary-filled buttons (Ready Up, Rematch, etc.)
+    const _accentLum = (() => {
+        const r = parseInt(p.accentPrimary.slice(1, 3), 16);
+        const g = parseInt(p.accentPrimary.slice(3, 5), 16);
+        const b = parseInt(p.accentPrimary.slice(5, 7), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    })();
+    const onPrimary = _accentLum > 0.55 ? _darkenColor(p.accentPrimary, 65) : '#ffffff';
+
+    // Escape a Tailwind arbitrary-value class for use inside a CSS stylesheet string
+    const _escTw = (cls) => cls
+        .replace(/\\/g, '\\\\')
+        .replace(/:/g, '\\:')
+        .replace(/\./g, '\\.')
+        .replace(/\//g, '\\/')
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/,/g, '\\,')
+        .replace(/#/g, '\\#');
+
+    // Build theme-aware overrides for every known hardcoded blue glow/shadow class
+    const shadowSpecs = [
+        ['shadow-[0_0_5px_rgba(108,218,255,0.3)]', `0 0 5px rgba(${accentRGB}, 0.3)`],
+        ['shadow-[0_0_8px_rgba(108,218,255,0.4)]', `0 0 8px rgba(${accentRGB}, 0.4)`],
+        ['shadow-[0_0_8px_rgba(0,208,255,0.3)]', `0 0 8px rgba(${accentRGB}, 0.3)`],
+        ['shadow-[0_0_10px_rgba(0,208,255,0)]', `0 0 10px rgba(${accentRGB}, 0)`],
+        ['shadow-[0_0_10px_rgba(0,208,255,0.2)]', `0 0 10px rgba(${accentRGB}, 0.2)`],
+        ['shadow-[0_0_10px_rgba(0,208,255,0.3)]', `0 0 10px rgba(${accentRGB}, 0.3)`],
+        ['shadow-[0_0_10px_rgba(0,208,255,0.4)]', `0 0 10px rgba(${accentRGB}, 0.4)`],
+        ['shadow-[0_0_10px_rgba(0,208,255,0.5)]', `0 0 10px rgba(${accentRGB}, 0.5)`],
+        ['shadow-[0_0_12px_rgba(0,208,255,0.25)]', `0 0 12px rgba(${accentRGB}, 0.25)`],
+        ['shadow-[0_0_15px_rgba(0,208,255,0.15)]', `0 0 15px rgba(${accentRGB}, 0.15)`],
+        ['shadow-[0_0_15px_rgba(0,208,255,0.4)]', `0 0 15px rgba(${accentRGB}, 0.4)`],
+        ['shadow-[0_0_20px_rgba(0,208,255,0.15)]', `0 0 20px rgba(${accentRGB}, 0.15)`],
+        ['shadow-[0_0_20px_rgba(0,208,255,0.3)]', `0 0 20px rgba(${accentRGB}, 0.3)`],
+        ['shadow-[0_0_20px_rgba(0,208,255,0.4)]', `0 0 20px rgba(${accentRGB}, 0.4)`],
+        ['shadow-[0_0_20px_rgba(0,208,255,0.15)]', `0 0 20px rgba(${accentRGB}, 0.15)`],
+        ['shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]', `inset 0 0 20px rgba(${accentRGB}, 0.05)`],
+        ['hover:shadow-[0_0_8px_rgba(0,208,255,0.4)]', `0 0 8px rgba(${accentRGB}, 0.4)`],
+        ['hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]', `0 0 10px rgba(${accentRGB}, 0.2)`],
+        ['hover:shadow-[0_0_10px_rgba(0,208,255,0.3)]', `0 0 10px rgba(${accentRGB}, 0.3)`],
+        ['hover:shadow-[0_0_15px_rgba(0,208,255,0.25)]', `0 0 15px rgba(${accentRGB}, 0.25)`],
+        ['hover:shadow-[0_0_15px_rgba(0,208,255,0.3)]', `0 0 15px rgba(${accentRGB}, 0.3)`],
+        ['hover:shadow-[0_0_15px_rgba(0,208,255,0.4)]', `0 0 15px rgba(${accentRGB}, 0.4)`],
+        ['hover:shadow-[0_0_20px_rgba(0,208,255,0.4)]', `0 0 20px rgba(${accentRGB}, 0.4)`],
+        ['hover:shadow-[0_0_30px_rgba(0,208,255,0.5)]', `0 0 30px rgba(${accentRGB}, 0.5)`],
+    ];
+    const dropShadowSpecs = [
+        ['drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', `drop-shadow(0 0 5px rgba(${accentRGB}, 0.4))`],
+        ['drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]', `drop-shadow(0 0 8px rgba(${accentRGB}, 0.4))`],
+        ['drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]', `drop-shadow(0 0 8px rgba(${accentRGB}, 0.8))`],
+        ['group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]', `drop-shadow(0 0 8px rgba(${accentRGB}, 0.8))`],
+        ['[text-shadow:0_0_10px_rgba(0,208,255,0.8)]', null], // text-shadow handled below
+        ['group-hover:[text-shadow:0_0_10px_rgba(0,208,255,0.8)]', null],
+    ];
+    const shadowOverrideCSS = shadowSpecs.map(([cls, val]) => {
+        if (cls.startsWith('hover:')) {
+            return `.${_escTw(cls)}:hover { box-shadow: ${val} !important; }`;
+        }
+        return `.${_escTw(cls)} { box-shadow: ${val} !important; }`;
+    }).join('\n        ');
+    const dropShadowOverrideCSS = dropShadowSpecs.filter(([, v]) => v).map(([cls, val]) => {
+        if (cls.startsWith('group-hover:')) {
+            return `.group:hover .${_escTw(cls)} { filter: ${val} !important; }`;
+        }
+        return `.${_escTw(cls)} { filter: ${val} !important; }`;
+    }).join('\n        ');
+
     const css = `
+        /* ── Theme CSS custom properties (usable by any page/JS) ── */
+        :root {
+            --theme-primary: ${p.accentPrimary};
+            --theme-primary-rgb: ${accentRGB};
+            --theme-primary-hover: ${p.accentHover};
+            --theme-primary-dark: ${accentDark};
+            --theme-primary-light: ${accentLight};
+            --theme-bg: ${p.bgMain};
+            --theme-bg-secondary: ${p.bgSecondary};
+            --theme-text: ${p.textPrimary};
+            --theme-text-muted: ${p.textMuted};
+            --theme-error: ${p.error};
+            --theme-error-rgb: ${errorRGB};
+        }
+
         /* ── Dynamic Font Family ── */
         html, body,
         input, button, select, textarea,
@@ -440,10 +525,27 @@ function applyThemeSettings(settings) {
         .text-primary { color: ${p.accentPrimary} !important; }
         .bg-primary { background-color: ${p.accentPrimary} !important; }
         .border-primary { border-color: ${p.accentPrimary} !important; }
+        .border-l-primary { border-left-color: ${p.accentPrimary} !important; }
         .text-primary-dark { color: ${accentDark} !important; }
         .bg-primary-dark { background-color: ${accentDark} !important; }
         .text-primary-light { color: ${accentLight} !important; }
         .bg-primary-light { background-color: ${accentLight} !important; }
+        .text-on-primary { color: ${onPrimary} !important; }
+        .text-background-dark { color: ${bgDark} !important; }
+
+        /* ── Gradient stop utilities (stats strip, podium cards, etc.) ── */
+        .from-primary {
+            --tw-gradient-from: ${p.accentPrimary} var(--tw-gradient-from-position) !important;
+            --tw-gradient-to: rgba(${accentRGB}, 0) var(--tw-gradient-to-position) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+        }
+        .to-primary {
+            --tw-gradient-to: ${p.accentPrimary} var(--tw-gradient-to-position) !important;
+        }
+        .via-primary {
+            --tw-gradient-via: ${p.accentPrimary} var(--tw-gradient-via-position) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+        }
 
         /* Surface */
         .bg-surface { background-color: ${p.bgSecondary} !important; }
@@ -475,14 +577,49 @@ function applyThemeSettings(settings) {
         .border-primary\\/30 { border-color: rgba(${accentRGB}, 0.3) !important; }
         .border-primary\\/40 { border-color: rgba(${accentRGB}, 0.4) !important; }
         .border-primary\\/50 { border-color: rgba(${accentRGB}, 0.5) !important; }
+        .border-primary\\/25 { border-color: rgba(${accentRGB}, 0.25) !important; }
         .text-primary\\/60 { color: rgba(${accentRGB}, 0.6) !important; }
+        .text-primary\\/70 { color: rgba(${accentRGB}, 0.7) !important; }
         .text-primary\\/80 { color: rgba(${accentRGB}, 0.8) !important; }
         .border-error\\/30 { border-color: rgba(${errorRGB}, 0.3) !important; }
+
+        /* ── Focus ring / border utilities (search bars, chat inputs, etc.) ── */
+        .focus\\:border-primary:focus { border-color: ${p.accentPrimary} !important; }
+        .focus\\:border-primary\\/50:focus { border-color: rgba(${accentRGB}, 0.5) !important; }
+        .focus\\:border-primary\\/60:focus { border-color: rgba(${accentRGB}, 0.6) !important; }
+        .focus\\:ring-primary\\/30:focus { --tw-ring-color: rgba(${accentRGB}, 0.3) !important; }
+        .focus\\:ring-primary\\/40:focus { --tw-ring-color: rgba(${accentRGB}, 0.4) !important; }
+        .focus\\:ring-1:focus { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color); box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important; }
+
+        /* Catch-all: any input/select carrying Tailwind focus:border-primary* classes */
+        input[class*="focus:border-primary"]:focus,
+        select[class*="focus:border-primary"]:focus,
+        textarea[class*="focus:border-primary"]:focus {
+            border-color: rgba(${accentRGB}, 0.5) !important;
+            outline: none !important;
+            --tw-ring-color: rgba(${accentRGB}, 0.3) !important;
+        }
+        input[class*="focus:ring-primary"]:focus,
+        select[class*="focus:ring-primary"]:focus {
+            --tw-ring-color: rgba(${accentRGB}, 0.35) !important;
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) rgba(${accentRGB}, 0.35) !important;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important;
+        }
+
+        /* Dedicated theme-aware focus class (preferred over Tailwind focus:border-primary) */
+        .theme-focus:focus,
+        .theme-focus:focus-visible {
+            border-color: rgba(${accentRGB}, 0.5) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 1px rgba(${accentRGB}, 0.35) !important;
+        }
 
         /* ── Hover variants ── */
         .hover\\:text-primary:hover { color: ${p.accentPrimary} !important; }
         .hover\\:bg-primary:hover { background-color: ${p.accentPrimary} !important; }
         .hover\\:bg-primary\\/20:hover { background-color: rgba(${accentRGB}, 0.2) !important; }
+        .hover\\:bg-primary\\/90:hover { background-color: rgba(${accentRGB}, 0.9) !important; }
+        .hover\\:text-on-primary:hover { color: ${onPrimary} !important; }
         .hover\\:border-primary:hover { border-color: ${p.accentPrimary} !important; }
         .hover\\:border-primary\\/30:hover { border-color: rgba(${accentRGB}, 0.3) !important; }
         .hover\\:border-primary\\/50:hover { border-color: rgba(${accentRGB}, 0.5) !important; }
@@ -491,14 +628,17 @@ function applyThemeSettings(settings) {
 
         /* ── Text shadow overrides for accent glow ── */
         [style*="text-shadow"][style*="0,208,255"],
+        [style*="text-shadow"][style*="0, 208, 255"],
         .text-primary[style*="text-shadow"] {
             text-shadow: 0 0 10px rgba(${accentRGB}, 0.6) !important;
         }
 
-        /* ── Shadow overrides ── */
-        .shadow-\\[0_0_15px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\] { box-shadow: 0 0 15px rgba(${accentRGB}, 0.4) !important; }
-        .shadow-\\[0_0_10px_rgba\\(0\\,208\\,255\\,0\\.3\\)\\] { box-shadow: 0 0 10px rgba(${accentRGB}, 0.3) !important; }
-        .hover\\:shadow-\\[0_0_15px_rgba\\(0\\,208\\,255\\,0\\.25\\)\\]:hover { box-shadow: 0 0 15px rgba(${accentRGB}, 0.25) !important; }
+        /* ── Exhaustive Tailwind JIT shadow / drop-shadow overrides ── */
+        ${shadowOverrideCSS}
+        ${dropShadowOverrideCSS}
+        .\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
+        .group:hover .group-hover\\:\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
+        .hover\\:\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\]:hover { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
 
         /* ── Base backgrounds ── */
         html { background-color: ${p.bgMain} !important; }
@@ -553,6 +693,9 @@ function applyThemeSettings(settings) {
         /* ── Logo layers (theme-aware) ── */
         .header-typ-layer  { background-color: ${logoTypColor} !important; }
         .header-user-layer { background-color: ${logoUserColor} !important; }
+        .header-typ-wrapper {
+            filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)) !important;
+        }
 
         /* Logo glow animations */
         @keyframes header-fade-typ {
@@ -598,7 +741,7 @@ function applyThemeSettings(settings) {
         /* ── Settings page: setting select, toggle ── */
         .setting-select { border-color: rgba(${accentRGB}, 0.25) !important; }
         .setting-select:hover { border-color: rgba(${accentRGB}, 0.5) !important; }
-        .toggle-track.on { background: ${p.accentPrimary} !important; box-shadow: 0 0 12px rgba(${accentRGB}, 0.4) !important; }
+        .toggle-track.on { background: ${p.accentPrimary} !important; border-color: ${p.accentPrimary} !important; box-shadow: 0 0 12px rgba(${accentRGB}, 0.4) !important; }
 
         /* ── Sign-in page side logo layers ── */
         .side-user-layer { background-color: ${logoUserColor} !important; }
@@ -635,20 +778,18 @@ function applyThemeSettings(settings) {
             filter: drop-shadow(0 0 8px rgba(${accentRGB}, 0.8)) !important;
         }
 
-        /* ── Tailwind JIT drop-shadow overrides ── */
-        .drop-shadow-\\[0_0_5px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\] { filter: drop-shadow(0 0 5px rgba(${accentRGB}, 0.4)) !important; }
-        .drop-shadow-\\[0_0_8px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { filter: drop-shadow(0 0 8px rgba(${accentRGB}, 0.8)) !important; }
-
-        /* ── Tailwind JIT text-shadow overrides ── */
-        .\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
-        .group:hover .group-hover\\:\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
-
         /* ── Tailwind JIT bg-[#00d0ff] overrides ── */
         .bg-\\[\\#00d0ff\\] { background-color: ${p.accentPrimary} !important; }
         .bg-\\[\\#00d0ff\\]\\\/40 { background-color: rgba(${accentRGB}, 0.4) !important; }
         .bg-\\[\\#00d0ff\\]\\\/60 { background-color: rgba(${accentRGB}, 0.6) !important; }
         .bg-\\[\\#00d0ff\\]\\\/20 { background-color: rgba(${accentRGB}, 0.2) !important; }
         .hover\\:bg-\\[\\#00d0ff\\]:hover { background-color: ${p.accentPrimary} !important; }
+
+        /* ── Tailwind blue-* utility remaps (friends page, etc.) ── */
+        .bg-blue-500 { background-color: ${p.accentPrimary} !important; }
+        .text-blue-400 { color: ${accentLight} !important; }
+        .bg-blue-400\\/10 { background-color: rgba(${accentRGB}, 0.1) !important; }
+        .border-blue-400\\/20 { border-color: rgba(${accentRGB}, 0.2) !important; }
 
         /* ── Inline style color overrides ── */
         [style*="background-color: #020016"] { background-color: ${p.bgMain} !important; }
@@ -659,13 +800,18 @@ function applyThemeSettings(settings) {
         [style*="background: #00d0ff"] { background: ${p.accentPrimary} !important; }
         [style*="background-color: #00d0ff"] { background-color: ${p.accentPrimary} !important; }
         [style*="background-color:#00d0ff"] { background-color: ${p.accentPrimary} !important; }
+        [style*="border"][style*="0,208,255"],
+        [style*="border"][style*="0, 208, 255"] { border-color: rgba(${accentRGB}, 0.35) !important; }
         [style*="border-color"][style*="0,208,255"] { border-color: rgba(${accentRGB}, 0.4) !important; }
         [style*="border-color"][style*="0, 208, 255"] { border-color: rgba(${accentRGB}, 0.4) !important; }
-        [style*="text-shadow"][style*="0, 208, 255"] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.6) !important; }
+        [style*="text-shadow"][style*="0, 208, 255"],
+        [style*="text-shadow"][style*="0,208,255"] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.6) !important; }
 
-        /* ── Inline box-shadow overrides ── */
+        /* ── Inline box-shadow overrides (primary-blue + light-cyan variants) ── */
         [style*="box-shadow"][style*="0,208,255"],
-        [style*="box-shadow"][style*="0, 208, 255"] {
+        [style*="box-shadow"][style*="0, 208, 255"],
+        [style*="box-shadow"][style*="108, 218, 255"],
+        [style*="box-shadow"][style*="108,218,255"] {
             box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
         }
 
@@ -789,12 +935,98 @@ function applyThemeSettings(settings) {
         [stroke="#00d0ff"] { stroke: ${p.accentPrimary} !important; }
         [fill="#00d0ff"] { fill: ${p.accentPrimary} !important; }
         [stop-color="#00d0ff"] { stop-color: ${p.accentPrimary} !important; }
+        [stroke="#6cdaff"] { stroke: ${accentLight} !important; }
+        [fill="#6cdaff"] { fill: ${accentLight} !important; }
+        [stop-color="#6cdaff"] { stop-color: ${accentLight} !important; }
 
         /* ── Leaderboards panel glow ── */
         .leaderboard-panel {
             box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
             border-color: rgba(${accentRGB}, 0.4) !important;
         }
+
+        /* ── Room / lobby accent surfaces ── */
+        .player-pill.me {
+            background: rgba(${accentRGB}, 0.08) !important;
+            border-color: rgba(${accentRGB}, 0.4) !important;
+            box-shadow: 0 0 20px rgba(${accentRGB}, 0.1) !important;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, ${p.accentPrimary}, ${accentLight}) !important;
+        }
+        .player-pill.me .progress-fill {
+            box-shadow: 0 0 8px rgba(${accentRGB}, 0.35) !important;
+        }
+        .player-node.is-ready .player-avatar-ring {
+            border-color: rgba(${accentRGB}, 0.85) !important;
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.55), 0 0 28px rgba(${accentRGB}, 0.2) !important;
+        }
+        .player-node.is-ready .player-ready-dot {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 6px rgba(${accentRGB}, 0.8) !important;
+        }
+        .neon-glow-primary { box-shadow: 0 0 15px rgba(${accentRGB}, 0.2) !important; }
+        .neon-glow-primary-strong { box-shadow: 0 0 25px rgba(${accentRGB}, 0.4) !important; }
+        .winner-glow {
+            box-shadow: 0 0 25px rgba(${accentRGB}, 0.12), 0 4px 30px rgba(0, 0, 0, 0.15) !important;
+            border-color: rgba(${accentRGB}, 0.15) !important;
+        }
+
+        /* ── Settings page leftover hardcoded accents ── */
+        #info-portal .info-title { color: ${p.accentPrimary} !important; }
+        .setting-info-btn:hover {
+            background: rgba(${accentRGB}, 0.12) !important;
+            border-color: rgba(${accentRGB}, 0.35) !important;
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.2) !important;
+        }
+        .setting-info-btn .material-symbols-outlined { color: ${p.accentPrimary} !important; }
+        .setting-select:focus {
+            border-color: rgba(${accentRGB}, 0.4) !important;
+            box-shadow: 0 0 0 2px rgba(${accentRGB}, 0.1) !important;
+        }
+        .search-input:focus {
+            border-color: rgba(${accentRGB}, 0.35) !important;
+            box-shadow: 0 0 0 2px rgba(${accentRGB}, 0.08) !important;
+        }
+
+        /* ── Settings page: setting cards, quick buttons, sliders ── */
+        .setting-card.active {
+            border-color: rgba(${accentRGB}, 0.3) !important;
+            box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
+            background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;
+        }
+        .quick-btn:hover {
+            background: rgba(${accentRGB}, 0.1) !important;
+            border-color: rgba(${accentRGB}, 0.3) !important;
+            color: ${p.accentPrimary} !important;
+            box-shadow: 0 0 12px rgba(${accentRGB}, 0.15) !important;
+        }
+        input[type="range"].custom-slider {
+            background-image: linear-gradient(${p.accentPrimary}, ${p.accentPrimary}), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+        }
+        input[type="range"].custom-slider::-webkit-slider-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"].custom-slider::-moz-range-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, 0.8), 0 0 15px rgba(${accentRGB}, 0.6) !important;
+        }
+        input[type="range"] {
+            background-image: linear-gradient(${p.accentPrimary}, ${p.accentPrimary}), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+        }
+
+        /* ── Find-match / dual accent widget stroke catch-alls ── */
+        [stroke="rgba(0,208,255,0.18)"] { stroke: rgba(${accentRGB}, 0.18) !important; }
+        [stroke="rgba(0, 208, 255, 0.18)"] { stroke: rgba(${accentRGB}, 0.18) !important; }
     `;
 
     let tag = document.getElementById('usertypo-theme-css');
@@ -806,6 +1038,12 @@ function applyThemeSettings(settings) {
     if (document.head) document.head.appendChild(tag);
 
     tag.textContent = css;
+
+    // Expose live accent for page scripts (copy flash, widgets, etc.)
+    try {
+        window.usertypo_themeAccent = p.accentPrimary;
+        window.usertypo_themeAccentRGB = accentRGB;
+    } catch { /* ignore */ }
 }
 
 
