@@ -1572,6 +1572,66 @@ function persistFromToggle(track) {
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  8b. LIVE SETTINGS SYNC — apply settings instantly across tabs / pages
+//
+//  Three mechanisms ensure changes made on the settings page are reflected
+//  immediately on the index page without requiring a manual reload:
+//
+//  1. `storage`          — fires when localStorage changes in ANOTHER tab
+//  2. `pageshow`         — fires on bfcache restoration (browser Back button)
+//  3. `visibilitychange` — fires when the user switches back to this tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Central helper: reload settings from localStorage and re-apply everything.
+ */
+function _reapplyAllSettings() {
+    const settings = loadSettings();
+    applyCursorSettings(settings);
+    applySoundscapeSettings(settings);
+    applyTestRulesSettings(settings);
+    applyKeyboardLayoutSettings(settings);
+    applyThemeSettings(settings);
+
+    // If we are on the settings page, also refresh the UI controls
+    if (document.querySelectorAll('[data-setting]').length > 0) {
+        restoreUI(settings);
+    }
+
+    // If we are on the index page and not currently typing, restart the test
+    // so new language / test-rule settings take effect
+    if (typeof restartTest === 'function' && typeof isTyping !== 'undefined' && !isTyping) {
+        restartTest();
+    }
+
+    // Re-init language if the language setting changed
+    if (typeof window._initLang === 'function') {
+        window._initLang();
+    }
+}
+
+// 1. Cross-tab sync: another tab (settings page) wrote to localStorage
+window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY) {
+        _reapplyAllSettings();
+    }
+});
+
+// 2. bfcache restoration: user hit Back to return to this page
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        _reapplyAllSettings();
+    }
+});
+
+// 3. Tab switch: user was on the settings tab and switched back here
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        _reapplyAllSettings();
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  9. KEYMAP RENDER LOGIC
 // ─────────────────────────────────────────────────────────────────────────────
 

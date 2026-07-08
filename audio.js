@@ -9,10 +9,10 @@ const SOUND_PACKS = {
 let audioBuffers = {};
 let currentPackLoaded = null;
 
-// AudioContext is still used ONLY for the synthesized error beep, not for playing files
+// Use Web Audio API for all sounds to guarantee zero latency
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-window.loadSoundPack = function loadSoundPack(packName) {
+window.loadSoundPack = async function loadSoundPack(packName) {
     if (currentPackLoaded === packName) return;
     const files = SOUND_PACKS[packName];
     if (!files) return;
@@ -20,22 +20,30 @@ window.loadSoundPack = function loadSoundPack(packName) {
     audioBuffers = {};
     currentPackLoaded = packName;
 
-    files.forEach(file => {
-        // Use encodeURI so paths with spaces load correctly on all browsers
-        const src = encodeURI(`Sound Packs/${packName}/${file}`);
-        const audio = new Audio(src);
-        
-        // Simple key mapping based on filename
-        let key = file.replace('.wav', '').toLowerCase();
-        if (key.includes('space')) key = 'space';
-        else if (key.includes('ent')) key = 'enter';
-        else if (key.includes('back')) key = 'backspace';
-        else if (key.match(/^[a-z]$/)) key = key;
-        else key = 'generic'; // fallback generic key
+    const loadPromises = files.map(async file => {
+        try {
+            // Use encodeURI so paths with spaces load correctly on all browsers
+            const src = encodeURI(`Sound Packs/${packName}/${file}`);
+            const response = await fetch(src);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            
+            // Simple key mapping based on filename
+            let key = file.replace('.wav', '').toLowerCase();
+            if (key.includes('space')) key = 'space';
+            else if (key.includes('ent')) key = 'enter';
+            else if (key.includes('back')) key = 'backspace';
+            else if (key.match(/^[a-z]$/)) key = key;
+            else key = 'generic'; // fallback generic key
 
-        if (!audioBuffers[key]) audioBuffers[key] = [];
-        audioBuffers[key].push(audio);
+            if (!audioBuffers[key]) audioBuffers[key] = [];
+            audioBuffers[key].push(audioBuffer);
+        } catch (e) {
+            console.error('Error loading audio file', file, e);
+        }
     });
+
+    await Promise.all(loadPromises);
 };
 
 window.playErrorSound = function (keyName) {
@@ -91,14 +99,22 @@ window.playKeystrokeSound = function (keyName) {
     if (!buffers || buffers.length === 0) buffers = audioBuffers['generic'];
     if (!buffers || buffers.length === 0) return;
 
-    const audioObj = buffers[Math.floor(Math.random() * buffers.length)];
+    const audioBuffer = buffers[Math.floor(Math.random() * buffers.length)];
     
-    // Clone the audio element to allow overlapping sounds for fast typing
-    const clone = audioObj.cloneNode();
-    clone.volume = (settings.masterVolume || 50) / 100;
-    clone.playbackRate = 0.95 + Math.random() * 0.1; // slight pitch variation
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
     
-    clone.play().catch(e => console.error("Error playing keystroke sound", e));
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = (settings.masterVolume || 50) / 100;
+    
+    source.playbackRate.value = 0.95 + Math.random() * 0.1; // slight pitch variation
+    
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    source.start(0);
 };
 
 // Pre-load sound pack on page load so first keypress is never silent
