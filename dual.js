@@ -1,49 +1,106 @@
 /**
  * usertypo_ Dual — global match-request state & floating indicator
  * Persists across pages via localStorage and drives card + corner UI.
+ *
+ * Matchmaking modes:
+ *  - challenge: friend-card invite → accept pill → click to join
+ *  - matchmaking: Find Match → search spinner → countdown → auto-join
  */
 (function () {
+    // Prevent a second (stale/cached) copy of this file from wiping matchmaking state.
+    const SCRIPT_VERSION = 4;
+    if (window.__USERTYPO_DUAL_MATCH_VERSION__ >= SCRIPT_VERSION) return;
+    if (window.__USERTYPO_DUAL_MATCH_VERSION__) {
+        try { window.DualMatch && window.DualMatch._stopTicker && window.DualMatch._stopTicker(); } catch (_) {}
+    }
+    window.__USERTYPO_DUAL_MATCH_VERSION__ = SCRIPT_VERSION;
+
     const STORAGE_KEY = 'usertypo_dual_request';
     const PENDING_MS = 30000;
     const PILL_MS = 3000;
     const DISMISS_AFTER_ACCEPT_MS = 60000;
     const TICK_MS = 250;
 
+    // Matchmaking ("Find Match"): after searching, count down 3→0 then connect.
+    const CONNECT_SECONDS = 3;
+    const CONNECT_MS = (CONNECT_SECONDS + 1) * 1000; // shows 3,2,1,0 then joins
+
+    const RANDOM_OPPONENTS = [
+        'SpeedDemon', 'QuickKeys', 'NeonRacer', 'GhostByte', 'RapidFire',
+        'KeyStorm', 'FlashType', 'TypeMaster', 'ByteRunner', 'ZeroLatency'
+    ];
+
     const WIDGET_ID = 'dual-global-widget';
     const STYLE_ID = 'dual-global-styles';
 
     let tickTimer = null;
+    // In-memory copy wins over localStorage so a stale dual.js on another tab
+    // cannot clear an active matchmaking session mid-search.
+    let memoryRequest = null;
+    let joining = false;
 
-    function loadRequest() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch {
-            return null;
-        }
-    }
-
-    function saveRequest(data) {
-        if (data) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        else localStorage.removeItem(STORAGE_KEY);
+    function randomOpponentName() {
+        return RANDOM_OPPONENTS[Math.floor(Math.random() * RANDOM_OPPONENTS.length)];
     }
 
     function now() {
         return Date.now();
     }
 
+    function isMatchmakingRequest(request) {
+        if (!request) return false;
+        return request.mode === 'matchmaking'
+            || request.status === 'searching'
+            || request.status === 'found';
+    }
+
+    function loadRequest() {
+        if (memoryRequest) return memoryRequest;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            memoryRequest = JSON.parse(raw);
+            return memoryRequest;
+        } catch {
+            return null;
+        }
+    }
+
+    function saveRequest(data) {
+        memoryRequest = data || null;
+        try {
+            if (data) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            else localStorage.removeItem(STORAGE_KEY);
+        } catch { /* ignore quota/private-mode */ }
+    }
+
     function getPhase(request) {
         if (!request) return 'none';
 
-        const elapsed = now() - request.sentAt;
+        const elapsed = now() - (Number(request.sentAt) || 0);
 
+        // Matchmaking: searching → connecting (countdown) → connect (join)
+        if (isMatchmakingRequest(request)) {
+            const status = request.status;
+            if (status === 'found') {
+                const foundAt = Number(request.foundAt) || (Number(request.sentAt) + PENDING_MS);
+                const sinceFound = now() - foundAt;
+                if (sinceFound >= CONNECT_MS) return 'connect';
+                return 'connecting';
+            }
+            // searching (or any other matchmaking status still waiting)
+            if (elapsed >= PENDING_MS) return 'connecting';
+            return 'searching';
+        }
+
+        // Challenge (friend card)
         if (request.status === 'pending') {
             if (elapsed >= PENDING_MS) return 'pill';
             return 'loading';
         }
 
         if (request.status === 'accepted') {
-            const sinceAccept = now() - request.acceptedAt;
+            const sinceAccept = now() - (Number(request.acceptedAt) || 0);
             if (sinceAccept >= DISMISS_AFTER_ACCEPT_MS) return 'expired';
             if (sinceAccept < PILL_MS) return 'pill';
             return 'circle';
@@ -53,12 +110,30 @@
     }
 
     function ensureAccepted(request) {
-        if (request.status === 'pending' && now() - request.sentAt >= PENDING_MS) {
+        if (!request) return request;
+
+        if (isMatchmakingRequest(request)) {
+            if (request.status !== 'found' && now() - (Number(request.sentAt) || 0) >= PENDING_MS) {
+                request.status = 'found';
+                request.mode = 'matchmaking';
+                request.foundAt = (Number(request.sentAt) || now()) + PENDING_MS;
+                saveRequest(request);
+            }
+            return request;
+        }
+
+        if (request.status === 'pending' && now() - (Number(request.sentAt) || 0) >= PENDING_MS) {
             request.status = 'accepted';
-            request.acceptedAt = request.sentAt + PENDING_MS;
+            request.acceptedAt = (Number(request.sentAt) || now()) + PENDING_MS;
             saveRequest(request);
         }
         return request;
+    }
+
+    function connectSecondsLeft(request) {
+        const foundAt = Number(request.foundAt) || ((Number(request.sentAt) || now()) + PENDING_MS);
+        const sinceFound = now() - foundAt;
+        return Math.max(0, CONNECT_SECONDS - Math.floor(sinceFound / 1000));
     }
 
     // Read the current theme accent color from a probe element so the
@@ -105,7 +180,7 @@
         style.textContent = `
             #${WIDGET_ID} {
                 position: fixed;
-                z-index: 55;
+                z-index: 9999;
                 right: 2rem;
                 bottom: 2rem;
                 pointer-events: none;
@@ -255,7 +330,7 @@
             const request = loadRequest();
             if (!request) return;
             const phase = getPhase(ensureAccepted(request));
-            if (phase === 'circle' || phase === 'pill') {
+            if (phase === 'circle' || phase === 'pill' || phase === 'connecting' || phase === 'connect') {
                 joinDual(request);
             }
         });
@@ -279,8 +354,25 @@
         request = ensureAccepted(request);
         const phase = getPhase(request);
 
-        if (phase === 'expired' || phase === 'none') {
+        // Never wipe an active matchmaking / challenge request as "unknown".
+        // Older dual.js versions mistook status:"searching" for garbage and
+        // called clearRequest(), which is the flash-then-disappear bug.
+        if (phase === 'expired') {
             clearRequest();
+            return;
+        }
+        if (phase === 'none') {
+            if (isMatchmakingRequest(request) || request.status === 'pending' || request.status === 'accepted') {
+                setWidgetVisible(true);
+                return;
+            }
+            clearRequest();
+            return;
+        }
+
+        // Matchmaking countdown finished → auto-join the match
+        if (phase === 'connect') {
+            joinDual(request);
             return;
         }
 
@@ -298,9 +390,9 @@
             widget.dataset.phase = phase;
             btn.classList.remove('is-pill', 'is-clickable');
 
-            if (phase === 'loading') {
+            if (phase === 'loading' || phase === 'searching') {
                 icon.innerHTML = spinnerMarkup();
-                btn.setAttribute('aria-label', 'Waiting for match response');
+                btn.setAttribute('aria-label', phase === 'searching' ? 'Searching for a match' : 'Waiting for match response');
             } else if (phase === 'pill') {
                 icon.innerHTML = '<span class="material-symbols-outlined text-[22px] text-green-400">check_circle</span>';
                 btn.classList.add('is-pill', 'is-clickable');
@@ -309,8 +401,17 @@
                 icon.innerHTML = '<span class="material-symbols-outlined text-[22px]">swords</span>';
                 btn.classList.add('is-clickable');
                 btn.setAttribute('aria-label', 'Join dual match');
+            } else if (phase === 'connecting') {
+                icon.innerHTML = '<span class="material-symbols-outlined text-[22px] text-green-400">check_circle</span>';
+                btn.classList.add('is-pill', 'is-clickable');
+                btn.setAttribute('aria-label', 'Match found. Connecting.');
             }
+        }
 
+        // Live label text (updated every tick for the connecting countdown)
+        if (phase === 'connecting') {
+            label.textContent = `Match Found. Connecting in ${connectSecondsLeft(request)}...`;
+        } else {
             label.textContent = 'Match Accepted. Click here to join';
         }
     }
@@ -364,6 +465,8 @@
     }
 
     function clearRequest() {
+        // Keep matchmaking alive unless an explicit revoke flag is passed —
+        // call with { force: true } when the match actually starts (dual.html).
         saveRequest(null);
         document.querySelectorAll('.dual-card-loading-corner').forEach(el => el.remove());
         const w = document.getElementById(WIDGET_ID);
@@ -371,22 +474,51 @@
         setWidgetVisible(false);
     }
 
+    function clearRequestSafe(opts) {
+        const force = opts && opts.force;
+        const request = loadRequest();
+        // Don't let stale cross-tab / old dual.js wipe an active search.
+        if (!force && isMatchmakingRequest(request)) {
+            const phase = getPhase(ensureAccepted(request));
+            if (phase === 'searching' || phase === 'connecting') return;
+        }
+        clearRequest();
+    }
+
     function joinDual(request) {
+        if (joining) return;
+        joining = true;
         const params = new URLSearchParams({
             mode: request.config?.mode || 'time',
-            amount: request.config?.amount || 30,
+            amount: String(request.config?.amount || 30),
             lang: request.config?.lang || 'english',
             punct: request.config?.punct || '0',
             nums: request.config?.nums || '1',
-            opponent: request.friendName || '',
+            opponent: request.friendName || request.config?.opponent || 'Opponent',
             avatar: request.config?.avatar || ''
         });
+        // Clear after we've committed to navigation so a tick can't race it.
+        clearRequest();
         window.location.href = `dual.html?${params.toString()}`;
+    }
+
+    function stopTicker() {
+        if (tickTimer) {
+            clearInterval(tickTimer);
+            tickTimer = null;
+        }
     }
 
     function startTicker() {
         if (tickTimer) return;
         tickTimer = setInterval(() => {
+            // Rehydrate from localStorage if memory was wiped externally
+            if (!memoryRequest) {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) memoryRequest = JSON.parse(raw);
+                } catch { /* ignore */ }
+            }
             const request = loadRequest();
             if (!request) {
                 setWidgetVisible(false);
@@ -403,13 +535,35 @@
 
     function sendRequest(friendName, config) {
         const data = {
+            mode: 'challenge',
             friendName,
             status: 'pending',
             sentAt: now(),
             acceptedAt: null,
             config: config || {}
         };
+        joining = false;
         saveRequest(data);
+        renderAll();
+        startTicker();
+        return data;
+    }
+
+    function sendMatchmaking(config) {
+        const opponent = randomOpponentName();
+        const data = {
+            mode: 'matchmaking',
+            status: 'searching',
+            sentAt: now(),
+            foundAt: null,
+            config: Object.assign({}, config || {}, { opponent })
+        };
+        joining = false;
+        saveRequest(data);
+        // Persist a durable mark so even a stale dual.js can't mistreat this.
+        try {
+            localStorage.setItem(STORAGE_KEY + '_active', String(now()));
+        } catch { /* ignore */ }
         renderAll();
         startTicker();
         return data;
@@ -417,13 +571,16 @@
 
     window.DualMatch = {
         sendRequest,
-        clearRequest,
+        sendMatchmaking,
+        clearRequest: clearRequestSafe,
         loadRequest,
         getPhase: () => getPhase(ensureAccepted(loadRequest())),
-        refresh: renderAll
+        refresh: renderAll,
+        _stopTicker: stopTicker,
+        version: SCRIPT_VERSION
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function boot() {
         document.querySelectorAll('.friend-card').forEach(card => {
             const name = card.querySelector('h3')?.textContent?.trim();
             if (name) card.dataset.friendName = name;
@@ -431,9 +588,28 @@
 
         renderAll();
         if (loadRequest()) startTicker();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
 
     window.addEventListener('storage', (e) => {
-        if (e.key === STORAGE_KEY) renderAll();
+        if (e.key !== STORAGE_KEY) return;
+        // Prefer keeping our in-memory matchmaking session if another tab
+        // (running an older dual.js) tried to wipe localStorage.
+        if (!e.newValue && isMatchmakingRequest(memoryRequest)) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryRequest)); } catch { /* ignore */ }
+            renderAll();
+            return;
+        }
+        if (e.newValue) {
+            try { memoryRequest = JSON.parse(e.newValue); } catch { memoryRequest = null; }
+        } else if (!memoryRequest) {
+            memoryRequest = null;
+        }
+        renderAll();
     });
 })();

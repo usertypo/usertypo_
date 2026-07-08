@@ -1397,7 +1397,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Clear the pending dual invite indicator now that the match started
             if (window.DualMatch && typeof window.DualMatch.clearRequest === 'function') {
-                window.DualMatch.clearRequest();
+                window.DualMatch.clearRequest({ force: true });
             }
 
             applyConfigIcons();
@@ -1450,7 +1450,7 @@
     </script>
 
     <!-- Apply saved settings globally (caret style, theme, sounds, fonts) -->
-    <script src="dual.js"></script>
+    <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
 </body>
 
