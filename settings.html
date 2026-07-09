@@ -1307,7 +1307,7 @@
                                                     <div class="flex gap-2 flex-wrap"
                                                         data-setting="cursor.paceCaretStyle">
                                                         <button
-                                                            class="opt-btn active flex items-center justify-center min-w-[2.5rem]"
+                                                            class="opt-btn flex items-center justify-center min-w-[2.5rem]"
                                                             title="Line" onclick="selectOpt(this)">
                                                             <div class="w-0.5 h-3.5 bg-current"></div>
                                                         </button>
@@ -1317,7 +1317,7 @@
                                                             <div class="w-2 h-3.5 bg-current"></div>
                                                         </button>
                                                         <button
-                                                            class="opt-btn flex items-center justify-center min-w-[2.5rem]"
+                                                            class="opt-btn active flex items-center justify-center min-w-[2.5rem]"
                                                             title="Underscore" onclick="selectOpt(this)">
                                                             <div class="w-2 h-0.5 bg-current translate-y-[5px]"></div>
                                                         </button>
@@ -1385,6 +1385,34 @@
                                         <div class="flex gap-2 flex-wrap" data-setting="cursor.tapeMode">
                                             <button class="opt-btn active" onclick="selectOpt(this)">Off</button>
                                             <button class="opt-btn" onclick="selectOpt(this)">Letter</button>
+                                            <button class="opt-btn" onclick="selectOpt(this)">Word</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-2 relative">
+                                        <div class="flex items-center gap-2">
+                                            <label
+                                                class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Tape
+                                                Mode in Dual</label>
+                                            <div
+                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                <span
+                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                <div
+                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                    <div
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        How it works
+                                                    </div>
+                                                    Same as Tape Mode, but applies only to the test view on the dual
+                                                    match page. Does not affect the main typing test on the home page.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 flex-wrap" data-setting="cursor.tapeModeInDual">
+                                            <button class="opt-btn" onclick="selectOpt(this)">Off</button>
+                                            <button class="opt-btn active" onclick="selectOpt(this)">Letter</button>
                                             <button class="opt-btn" onclick="selectOpt(this)">Word</button>
                                         </div>
                                     </div>
@@ -5004,6 +5032,7 @@
     <!-- Settings State Management & Global Application -->
     <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
+    <script src="settings-search.js"></script>
 </body>
 
 </html>

@@ -1008,6 +1008,7 @@
     <script src="audio.js"></script>
     <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
+    <script src="settings-search.js"></script>
     <script src="screenshot.js"></script>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1451,6 +1452,16 @@
 
         let isTyping = false;
         let testComplete = false;
+
+        window.usertypo_testRuntime = {
+            isActive() { return isTyping && !testComplete; },
+            isTyping() { return isTyping; },
+        };
+
+        window.usertypo_getKeymapRenderArgs = () => ({
+            useNumbers: roomUseNums,
+            usePunctuation: roomUsePunct,
+        });
         let startTime = null;
 
         let totalKeystrokes = 0;

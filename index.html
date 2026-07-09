@@ -418,6 +418,23 @@
             border-radius: 9999px;
         }
 
+        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
+        #pace-caret {
+            position: absolute;
+            pointer-events: none;
+            left: 0;
+            top: 0;
+            z-index: 9;
+            height: 1.2em;
+            opacity: 0;
+            will-change: transform, width, opacity;
+        }
+
+        #pace-caret.hidden {
+            opacity: 0 !important;
+            visibility: hidden;
+        }
+
         /* --- TEXT CONTAINER WITH SLOW OPACITY FADE AND NEW SCROLL TRANSITION --- */
         #text-container {
             display: flex;
@@ -862,6 +879,7 @@
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
                             <div id="text-container" class="relative w-full transition-all duration-300">
+                                <span id="pace-caret" class="hidden"></span>
                                 <span id="caret"
                                     class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
                             </div>
@@ -1287,40 +1305,6 @@
         </div>
     </div>
 
-    <div id="cmd-modal"
-        class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 bg-background/80 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] transform scale-95 transition-transform duration-300"
-            id="cmd-box">
-            <div class="flex items-center border-b border-white/10 pb-4 mb-4 text-primary font-mono text-sm gap-2">
-                <span class="material-symbols-outlined">terminal</span>
-                <span>Command Palette</span>
-            </div>
-            <div class="flex flex-col gap-2 font-mono text-sm">
-                <div
-                    class="flex justify-between items-center p-3 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition-colors">
-                    <span>Restart Test</span>
-                    <kbd
-                        class="bg-surface-light border border-white/10 px-2 py-1 rounded text-xs text-primary">Tab</kbd>
-                </div>
-
-                <div
-                    class="flex justify-between items-center p-3 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition-colors">
-                    <span>Next Test</span>
-                    <kbd
-                        class="bg-surface-light border border-white/10 px-2 py-1 rounded text-xs text-primary">Enter</kbd>
-                </div>
-                <div class="flex justify-between items-center p-3 rounded-lg hover:bg-white/5 cursor-pointer text-slate-300 hover:text-white transition-colors"
-                    onclick="openCustomPrompt(); toggleCmdModal();">
-                    <span>Custom Shortcut</span>
-                    <kbd
-                        class="bg-surface-light border border-white/10 px-2 py-1 rounded text-xs text-primary">Custom</kbd>
-                </div>
-            </div>
-            <div class="mt-6 text-center text-xs text-slate-500 font-sans">Press <kbd
-                    class="px-1 bg-surface-light rounded">Esc</kbd> to close</div>
-        </div>
-    </div>
-
     <script src="languages.js"></script>
     <script>
         // --- DATA & STATE ---
@@ -1339,9 +1323,18 @@
         let lineHeight = 0;
 
         let isTyping = false;
-        let isCmdModalOpen = false;
         let isRestarting = false;
         let testComplete = false;
+
+        window.usertypo_testRuntime = {
+            isActive() { return isTyping && !testComplete; },
+            isTyping() { return isTyping; },
+        };
+
+        window.usertypo_getKeymapRenderArgs = () => ({
+            useNumbers,
+            usePunctuation,
+        });
 
         let startTime = null;
 
@@ -1384,14 +1377,13 @@
         const typingArea = document.getElementById('typing-area');
         const textContainer = document.getElementById('text-container');
         const caret = document.getElementById('caret');
+        const paceCaretEl = document.getElementById('pace-caret');
         const wpmDisplay = document.getElementById('wpm-display');
         const accDisplay = document.getElementById('acc-display');
         const burstDisplay = document.getElementById('burst-display');
         const wordProgressDisplay = document.getElementById('word-progress');
         const zenElements = document.querySelectorAll('.zen-element');
         const configBar = document.getElementById('config-bar');
-        const cmdModal = document.getElementById('cmd-modal');
-        const cmdBox = document.getElementById('cmd-box');
 
         // --- TEST RULES HELPERS ---
         // Read a test rule from the settings store (loaded by settings.js)
@@ -1909,6 +1901,8 @@
                 lastKeystrokeTime = null;
                 avgInterKeyInterval = 150;
                 typedCharsMap = {};
+                isPaceRepeat = false;
+                resetPaceCaret();
                 // Hide fail overlay on restart
                 const dfo = document.getElementById('difficulty-fail-overlay');
                 if (dfo) dfo.classList.add('hidden');
@@ -1944,6 +1938,8 @@
                 }
 
                 renderText();
+                initPaceCaret();
+                resetPaceCaretPosition();
 
                 requestAnimationFrame(() => {
                     updateCaretPosition();
@@ -2057,6 +2053,7 @@
 
             handleScroll();
         }
+        window.updateLineLayout = updateLineLayout;
 
         function handleScroll() {
             const currentWordEl = document.getElementById(`word-${currentWordIndex}`);
@@ -2128,6 +2125,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
+            if (window.usertypo_settingsSearch?.isOpen()) return;
             if (isTyping && !testComplete) {
                 hideZenElements();
             }
@@ -2140,13 +2138,7 @@
                 updateKeymapHighlight(e.key, true);
             }
 
-            if (e.key === 'Escape') {
-                toggleCmdModal();
-                return;
-            }
-            if (isCmdModalOpen) return;
-
-            // â”€â”€ Quick Restart: Tab â”€â”€
+            // ── Quick Restart: Tab ──
             const quickRestart = getTestRule('quickRestart');
 
             if (e.key === 'Tab') {
@@ -2363,6 +2355,10 @@
                 lastKeystrokeTime = spaceNow;
 
                 const currentWordText = generatedWords[currentWordIndex];
+
+                if (paceCaretSettings) {
+                    handlePaceCaretSpace(isCurrentWordCorrectForPace(), currentWordText);
+                }
 
                 // â”€â”€ Indicate Typos: show what user actually typed â”€â”€
                 const indicateTypos = getTestRule('indicateTypos');
@@ -2683,6 +2679,271 @@
                 updateKeymapHighlight();
             }
         }
+        window.updateCaretPosition = updateCaretPosition;
+
+        // --- PACE CARET (monkeytype-style replay ghost caret) ---
+        let paceCaretSettings = null;
+        let paceCaretStartTimestamp = 0;
+        let lastTestWpm = 0;
+        let isPaceRepeat = false;
+
+        function getCursorSettings() {
+            return (window.usertypo_settings || {}).cursor || {};
+        }
+
+        function setLastTestWpm(wpm) {
+            if (!isPaceRepeat || (isPaceRepeat && wpm > lastTestWpm)) {
+                lastTestWpm = wpm;
+            }
+        }
+
+        function shouldUsePaceCaret() {
+            const cursor = getCursorSettings();
+            const mode = (cursor.paceCaretMode || 'off').toLowerCase();
+            const repeatedPace = cursor.repeatedPace !== false;
+            return mode !== 'off' || (repeatedPace && isPaceRepeat);
+        }
+
+        function resolvePaceCaretWpm() {
+            const cursor = getCursorSettings();
+            const mode = (cursor.paceCaretMode || 'off').toLowerCase();
+
+            if (mode === 'custom') return cursor.paceCaretCustomSpeed || 100;
+            if (mode === 'average' || mode === 'pb' || mode === 'daily') return lastTestWpm;
+            if (mode === 'last' || isPaceRepeat) return lastTestWpm;
+            return 0;
+        }
+
+        function showPaceCaret() {
+            if (!paceCaretEl) return;
+            paceCaretEl.classList.remove('hidden');
+            paceCaretEl.style.visibility = '';
+        }
+
+        function hidePaceCaret() {
+            if (!paceCaretEl) return;
+            paceCaretEl.classList.add('hidden');
+            paceCaretEl.style.visibility = 'hidden';
+        }
+
+        function resetPaceCaret() {
+            if (paceCaretSettings?.timeout != null) {
+                clearTimeout(paceCaretSettings.timeout);
+            }
+            paceCaretSettings = null;
+            paceCaretStartTimestamp = 0;
+            hidePaceCaret();
+        }
+
+        function initPaceCaret() {
+            hidePaceCaret();
+            if (!shouldUsePaceCaret()) {
+                paceCaretSettings = null;
+                return;
+            }
+
+            const wpm = resolvePaceCaretWpm();
+            if (!wpm || wpm < 1 || Number.isNaN(wpm)) {
+                paceCaretSettings = null;
+                return;
+            }
+
+            const characters = wpm * 5;
+            const spc = 60 / characters;
+
+            paceCaretSettings = {
+                wpm,
+                spc,
+                correction: 0,
+                currentWordIndex: 0,
+                currentLetterIndex: 0,
+                wordsStatus: {},
+                timeout: null,
+            };
+        }
+
+        function resetPaceCaretPosition() {
+            if (!shouldUsePaceCaret() || !paceCaretSettings) return;
+            hidePaceCaret();
+            paceCaretSettings.currentWordIndex = 0;
+            paceCaretSettings.currentLetterIndex = 0;
+            paceCaretSettings.correction = 0;
+            paceCaretSettings.wordsStatus = {};
+        }
+
+        function getPaceCaretStyle() {
+            return (getCursorSettings().paceCaretStyle || 'underscore').toLowerCase();
+        }
+
+        function applyPaceCaretDimensions(rect) {
+            const style = getPaceCaretStyle();
+            if (style === 'line') {
+                paceCaretEl.style.width = '2.5px';
+            } else {
+                // underscore, block, outline — ::after underline spans the character width
+                paceCaretEl.style.width = `${rect.width}px`;
+            }
+        }
+
+        function incrementPaceLetterIndex() {
+            if (!paceCaretSettings) return;
+
+            try {
+                const wordText = generatedWords[paceCaretSettings.currentWordIndex];
+                if (!wordText) {
+                    paceCaretSettings = null;
+                    hidePaceCaret();
+                    return;
+                }
+
+                if (paceCaretSettings.currentLetterIndex >= wordText.length) {
+                    paceCaretSettings.currentLetterIndex = -1;
+                    paceCaretSettings.currentWordIndex++;
+                }
+                paceCaretSettings.currentLetterIndex++;
+
+                if (paceCaretSettings.correction < 0) {
+                    while (paceCaretSettings.correction < 0) {
+                        paceCaretSettings.currentLetterIndex--;
+                        if (paceCaretSettings.currentLetterIndex <= -1) {
+                            const prevWord = generatedWords[paceCaretSettings.currentWordIndex - 1];
+                            if (!prevWord) throw new Error('pace caret out of words');
+                            paceCaretSettings.currentLetterIndex = prevWord.length;
+                            paceCaretSettings.currentWordIndex--;
+                        }
+                        paceCaretSettings.correction++;
+                    }
+                } else if (paceCaretSettings.correction > 0) {
+                    while (paceCaretSettings.correction > 0) {
+                        const curWord = generatedWords[paceCaretSettings.currentWordIndex];
+                        if (!curWord) throw new Error('pace caret out of words');
+                        paceCaretSettings.currentLetterIndex++;
+                        if (paceCaretSettings.currentLetterIndex >= curWord.length + 1) {
+                            paceCaretSettings.currentLetterIndex = 0;
+                            paceCaretSettings.currentWordIndex++;
+                        }
+                        paceCaretSettings.correction--;
+                    }
+                }
+            } catch (e) {
+                paceCaretSettings = null;
+                hidePaceCaret();
+            }
+        }
+
+        function goToPaceCaretPosition(wordIndex, charIndex, animate) {
+            if (!paceCaretEl || !paceCaretSettings) return;
+
+            const currentWordEl = document.getElementById(`word-${wordIndex}`);
+            if (!currentWordEl) {
+                hidePaceCaret();
+                return;
+            }
+
+            const wordText = generatedWords[wordIndex] || '';
+            const wordLength = wordText.length;
+
+            let isAfter = false;
+            let targetCharIndex = charIndex;
+
+            if (targetCharIndex >= wordLength) {
+                isAfter = true;
+                targetCharIndex = Math.max(0, wordLength - 1);
+            }
+            if (targetCharIndex < 0) targetCharIndex = 0;
+
+            let targetEl = document.getElementById(`char-${wordIndex}-${targetCharIndex}`);
+            if (!targetEl) targetEl = currentWordEl;
+
+            const rect = targetEl.getBoundingClientRect();
+            const containerRect = textContainer.getBoundingClientRect();
+
+            let left = rect.left - containerRect.left;
+            let top = rect.top - containerRect.top;
+            if (isAfter) left += rect.width;
+
+            if (!animate) {
+                paceCaretEl.style.transition = 'none';
+            } else {
+                paceCaretEl.style.removeProperty('transition');
+            }
+
+            applyPaceCaretDimensions(rect);
+            paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+
+            if (!animate) {
+                void paceCaretEl.offsetWidth;
+                paceCaretEl.style.removeProperty('transition');
+            }
+        }
+
+        function paceCaretUpdate(expectedStepEnd) {
+            const currentSettings = paceCaretSettings;
+            if (!currentSettings || !isTyping || testComplete) return;
+
+            incrementPaceLetterIndex();
+            if (!paceCaretSettings || paceCaretSettings !== currentSettings) return;
+
+            goToPaceCaretPosition(
+                currentSettings.currentWordIndex,
+                currentSettings.currentLetterIndex,
+                true
+            );
+
+            const now = performance.now();
+            const absoluteStepEnd = paceCaretStartTimestamp + expectedStepEnd;
+            const duration = Math.max(0, absoluteStepEnd - now);
+
+            currentSettings.timeout = setTimeout(() => {
+                if (paceCaretSettings !== currentSettings) return;
+                paceCaretUpdate(expectedStepEnd + (currentSettings.spc * 1000));
+            }, duration);
+        }
+
+        function startPaceCaret() {
+            if (!paceCaretSettings) return;
+            paceCaretStartTimestamp = performance.now();
+            goToPaceCaretPosition(0, 0, false);
+            showPaceCaret();
+            paceCaretUpdate(paceCaretSettings.spc * 1000);
+        }
+
+        window.refreshPaceCaretVisual = function () {
+            if (!paceCaretSettings || !isTyping || paceCaretEl.classList.contains('hidden')) return;
+            goToPaceCaretPosition(
+                paceCaretSettings.currentWordIndex,
+                paceCaretSettings.currentLetterIndex,
+                false
+            );
+        };
+
+        function isCurrentWordCorrectForPace() {
+            const wordText = generatedWords[currentWordIndex];
+            if (!wordText) return false;
+            if (currentCharIndex < wordText.length) return false;
+            const wordEl = document.getElementById(`word-${currentWordIndex}`);
+            if (!wordEl) return false;
+            if (wordEl.querySelectorAll('.extra').length > 0) return false;
+            for (let i = 0; i < wordText.length; i++) {
+                const cEl = document.getElementById(`char-${currentWordIndex}-${i}`);
+                if (!cEl || cEl.classList.contains('text-error') || cEl.classList.contains('error-underline')) return false;
+                if (!cEl.classList.contains('text-primary')) return false;
+            }
+            return true;
+        }
+
+        function handlePaceCaretSpace(correct, currentWord) {
+            if (!paceCaretSettings || !currentWord) return;
+            if (correct) {
+                if (paceCaretSettings.wordsStatus[currentWordIndex] === true) {
+                    paceCaretSettings.wordsStatus[currentWordIndex] = undefined;
+                    paceCaretSettings.correction -= currentWord.length + 1;
+                }
+            } else if (paceCaretSettings.wordsStatus[currentWordIndex] === undefined) {
+                paceCaretSettings.wordsStatus[currentWordIndex] = true;
+                paceCaretSettings.correction += currentWord.length + 1;
+            }
+        }
 
         function updateKeymapHighlight(pressedKey = null, isKeyDown = false) {
             const kl = window.usertypo_settings?.keyboardLayout || {};
@@ -2761,59 +3022,18 @@
             startTime = Date.now();
             document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
 
-            // Apply live feed visibility from settings
-            const lf = (window.usertypo_settings && window.usertypo_settings.liveFeed) || {};
-            const showWpm = lf.liveWpm !== false;
-            const showAcc = lf.liveAccuracy !== false;
-            const showBurst = lf.liveBurst === true;
-
-            document.getElementById('live-wpm-wrapper').classList.toggle('hidden', !showWpm);
-            document.getElementById('live-acc-wrapper').classList.toggle('hidden', !showAcc);
-            document.getElementById('live-burst-wrapper').classList.toggle('hidden', !showBurst);
-
-            // Smart dividers: only show between two visible adjacent stats
-            const wpmDivider = document.getElementById('live-wpm-divider');
-            const accDivider = document.getElementById('live-acc-divider');
-            // WPM divider sits between WPM and ACC — show only if both visible
-            wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
-            // ACC divider sits between ACC and BURST — show only if both visible
-            accDivider.classList.toggle('hidden', !(showAcc && showBurst));
-            // Edge case: WPM on, ACC off, burst on → need a divider between WPM and burst
-            if (showWpm && !showAcc && showBurst) {
-                wpmDivider.classList.remove('hidden');
-            }
-
-            // Apply Timer / Progress Style and Opacity
-            const timerStyle = lf.timerStyle || 'Number';
-            const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
-
-            const timerProgressWrapper = document.getElementById('timer-progress-wrapper');
-            const wordProgressText = document.getElementById('word-progress');
-            const wordProgressBarContainer = document.getElementById('word-progress-bar-container');
-            const liveStatsContainer = document.getElementById('live-stats-container');
-
-            if (timerStyle === 'Off') {
-                timerProgressWrapper.style.visibility = 'hidden';
-            } else {
-                timerProgressWrapper.style.visibility = 'visible';
-
-                if (timerStyle === 'Bar') {
-                    wordProgressText.classList.add('hidden');
-                    wordProgressBarContainer.classList.remove('hidden');
-                } else {
-                    wordProgressText.classList.remove('hidden');
-                    wordProgressBarContainer.classList.add('hidden');
-                }
-            }
-
-            // Apply opacity to all live stats elements
-            timerProgressWrapper.style.opacity = timerOpacity.toString();
-            if (liveStatsContainer) {
-                liveStatsContainer.style.opacity = timerOpacity.toString();
+            if (typeof applyLiveFeedSettings === 'function') {
+                applyLiveFeedSettings(window.usertypo_settings);
             }
 
             hideZenElements();
             caret.classList.remove('animate-breath');
+
+            try {
+                if (shouldUsePaceCaret() && paceCaretSettings) {
+                    startPaceCaret();
+                }
+            } catch (e) {}
 
             let lastTickSecond = 0;
             updateInterval = setInterval(() => {
@@ -2896,6 +3116,8 @@
             const exactRawWpm = (rawChars / 5) / elapsedMinutes;
             const wpm = Math.max(0, Math.round(exactWpm));
             const rawWpm = Math.max(0, Math.round(exactRawWpm));
+            setLastTestWpm(wpm);
+            resetPaceCaret();
             const acc = totalKeystrokes > 0 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100) : 0;
 
             function formatDecimal(val) {
@@ -3160,6 +3382,9 @@
             currentWordIndex = 0;
             currentCharIndex = 0;
             isRestarting = false;
+            const cursorSettings = getCursorSettings();
+            isPaceRepeat = !shouldRestart && (cursorSettings.repeatedPace !== false);
+            resetPaceCaret();
             // Clear graph data
             wpmHistory = [];
             rawHistory = [];
@@ -3220,6 +3445,8 @@
 
             // Re-render text (fresh un-typed state)
             renderText();
+            initPaceCaret();
+            resetPaceCaretPosition();
             textContainer.style.opacity = '1';
 
             // Hide the test view footer during transition (it gets shown by showZenElements)
@@ -3416,20 +3643,7 @@
             zenElements.forEach(el => el.classList.remove('zen-hidden'));
         }
 
-        function toggleCmdModal() {
-            isCmdModalOpen = !isCmdModalOpen;
-            if (isCmdModalOpen) {
-                cmdModal.classList.remove('opacity-0', 'pointer-events-none');
-                cmdBox.classList.remove('scale-95');
-                cmdBox.classList.add('scale-100');
-            } else {
-                cmdModal.classList.add('opacity-0', 'pointer-events-none');
-                cmdBox.classList.add('scale-95');
-                cmdBox.classList.remove('scale-100');
-            }
-        }
-
-        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ─────────────────────────────────────────────────────────────
         //  BASIC PERFORMANCE GRAPH
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         function renderBasicGraph() {
@@ -4634,6 +4848,7 @@
     <!-- Apply saved settings globally -->
     <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
+    <script src="settings-search.js"></script>
 </body>
 
 </html>

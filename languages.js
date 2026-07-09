@@ -535,21 +535,24 @@ function selectLangOpt(btn) {
             }
         }
         
-        // Instantly reload language globally
+        // Instantly reload language globally (defer restart if mid-test)
         if (typeof window._initLang === 'function') {
-            window._initLang();
+            const testActive = typeof window.usertypo_testRuntime?.isActive === 'function'
+                && window.usertypo_testRuntime.isActive();
+            window._initLang({ skipRestart: testActive });
         }
     }
 }
 
 // Auto-load the saved language on page load (for index.html)
 if (typeof document !== 'undefined') {
-    window._initLang = () => {
+    window._initLang = (opts = {}) => {
         const saved = getSavedLanguage();
         if (saved) {
             loadLanguage(saved).then(() => {
-                // If a restart function exists, restart to apply the new word list
-                if (typeof restartTest === 'function' && typeof isTyping !== 'undefined' && !isTyping) {
+                const testActive = typeof window.usertypo_testRuntime?.isActive === 'function'
+                    && window.usertypo_testRuntime.isActive();
+                if (!opts.skipRestart && !testActive && typeof restartTest === 'function') {
                     restartTest();
                 }
             });

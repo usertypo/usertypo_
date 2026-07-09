@@ -25,9 +25,12 @@ const DEFAULTS = {
         caretSmoothness: 'medium',    // off | slow | medium | fast
         adaptiveSmoothness: false,
         paceCaretMode: 'off',       // off | average | pb | last | custom | daily
-        paceCaretStyle: 'line',      // line | block | underscore | outline
+        paceCaretStyle: 'underscore', // line | block | underscore | outline
+        paceCaretCustomSpeed: 100,
+        repeatedPace: true,          // auto pace caret on replay at previous test speed
         smoothLineScroll: true,
         tapeMode: 'off',       // off | letter | word
+        tapeModeInDual: 'letter', // off | letter | word — dual test view only
         tapeModeInRooms: 'letter', // off | letter | word — room test view only
     },
     soundscape: {
@@ -97,6 +100,10 @@ function loadSettings() {
     // Migrate old boolean errorSounds to new string options ('beep', 'mute', 'off')
     if (settings.soundscape && typeof settings.soundscape.errorSounds === 'boolean') {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
+    }
+
+    if (settings.cursor && settings.cursor.tapeModeInDual === undefined) {
+        settings.cursor.tapeModeInDual = 'letter';
     }
 
     if (settings.cursor && settings.cursor.tapeModeInRooms === undefined) {
@@ -1183,6 +1190,112 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
     return css;
 }
 
+/**
+ * Pace caret styles — ghost caret matching live-stats white at 50% opacity.
+ * Movement smoothness mirrors the main caret (caretSmoothness setting).
+ */
+function buildPaceCaretCSS(style, smoothness) {
+    style = (style || 'underscore').toLowerCase();
+    const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
+    const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
+    const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
+    const liveWhite = '#ffffff';
+    const liveWhiteRGB = '255, 255, 255';
+
+    let css = `
+        #pace-caret {
+            transition: ${transition} !important;
+            opacity: 0.5 !important;
+            filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.3));
+        }
+    `;
+
+    switch (style) {
+        case 'line':
+            css += `
+                #pace-caret {
+                    width: 2.5px !important;
+                    background-color: ${liveWhite};
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                #pace-caret::after { display: none !important; }
+            `;
+            break;
+
+        case 'block':
+            css += `
+                #pace-caret {
+                    background-color: rgba(${liveWhiteRGB}, 0.25);
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                #pace-caret::after { display: none !important; }
+            `;
+            break;
+
+        case 'underscore':
+            css += `
+                #pace-caret {
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                #pace-caret::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${liveWhite};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
+                }
+            `;
+            break;
+
+        case 'outline':
+            css += `
+                #pace-caret {
+                    background-color: transparent;
+                    border: 2px solid rgba(${liveWhiteRGB}, 0.6) !important;
+                    border-radius: 3px;
+                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.15);
+                }
+                #pace-caret::after { display: none !important; }
+            `;
+            break;
+
+        default:
+            css += `
+                #pace-caret {
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                #pace-caret::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${liveWhite};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
+                }
+            `;
+            break;
+    }
+
+    return css;
+}
+
 function buildLayoutCSS(smoothLineScroll, tapeMode) {
     let css = '';
 
@@ -1238,10 +1351,17 @@ function isRoomPage() {
     return !!document.getElementById('room-typing-area');
 }
 
+function isDualPage() {
+    return !!document.getElementById('bot-caret');
+}
+
 function getEffectiveTapeMode(settings) {
     const cursor = settings?.cursor || {};
     if (isRoomPage()) {
         return String(cursor.tapeModeInRooms || 'letter').toLowerCase();
+    }
+    if (isDualPage()) {
+        return String(cursor.tapeModeInDual || 'letter').toLowerCase();
     }
     return String(cursor.tapeMode || 'off').toLowerCase();
 }
@@ -1267,6 +1387,7 @@ function applyCursorSettings(settings) {
     const _caretAccent = _palette.accentPrimary;
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
+        + buildPaceCaretCSS(settings.cursor.paceCaretStyle, settings.cursor.caretSmoothness)
         + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode);
 
     // ── Data attributes on <body> ──
@@ -1282,6 +1403,11 @@ function applyCursorSettings(settings) {
 
     // ── Adaptive smoothness hook ──
     setupAdaptiveSmoothness(settings.cursor.adaptiveSmoothness);
+
+    if (!settings.cursor.adaptiveSmoothness) {
+        document.getElementById('caret')?.style.removeProperty('transition');
+        document.getElementById('pace-caret')?.style.removeProperty('transition');
+    }
 }
 
 
@@ -1328,6 +1454,64 @@ function applyTestRulesSettings(settings) {
     document.body.setAttribute('data-opposite-shift', String(!!tr.oppositeShift));
 }
 
+function getKeymapRenderArgs() {
+    if (typeof window.usertypo_getKeymapRenderArgs === 'function') {
+        return window.usertypo_getKeymapRenderArgs();
+    }
+    return { useNumbers: true, usePunctuation: true };
+}
+
+function getTestKeymapContainers() {
+    const containers = [];
+    const room = document.getElementById('room-keymap-container');
+    if (room) containers.push(room);
+    const index = document.getElementById('dynamic-keymap-container');
+    if (index && document.getElementById('typing-area')) containers.push(index);
+    return containers;
+}
+
+function isSettingsKeymapPreviewPage() {
+    return !!document.getElementById('dynamic-keymap-container')
+        && !document.getElementById('typing-area')
+        && !document.getElementById('room-keymap-container');
+}
+
+/**
+ * Show/hide and render the on-screen keymap for test pages and settings preview.
+ */
+function applyKeymapDisplay(settings) {
+    if (!settings) settings = loadSettings();
+    const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
+    const isOn = kl.keymapMode && kl.keymapMode !== 'Off';
+
+    const testContainers = getTestKeymapContainers();
+
+    if (testContainers.length) {
+        if (!isOn) {
+            testContainers.forEach(el => {
+                el.classList.add('opacity-0');
+                el.classList.add('hidden');
+            });
+        } else {
+            const args = getKeymapRenderArgs();
+            if (typeof window.renderKeymap === 'function') {
+                window.renderKeymap(args.useNumbers, args.usePunctuation);
+            }
+            testContainers.forEach(el => {
+                el.classList.remove('hidden');
+                requestAnimationFrame(() => el.classList.remove('opacity-0'));
+            });
+            if (typeof window.updateKeymapHighlight === 'function') {
+                requestAnimationFrame(() => window.updateKeymapHighlight());
+            }
+        }
+    }
+
+    if (isSettingsKeymapPreviewPage() && typeof window.renderKeymap === 'function') {
+        window.renderKeymap(true, true);
+    }
+}
+
 /**
  * Apply keyboard layout settings.
  */
@@ -1338,9 +1522,95 @@ function applyKeyboardLayoutSettings(settings) {
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
     document.body.setAttribute('data-quick-restart', kl.quickRestart || 'Tab');
 
-    // Re-render keymap if function exists
-    if (typeof window.renderKeymap === 'function') {
-        window.renderKeymap();
+    applyKeymapDisplay(settings);
+}
+
+/**
+ * Apply live feed / timer display settings on index and room pages.
+ */
+function applyLiveFeedSettings(settings) {
+    if (!settings) settings = loadSettings();
+    const lf = settings.liveFeed || DEFAULTS.liveFeed;
+
+    const liveWpmWrapper = document.getElementById('live-wpm-wrapper');
+    if (liveWpmWrapper) {
+        const showWpm = lf.liveWpm !== false;
+        const showAcc = lf.liveAccuracy !== false;
+        const showBurst = lf.liveBurst === true;
+
+        liveWpmWrapper.classList.toggle('hidden', !showWpm);
+        document.getElementById('live-acc-wrapper')?.classList.toggle('hidden', !showAcc);
+        document.getElementById('live-burst-wrapper')?.classList.toggle('hidden', !showBurst);
+
+        const wpmDivider = document.getElementById('live-wpm-divider');
+        const accDivider = document.getElementById('live-acc-divider');
+        if (wpmDivider) wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
+        if (accDivider) accDivider.classList.toggle('hidden', !(showAcc && showBurst));
+        if (showWpm && !showAcc && showBurst && wpmDivider) wpmDivider.classList.remove('hidden');
+
+        const timerStyle = lf.timerStyle || 'Number';
+        const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+        const timerProgressWrapper = document.getElementById('timer-progress-wrapper');
+        const wordProgressText = document.getElementById('word-progress');
+        const wordProgressBarContainer = document.getElementById('word-progress-bar-container');
+        const liveStatsContainer = document.getElementById('live-stats-container');
+
+        if (timerProgressWrapper) {
+            if (timerStyle === 'Off') {
+                timerProgressWrapper.style.visibility = 'hidden';
+            } else {
+                timerProgressWrapper.style.visibility = 'visible';
+                if (timerStyle === 'Bar') {
+                    wordProgressText?.classList.add('hidden');
+                    wordProgressBarContainer?.classList.remove('hidden');
+                } else {
+                    wordProgressText?.classList.remove('hidden');
+                    wordProgressBarContainer?.classList.add('hidden');
+                }
+            }
+            timerProgressWrapper.style.opacity = timerOpacity.toString();
+        }
+        if (liveStatsContainer) {
+            liveStatsContainer.style.opacity = timerOpacity.toString();
+        }
+    }
+
+    if (typeof window.applyRoomLiveFeedSettings === 'function') {
+        window.applyRoomLiveFeedSettings();
+    }
+
+    if (typeof window.applyDualLiveFeedSettings === 'function') {
+        window.applyDualLiveFeedSettings();
+    }
+}
+
+function isTestSessionActive() {
+    if (typeof window.usertypo_testRuntime?.isActive === 'function') {
+        return window.usertypo_testRuntime.isActive();
+    }
+    return false;
+}
+
+function applyAllSettings(settings) {
+    if (!settings) settings = loadSettings();
+    applyCursorSettings(settings);
+    applySoundscapeSettings(settings);
+    applyTestRulesSettings(settings);
+    applyKeyboardLayoutSettings(settings);
+    applyThemeSettings(settings);
+    applyLiveFeedSettings(settings);
+    refreshActiveTestVisuals();
+}
+
+function refreshActiveTestVisuals() {
+    if (typeof window.updateCaretPosition === 'function') {
+        requestAnimationFrame(() => window.updateCaretPosition());
+    }
+    if (typeof window.refreshPaceCaretVisual === 'function') {
+        requestAnimationFrame(() => window.refreshPaceCaretVisual());
+    }
+    if (typeof window.updateLineLayout === 'function') {
+        requestAnimationFrame(() => window.updateLineLayout());
     }
 }
 
@@ -1376,11 +1646,14 @@ function setupAdaptiveSmoothness(enabled) {
         const t = (clamped - minWpm) / (maxWpm - minWpm);
         const dur = Math.round(maxDur - t * (maxDur - minDur));
 
-        const caret = document.getElementById('caret');
-        if (!caret) return;
-
         const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
-        caret.style.transition = `transform ${dur}ms ${ease}, width ${dur}ms ${ease}, opacity 0.5s ease-in-out`;
+        const transition = `transform ${dur}ms ${ease}, width ${dur}ms ${ease}, opacity 0.5s ease-in-out`;
+
+        const caret = document.getElementById('caret');
+        if (caret) caret.style.transition = transition;
+
+        const paceCaret = document.getElementById('pace-caret');
+        if (paceCaret) paceCaret.style.transition = transition;
     }, 500);
 }
 
@@ -1466,15 +1739,7 @@ function persistFromOpt(btn) {
     const settings = loadSettings();
     setByPath(settings, path, resolveOptValue(btn));
     saveSettings(settings);
-    applyCursorSettings(settings);
-    applySoundscapeSettings(settings);
-    applyTestRulesSettings(settings);
-    applyKeyboardLayoutSettings(settings);
-    applyThemeSettings(settings);
-
-    if (path.startsWith('liveFeed.') && typeof window.applyRoomLiveFeedSettings === 'function') {
-        window.applyRoomLiveFeedSettings();
-    }
+    applyAllSettings(settings);
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         // slight delay to let the soundpack load if it changed
@@ -1489,14 +1754,7 @@ function persistFromToggle(track) {
     const settings = loadSettings();
     setByPath(settings, path, track.classList.contains('on'));
     saveSettings(settings);
-    applyCursorSettings(settings);
-    applySoundscapeSettings(settings);
-    applyTestRulesSettings(settings);
-    applyKeyboardLayoutSettings(settings);
-
-    if (path.startsWith('liveFeed.') && typeof window.applyRoomLiveFeedSettings === 'function') {
-        window.applyRoomLiveFeedSettings();
-    }
+    applyAllSettings(settings);
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         if (path === 'soundscape.errorSounds') {
@@ -1582,31 +1840,18 @@ function persistFromToggle(track) {
 //  3. `visibilitychange` — fires when the user switches back to this tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Central helper: reload settings from localStorage and re-apply everything.
- */
 function _reapplyAllSettings() {
     const settings = loadSettings();
-    applyCursorSettings(settings);
-    applySoundscapeSettings(settings);
-    applyTestRulesSettings(settings);
-    applyKeyboardLayoutSettings(settings);
-    applyThemeSettings(settings);
+    applyAllSettings(settings);
 
-    // If we are on the settings page, also refresh the UI controls
-    if (document.querySelectorAll('[data-setting]').length > 0) {
+    const onSettingsPage = /settings\.html/i.test(location.pathname.split('/').pop() || '');
+    if (onSettingsPage) {
         restoreUI(settings);
     }
 
-    // If we are on the index page and not currently typing, restart the test
-    // so new language / test-rule settings take effect
-    if (typeof restartTest === 'function' && typeof isTyping !== 'undefined' && !isTyping) {
+    // Only restart when idle — never interrupt an active typing session
+    if (!isTestSessionActive() && typeof restartTest === 'function') {
         restartTest();
-    }
-
-    // Re-init language if the language setting changed
-    if (typeof window._initLang === 'function') {
-        window._initLang();
     }
 }
 
@@ -2036,3 +2281,22 @@ document.addEventListener('keydown', (e) => {
         setTimeout(doRestore, 200);
     }
 })();
+
+// Public API for the global settings search overlay (settings-search.js)
+window.usertypo_settingsApi = {
+    loadSettings,
+    saveSettings,
+    setByPath,
+    restoreUI,
+    persistFromOpt,
+    persistFromToggle,
+    applySoundscapeSettings,
+    applyLiveFeedSettings,
+    applyAllSettings,
+    applyKeymapDisplay,
+    refreshActiveTestVisuals,
+    reapplyAllSettings: _reapplyAllSettings,
+    isDualPage,
+    isRoomPage,
+    getEffectiveTapeMode,
+};
