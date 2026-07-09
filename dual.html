@@ -674,6 +674,7 @@
         let lineHeight = 0;
         let updateInterval = null;
         let userRecentWpm = 40;   // smoothed live estimate; persists when the user pauses
+        let keystrokeTimes = [];
         let lastCharTime = 0;
 
         // --- BOT STATE ---
@@ -969,6 +970,7 @@
             currentWordIndex = 0;
             currentCharIndex = 0;
             userRecentWpm = 40;
+            keystrokeTimes = [];
             lastCharTime = 0;
             clearInterval(updateInterval);
             stopBot();
@@ -1024,8 +1026,14 @@
             if (!startTime) return;
             let validChars = 0;
             textContainer.querySelectorAll('.word').forEach((wordEl, idx) => {
-                validChars += wordEl.querySelectorAll('.text-primary').length;
-                if (idx < currentWordIndex) validChars += 1;
+                if (idx < currentWordIndex) {
+                    const hasError = wordEl.querySelectorAll('.text-error, .error-underline, .extra').length > 0;
+                    if (!hasError) {
+                        validChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
+                    }
+                } else if (idx === currentWordIndex) {
+                    validChars += wordEl.querySelectorAll('.text-primary').length;
+                }
             });
             const mins = Math.max((Date.now() - startTime) / 60000, 2 / 60);
             const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -1112,6 +1120,7 @@
             }
             else if (e.key === ' ') {
                 totalKeystrokes++;
+                keystrokeTimes.push(Date.now());
                 if (window.playKeystrokeSound) window.playKeystrokeSound(' ');
                 // Mark remaining chars as missed errors
                 for (let i = currentCharIndex; i < currentWord.length; i++) {
@@ -1130,6 +1139,7 @@
             else if (e.key.length === 1) {
                 e.preventDefault();
                 totalKeystrokes++;
+                keystrokeTimes.push(Date.now());
 
                 // Track the user's live typing speed from inter-key timing so
                 // the bot can pace itself off it (and keep going during pauses).
@@ -1188,27 +1198,41 @@
         // ─────────────────────────────────────────────────────────────
         function computeUserStats() {
             let validChars = 0;
-            let totalChars = 0;
+            let rawChars = 0;
             const allWords = textContainer.querySelectorAll('.word');
             allWords.forEach((wordEl, idx) => {
-                validChars += wordEl.querySelectorAll('.text-primary').length;
                 if (idx < currentWordIndex) {
-                    totalChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
-                    validChars += 1;
+                    const hasError = wordEl.querySelectorAll('.text-error, .error-underline, .extra').length > 0;
+                    if (!hasError) {
+                        validChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
+                    }
+                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length + 1;
                 } else if (idx === currentWordIndex) {
-                    totalChars += wordEl.querySelectorAll('.char:not(.extra)').length;
+                    validChars += wordEl.querySelectorAll('.text-primary').length;
+                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length;
                 }
             });
             const elapsedSeconds = startTime ? Math.max(1, Math.round((Date.now() - startTime) / 1000)) : 1;
             const mins = Math.max((Date.now() - startTime) / 60000, 2 / 60);
             const wpm = Math.max(0, Math.round((validChars / 5) / mins));
-            const raw = Math.max(0, Math.round((totalKeystrokes / 5) / mins));
+            const raw = Math.max(0, Math.round((rawChars / 5) / mins));
             const acc = totalKeystrokes > 0 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100) : 0;
 
-            let consistency;
-            if (acc >= 95) consistency = Math.min(100, Math.round(85 + Math.random() * 12));
-            else if (acc >= 80) consistency = Math.min(95, Math.round(65 + Math.random() * 15));
-            else consistency = Math.min(80, Math.round(40 + Math.random() * 20));
+            let consistency = 0;
+            if (typeof keystrokeTimes !== 'undefined' && keystrokeTimes.length > 1) {
+                const intervals = [];
+                for (let i = 1; i < keystrokeTimes.length; i++) {
+                    intervals.push(keystrokeTimes[i] - keystrokeTimes[i - 1]);
+                }
+                const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                const stdDev = Math.sqrt(intervals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / intervals.length);
+                const cov = stdDev / mean;
+                const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+                consistency = Math.max(0, Math.min(100, Math.round(kogasa)));
+            }
+            if (isNaN(consistency) || typeof keystrokeTimes === 'undefined' || keystrokeTimes.length <= 1) {
+                consistency = 100;
+            }
 
             return {
                 name: userName,
@@ -1221,7 +1245,7 @@
                 time: elapsedSeconds,
                 errors: errorsMade,
                 correct: validChars,
-                total: Math.max(totalChars, validChars),
+                total: Math.max(rawChars, validChars),
                 extra: extraChars
             };
         }
