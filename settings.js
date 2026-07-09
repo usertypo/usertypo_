@@ -742,6 +742,24 @@ function applyThemeSettings(settings) {
             box-shadow: 0 0 15px rgba(${accentRGB}, 0.6) !important;
         }
 
+        /* ── Settings page: nav pill ── */
+        #settings-nav-pill .setting-card.active {
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+        }
+        #settings-nav-pill .setting-card.active .card-label {
+            background: rgba(${accentRGB}, 0.08) !important;
+            box-shadow: inset 0 0 0 1px rgba(${accentRGB}, 0.14) !important;
+        }
+        #settings-nav-pill .setting-card.active .card-icon {
+            color: ${p.accentPrimary} !important;
+            filter: drop-shadow(0 0 5px rgba(${accentRGB}, 0.55)) !important;
+        }
+        #settings-nav-pill .setting-card.active .card-title {
+            color: ${p.accentPrimary} !important;
+        }
+
         /* ── Settings page: info popovers ── */
         .info-popover { border-color: rgba(${accentRGB}, 0.2) !important; }
 
@@ -997,7 +1015,8 @@ function applyThemeSettings(settings) {
         }
 
         /* ── Settings page: setting cards, quick buttons, sliders ── */
-        .setting-card.active {
+        #settings-panel .setting-card.active,
+        .sub-setting-card.active {
             border-color: rgba(${accentRGB}, 0.3) !important;
             box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
             background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;

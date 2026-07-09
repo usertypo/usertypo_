@@ -97,7 +97,7 @@
         }
         .menu-btn:focus, .menu-btn:active { outline: none !important; background: transparent; }
         .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
-        .menu-btn.is-active { color: #00d0ff !important; text-shadow: 0 0 15px rgba(0, 208, 255, 0.8); }
+        .menu-btn.is-active { color: var(--theme-primary) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.8); }
 
         .slide-ease { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
 
@@ -106,22 +106,36 @@
 
         /* â”€â”€â”€ Settings Grid Layout â”€â”€â”€ */
         #settings-container {
-            display: grid;
-            grid-template-columns: 1fr 0fr;
-            gap: 0rem;
-            transition: grid-template-columns 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        gap 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        #settings-container.is-split {
-            grid-template-columns: 1fr 2fr;
+            display: flex;
             gap: 1rem;
+            align-items: flex-start;
+        }
+
+        :root {
+            --theme-primary: #00d0ff;
+            --theme-primary-rgb: 0, 208, 255;
+            /* Half of collapsed nav width (44px) — forms a pill when collapsed */
+            --settings-box-radius: 22px;
+        }
+
+        #settings-nav-pill {
+            position: relative;
+            flex-shrink: 0;
+            width: 268px;
+            overflow: hidden;
+            border-radius: var(--settings-box-radius);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            align-self: start;
+        }
+        #settings-nav-pill.is-collapsed {
+            width: 44px;
         }
 
         
         /* Staggered card animation â€” JS driven */
         #settings-nav .setting-card {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(12px);
             transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #settings-nav .setting-card.card-visible {
@@ -131,56 +145,112 @@
 
         .setting-card .setting-card-header .chevron-icon { display: none; }
 
-        /* â”€â”€â”€ Settings Nav â”€â”€â”€ */
+        /* Settings Nav — inner layout is always full width; outer pill clips from the right */
         #settings-nav {
+            width: 268px;
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            min-width: 0;
-        }
-        #settings-container.is-split #settings-nav {
-            align-self: start;
+            gap: 0.35rem;
+            padding: 0.55rem 0;
         }
 
-        /* Card subtitle â€” always visible */
-        .card-subtitle {
-            max-height: 1.5rem;
-            opacity: 1;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        opacity 0.3s ease,
-                        margin 0.3s ease;
-        }
-
-        /* â”€â”€â”€ Settings Panel â”€â”€â”€ */
-        #settings-panel {
-            min-width: 0;
-            overflow: hidden;
-            opacity: 0;
-            transition: opacity 0.35s ease 0.1s;
-        }
-        #settings-container.is-split #settings-panel {
-            opacity: 1;
-        }
-
-        /* â”€â”€â”€ Setting Card â”€â”€â”€ */
         .setting-card {
-            transition: all 0.25s ease;
-            overflow: visible !important;
-        }
-        .setting-card:hover {
-            border-color: rgba(255, 255, 255, 0.12);
-        }
-        .setting-card.active {
-            border-color: rgba(0, 208, 255, 0.3) !important;
-            box-shadow: 0 0 15px rgba(0, 208, 255, 0.08), inset 0 0 0 1px rgba(0, 208, 255, 0.05);
-            background: linear-gradient(145deg, rgba(0, 208, 255, 0.04) 0%, rgba(26, 29, 35, 0.3) 100%);
+            display: grid;
+            grid-template-columns: 44px 224px;
+            align-items: center;
+            min-height: 3.25rem;
         }
 
-        .setting-card-header { transition: background 0.2s ease; }
-        .setting-card-header:hover { background: rgba(255,255,255,0.03); }
+        .setting-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 3.25rem;
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+        }
 
-        /* Chevron: right â†’ rotate 90Â° when active */
+        .card-label {
+            margin: 0.15rem 0.5rem 0.15rem 0;
+            padding: 0.45rem 0.65rem;
+            overflow: hidden;
+            cursor: pointer;
+            white-space: nowrap;
+            border-radius: var(--settings-box-radius);
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+        #settings-nav-pill.is-collapsed .card-label {
+            pointer-events: none;
+        }
+
+        .card-title {
+            line-height: 1.3;
+        }
+
+        .card-subtitle {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 0.2rem;
+            line-height: 1.35;
+        }
+
+        /* Nav — no full-row highlight; active style lives on the label only */
+        #settings-nav-pill .setting-card.active {
+            background: transparent;
+            box-shadow: none;
+        }
+        #settings-nav-pill .setting-card.active .card-label {
+            background: rgba(var(--theme-primary-rgb), 0.08);
+            box-shadow: inset 0 0 0 1px rgba(var(--theme-primary-rgb), 0.14);
+        }
+
+        /* Nav icons — color only, no boxes */
+        .setting-card .card-icon {
+            color: #64748b;
+            transition: color 0.25s ease, filter 0.25s ease;
+        }
+        .setting-card:hover:not(.active) .card-icon {
+            color: #94a3b8;
+        }
+        .setting-card.active .card-icon {
+            color: var(--theme-primary);
+            filter: drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.55));
+        }
+        .setting-card.active .card-title {
+            color: var(--theme-primary);
+        }
+
+        /* Settings Panel */
+        #settings-panel {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            opacity: 1;
+            transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #panel-card {
+            border-radius: var(--settings-box-radius) !important;
+        }
+
+        /* Unified corner radius across settings page surfaces */
+        #settings-panel .sub-setting-card,
+        #settings-panel .glass-card,
+        .search-result-item,
+        .danger-zone,
+        .setting-select,
+        .setting-info-popover,
+        .opt-btn,
+        .search-input,
+        .quick-btn,
+        #save-toast > div,
+        #info-portal {
+            border-radius: var(--settings-box-radius) !important;
+        }
+
+        /* Chevron: right → rotate 90° when active */
         .chevron-icon {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -282,7 +352,7 @@
         #info-portal .info-title {
             font-size: 8px !important;
             font-weight: 700;
-            color: #00d0ff;
+            color: var(--theme-primary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 2px;
@@ -311,14 +381,14 @@
             flex-shrink: 0;
         }
         .setting-info-btn:hover {
-            background: rgba(0, 208, 255, 0.12);
-            border-color: rgba(0, 208, 255, 0.35);
-            box-shadow: 0 0 12px rgba(0, 208, 255, 0.2);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            border-color: rgba(var(--theme-primary-rgb), 0.35);
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.2);
             transform: scale(1.1);
         }
         .setting-info-btn .material-symbols-outlined {
             font-size: 13px;
-            color: #00d0ff;
+            color: var(--theme-primary);
             transition: all 0.25s ease;
         }
 
@@ -331,10 +401,9 @@
             /* Match sidebar menu background exactly */
             background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
             background-color: rgba(26, 29, 35, 0.85);
-            border: 1px solid rgba(0, 208, 255, 0.2);
-            border-radius: 0.75rem;
+            border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
             padding: 0.75rem 0.9rem;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 208, 255, 0.08);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--theme-primary-rgb), 0.08);
             backdrop-filter: blur(12px);
             opacity: 0;
             pointer-events: none;
@@ -349,7 +418,7 @@
         .setting-info-popover .info-title {
             font-size: 11px;
             font-weight: 700;
-            color: #00d0ff;
+            color: var(--theme-primary);
             text-transform: uppercase;
             letter-spacing: 0.06em;
             margin-bottom: 6px;
@@ -375,9 +444,9 @@
             flex-shrink: 0;
         }
         .toggle-track.on {
-            background: #00d0ff;
-            border-color: #00d0ff;
-            box-shadow: 0 0 8px rgba(0,208,255,0.4);
+            background: var(--theme-primary);
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 8px rgba(var(--theme-primary-rgb),0.4);
         }
         .toggle-thumb {
             position: absolute;
@@ -396,7 +465,6 @@
         /* â”€â”€â”€ Option Buttons â”€â”€â”€ */
         .opt-btn {
             padding: 0.35rem 0.7rem;
-            border-radius: 0.5rem;
             font-size: 0.65rem;
             font-weight: 600;
             font-family: 'Roboto Mono', monospace;
@@ -408,22 +476,22 @@
         }
         .opt-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
         .opt-btn.active {
-            background: rgba(0,208,255,0.15);
-            border-color: rgba(0,208,255,0.35);
-            color: #00d0ff;
-            box-shadow: 0 0 8px rgba(0,208,255,0.15);
+            background: rgba(var(--theme-primary-rgb),0.15);
+            border-color: rgba(var(--theme-primary-rgb),0.35);
+            color: var(--theme-primary);
+            box-shadow: 0 0 8px rgba(var(--theme-primary-rgb),0.15);
         }
         .opt-btn.highlighted {
-            background: rgba(0, 208, 255, 0.12) !important;
-            border-color: rgba(0, 208, 255, 0.45) !important;
-            color: #00d0ff !important;
-            box-shadow: 0 0 10px rgba(0, 208, 255, 0.3) !important;
+            background: rgba(var(--theme-primary-rgb), 0.12) !important;
+            border-color: rgba(var(--theme-primary-rgb), 0.45) !important;
+            color: var(--theme-primary) !important;
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.3) !important;
             font-weight: 700;
         }
         .opt-btn.highlighted:hover {
-            background: #00d0ff !important;
+            background: var(--theme-primary) !important;
             color: #0d1117 !important;
-            box-shadow: 0 0 15px rgba(0, 208, 255, 0.6) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.6) !important;
         }
 
 
@@ -432,7 +500,6 @@
             width: 100%;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 0.6rem;
             padding: 0.4rem 0.7rem;
             color: #cbd5e1;
             font-size: 0.75rem;
@@ -447,7 +514,7 @@
             background-position: right 0.75rem center;
             padding-right: 2rem;
         }
-        .setting-select:focus { border-color: rgba(0,208,255,0.4); box-shadow: 0 0 0 2px rgba(0,208,255,0.1); }
+        .setting-select:focus { border-color: rgba(var(--theme-primary-rgb),0.4); box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb),0.1); }
         .setting-select option { background: #1a1d23; color: #cbd5e1; }
 
         /* â”€â”€â”€ Search â”€â”€â”€ */
@@ -465,7 +532,6 @@
             width: 100%;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 9999px;
             padding: 0.55rem 2.5rem 0.55rem 2.5rem;
             color: #cbd5e1;
             font-size: 0.75rem;
@@ -473,7 +539,7 @@
             outline: none;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .search-input:focus { border-color: rgba(0,208,255,0.35); box-shadow: 0 0 0 2px rgba(0,208,255,0.08); }
+        .search-input:focus { border-color: rgba(var(--theme-primary-rgb),0.35); box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb),0.08); }
         .search-input::placeholder { color: #475569; }
         .search-clear-btn {
             position: absolute;
@@ -512,7 +578,6 @@
         .quick-btn {
             width: 36px;
             height: 36px;
-            border-radius: 9999px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -524,10 +589,10 @@
             position: relative;
         }
         .quick-btn:hover {
-            background: rgba(0,208,255,0.1);
-            border-color: rgba(0,208,255,0.3);
-            color: #00d0ff;
-            box-shadow: 0 0 12px rgba(0,208,255,0.15);
+            background: rgba(var(--theme-primary-rgb),0.1);
+            border-color: rgba(var(--theme-primary-rgb),0.3);
+            color: var(--theme-primary);
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb),0.15);
         }
         .quick-btn .material-symbols-outlined {
             font-size: 18px;
@@ -540,7 +605,7 @@
             padding: 4px 10px;
             border-radius: 8px;
             background: rgba(26, 29, 35, 0.92);
-            border: 1px solid rgba(0,208,255,0.2);
+            border: 1px solid rgba(var(--theme-primary-rgb),0.2);
             backdrop-filter: blur(12px);
             font-size: 10px;
             font-weight: 600;
@@ -567,20 +632,19 @@
         .search-result-item {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             margin-bottom: 0.5rem;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         .search-result-item:hover {
-            border-color: rgba(0,208,255,0.2);
-            background: rgba(0,208,255,0.04);
+            border-color: rgba(var(--theme-primary-rgb),0.2);
+            background: rgba(var(--theme-primary-rgb),0.04);
         }
         .search-result-category {
             font-size: 10px;
             font-weight: 700;
-            color: #00d0ff;
+            color: var(--theme-primary);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 2px;
@@ -596,7 +660,7 @@
             margin-top: 2px;
         }
         .search-highlight {
-            color: #00d0ff;
+            color: var(--theme-primary);
             font-weight: 700;
         }
 
@@ -604,7 +668,6 @@
         .danger-zone {
             background: rgba(255,51,51,0.06);
             border: 1px solid rgba(255,51,51,0.15);
-            border-radius: 0.75rem;
         }
         .danger-btn {
             font-size: 0.7rem;
@@ -656,7 +719,7 @@
             appearance: none;
             height: 24px !important; /* Thick clickable area to prevent finicky grabs */
             background-color: transparent !important;
-            background-image: linear-gradient(#00d0ff, #00d0ff), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+            background-image: linear-gradient(var(--theme-primary), var(--theme-primary)), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
             background-repeat: no-repeat !important;
             background-position: left center, left center !important;
             border-radius: 0 !important;
@@ -674,9 +737,9 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #00d0ff;
+            background: var(--theme-primary);
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 208, 255, 0.8), 0 0 15px rgba(0, 208, 255, 0.6);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8), 0 0 15px rgba(var(--theme-primary-rgb), 0.6);
             margin-top: 6px; /* Vertically center in 24px track */
         }
         input[type="range"].custom-slider::-moz-range-track {
@@ -688,9 +751,9 @@
             height: 12px;
             border: none;
             border-radius: 50%;
-            background: #00d0ff;
+            background: var(--theme-primary);
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 208, 255, 0.8), 0 0 15px rgba(0, 208, 255, 0.6);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8), 0 0 15px rgba(var(--theme-primary-rgb), 0.6);
             transform: translateY(6px);
         }
         /* Header Logo */
@@ -878,254 +941,179 @@
         <div id="settings-container">
 
             <!-- â•â•â• LEFT: Nav Cards â•â•â• -->
+            <div id="settings-nav-pill" class="settings-nav-pill glass-panel is-expanded">
             <div id="settings-nav">
 
                 <!-- Card 1: Cursor & Motion -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="cursor-motion"
+                <div class="setting-card" data-category="cursor-motion"
                     data-keywords="caret smoothness style pace smooth scroll tape line block underscore">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">edit_square</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">edit_square</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Cursor & Motion</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Caret, pace, and text flow
                                 </p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 2: Soundscape -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="soundscape"
+                <div class="setting-card" data-category="soundscape"
                     data-keywords="click sounds error volume audio sound pack">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">graphic_eq</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">graphic_eq</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Soundscape</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Audio, clicks, and volume</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 3: Look & Feel -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="look-feel"
+                <div class="setting-card" data-category="look-feel"
                     data-keywords="theme font color colorblind high contrast animations accessibility typography">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">palette</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">palette</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Look & Feel</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Theme, fonts, and visuals</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 4: Test Rules -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="test-rules"
+                <div class="setting-card" data-category="test-rules"
                     data-keywords="difficulty stop error confidence freedom lazy blind strict numbers punctuation restart">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">rule</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">rule</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Test Rules</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Difficulty, errors, and
                                     options</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 5: Live Feed -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="live-feed"
+                <div class="setting-card" data-category="live-feed"
                     data-keywords="live wpm accuracy burst timer progress opacity color">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">speed</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">speed</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Live Feed</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Real-time stats and timers
                                 </p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 6: Results & Graphs -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="results-graphs"
+                <div class="setting-card" data-category="results-graphs"
                     data-keywords="decimal precision graph smooth cps threshold min wpm accuracy burst">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">bar_chart</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">bar_chart</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Results & Graphs</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Post-test data and charts</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 7: Language & Content -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="language-content"
+                <div class="setting-card" data-category="language-content"
                     data-keywords="language test mode time words quote zen custom ui">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">translate</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">translate</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Language & Content</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Language, mode, and locale
                                 </p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 8: Keyboard & Layout -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="keyboard-layout"
+                <div class="setting-card" data-category="keyboard-layout"
                     data-keywords="keymap keyboard shortcuts layout legend qwerty dvorak colemak tab">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">keyboard</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">keyboard</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Keyboard & Layout</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Keymap, shortcuts, and input
                                 </p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 9: Identity & Social -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="identity-social"
+                <div class="setting-card" data-category="identity-social"
                     data-keywords="leaderboard friends email notifications profile visibility privacy">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">person</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">person</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Identity & Social</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Profile, privacy, and sharing
                                 </p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 10: System & Data -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="system-data"
+                <div class="setting-card" data-category="system-data"
                     data-keywords="auto save import export reset delete account danger preferences">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">settings_suggest</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">settings_suggest</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">System & Data</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Preferences, reset, and
                                     export</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
                 <!-- Card 11: Account Settings -->
-                <div class="setting-card glass-panel rounded-xl overflow-hidden" data-category="account-settings"
+                <div class="setting-card" data-category="account-settings"
                     data-keywords="account name leaderboards personal bests authentication email password google logout block unblock report">
                     <button
-                        class="setting-card-header w-full flex items-center justify-between p-3.5 cursor-pointer rounded-xl"
+                        class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                                <span class="material-symbols-outlined text-[18px] card-icon">manage_accounts</span>
-                            </div>
-                            <div class="text-left min-w-0">
+                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">manage_accounts</span>
+                    </button>
+                    <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Account Settings</h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Account, auth, and blocked
                                     users</p>
                             </div>
-                        </div>
-                        <span
-                            class="material-symbols-outlined text-slate-500 chevron-icon text-[18px] shrink-0">chevron_right</span>
-                    </button>
                 </div>
 
+            </div>
             </div>
 
             <!-- â•â•â• RIGHT: Settings Panel â•â•â• -->
             <div id="settings-panel">
-                <div class="glass-panel rounded-2xl flex flex-col" id="panel-card">
+                <div class="glass-panel flex flex-col" id="panel-card">
                     <!-- Panel Header -->
-                    <div class="flex items-center justify-between p-4 border-b border-white/5 shrink-0">
+                    <div class="flex items-center p-4 border-b border-white/5 shrink-0">
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
@@ -1133,10 +1121,7 @@
                             </div>
                             <h2 class="text-base font-bold text-slate-100" id="panel-title">Cursor & Motion</h2>
                         </div>
-                        <button onclick="closeCategory()"
-                            class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 transition-all">
-                            <span class="material-symbols-outlined text-[18px]">close</span>
-                        </button>
+
                     </div>
                     <!-- Panel Body -->
                     <div class="p-5" id="panel-body">
@@ -4258,7 +4243,7 @@
 
     <!-- Save Toast -->
     <div id="save-toast">
-        <div class="flex items-center gap-3 px-5 py-3 rounded-2xl glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
+        <div class="flex items-center gap-3 px-5 py-3 glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
             style="backdrop-filter:blur(20px);">
             <span class="material-symbols-outlined text-primary text-[18px]" id="toast-icon">check_circle</span>
             <span class="text-sm font-semibold text-slate-100" id="toast-msg">Settings saved</span>
@@ -4365,6 +4350,39 @@
                 setTimeout(() => {
                     card.classList.add('card-visible');
                 }, 150 + index * 90);
+            });
+
+            // Default: open Cursor & Motion on load
+            const defaultCard = document.querySelector('.setting-card[data-category="cursor-motion"]');
+            if (defaultCard) {
+                const defaultBtn = defaultCard.querySelector('.setting-card-header');
+                if (defaultBtn) openCategory(defaultBtn);
+            }
+
+            // Nav pill: expanded on load, collapse after 2s, expand on hover
+            const navPill = document.getElementById('settings-nav-pill');
+            if (navPill) {
+                setTimeout(() => {
+                    navPill.classList.remove('is-expanded');
+                    navPill.classList.add('is-collapsed');
+                }, 2000);
+
+                navPill.addEventListener('mouseenter', () => {
+                    navPill.classList.remove('is-collapsed');
+                    navPill.classList.add('is-expanded');
+                });
+                navPill.addEventListener('mouseleave', () => {
+                    navPill.classList.remove('is-expanded');
+                    navPill.classList.add('is-collapsed');
+                });
+            }
+
+            // Click labels in drawer to open category
+            document.querySelectorAll('#settings-nav .card-label').forEach(label => {
+                label.addEventListener('click', () => {
+                    const btn = label.closest('.setting-card')?.querySelector('.setting-card-header');
+                    if (btn) openCategory(btn);
+                });
             });
 
             // â”€â”€ SEARCH FILTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4602,16 +4620,15 @@
             const categoryId = card.dataset.category;
             const container = document.getElementById('settings-container');
 
-            // Toggle off if same card
+            // Stay on same category if already active
             if (activeCategory === categoryId) {
-                closeCategory();
                 return;
             }
 
             // Deactivate all cards and panels
-            document.querySelectorAll('.setting-card').forEach(c => {
+            document.querySelectorAll('#settings-nav .setting-card').forEach(c => {
                 c.classList.remove('active');
-                c.querySelector('.chevron-icon').classList.remove('rotated');
+                c.querySelector('.chevron-icon')?.classList.remove('rotated');
             });
             document.querySelectorAll('.category-content').forEach(p => p.classList.add('hidden'));
 
@@ -4620,7 +4637,7 @@
 
             // Activate this card
             card.classList.add('active');
-            card.querySelector('.chevron-icon').classList.add('rotated');
+            card.querySelector('.chevron-icon')?.classList.add('rotated');
             activeCategory = categoryId;
 
             // Split layout
@@ -4651,9 +4668,9 @@
             container.classList.remove('is-split');
 
             // Deactivate cards
-            document.querySelectorAll('.setting-card').forEach(c => {
+            document.querySelectorAll('#settings-nav .setting-card').forEach(c => {
                 c.classList.remove('active');
-                c.querySelector('.chevron-icon').classList.remove('rotated');
+                c.querySelector('.chevron-icon')?.classList.remove('rotated');
             });
 
             activeCategory = null;
