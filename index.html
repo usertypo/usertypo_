@@ -22,6 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
+    <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
 
     <script>
         tailwind.config = {
@@ -940,6 +941,7 @@
             class="hidden flex-1 flex flex-col relative w-full opacity-0 transition-opacity duration-150">
             <main class="flex-1 w-full max-w-7xl mx-auto px-6 pt-4 pb-4 flex flex-col lg:flex-row gap-6 relative z-10">
                 <div class="flex-1 flex flex-col gap-6 min-w-0">
+                    <div id="stats-capture-area" class="flex flex-col gap-6 w-full">
                     <div class="flex flex-row gap-6">
                         <div class="flex-1 glass-panel rounded-xl p-8 relative overflow-hidden h-[18.75rem] opacity-0 stats-animate-card [animation-delay:200ms]"
                             style="border: 1px solid rgba(var(--theme-primary-rgb), 0.1);" id="stats-hero-card">
@@ -960,7 +962,7 @@
 
                             <div class="flex items-end gap-4 mt-2">
                                 <div class="relative">
-                                    <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full"></div>
+                                    <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full" data-screenshot-glow></div>
                                     <h1 id="stats-wpm"
                                         class="text-9xl font-black text-primary relative z-10 leading-none tracking-tighter"
                                         style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.4);">105</h1>
@@ -1145,6 +1147,7 @@
                                     class="text-base text-slate-500 font-bold">520</span></div>
                         </div>
                     </div>
+                    </div>
 
                     <!-- Action Buttons Row (moved from footer) -->
                     <div class="flex items-center gap-4 opacity-0 stats-animate-card [animation-delay:800ms]"
@@ -1161,8 +1164,9 @@
                             <span class="material-symbols-outlined text-[18px]">refresh</span>
                             Replay
                         </button>
-                        <button
-                            class="glass-card flex items-center justify-center w-12 h-12 hover:bg-surface-light text-slate-400 hover:text-white rounded transition-colors">
+                        <button id="screenshot-btn"
+                            class="glass-card flex items-center justify-center w-12 h-12 hover:bg-surface-light text-slate-400 hover:text-white rounded transition-colors"
+                            title="Share Screenshot">
                             <span class="material-symbols-outlined text-[20px]">ios_share</span>
                         </button>
                     </div>
@@ -1630,6 +1634,9 @@
 
             // Initialize position on load
             updateScrollbar();
+
+            const screenshotBtn = document.getElementById('screenshot-btn');
+            if (screenshotBtn) screenshotBtn.addEventListener('click', captureIndexStatsScreenshot);
         });
 
         // --- CONFIGURATION LOGIC ---
@@ -3849,6 +3856,39 @@
             }
         }
 
+        async function captureIndexStatsScreenshot() {
+            const captureArea = document.getElementById('stats-capture-area');
+            const btn = document.getElementById('screenshot-btn');
+            if (!captureArea || !window.StatsScreenshot) return;
+
+            await StatsScreenshot.capture({
+                captureArea,
+                button: btn,
+                hideSelectors: ['#stats-action-buttons'],
+                padding: 56,
+                patchCloneRoot: (cloned) => {
+                    const overlay = cloned.querySelector('#graph-info-overlay');
+                    const graphContainer = cloned.querySelector('#graph-container');
+                    const legend = cloned.querySelector('#graph-legend');
+
+                    if (graphInfoVisible) {
+                        if (overlay) overlay.classList.add('is-visible');
+                        if (graphContainer) graphContainer.style.opacity = '0';
+                        if (legend) {
+                            legend.style.opacity = '0';
+                            legend.style.pointerEvents = 'none';
+                        }
+                    } else {
+                        if (graphContainer) graphContainer.style.opacity = '1';
+                        if (legend) {
+                            legend.style.opacity = '1';
+                            legend.style.pointerEvents = 'auto';
+                        }
+                    }
+                },
+            });
+        }
+
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         //  GRAPH INFO CUSTOM SCROLLBAR (matches leaderboards page)
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4560,6 +4600,7 @@
     </script>
     <!-- Audio Manager -->
     <script src="audio.js"></script>
+    <script src="screenshot.js"></script>
 
     <!-- Save Toast -->
     <div id="save-toast"

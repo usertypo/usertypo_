@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
 
     <script>
         tailwind.config = {
@@ -437,7 +437,9 @@
             <main
                 class="flex-1 w-full max-w-7xl mx-auto px-6 pt-0 pb-0 flex flex-col lg:flex-row items-stretch gap-6 relative z-10 min-h-0 overflow-hidden">
 
-                <div id="stats-capture-area" class="flex-1 flex flex-col justify-center gap-3 min-w-0 min-h-0">
+                <div class="flex-1 flex flex-col justify-center gap-3 min-w-0 min-h-0">
+
+                <div id="stats-capture-area" class="flex flex-col justify-center gap-3 min-w-0 w-full shrink-0">
 
                     <div class="flex justify-center opacity-0 stats-animate-card [animation-delay:100ms]">
                         <div class="glass-panel rounded-full px-4 py-1 flex items-center gap-2">
@@ -472,7 +474,7 @@
 
                                 <div class="flex flex-col items-center gap-0 mb-3">
                                     <div class="relative">
-                                        <div class="absolute -inset-4 rounded-full" style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.15) 0%, transparent 70%);"></div>
+                                        <div class="absolute -inset-4 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.15) 0%, transparent 70%);"></div>
                                         <span id="w-wpm"
                                             class="text-6xl font-black text-primary relative z-10 leading-none tracking-tighter"
                                             style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.4);">0</span>
@@ -589,6 +591,8 @@
                         </div>
                     </div>
 
+                </div> <!-- End capture area -->
+
                     <!-- Action buttons: centred below the two player cards -->
                     <div id="stats-action-buttons"
                         class="flex items-center justify-center gap-5 mt-2 opacity-0 stats-animate-card [animation-delay:400ms]">
@@ -608,7 +612,7 @@
                         </button>
                     </div>
 
-                </div> <!-- End capture area -->
+                </div>
 
                 <!-- Ad Section (room.html stats ad; sits on the right and spans the screen height) -->
                 <div class="w-[10rem] shrink-0 panel-surface rounded-xl flex flex-col relative overflow-hidden hidden lg:flex self-stretch my-2">
@@ -636,6 +640,9 @@
 
     <script src="languages.js"></script>
     <script src="audio.js"></script>
+    <script src="screenshot.js"></script>
+    <script src="dual.js?v=4"></script>
+    <script src="settings.js"></script>
 
     <script>
         // ─────────────────────────────────────────────────────────────
@@ -1344,51 +1351,19 @@
         }
 
         // ─────────────────────────────────────────────────────────────
-        //  SCREENSHOT (matches dualstats.html)
+        //  SCREENSHOT
         // ─────────────────────────────────────────────────────────────
         async function captureScreenshot() {
-            const btn = document.getElementById('screenshot-btn');
-            if (!btn) return;
-            const original = btn.innerHTML;
-            btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">refresh</span>';
-
             const captureArea = document.getElementById('stats-capture-area');
-            const actionButtons = document.getElementById('stats-action-buttons');
-            const prevDisplay = actionButtons ? actionButtons.style.display : '';
-            if (actionButtons) actionButtons.style.display = 'none';
+            const btn = document.getElementById('screenshot-btn');
+            if (!captureArea || !window.StatsScreenshot) return;
 
-            const animated = captureArea.querySelectorAll('.opacity-0, .stats-animate-card');
-            const saved = [];
-            animated.forEach(el => {
-                saved.push({ el, animation: el.style.animation, opacity: el.style.opacity, had: el.classList.contains('opacity-0') });
-                el.style.animation = 'none';
-                el.style.opacity = '1';
-                el.classList.remove('opacity-0');
+            await StatsScreenshot.capture({
+                captureArea,
+                button: btn,
+                hideSelectors: ['#stats-action-buttons'],
+                padding: 56,
             });
-
-            await new Promise(r => setTimeout(r, 50));
-            try {
-                const canvas = await html2canvas(captureArea, { backgroundColor: '#020016', scale: 2, logging: false });
-                canvas.toBlob(async (blob) => {
-                    try {
-                        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-                        btn.innerHTML = '<span class="material-symbols-outlined text-[20px] text-green-400">check</span>';
-                    } catch {
-                        btn.innerHTML = '<span class="material-symbols-outlined text-[20px] text-red-400">close</span>';
-                    }
-                    setTimeout(() => { btn.innerHTML = original; }, 2000);
-                });
-            } catch (err) {
-                console.error('Screenshot failed:', err);
-                btn.innerHTML = original;
-            } finally {
-                if (actionButtons) actionButtons.style.display = prevDisplay;
-                saved.forEach(item => {
-                    item.el.style.animation = item.animation;
-                    item.el.style.opacity = item.opacity;
-                    if (item.had) item.el.classList.add('opacity-0');
-                });
-            }
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -1448,10 +1423,6 @@
             }
         });
     </script>
-
-    <!-- Apply saved settings globally (caret style, theme, sounds, fonts) -->
-    <script src="dual.js?v=4"></script>
-    <script src="settings.js"></script>
 </body>
 
 </html>

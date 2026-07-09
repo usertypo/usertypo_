@@ -23,6 +23,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
+    <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -955,12 +956,13 @@
         style="display:none;">
         <main class="flex-1 w-full max-w-7xl mx-auto px-6 pt-2 pb-6 flex flex-col lg:flex-row gap-6 relative z-10">
             <div class="flex-1 flex flex-col gap-6 min-w-0">
-
+                <div id="stats-capture-area" class="flex flex-col gap-6 w-full">
                 <!-- TOP 3 PODIUM (dynamic) -->
                 <section id="stats-podium" class="flex flex-row items-end justify-center gap-6 pt-16 pb-4"></section>
 
                 <!-- RANKINGS LIST (dynamic) -->
-                <section id="stats-rankings-list" class="flex flex-col gap-3 pb-28"></section>
+                <section id="stats-rankings-list" class="flex flex-col gap-3"></section>
+                </div>
             </div>
 
             <!-- Right: Ad -->
@@ -986,7 +988,7 @@
         </main>
 
         <!-- Stats CTA (matches lobby Ready / Leave) -->
-        <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-5">
+        <div id="stats-action-buttons" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-5">
             <button onclick="showLobbyView()"
                 class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong flex items-center justify-center">
                 <span>Play Again</span>
@@ -996,11 +998,17 @@
                 class="px-8 py-3 panel-surface rounded-xl font-display font-bold text-base uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all">
                 Leave Room
             </button>
+            <button id="screenshot-btn"
+                class="panel-surface flex items-center justify-center w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                title="Share Screenshot">
+                <span class="material-symbols-outlined text-[20px]">ios_share</span>
+            </button>
         </div>
     </div>
     <script src="audio.js"></script>
     <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
+    <script src="screenshot.js"></script>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!--  JAVASCRIPT — Lobby Logic, Typing Engine, View Transitions -->
@@ -1256,19 +1264,27 @@
             };
             const t = themes[place];
             const stats = player.isMe ? userStats : player.botStats;
+            const cardBorderStyle = player.isMe
+                ? 'border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);'
+                : `border:1px solid ${t.border};${t.boxShadow ? ` box-shadow: ${t.boxShadow};` : ''}`;
+            const meBarHtml = player.isMe
+                ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>'
+                : '';
+            const nameHtml = `${player.name}${player.isMe ? ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span>' : ''}`;
             const trophyHtml = t.trophy
                 ? '<span class="material-symbols-outlined text-amber-400 text-[28px] mb-1 block" style="text-shadow: 0 0 12px rgba(251,191,36,0.5);">emoji_events</span>'
                 : '';
-            const glowHtml = t.glow ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full"></div>' : '';
+            const glowHtml = t.glow ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full" data-screenshot-glow></div>' : '';
 
             return `
                 <div class="flex flex-col items-center gap-3 w-[220px] anim-card" style="animation-delay: ${t.delay};">
                     <div class="panel-surface rounded-xl p-5 w-full text-center relative overflow-hidden"
-                        style="border:1px solid ${t.border};${t.boxShadow ? ` box-shadow: ${t.boxShadow};` : ''}">
+                        style="${cardBorderStyle}">
                         <div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b ${t.gradient} to-transparent opacity-${place === 1 ? '80' : '50'}"></div>
+                        ${meBarHtml}
                         ${trophyHtml}
-                        <div class="w-12 h-12 rounded-full ${t.avatarBg} border flex items-center justify-center font-black text-base mx-auto mb-2 ${t.avatarShadow}">${player.initials}</div>
-                        <p class="text-white font-bold text-sm mb-3">${player.name}${player.isMe ? '' : ''}</p>
+                        <div class="w-12 h-12 rounded-full ${player.isMe ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_12px_rgba(0,208,255,0.25)]' : t.avatarBg + ' border'} flex items-center justify-center font-black text-base mx-auto mb-2 ${player.isMe ? '' : t.avatarShadow}">${player.initials}</div>
+                        <p class="text-white font-bold text-sm mb-3">${nameHtml}</p>
                         <div class="relative inline-block mb-1">
                             ${glowHtml}
                             <span class="text-5xl font-black ${t.wpmClass} relative z-10 leading-none tracking-tighter" style="text-shadow: ${t.wpmShadow};">${player.wpm}</span>
@@ -2666,6 +2682,22 @@
                 showLobbyView();
             }
         });
+
+        async function captureRoomStatsScreenshot() {
+            const captureArea = document.getElementById('stats-capture-area');
+            const btn = document.getElementById('screenshot-btn');
+            if (!captureArea || !window.StatsScreenshot) return;
+
+            await StatsScreenshot.capture({
+                captureArea,
+                button: btn,
+                hideSelectors: ['#stats-action-buttons'],
+                padding: 56,
+            });
+        }
+
+        const screenshotBtn = document.getElementById('screenshot-btn');
+        if (screenshotBtn) screenshotBtn.addEventListener('click', captureRoomStatsScreenshot);
     </script>
 </body>
 
