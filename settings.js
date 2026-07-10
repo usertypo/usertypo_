@@ -657,9 +657,49 @@ function applyThemeSettings(settings) {
         /* Radial glow overlay */
         div[style*="radial-gradient"] { background: radial-gradient(ellipse 70% 55% at 50% 38%, rgba(${accentRGB}, 0.05) 0%, transparent 72%) !important; }
 
-        /* ── Glass panels ── */
-        .glass-panel {
-            background: linear-gradient(145deg, rgba(${bgSecRGB}, 0.4) 0%, rgba(${bgSecRGB}, 0.2) 100%) !important;
+        /* ── Glass panels — flat translucent (no light→dark gradient) ── */
+        .glass-panel,
+        .glass-card,
+        #sidebar-menu {
+            background: rgba(${bgSecRGB}, 0.4) !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+
+        /* Settings surfaces — same flat glass as menu sidebar */
+        #settings-nav-pill,
+        .settings-panel-card,
+        #panel-card,
+        .search-input,
+        .quick-btn,
+        .search-result-item,
+        .setting-info-popover,
+        #save-toast > div,
+        #info-portal,
+        .setting-select,
+        .sub-card-header,
+        .opt-btn:not(.active):not(.highlighted) {
+            background: rgba(${bgSecRGB}, 0.4) !important;
+            background-image: none !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+        .setting-select {
+            padding-right: 0.7rem !important;
+        }
+        /* Nested wrappers — no outer box behind pills */
+        #settings-panel .panel-body-inner .sub-setting-card,
+        #settings-panel .panel-body-inner .sub-setting-card.glass-card,
+        .sub-setting-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
         }
 
         /* ── Scrollbar thumb ── */
@@ -931,11 +971,17 @@ function applyThemeSettings(settings) {
         .sub-setting-arrow { color: ${p.accentPrimary} !important; }
         .sidebar-search-input:focus { color: ${p.accentPrimary} !important; }
 
-        /* ── Settings page sub-setting-card ── */
-        .sub-setting-card {
-            border-color: rgba(${accentRGB}, 0.3) !important;
-            box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
-            background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;
+        /* ── Settings page sub-setting-card — no outer box around option rows ── */
+        .sub-setting-card,
+        .sub-setting-card.glass-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+        }
+        .sub-card-header {
+            border-radius: 9999px !important;
         }
 
         /* ── Settings range slider ── */
@@ -951,9 +997,9 @@ function applyThemeSettings(settings) {
             background-image: linear-gradient(${p.accentPrimary}, ${p.accentPrimary}), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
         }
 
-        /* ── Settings select chevron SVG ── */
+        /* ── Settings select — no CSS dropdown arrow (buttons have their own chevron) ── */
         .setting-select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23${p.accentPrimary.slice(1)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+            background-image: none !important;
         }
 
         /* ── SVG graph colors ── */
@@ -1015,11 +1061,15 @@ function applyThemeSettings(settings) {
         }
 
         /* ── Settings page: setting cards, quick buttons, sliders ── */
-        #settings-panel .setting-card.active,
-        .sub-setting-card.active {
+        #settings-panel .setting-card.active {
             border-color: rgba(${accentRGB}, 0.3) !important;
             box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
             background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;
+        }
+        .opt-btn,
+        .setting-select,
+        .sub-card-header {
+            border-radius: 9999px !important;
         }
         .quick-btn:hover {
             background: rgba(${accentRGB}, 0.1) !important;

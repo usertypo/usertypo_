@@ -79,15 +79,18 @@
         html, body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
 
         .glass-panel {
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
+            background: rgba(26, 29, 35, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(26, 29, 35, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
 
         .menu-btn {
@@ -104,11 +107,15 @@
         body { animation: appLoad 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes appLoad { 0% { opacity: 0; } 100% { opacity: 1; } }
 
-        /* â”€â”€â”€ Settings Grid Layout â”€â”€â”€ */
+        /* Settings layout — panel stays fixed next to collapsed pill; expanded pill overlays */
         #settings-container {
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
+            position: relative;
+            display: block;
+            --settings-pill-collapsed: 44px;
+            --settings-pill-expanded: 268px;
+            --settings-pill-gap: 1rem;
+            /* Keep page tall enough that footer stays below the titles pill */
+            min-height: var(--settings-nav-height, 36rem);
         }
 
         :root {
@@ -119,16 +126,17 @@
         }
 
         #settings-nav-pill {
-            position: relative;
-            flex-shrink: 0;
-            width: 268px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 30;
+            width: var(--settings-pill-expanded);
             overflow: hidden;
             border-radius: var(--settings-box-radius);
             transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            align-self: start;
         }
         #settings-nav-pill.is-collapsed {
-            width: 44px;
+            width: var(--settings-pill-collapsed);
         }
 
         
@@ -223,31 +231,137 @@
             color: var(--theme-primary);
         }
 
-        /* Settings Panel */
+        /* Settings Panel — flex row of cards; left edge fixed next to collapsed pill */
         #settings-panel {
-            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-left: calc(var(--settings-pill-collapsed) + var(--settings-pill-gap));
             min-width: 0;
-            overflow: hidden;
             opacity: 1;
-            transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
         }
-        #panel-card {
+        .settings-panel-card {
+            flex: 1 1 100%;
+            max-width: 100%;
+            min-width: 0;
             border-radius: var(--settings-box-radius) !important;
+            transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.4s ease,
+                        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        margin 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        padding 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                        border-width 0.5s ease;
+        }
+        /* When two tabs are open: left ~1/3, right ~2/3 — animate both edges */
+        #settings-panel.has-sub > .settings-panel-card.is-primary:not(.panel-away) {
+            flex: 1 1 33.333%;
+            max-width: 33.333%;
+        }
+        #settings-panel.has-sub > .settings-panel-card.is-detail:not(.panel-away) {
+            flex: 2 1 66.666%;
+            max-width: 66.666%;
+        }
+        /* New panel starts collapsed so the main card can animate narrower */
+        .settings-panel-card.panel-growing,
+        #settings-panel.has-sub > .settings-panel-card.panel-growing {
+            flex: 0 1 0% !important;
+            max-width: 0 !important;
+            opacity: 0;
+            transform: translateX(24px);
+            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-width: 0 !important;
+        }
+        /* Collapsed/hidden panels must not leave an extra flex gap */
+        .settings-panel-card.panel-away {
+            flex: 0 1 0% !important;
+            max-width: 0 !important;
+            min-width: 0 !important;
+            opacity: 0;
+            transform: translateX(-24px);
+            overflow: hidden;
+            pointer-events: none;
+            border-width: 0 !important;
+            margin: 0 -1rem 0 0 !important; /* cancel flex gap so left edge stays put */
+            padding: 0 !important;
+        }
+        .settings-panel-card.panel-exit {
+            flex: 0 1 0% !important;
+            max-width: 0 !important;
+            opacity: 0;
+            transform: translateX(32px);
+            pointer-events: none;
+            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-width: 0 !important;
         }
 
-        /* Unified corner radius across settings page surfaces */
-        #settings-panel .sub-setting-card,
-        #settings-panel .glass-card,
+        /* Unified corner radius — pills for controls, capsule radius for panels */
         .search-result-item,
         .danger-zone,
-        .setting-select,
         .setting-info-popover,
-        .opt-btn,
         .search-input,
         .quick-btn,
         #save-toast > div,
-        #info-portal {
+        #info-portal,
+        #settings-nav-pill,
+        .settings-panel-card {
             border-radius: var(--settings-box-radius) !important;
+        }
+        .setting-select,
+        .opt-btn,
+        .sub-card-header {
+            border-radius: 9999px !important;
+        }
+
+        /* Flat glass — same recipe as menu sidebar (no light→dark gradient) */
+        .search-input,
+        .quick-btn,
+        .search-result-item,
+        .setting-info-popover,
+        #save-toast > div,
+        #settings-nav-pill,
+        .settings-panel-card,
+        #info-portal,
+        .setting-select,
+        .sub-card-header,
+        .opt-btn:not(.active):not(.highlighted) {
+            background: rgba(26, 29, 35, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        /* Nested wrappers — never a box behind pills / headers */
+        #settings-panel .sub-setting-card,
+        #panel-main-content .sub-setting-card,
+        #settings-panel .panel-body-inner .sub-setting-card,
+        #settings-panel .panel-body-inner .sub-setting-card.glass-card,
+        #panel-main-content .sub-setting-card.glass-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+        /* Navigable row header = same pill as setting-select */
+        #settings-panel .sub-card-header,
+        #panel-main-content .sub-card-header {
+            border-radius: 9999px !important;
+            padding: 0.55rem 0.85rem !important;
+        }
+        /* No CSS dropdown arrow — buttons already have their own chevron */
+        .setting-select {
+            background-image: none !important;
+            background-repeat: no-repeat !important;
+            padding-right: 0.7rem !important;
         }
 
         /* Chevron: right → rotate 90° when active */
@@ -256,67 +370,33 @@
         }
         .chevron-icon.rotated { transform: rotate(90deg); }
 
-        /* â”€â”€â”€ Sub-settings Slide Navigation â”€â”€â”€ */
+        /* Panel body */
         #panel-body {
             position: relative;
             overflow: visible;
         }
-        #panel-main-content {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        opacity 0.3s ease;
+        .panel-breadcrumb-parent {
+            color: #64748b;
+            font-weight: 600;
         }
-        #panel-main-content.slide-out {
-            transform: translateX(-100%);
-            opacity: 0;
-            position: absolute;
-            width: 100%;
+        .panel-breadcrumb-sep {
+            color: #475569;
+            margin: 0 0.25rem;
         }
-        #panel-sub-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            transform: translateX(100%);
-            opacity: 0;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        opacity 0.3s ease;
-            pointer-events: none;
+        .panel-back-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            color: #94a3b8;
+            transition: color 0.2s ease, background 0.2s ease;
+            flex-shrink: 0;
         }
-        #panel-sub-content.slide-in {
-            transform: translateX(0);
-            opacity: 1;
-            pointer-events: auto;
-            position: relative;
-        }
-        #panel-sub-content.slide-out {
-            transform: translateX(-100%);
-            opacity: 0;
-            pointer-events: none;
-            position: absolute;
-        }
-        .settings-panel-slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            transform: translateX(100%);
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        opacity 0.3s ease;
-        }
-        .settings-panel-slide.slide-in {
-            transform: translateX(0);
-            opacity: 1;
-            pointer-events: auto;
-            position: relative;
-        }
-        .settings-panel-slide.slide-out {
-            transform: translateX(-100%);
-            opacity: 0;
-            pointer-events: none;
-            position: absolute;
+        .panel-back-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.06);
         }
         .sub-card-header { transition: background 0.2s ease; }
         .sub-card-header:hover { background: rgba(255,255,255,0.04); }
@@ -398,13 +478,9 @@
             z-index: 50;
             width: 260px;
             max-width: calc(100vw - 3rem);
-            /* Match sidebar menu background exactly */
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
-            background-color: rgba(26, 29, 35, 0.85);
             border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
             padding: 0.75rem 0.9rem;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--theme-primary-rgb), 0.08);
-            backdrop-filter: blur(12px);
             opacity: 0;
             pointer-events: none;
             transform: translateY(6px) scale(0.97);
@@ -464,12 +540,12 @@
 
         /* â”€â”€â”€ Option Buttons â”€â”€â”€ */
         .opt-btn {
-            padding: 0.35rem 0.7rem;
+            padding: 0.35rem 0.85rem;
             font-size: 0.65rem;
             font-weight: 600;
             font-family: 'Roboto Mono', monospace;
             border: 1px solid transparent;
-            background: rgba(255,255,255,0.04);
+            border-radius: 9999px;
             color: #94a3b8;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -498,7 +574,6 @@
         /* â”€â”€â”€ Select â”€â”€â”€ */
         .setting-select {
             width: 100%;
-            background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.1);
             padding: 0.4rem 0.7rem;
             color: #cbd5e1;
@@ -509,10 +584,8 @@
             transition: border-color 0.2s ease;
             appearance: none;
             -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            padding-right: 2rem;
+            background-image: none;
+            padding-right: 0.7rem;
         }
         .setting-select:focus { border-color: rgba(var(--theme-primary-rgb),0.4); box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb),0.1); }
         .setting-select option { background: #1a1d23; color: #cbd5e1; }
@@ -528,9 +601,13 @@
             flex: 1;
             max-width: 420px;
         }
+        .search-wrapper > .material-symbols-outlined {
+            z-index: 10;
+            filter: none !important;
+            backdrop-filter: none !important;
+        }
         .search-input {
             width: 100%;
-            background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             padding: 0.55rem 2.5rem 0.55rem 2.5rem;
             color: #cbd5e1;
@@ -581,7 +658,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             color: #64748b;
             cursor: pointer;
@@ -630,9 +706,9 @@
             min-height: 60vh;
         }
         .search-result-item {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
             padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
             margin-bottom: 0.5rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -902,7 +978,7 @@
             <div class="search-area">
                 <div class="search-wrapper">
                     <span
-                        class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none">search</span>
+                        class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none z-10">search</span>
                     <input id="settings-search" type="text" class="search-input" placeholder="Search" />
                     <button id="search-clear-btn" class="search-clear-btn" title="Clear search">
                         <span class="material-symbols-outlined text-[14px]">close</span>
@@ -941,7 +1017,7 @@
         <div id="settings-container">
 
             <!-- â•â•â• LEFT: Nav Cards â•â•â• -->
-            <div id="settings-nav-pill" class="settings-nav-pill glass-panel is-expanded">
+            <div id="settings-nav-pill" class="settings-nav-pill glass-panel bg-surface/85 !backdrop-blur-sm is-expanded">
             <div id="settings-nav">
 
                 <!-- Card 1: Cursor & Motion -->
@@ -1111,7 +1187,7 @@
 
             <!-- â•â•â• RIGHT: Settings Panel â•â•â• -->
             <div id="settings-panel">
-                <div class="glass-panel flex flex-col" id="panel-card">
+                <div class="settings-panel-card glass-panel bg-surface/85 !backdrop-blur-sm flex flex-col" id="panel-card">
                     <!-- Panel Header -->
                     <div class="flex items-center p-4 border-b border-white/5 shrink-0">
                         <div class="flex items-center gap-3">
@@ -4218,9 +4294,6 @@
                             }
                         </script>
 
-                        <!-- Sub-setting slide-in content (injected by JS) -->
-                        <div id="panel-sub-content"></div>
-
                     </div>
                 </div>
             </div>
@@ -4361,10 +4434,30 @@
 
             // Nav pill: expanded on load, collapse after 2s, expand on hover
             const navPill = document.getElementById('settings-nav-pill');
+            const settingsContainerEl = document.getElementById('settings-container');
+            function syncSettingsNavHeight() {
+                if (!navPill || !settingsContainerEl) return;
+                // Measure full expanded content height so footer stays below the pill
+                const wasCollapsed = navPill.classList.contains('is-collapsed');
+                if (wasCollapsed) {
+                    navPill.classList.remove('is-collapsed');
+                    navPill.classList.add('is-expanded');
+                }
+                const h = Math.ceil(navPill.getBoundingClientRect().height);
+                settingsContainerEl.style.setProperty('--settings-nav-height', h + 'px');
+                if (wasCollapsed) {
+                    navPill.classList.remove('is-expanded');
+                    navPill.classList.add('is-collapsed');
+                }
+            }
             if (navPill) {
+                // Wait for card stagger to settle, then lock min-height
+                setTimeout(syncSettingsNavHeight, 1200);
+
                 setTimeout(() => {
                     navPill.classList.remove('is-expanded');
                     navPill.classList.add('is-collapsed');
+                    syncSettingsNavHeight();
                 }, 2000);
 
                 navPill.addEventListener('mouseenter', () => {
@@ -4648,7 +4741,10 @@
             if (content) content.classList.remove('hidden');
 
             // Update panel header
-            document.getElementById('panel-title').textContent = card.querySelector('.card-title').textContent;
+            const catTitle = card.querySelector('.card-title').textContent.trim();
+            const panelTitleEl = document.getElementById('panel-title');
+            panelTitleEl.textContent = catTitle;
+            panelTitleEl.dataset.baseTitle = catTitle;
             document.getElementById('panel-icon').textContent = card.querySelector('.card-icon').textContent;
 
             // Scroll page to align with the top of the settings container
@@ -4690,12 +4786,12 @@
 
         // â”€â”€ SUB-SETTING SLIDE NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         let closeSubTimeout = null;
-        let subStack = [];
+        let panelDepth = [];
         let activeSubCards = [];
 
         function filterSubOptions(input) {
             const query = input.value.toLowerCase();
-            const container = input.closest('.settings-panel-slide') || input.closest('#panel-sub-content');
+            const container = input.closest('.settings-panel-card') || input.closest('.panel-body-inner');
             if (!container) return;
             const options = container.querySelectorAll('.opt-btn');
             options.forEach(opt => {
@@ -4707,6 +4803,98 @@
             });
         }
 
+        function getBaseCategoryTitle() {
+            const el = document.getElementById('panel-title');
+            return (el && (el.dataset.baseTitle || el.textContent) || 'Settings').trim();
+        }
+
+        function formatBreadcrumb(pathTitles) {
+            if (!pathTitles || !pathTitles.length) return '';
+            return pathTitles.map((part, i) => {
+                if (i === pathTitles.length - 1) {
+                    return `<span>${part}</span>`;
+                }
+                return `<span class="panel-breadcrumb-parent">${part}</span><span class="panel-breadcrumb-sep">›</span>`;
+            }).join('');
+        }
+
+        function syncVisiblePanels() {
+            const mainCard = document.getElementById('panel-card');
+            const settingsPanel = document.getElementById('settings-panel');
+            if (!mainCard || !settingsPanel) return;
+
+            const allCards = [mainCard, ...panelDepth];
+            allCards.forEach(c => {
+                c.classList.remove('is-primary', 'is-detail');
+            });
+
+            // Hide panels that should not be visible
+            panelDepth.forEach((p, i) => {
+                const shouldShow = panelDepth.length === 1
+                    ? i === 0
+                    : (i === panelDepth.length - 2 || i === panelDepth.length - 1);
+                if (shouldShow) {
+                    p.classList.remove('panel-away');
+                } else {
+                    p.classList.add('panel-away');
+                    p.classList.remove('is-primary', 'is-detail');
+                }
+            });
+
+            if (panelDepth.length === 0) {
+                mainCard.classList.remove('panel-away', 'is-primary', 'is-detail');
+                settingsPanel.classList.remove('has-sub');
+                return;
+            }
+
+            settingsPanel.classList.add('has-sub');
+
+            if (panelDepth.length === 1) {
+                mainCard.classList.remove('panel-away');
+                mainCard.classList.add('is-primary');
+                panelDepth[0].classList.add('is-detail');
+            } else {
+                mainCard.classList.add('panel-away');
+                mainCard.classList.remove('is-primary', 'is-detail');
+                const left = panelDepth[panelDepth.length - 2];
+                const right = panelDepth[panelDepth.length - 1];
+                left.classList.add('is-primary');
+                right.classList.add('is-detail');
+            }
+        }
+
+        function createSubPanelCard(pathTitles, title, icon, contentHTML, isSearchable) {
+            const card = document.createElement('div');
+            card.className = 'settings-panel-card glass-panel bg-surface/85 !backdrop-blur-sm flex flex-col panel-growing';
+            card.dataset.leafTitle = title;
+            card.dataset.pathTitles = JSON.stringify(pathTitles);
+
+            const searchBlock = isSearchable ? `
+                <div class="relative w-full mb-1">
+                    <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none z-10">search</span>
+                    <input type="text" class="search-input w-full" style="padding-left:2.5rem;" placeholder="Search options..." oninput="filterSubOptions(this)" autocomplete="off">
+                </div>` : '';
+
+            card.innerHTML = `
+                <div class="flex items-center gap-3 p-4 border-b border-white/5 shrink-0">
+                    <button type="button" class="panel-back-btn" title="Back">
+                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    </button>
+                    <div class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">${icon}</span>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-100 truncate min-w-0">${formatBreadcrumb(pathTitles)}</h2>
+                </div>
+                <div class="p-5 panel-body-inner flex flex-col gap-5">
+                    ${searchBlock}
+                    ${contentHTML}
+                </div>
+            `;
+
+            card.querySelector('.panel-back-btn').addEventListener('click', () => popSubSetting());
+            return card;
+        }
+
         function openSubSetting(btn) {
             if (closeSubTimeout) {
                 clearTimeout(closeSubTimeout);
@@ -4714,132 +4902,126 @@
             }
 
             const subCard = btn.closest('.sub-setting-card');
+            if (!subCard) return;
             const subContent = Array.from(subCard.children).find(c => c.classList.contains('sub-setting-content')) || subCard.querySelector('.sub-setting-content');
             const title = subCard.dataset.subTitle || 'Settings';
             const icon = subCard.dataset.subIcon || 'settings';
             const isSearchable = subCard.dataset.searchable === 'true';
-
             if (!subContent) return;
 
-            const mainContent = document.getElementById('panel-main-content');
-            const parentPanel = btn.closest('.settings-panel-slide') || btn.closest('#panel-sub-content');
-            const isNested = parentPanel !== null;
+            const hostCard = btn.closest('.settings-panel-card');
+            const isFromMain = !hostCard || hostCard.id === 'panel-card';
+
+            let pathTitles;
+            if (isFromMain) {
+                pathTitles = [getBaseCategoryTitle(), title];
+                clearSubPanelsDOM();
+                panelDepth = [];
+                activeSubCards = [];
+                document.getElementById('panel-card')?.classList.remove('panel-away');
+            } else {
+                let parentPath = [];
+                try {
+                    parentPath = JSON.parse(hostCard.dataset.pathTitles || '[]');
+                } catch (e) {
+                    parentPath = [hostCard.dataset.leafTitle || getBaseCategoryTitle()];
+                }
+                if (!parentPath.length) parentPath = [getBaseCategoryTitle()];
+                pathTitles = parentPath.concat([title]);
+            }
 
             activeSubCards.push(subCard);
 
-            let subContainer;
+            const contentHTML = subContent.innerHTML;
+            const panel = createSubPanelCard(pathTitles, title, icon, contentHTML, isSearchable);
+            const settingsPanel = document.getElementById('settings-panel');
+            const mainCard = document.getElementById('panel-card');
+            settingsPanel.appendChild(panel);
+            panelDepth.push(panel);
 
-            if (!isNested) {
-                // Clear any dynamic nested sub panels from DOM
-                document.querySelectorAll('.dynamic-sub-panel').forEach(p => p.remove());
-                subStack = [];
-                activeSubCards = [subCard];
+            if (typeof initTooltips === 'function') initTooltips(panel);
 
-                subContainer = document.getElementById('panel-sub-content');
-                subContainer.classList.remove('slide-out');
-            } else {
-                // Nested sub-setting: Spawn a new panel
-                subContainer = document.createElement('div');
-                subContainer.className = 'settings-panel-slide dynamic-sub-panel';
-                document.getElementById('panel-body').appendChild(subContainer);
-                subStack.push(subContainer);
-
-                // Slide out the parent panel to the left
-                parentPanel.classList.remove('slide-in');
-                parentPanel.classList.add('slide-out');
+            // Start split: keep primary at full width for one frame, then animate to 1/3
+            settingsPanel.classList.add('has-sub');
+            if (panelDepth.length === 1 && mainCard) {
+                mainCard.classList.remove('is-primary', 'is-detail', 'panel-away');
+            } else if (panelDepth.length > 1 && mainCard) {
+                mainCard.classList.add('panel-away');
+                const left = panelDepth[panelDepth.length - 2];
+                left.classList.remove('panel-away', 'is-detail');
+                // leave left without is-primary for one frame so it can animate from ~full to 1/3
+                left.classList.remove('is-primary');
             }
+            panel.classList.add('panel-growing');
+            panel.classList.remove('is-primary', 'is-detail');
 
-            // Build sub-content with back button
-            subContainer.innerHTML = `
-                <div class="flex flex-col gap-5">
-                    <button onclick="${isNested ? 'popSubSetting()' : 'closeSubSetting()'}" class="flex items-center gap-2 text-slate-400 hover:text-white transition-all group w-fit -ml-0.5">
-                        <span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">arrow_back</span>
-                        <span class="text-xs font-semibold uppercase tracking-widest">Back</span>
-                    </button>
-                    ${isSearchable ? `
-                    <div class="relative w-full mb-1">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
-                        <input type="text" class="theme-focus w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:bg-white/10 transition-all placeholder-slate-500" placeholder="Search options..." oninput="filterSubOptions(this)" autocomplete="off">
-                    </div>
-                    ` : `
-                    <div class="flex items-center gap-2.5 mb-1">
-                        <div class="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
-                            <span class="material-symbols-outlined text-[15px]">${icon}</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-100">${title}</h3>
-                    </div>
-                    `}
-                    <div class="section-divider"></div>
-                    ${subContent.innerHTML}
-                </div>
-            `;
-
-            if (typeof initTooltips === 'function') initTooltips(subContainer);
-
-            // Trigger animations
-            void subContainer.offsetWidth; // Force reflow
-            if (!isNested) {
-                mainContent.classList.add('slide-out');
-            }
-            subContainer.classList.remove('slide-out');
-            subContainer.classList.add('slide-in');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (panelDepth.length === 1 && mainCard) {
+                        mainCard.classList.add('is-primary');
+                    } else if (panelDepth.length > 1) {
+                        const left = panelDepth[panelDepth.length - 2];
+                        if (left) left.classList.add('is-primary');
+                    }
+                    panel.classList.remove('panel-growing');
+                    panel.classList.add('is-detail');
+                    syncVisiblePanels();
+                });
+            });
 
             requestAnimationFrame(() => {
                 if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
-                const searchInput = subContainer.querySelector('input');
+                const searchInput = panel.querySelector('input.search-input');
                 if (searchInput) searchInput.focus();
             });
         }
 
+        function clearSubPanelsDOM() {
+            panelDepth.forEach(p => p.remove());
+            panelDepth = [];
+            document.querySelectorAll('#settings-panel .settings-panel-card:not(#panel-card)').forEach(p => p.remove());
+        }
+
         function popSubSetting() {
-            if (subStack.length > 0) {
-                if (typeof activeSubCards !== 'undefined') activeSubCards.pop();
-
-                const currentPanel = subStack.pop();
-                // Slide current nested panel out to the right
-                currentPanel.classList.remove('slide-in');
-
-                // Find the previous active sub panel (could be #panel-sub-content or a previous dynamic sub-panel)
-                const prevPanel = subStack.length > 0 ? subStack[subStack.length - 1] : document.getElementById('panel-sub-content');
-
-                // Slide parent panel back in from the left
-                prevPanel.classList.remove('slide-out');
-                prevPanel.classList.add('slide-in');
-
-                // Remove the popped panel from DOM after transition finishes
-                setTimeout(() => {
-                    currentPanel.remove();
-                }, 400);
-
-                requestAnimationFrame(() => {
-                    if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
-                });
-            } else {
+            if (panelDepth.length === 0) {
                 closeSubSetting();
+                return;
             }
+
+            const current = panelDepth.pop();
+            if (typeof activeSubCards !== 'undefined' && activeSubCards.length) activeSubCards.pop();
+
+            current.classList.remove('is-detail', 'is-primary', 'panel-growing');
+            current.classList.add('panel-exit');
+            setTimeout(() => current.remove(), 500);
+
+            syncVisiblePanels();
+
+            requestAnimationFrame(() => {
+                if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
+            });
         }
 
         function closeSubSetting() {
-            const mainContent = document.getElementById('panel-main-content');
-            const subContainer = document.getElementById('panel-sub-content');
+            const mainCard = document.getElementById('panel-card');
+            const settingsPanel = document.getElementById('settings-panel');
 
-            mainContent.classList.remove('slide-out');
-            subContainer.classList.remove('slide-in');
-            subContainer.classList.remove('slide-out');
-
-            // Slide out any dynamic nested panels and schedule their destruction
-            subStack.forEach(panel => {
-                panel.classList.remove('slide-in');
-                setTimeout(() => panel.remove(), 400);
+            panelDepth.forEach(p => {
+                p.classList.remove('is-detail', 'is-primary', 'panel-growing');
+                p.classList.add('panel-exit');
+                setTimeout(() => p.remove(), 500);
             });
-            subStack = [];
-            if (typeof activeSubCards !== 'undefined') activeSubCards = [];
+            panelDepth = [];
+            activeSubCards = [];
 
-            // Clear sub content after animation
+            // Expand main card back to full width while detail exits
+            if (mainCard) mainCard.classList.remove('panel-away', 'is-primary', 'is-detail');
+            if (settingsPanel) settingsPanel.classList.remove('has-sub');
+
             if (closeSubTimeout) clearTimeout(closeSubTimeout);
             closeSubTimeout = setTimeout(() => {
-                subContainer.innerHTML = '';
-            }, 400);
+                document.querySelectorAll('#settings-panel > .settings-panel-card:not(#panel-card)').forEach(p => p.remove());
+            }, 500);
 
             requestAnimationFrame(() => {
                 if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
@@ -4941,7 +5123,7 @@
             if (typeof activeSubCards !== 'undefined' && activeSubCards.length > 0) {
                 const currentCard = activeSubCards[activeSubCards.length - 1];
                 const subTitle = currentCard.dataset.subTitle;
-                const parentContainer = track.closest('.settings-panel-slide') || track.closest('#panel-sub-content');
+                const parentContainer = track.closest('.settings-panel-card') || track.closest('.panel-body-inner');
 
                 if (subTitle && parentContainer) {
                     const allToggles = Array.from(parentContainer.querySelectorAll('.toggle-track'));
@@ -4954,9 +5136,9 @@
                             if (toggles[toggleIndex]) toggles[toggleIndex].classList.toggle('on', isOn);
                         });
 
-                        // 2. Update the actual DOM elements in subStack to prevent reverting on 'Back'
-                        if (typeof subStack !== 'undefined') {
-                            subStack.forEach(panel => {
+                        // 2. Update open sub panels so Back doesn't revert
+                        if (typeof panelDepth !== 'undefined') {
+                            panelDepth.forEach(panel => {
                                 panel.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                                     const toggles = card.querySelectorAll('.toggle-track');
                                     if (toggles[toggleIndex]) toggles[toggleIndex].classList.toggle('on', isOn);
@@ -4992,9 +5174,9 @@
                         }
                     });
 
-                    // 2. Update the actual DOM elements in subStack to prevent reverting on 'Back'
-                    if (typeof subStack !== 'undefined') {
-                        subStack.forEach(panel => {
+                    // 2. Update open sub panels so Back doesn't revert
+                    if (typeof panelDepth !== 'undefined') {
+                        panelDepth.forEach(panel => {
                             panel.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                                 card.querySelectorAll('.opt-btn').forEach(b => {
                                     b.classList.toggle('active', b.textContent === btn.textContent);
