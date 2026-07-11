@@ -165,6 +165,12 @@
             max-width: none !important;
         }
 
+        /* Proportional desktop scaling for typing test (matches index page) */
+        #typing-area {
+            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            line-height: 1.5 !important;
+        }
+
         /* Header Logo (non-clickable) */
         .header-logo-link { display: flex; align-items: center; justify-content: center; height: 48px; width: 180px; }
         .menu-btn { transition: all 0.2s ease; outline: none !important; }
@@ -294,7 +300,7 @@
 
             <main class="flex-1 flex items-center justify-center p-6 relative z-10">
 
-                <div id="test-box" class="relative flex items-center justify-center w-[80vw] max-w-none">
+                <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none">
 
                     <!-- ABOVE: config icons + timer (absolute, does not shift centering) -->
                     <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">

@@ -37,7 +37,11 @@ const DEFAULTS = {
         clickSounds: false,
         errorSounds: 'beep', // Changed from boolean to string
         masterVolume: 50,
+        muted: false,
         soundPack: 'Steelseries Apex Pro V2',
+    },
+    languageContent: {
+        testLanguage: 'english_10k',
     },
     testRules: {
         difficulty: 'Normal',
@@ -358,6 +362,8 @@ const THEME_PALETTES = {
         error: '#ff5555',
     },
 };
+
+window.usertypo_THEME_PALETTES = THEME_PALETTES;
 
 /**
  * Derive lighter / darker shades from a hex color.
@@ -686,6 +692,19 @@ function applyThemeSettings(settings) {
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
+        .footer-pill,
+        #footer-picker-box,
+        .footer-picker-search,
+        .footer-picker-pill,
+        .footer-picker-theme-preview,
+        .footer-picker-list-item:not(.is-active) {
+            background: rgba(${bgSecRGB}, 0.4) !important;
+            background-image: none !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
         .setting-select {
             padding-right: 0.7rem !important;
         }
@@ -807,6 +826,11 @@ function applyThemeSettings(settings) {
         .setting-select { border-color: rgba(${accentRGB}, 0.25) !important; }
         .setting-select:hover { border-color: rgba(${accentRGB}, 0.5) !important; }
         .toggle-track.on { background: ${p.accentPrimary} !important; border-color: ${p.accentPrimary} !important; box-shadow: 0 0 12px rgba(${accentRGB}, 0.4) !important; }
+        .toggle-track.on .toggle-thumb {
+            background: ${onPrimary} !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+        }
 
         /* ── Sign-in page side logo layers ── */
         .side-user-layer { background-color: ${logoUserColor} !important; }
@@ -1492,12 +1516,103 @@ function applySoundscapeSettings(settings) {
         document.body.setAttribute('data-click-sounds', String(!!settings.soundscape.clickSounds));
         document.body.setAttribute('data-error-sounds', String(!!settings.soundscape.errorSounds));
         document.body.setAttribute('data-master-volume', String(settings.soundscape.masterVolume));
+        document.body.setAttribute('data-sound-muted', String(!!settings.soundscape.muted));
         document.body.setAttribute('data-sound-pack', settings.soundscape.soundPack);
     }
 
     // Pre-load the chosen sound pack if the audio manager is available
-    if (settings.soundscape.clickSounds && typeof window.loadSoundPack === 'function') {
+    if (settings.soundscape.clickSounds && !settings.soundscape.muted && typeof window.loadSoundPack === 'function') {
         window.loadSoundPack(settings.soundscape.soundPack);
+    }
+
+    updateFooterMuteUI(settings);
+}
+
+/**
+ * Resolve a language file id to a human-readable display name.
+ */
+function getLanguageDisplayName(langFile) {
+    const file = langFile || 'english_10k';
+    if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
+        const found = ALL_LANGUAGES.find(l => l.file === file);
+        if (found) return found.name;
+    }
+    return file
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+/**
+ * Sync footer theme/language pills (and mute icon on index) with saved settings.
+ */
+function applyFooterSettings(settings) {
+    if (!settings) settings = loadSettings();
+
+    const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const langFile = settings.languageContent?.testLanguage || 'english_10k';
+    const langName = getLanguageDisplayName(langFile);
+
+    document.querySelectorAll('[data-footer-picker]').forEach(el => {
+        el.textContent = `${themeName}, ${langName}`;
+    });
+
+    updateFooterMuteUI(settings);
+}
+
+function updateFooterMuteUI(settings) {
+    if (!settings) settings = loadSettings();
+    const muted = !!settings.soundscape?.muted;
+    const icon = muted ? 'volume_off' : 'volume_up';
+    const label = muted ? 'Unmute sounds' : 'Mute sounds';
+
+    document.querySelectorAll('.footer-mute-btn').forEach(btn => {
+        btn.title = label;
+        btn.setAttribute('aria-label', label);
+        btn.classList.toggle('text-primary', muted);
+        btn.classList.toggle('text-slate-600', !muted);
+    });
+    document.querySelectorAll('[data-footer-mute-icon]').forEach(el => {
+        el.textContent = icon;
+    });
+    document.querySelectorAll('[data-setting="soundscape.muted"]').forEach(track => {
+        track.classList.toggle('on', muted);
+    });
+}
+
+/**
+ * Toggle global mute from the index footer volume icon.
+ * Preserves clickSounds / volume preferences — only flips soundscape.muted.
+ */
+function toggleFooterMute() {
+    const settings = loadSettings();
+    if (!settings.soundscape) settings.soundscape = structuredClone(DEFAULTS.soundscape);
+    settings.soundscape.muted = !settings.soundscape.muted;
+    saveSettings(settings);
+    applySoundscapeSettings(settings);
+}
+
+/**
+ * Select a color theme from the footer picker (or elsewhere) and sync UI.
+ */
+function selectColorTheme(themeName) {
+    const settings = loadSettings();
+    setByPath(settings, 'lookFeel.colorTheme', themeName);
+    saveSettings(settings);
+    applyAllSettings(settings);
+
+    const container = document.querySelector('[data-setting="lookFeel.colorTheme"]');
+    if (container) {
+        const savedNorm = String(themeName).replace(/\s+/g, ' ').trim();
+        container.querySelectorAll('.opt-btn').forEach(btn => {
+            const btnVal = resolveOptValue(btn);
+            btn.classList.toggle('active', btnVal === savedNorm);
+        });
+        const card = container.closest('.sub-setting-card') || container.closest('[data-sub-title]');
+        if (card) {
+            const label = card.querySelector('.setting-select .truncate');
+            if (label) label.textContent = themeName;
+        }
     }
 }
 
@@ -1668,6 +1783,7 @@ function applyAllSettings(settings) {
     applyKeyboardLayoutSettings(settings);
     applyThemeSettings(settings);
     applyLiveFeedSettings(settings);
+    applyFooterSettings(settings);
     refreshActiveTestVisuals();
 }
 
@@ -1853,6 +1969,19 @@ function persistFromToggle(track) {
         applyTestRulesSettings(settings);
         applyKeyboardLayoutSettings(settings);
         applyThemeSettings(settings);
+        applyFooterSettings(settings);
+
+        // Index-only mute toggle in the footer
+        document.querySelectorAll('.footer-mute-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleFooterMute();
+            });
+        });
+
+        if (window.usertypo_footerPicker?.init) {
+            window.usertypo_footerPicker.init();
+        }
 
         // Setup caret width guard for "line" style
         setupCaretWidthGuard();
@@ -2361,10 +2490,14 @@ window.usertypo_settingsApi = {
     persistFromToggle,
     applySoundscapeSettings,
     applyLiveFeedSettings,
+    applyFooterSettings,
     applyAllSettings,
     applyKeymapDisplay,
     refreshActiveTestVisuals,
     reapplyAllSettings: _reapplyAllSettings,
+    toggleFooterMute,
+    selectColorTheme,
+    getLanguageDisplayName,
     isDualPage,
     isRoomPage,
     getEffectiveTapeMode,

@@ -77,6 +77,12 @@
         html { background-color: #020016; }
         html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; }
         html, body { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        /* Responsive proportional scaling: 16px at 1227px viewport (14.5" laptop),
+           scales proportionally for all PC screens. All rem-based Tailwind values
+           (fonts, padding, gaps, widths, border-radius, max-width) auto-scale. */
+        html {
+            font-size: clamp(13px, 1.3032vw, 24px);
+        }
 
         .glass-panel {
             background: rgba(26, 29, 35, 0.4);
@@ -111,8 +117,8 @@
         #settings-container {
             position: relative;
             display: block;
-            --settings-pill-collapsed: 44px;
-            --settings-pill-expanded: 268px;
+            --settings-pill-collapsed: 2.75rem;
+            --settings-pill-expanded: 16.75rem;
             --settings-pill-gap: 1rem;
             /* Keep page tall enough that footer stays below the titles pill */
             min-height: var(--settings-nav-height, 36rem);
@@ -121,8 +127,8 @@
         :root {
             --theme-primary: #00d0ff;
             --theme-primary-rgb: 0, 208, 255;
-            /* Half of collapsed nav width (44px) — forms a pill when collapsed */
-            --settings-box-radius: 22px;
+            /* Half of collapsed nav width — forms a pill when collapsed */
+            --settings-box-radius: 1.375rem;
         }
 
         #settings-nav-pill {
@@ -155,7 +161,7 @@
 
         /* Settings Nav — inner layout is always full width; outer pill clips from the right */
         #settings-nav {
-            width: 268px;
+            width: 16.75rem;
             display: flex;
             flex-direction: column;
             gap: 0.35rem;
@@ -164,7 +170,7 @@
 
         .setting-card {
             display: grid;
-            grid-template-columns: 44px 224px;
+            grid-template-columns: 2.75rem 14rem;
             align-items: center;
             min-height: 3.25rem;
         }
@@ -173,7 +179,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 44px;
+            width: 2.75rem;
             height: 3.25rem;
             padding: 0;
             background: transparent;
@@ -384,8 +390,8 @@
             margin: 0 0.25rem;
         }
         .panel-back-btn {
-            width: 32px;
-            height: 32px;
+            width: 2rem;
+            height: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -410,10 +416,10 @@
         #info-portal {
             position: fixed;
             z-index: 99999;
-            width: 210px;
+            width: 13.125rem;
             padding: 0.5rem 0.65rem;
             border-radius: 0.6rem;
-            font-size: 11.5px !important;
+            font-size: 0.72rem !important;
             line-height: 1.45 !important;
             opacity: 0;
             pointer-events: none;
@@ -430,7 +436,7 @@
             line-height: inherit !important;
         }
         #info-portal .info-title {
-            font-size: 8px !important;
+            font-size: 0.5rem !important;
             font-weight: 700;
             color: var(--theme-primary);
             text-transform: uppercase;
@@ -441,15 +447,15 @@
             gap: 3px;
         }
         #info-portal .info-body {
-            font-size: 11px !important;
+            font-size: 0.6875rem !important;
             line-height: 1.45 !important;
             color: #94a3b8;
         }
 
         /* â”€â”€â”€ Setting Info Button â”€â”€â”€ */
         .setting-info-btn {
-            width: 20px;
-            height: 20px;
+            width: 1.25rem;
+            height: 1.25rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -467,7 +473,7 @@
             transform: scale(1.1);
         }
         .setting-info-btn .material-symbols-outlined {
-            font-size: 13px;
+            font-size: 0.8125rem;
             color: var(--theme-primary);
             transition: all 0.25s ease;
         }
@@ -476,7 +482,7 @@
         .setting-info-popover {
             position: absolute;
             z-index: 50;
-            width: 260px;
+            width: 16.25rem;
             max-width: calc(100vw - 3rem);
             border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
             padding: 0.75rem 0.9rem;
@@ -492,7 +498,7 @@
             transform: translateY(0) scale(1);
         }
         .setting-info-popover .info-title {
-            font-size: 11px;
+            font-size: 0.6875rem;
             font-weight: 700;
             color: var(--theme-primary);
             text-transform: uppercase;
@@ -503,14 +509,14 @@
             gap: 5px;
         }
         .setting-info-popover .info-desc {
-            font-size: 12px;
+            font-size: 0.75rem;
             line-height: 1.6;
             color: #94a3b8;
         }
 
         /* â”€â”€â”€ Toggle Switch â”€â”€â”€ */
         .toggle-track {
-            width: 40px; height: 22px;
+            width: 2.5rem; height: 1.375rem;
             background: rgba(255,255,255,0.08);
             border-radius: 9999px;
             position: relative;
@@ -526,16 +532,18 @@
         }
         .toggle-thumb {
             position: absolute;
-            top: 3px; left: 3px;
-            width: 14px; height: 14px;
+            top: 0.1875rem; left: 0.1875rem;
+            width: 0.875rem; height: 0.875rem;
             background: rgba(170,185,200,0.7);
             border-radius: 9999px;
+            z-index: 1;
             transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), background 0.25s ease;
         }
         .toggle-track.on .toggle-thumb {
-            transform: translateX(18px);
-            background: #ffffff;
-            box-shadow: 0 0 6px rgba(255,255,255,0.8);
+            transform: translateX(1.125rem);
+            background: #0d1117;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
         }
 
         /* â”€â”€â”€ Option Buttons â”€â”€â”€ */
@@ -595,11 +603,12 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            flex-wrap: wrap;
         }
         .search-wrapper {
             position: relative;
             flex: 1;
-            max-width: 420px;
+            max-width: min(26.25rem, calc(100vw - 8rem));
         }
         .search-wrapper > .material-symbols-outlined {
             z-index: 10;
@@ -620,11 +629,11 @@
         .search-input::placeholder { color: #475569; }
         .search-clear-btn {
             position: absolute;
-            right: 10px;
+            right: 0.625rem;
             top: 50%;
             transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
+            width: 1.25rem;
+            height: 1.25rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -653,8 +662,8 @@
             gap: 0.5rem;
         }
         .quick-btn {
-            width: 36px;
-            height: 36px;
+            width: 2.25rem;
+            height: 2.25rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -671,7 +680,7 @@
             box-shadow: 0 0 12px rgba(var(--theme-primary-rgb),0.15);
         }
         .quick-btn .material-symbols-outlined {
-            font-size: 18px;
+            font-size: 1.125rem;
         }
         .quick-btn-tooltip {
             position: absolute;
@@ -683,7 +692,7 @@
             background: rgba(26, 29, 35, 0.92);
             border: 1px solid rgba(var(--theme-primary-rgb),0.2);
             backdrop-filter: blur(12px);
-            font-size: 10px;
+            font-size: 0.625rem;
             font-weight: 600;
             color: #94a3b8;
             white-space: nowrap;
@@ -718,7 +727,7 @@
             background: rgba(var(--theme-primary-rgb),0.04);
         }
         .search-result-category {
-            font-size: 10px;
+            font-size: 0.625rem;
             font-weight: 700;
             color: var(--theme-primary);
             text-transform: uppercase;
@@ -726,12 +735,12 @@
             margin-bottom: 2px;
         }
         .search-result-name {
-            font-size: 13px;
+            font-size: 0.8125rem;
             font-weight: 600;
             color: #e2e8f0;
         }
         .search-result-desc {
-            font-size: 11px;
+            font-size: 0.6875rem;
             color: #64748b;
             margin-top: 2px;
         }
@@ -1536,6 +1545,35 @@
                                             <p class="text-xs text-slate-500">Play sounds on each keypress</p>
                                         </div>
                                         <div class="toggle-track" data-setting="soundscape.clickSounds"
+                                            onclick="toggleSwitch(this)">
+                                            <div class="toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-semibold text-slate-200">Mute Sounds</p>
+                                                <div
+                                                    class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span
+                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div
+                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            <span
+                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                            How it works
+                                                        </div>
+                                                        Silently mutes all typing sounds without changing your click
+                                                        sounds, error sounds, or volume preferences. Also available from
+                                                        the volume icon on the home page footer.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Temporarily silence all audio</p>
+                                        </div>
+                                        <div class="toggle-track" data-setting="soundscape.muted"
                                             onclick="toggleSwitch(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
@@ -4305,9 +4343,9 @@
     <footer class="px-8 py-4 flex justify-end items-center relative z-20 zen-element">
         <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
             <span class="material-symbols-outlined text-[14px]">palette</span>
-            <span>Themes: </span>
-            <button
-                class="bg-surface border border-white/10 px-2 py-1 rounded text-slate-400 hover:text-white hover:border-primary/50 transition-colors">usertypo_</button>
+            <span>Themes and Languages</span>
+            <button type="button" data-footer-picker
+                class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
         </div>
     </footer>
 
@@ -4325,6 +4363,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Always start at the top of the page
+            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+            window.scrollTo(0, 0);
 
             // â”€â”€ SIDEBAR MENU â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const openMenuBtn = document.getElementById('open-menu-btn');
@@ -4425,11 +4466,11 @@
                 }, 150 + index * 90);
             });
 
-            // Default: open Cursor & Motion on load
+            // Default: open Cursor & Motion on load (without scrolling)
             const defaultCard = document.querySelector('.setting-card[data-category="cursor-motion"]');
             if (defaultCard) {
                 const defaultBtn = defaultCard.querySelector('.setting-card-header');
-                if (defaultBtn) openCategory(defaultBtn);
+                if (defaultBtn) openCategory(defaultBtn, { scroll: false });
             }
 
             // Nav pill: expanded on load, collapse after 2s, expand on hover
@@ -4708,7 +4749,8 @@
         // â”€â”€ CATEGORY PANEL FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         let activeCategory = null;
 
-        function openCategory(btn) {
+        function openCategory(btn, options = {}) {
+            const { scroll = true } = options;
             const card = btn.closest('.setting-card');
             const categoryId = card.dataset.category;
             const container = document.getElementById('settings-container');
@@ -4747,9 +4789,11 @@
             panelTitleEl.dataset.baseTitle = catTitle;
             document.getElementById('panel-icon').textContent = card.querySelector('.card-icon').textContent;
 
-            // Scroll page to align with the top of the settings container
-            const offsetTop = container.offsetTop;
-            window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+            // Scroll page to align with the top of the settings container (user navigation only)
+            if (scroll) {
+                const offsetTop = container.offsetTop;
+                window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+            }
 
             // Update scrollbar
             requestAnimationFrame(() => {
@@ -5053,9 +5097,11 @@
             infoPortal.classList.add('visible');
             const portalH = infoPortal.offsetHeight;
 
-            // Use the panel card as boundary if it exists, else viewport
-            const panelCard = document.getElementById('panel-card');
-            const bounds = panelCard ? panelCard.getBoundingClientRect() : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+            // Use the panel that contains this icon as boundary (main or sub-settings tab)
+            const panelCard = wrapper.closest('.settings-panel-card');
+            const bounds = panelCard
+                ? panelCard.getBoundingClientRect()
+                : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
             const GAP = 8;
             const PAD = 8;
 
@@ -5231,6 +5277,7 @@
     <!-- Settings State Management & Global Application -->
     <script src="dual.js?v=4"></script>
     <script src="settings.js"></script>
+    <script src="footer-picker.js"></script>
     <script src="settings-search.js"></script>
 </body>
 

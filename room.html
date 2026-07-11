@@ -85,6 +85,17 @@
             background-color: #020016;
         }
 
+        /* Responsive proportional scaling: 16px at 1227px viewport (14.5" laptop) */
+        html {
+            font-size: clamp(13px, 1.3032vw, 24px);
+        }
+
+        /* Proportional desktop scaling for typing test (matches index page) */
+        #room-typing-area {
+            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            line-height: 1.5 !important;
+        }
+
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
             display: block !important;
@@ -270,7 +281,7 @@
             top: 0;
             width: 0;
             height: 0;
-            transform: rotate(var(--arm-angle)) translateX(138px);
+            transform: rotate(var(--arm-angle)) translateX(8.625rem);
         }
         .orbit-counter {
             animation: orbitSpinReverse 72s linear infinite;
@@ -282,16 +293,16 @@
 
         .player-node {
             position: relative;
-            width: 52px;
-            height: 52px;
-            margin-left: -26px;
-            margin-top: -26px;
+            width: 3.25rem;
+            height: 3.25rem;
+            margin-left: -1.625rem;
+            margin-top: -1.625rem;
             flex-shrink: 0;
             cursor: pointer;
         }
         .player-avatar-ring {
-            width: 52px;
-            height: 52px;
+            width: 3.25rem;
+            height: 3.25rem;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid rgba(255, 255, 255, 0.15);
@@ -301,8 +312,8 @@
         }
         .player-node-img {
             display: block;
-            width: 52px;
-            height: 52px;
+            width: 3.25rem;
+            height: 3.25rem;
             object-fit: cover;
         }
         .player-node.is-ready .player-avatar-ring {
@@ -340,7 +351,7 @@
             -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #f1f5f9;
-            font-size: 11px;
+            font-size: 0.6875rem;
             font-weight: 700;
             font-family: 'Inter', sans-serif;
             letter-spacing: 0.04em;
@@ -496,7 +507,7 @@
 
         <!-- Player Orbit Arena -->
         <div class="flex-1 flex items-center justify-center relative min-h-0" id="lobby-orbit-arena">
-            <div class="relative w-[min(72vw,340px)] h-[min(72vw,340px)]" id="lobby-orbit-system">
+            <div class="relative w-[min(72vw,21.25rem)] h-[min(72vw,21.25rem)]" id="lobby-orbit-system">
 
                 <div class="orbit-ring" id="lobby-orbit-ring">
 
@@ -866,10 +877,10 @@
     <div id="test-view" class="view-transition hidden flex-1 flex flex-col relative z-10 opacity-0"
         style="display:none;">
         <main class="flex-1 flex items-start justify-center relative z-10">
-            <div class="w-[90vw] flex gap-14 items-center min-w-0 max-w-full">
+            <div class="w-[min(90vw,80rem)] flex gap-14 items-center min-w-0 max-w-full">
 
                 <!-- LEADERBOARD SIDEBAR (exact copy from tournament.html) -->
-                <div class="w-[280px] shrink-0 flex flex-col gap-3" style="margin-left: -24px; padding-bottom: 24px;">
+                <div class="w-[17.5rem] shrink-0 flex flex-col gap-3" style="margin-left: -1.5rem; padding-bottom: 1.5rem;">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[10px] font-bold tracking-[2px] uppercase text-slate-500">Leaderboard</span>
                         <span

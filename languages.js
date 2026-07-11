@@ -488,6 +488,9 @@ function saveLanguage(filename) {
             if (!window.usertypo_settings.languageContent) window.usertypo_settings.languageContent = {};
             window.usertypo_settings.languageContent.testLanguage = filename;
         }
+        if (window.usertypo_settingsApi?.applyFooterSettings) {
+            window.usertypo_settingsApi.applyFooterSettings();
+        }
     } catch (e) {
         console.warn('[languages] Failed to save language:', e);
     }
