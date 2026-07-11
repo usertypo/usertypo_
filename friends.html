@@ -95,8 +95,9 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
         .glass-panel {
-            @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
+            background: rgba(26, 29, 35, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
@@ -115,6 +116,11 @@
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
         
+        :root {
+            --theme-primary: #00d0ff;
+            --theme-primary-rgb: 0, 208, 255;
+        }
+
         .menu-btn { 
             transition: all 0.2s ease; 
             outline: none !important;
@@ -122,80 +128,176 @@
         }
         .menu-btn:focus, .menu-btn:active { outline: none !important; background: transparent; }
         .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
-        .menu-btn.is-active { color: #00d0ff !important; text-shadow: 0 0 15px rgba(0, 208, 255, 0.8); }
+        .menu-btn.is-active { color: var(--theme-primary) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.8); }
 
         .slide-ease {
             transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Expanding Bubble Menu */
+        /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         .expanding-bubble {
             position: absolute;
             top: 0;
             left: 0;
-            width: 40px;
-            max-height: 40px;
-            border-radius: 20px;
-            overflow: hidden;
-            background-color: rgba(26, 29, 35, 0.4);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        border-radius 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        background-color 0.4s ease,
-                        box-shadow 0.4s ease,
-                        border-color 0.4s ease;
-            z-index: 100;
-        }
-        
-        .expanding-bubble:hover {
-            box-shadow: 0 0 15px rgba(0, 208, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .expanding-bubble.is-expanded {
-            width: 260px;
-            max-height: 800px;
-            border-radius: 20px;
-            background-color: rgba(26, 29, 35, 0.85); /* panel-surface */
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            border-color: rgba(255, 255, 255, 0.08);
-        }
-
-        .bubble-header {
+            box-sizing: border-box;
             width: 40px;
             height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: default;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .expanding-bubble:not(.is-open):hover {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
+            color: #ffffff;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+        }
+
+        .expanding-bubble.is-open {
+            border-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        #bubble-toggle {
+            appearance: none;
+            -webkit-appearance: none;
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            z-index: 2;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            line-height: 0;
+            font-size: 0;
             cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #bubble-toggle:focus,
+        #bubble-toggle:active {
+            outline: none;
+            background: transparent;
+        }
+
+        .bubble-icon-stack {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .bubble-toggle-icon {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            display: block;
+            width: 24px;
+            height: 24px;
+            color: var(--theme-primary);
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
+            transform-origin: center center;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        z-index 0s step-end 0.4s,
+                        color 0.2s ease,
+                        filter 0.2s ease;
+        }
+
+        .bubble-toggle-icon-menu {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+            z-index: 2;
+        }
+
+        .bubble-toggle-icon-close {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.75);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .expanding-bubble.is-icon-open .bubble-toggle-icon-menu {
+            opacity: 0;
+            transform: rotate(-90deg) scale(0.75);
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        z-index 0s step-start 0s,
+                        color 0.2s ease,
+                        filter 0.2s ease;
+        }
+
+        .expanding-bubble.is-icon-open .bubble-toggle-icon-close {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+            z-index: 2;
+            pointer-events: auto;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        z-index 0s step-start 0s,
+                        color 0.2s ease,
+                        filter 0.2s ease;
+        }
+
+        #bubble-toggle:hover .bubble-toggle-icon {
+            color: #ffffff;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
         }
 
         .bubble-content {
             width: 260px;
-            opacity: 0;
+            margin-top: 40px;
             pointer-events: none;
-            transition: opacity 0.2s ease;
         }
 
-        .expanding-bubble.is-expanded .bubble-content {
-            opacity: 1;
+        .expanding-bubble.is-open .bubble-content {
             pointer-events: auto;
-            transition: opacity 0.3s ease 0.2s; /* Delayed fade in */
         }
-        
-        .bubble-icon {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+        .bubble-nav-link {
+            cursor: pointer;
+            color: #cbd5e1;
+            transition: color 0.2s ease, background-color 0.2s ease;
         }
-        
-        .bubble-icon.is-expanded {
-            transform: rotate(90deg);
+        .bubble-nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .bubble-nav-link.is-active {
+            color: var(--theme-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .bubble-nav-link .nav-icon {
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+        .bubble-nav-link:hover .nav-icon,
+        .bubble-nav-link.is-active .nav-icon {
+            color: var(--theme-primary);
+            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);
+        }
+        .bubble-user-avatar {
+            background-color: var(--theme-primary);
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.4);
+        }
+        .bubble-user-tier {
+            color: var(--theme-primary);
         }
 
         .zen-hidden {
@@ -276,35 +378,43 @@
     <header class="flex items-center justify-between p-4 bg-transparent shrink-0 relative z-20">
         <div class="flex items-center gap-3 w-1/3 zen-element">
             <!-- Expanding Bubble Menu -->
-            <div class="relative" id="expanding-menu-wrapper" style="width: 40px; height: 40px;">
-                <div id="expanding-bubble" class="expanding-bubble group cursor-pointer">
-                    <!-- Header (Icon) -->
-                    <div id="bubble-header" class="bubble-header text-slate-300 group-hover:text-white transition-colors">
-                        <span id="bubble-icon" class="material-symbols-outlined text-[24px] leading-none flex items-center justify-center text-primary group-hover:text-white transition-colors bubble-icon">menu</span>
-                    </div>
+            <div class="relative overflow-visible" id="expanding-menu-wrapper" style="width: 40px; height: 40px;">
+                <div id="expanding-bubble" class="expanding-bubble glass-panel bg-surface/85 !backdrop-blur-sm transition-all">
+                    <button type="button" id="bubble-toggle" aria-label="Open menu" aria-expanded="false">
+                        <span class="bubble-icon-stack" aria-hidden="true">
+                            <svg class="bubble-toggle-icon bubble-toggle-icon-menu" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="6" width="16" height="2" rx="1"></rect>
+                                <rect x="4" y="11" width="16" height="2" rx="1"></rect>
+                                <rect x="4" y="16" width="16" height="2" rx="1"></rect>
+                            </svg>
+                            <svg class="bubble-toggle-icon bubble-toggle-icon-close" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 7L17 17M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                            </svg>
+                        </span>
+                    </button>
 
                     <!-- Floating Dropdown Content -->
                     <div id="bubble-content" class="bubble-content flex flex-col">
                         <nav class="flex flex-col gap-2 py-1 px-3">
                             <a href="index.html"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group/link">
-                                <span class="material-symbols-outlined text-[20px] group-hover/link:text-primary group-hover/link:[text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">keyboard</span>
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
+                                <span class="material-symbols-outlined nav-icon text-[20px]">keyboard</span>
                                 <span class="font-bold text-sm tracking-wide">Typing Test</span>
                             </a>
                             <a href="friends.html"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-primary bg-white/5 transition-all group/link">
-                                <span class="material-symbols-outlined text-[20px] [text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">group</span>
+                                class="bubble-nav-link is-active flex items-center gap-3 px-4 py-3 rounded-xl">
+                                <span class="material-symbols-outlined nav-icon text-[20px]">group</span>
                                 <span class="font-bold text-sm tracking-wide">Friends</span>
                             </a>
                             <a href="leaderboards.html"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group/link">
-                                <span class="material-symbols-outlined text-[20px] group-hover/link:text-primary group-hover/link:[text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">emoji_events</span>
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
+                                <span class="material-symbols-outlined nav-icon text-[20px]">emoji_events</span>
                                 <span class="font-bold text-sm tracking-wide">Leaderboards</span>
                             </a>
                             <a href="#"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group/link">
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <div class="relative flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-[20px] group-hover/link:text-primary group-hover/link:[text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">notifications</span>
+                                    <span class="material-symbols-outlined nav-icon text-[20px]">notifications</span>
                                     <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] border border-surface"></span>
                                 </div>
                                 <span class="font-bold text-sm tracking-wide">Notifications</span>
@@ -313,13 +423,13 @@
                             <div class="h-px bg-white/10 w-full my-1 mx-auto" style="width: calc(100% - 2rem);"></div>
 
                             <a href="settings.html"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group/link">
-                                <span class="material-symbols-outlined text-[20px] group-hover/link:text-primary group-hover/link:[text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">settings</span>
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
+                                <span class="material-symbols-outlined nav-icon text-[20px]">settings</span>
                                 <span class="font-bold text-sm tracking-wide">Settings</span>
                             </a>
                             <a href="#"
-                                class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all group/link">
-                                <span class="material-symbols-outlined text-[20px] group-hover/link:text-primary group-hover/link:[text-shadow:0_0_10px_rgba(0,208,255,0.8)] transition-all">info</span>
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
+                                <span class="material-symbols-outlined nav-icon text-[20px]">info</span>
                                 <span class="font-bold text-sm tracking-wide">About</span>
                             </a>
                             
@@ -331,12 +441,12 @@
                             <a href="userstats.html"
                                 class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group/link">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-background-dark font-black text-sm shadow-[0_0_15px_rgba(0,208,255,0.4)]">
+                                    <div class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
                                         G
                                     </div>
                                     <div class="flex flex-col justify-center">
                                         <span class="text-white font-bold text-xs leading-tight">GAMER_42</span>
-                                        <span class="text-primary text-[10px] font-bold tracking-wide">Pro Member</span>
+                                        <span class="bubble-user-tier text-[10px] font-bold tracking-wide">Pro Member</span>
                                     </div>
                                 </div>
                                 <button class="text-slate-500 group-hover/link:text-white transition-colors mr-1">
@@ -1405,41 +1515,90 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- EXPANDING BUBBLE MENU LOGIC ---
             const expandingBubble = document.getElementById('expanding-bubble');
-            const bubbleIcon = document.getElementById('bubble-icon');
+            const bubbleToggle = document.getElementById('bubble-toggle');
             let bubbleOpen = false;
+            let bubbleExpandedHeight = null;
+            const BUBBLE_W_COLLAPSED = 40;
+            const BUBBLE_H_COLLAPSED = 40;
+            const BUBBLE_W_EXPANDED = 260;
+            const BUBBLE_ANIM_MS = 400;
+            const BUBBLE_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
+
+            function measureBubbleExpandedHeight() {
+                expandingBubble.style.visibility = 'hidden';
+                expandingBubble.classList.add('is-open');
+                expandingBubble.style.transition = 'none';
+                expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
+                expandingBubble.style.height = 'auto';
+                const height = expandingBubble.scrollHeight;
+                expandingBubble.classList.remove('is-open');
+                expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
+                expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+                expandingBubble.style.visibility = '';
+                expandingBubble.style.transition = '';
+                return height;
+            }
+
+            function runBubbleAnimation(open) {
+                if (!bubbleExpandedHeight) {
+                    bubbleExpandedHeight = measureBubbleExpandedHeight();
+                }
+
+                const transition = `width ${BUBBLE_ANIM_MS}ms ${BUBBLE_EASING}, height ${BUBBLE_ANIM_MS}ms ${BUBBLE_EASING}`;
+
+                if (open) {
+                    bubbleOpen = true;
+                    bubbleToggle.setAttribute('aria-label', 'Close menu');
+                    bubbleToggle.setAttribute('aria-expanded', 'true');
+                    expandingBubble.classList.add('is-open');
+                    expandingBubble.classList.add('is-icon-open');
+                    expandingBubble.style.transition = 'none';
+                    expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
+                    expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+                    void expandingBubble.offsetWidth;
+                    expandingBubble.style.transition = transition;
+                    expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
+                    expandingBubble.style.height = bubbleExpandedHeight + 'px';
+                } else {
+                    if (!bubbleOpen) return;
+                    bubbleOpen = false;
+                    bubbleToggle.setAttribute('aria-label', 'Open menu');
+                    bubbleToggle.setAttribute('aria-expanded', 'false');
+                    expandingBubble.classList.remove('is-icon-open');
+                    expandingBubble.classList.remove('is-open');
+                    expandingBubble.style.transition = transition;
+                    expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
+                    expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+                    setTimeout(() => {
+                        if (!bubbleOpen) {
+                            expandingBubble.style.transition = '';
+                            expandingBubble.style.width = '';
+                            expandingBubble.style.height = '';
+                        }
+                    }, BUBBLE_ANIM_MS);
+                }
+            }
 
             function openBubble() {
-                bubbleOpen = true;
-                expandingBubble.classList.add('is-expanded');
-                bubbleIcon.textContent = 'close';
-                bubbleIcon.classList.add('is-expanded');
+                runBubbleAnimation(true);
             }
 
             function closeBubble() {
-                bubbleOpen = false;
-                expandingBubble.classList.remove('is-expanded');
-                bubbleIcon.textContent = 'menu';
-                bubbleIcon.classList.remove('is-expanded');
+                runBubbleAnimation(false);
             }
 
-            if (expandingBubble) {
-                expandingBubble.addEventListener('click', (e) => {
-                    // Prevent closing if they click on an actual link inside the bubble
-                    if (e.target.closest('a')) return;
-                    
+            if (expandingBubble && bubbleToggle) {
+                bubbleToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     if (bubbleOpen) {
-                        // If they clicked the header/icon, close it
-                        if (e.target.closest('#bubble-header')) {
-                            closeBubble();
-                        }
+                        closeBubble();
                     } else {
                         openBubble();
                     }
                 });
 
-                // Close on outside click
-                document.addEventListener('click', (e) => {
-                    if (bubbleOpen && !expandingBubble.contains(e.target)) {
+                expandingBubble.addEventListener('mouseleave', () => {
+                    if (bubbleOpen) {
                         closeBubble();
                     }
                 });

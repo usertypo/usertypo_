@@ -666,7 +666,8 @@ function applyThemeSettings(settings) {
         /* ── Glass panels — flat translucent (no light→dark gradient) ── */
         .glass-panel,
         .glass-card,
-        #sidebar-menu {
+        #sidebar-menu,
+        #expanding-bubble {
             background: rgba(${bgSecRGB}, 0.4) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
