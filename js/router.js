@@ -88,14 +88,13 @@
 
     function looksLikeSpaShell(html) {
         if (!html || typeof html !== 'string') return true;
-        // Shell markers — page fragments must never contain these IDs / docs
+        // Shell-only markers. Do NOT use ids pages may reuse (e.g. dual's #expanding-bubble).
         if (/id=["']spa-page-root["']/i.test(html)) return true;
         if (/id=["']spa-shell-footer["']/i.test(html)) return true;
         if (/id=["']spa-content["']/i.test(html)) return true;
-        if (/id=["']expanding-bubble["']/i.test(html)) return true;
         if (/id=["']app-body["']/i.test(html)) return true;
-        if (/<html[\s>]/i.test(html)) return true;
         if (/js\/router\.js/i.test(html)) return true;
+        if (/<html[\s>]/i.test(html) && /<\/html>/i.test(html)) return true;
         return false;
     }
 
