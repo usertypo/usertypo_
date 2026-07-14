@@ -1,0 +1,28 @@
+# Cloudflare Pages SPA rules.
+# More specific rules must come BEFORE the catch-all.
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+/pages/*          /pages/:splat          200
+/css/*            /css/:splat            200
+/js/*             /js/:splat             200
+/logo-assets/*    /logo-assets/:splat    200
+/sounds/*         /sounds/:splat         200
+/lang/*           /lang/:splat           200
+/*.js             /:splat.js             200
+/*.css            /:splat.css            200
+/*.json           /:splat.json           200
+/*.mp3            /:splat.mp3            200
+/*.wav            /:splat.wav            200
+/*.png            /:splat.png            200
+/*.jpg            /:splat.jpg            200
+/*.jpeg           /:splat.jpeg           200
+/*.gif            /:splat.gif            200
+/*.svg            /:splat.svg            200
+/*.webp           /:splat.webp           200
+/*.woff           /:splat.woff           200
+/*.woff2          /:splat.woff2          200
+/*.ico            /:splat.ico            200
+/*.map            /:splat.map            200
+
+# Client-side SPA routes → shell
+/*    /index.html   200

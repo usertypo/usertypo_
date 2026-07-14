@@ -1,112 +1,6 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en">
-
-<head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Friends - Play With Friends | usertypo_ </title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Cutive&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Cutive+Mono&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=SUSE:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet" />
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00d0ff',
-                        'primary-dark': '#0090b0',
-                        'primary-light': '#33d9ff',
-                        background: '#121418',
-                        'background-dark': '#0e1013',
-                        surface: '#1a1d23',
-                        'surface-light': '#252932',
-                        error: '#ff3333',
-                    },
-                    fontFamily: {
-                        mono: ['"Roboto Mono"', 'monospace'],
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    keyframes: {
-                        blink: {
-                            '0%, 100%': { opacity: '1' },
-                            '50%': { opacity: '0' },
-                        },
-                        breath: {
-                            '0%, 100%': { opacity: '1', textShadow: '0 0 10px rgba(0,208,255,0.6)' },
-                            '50%': { opacity: '0.2', textShadow: '0 0 2px rgba(0,208,255,0.1)' },
-                        },
-                        boxFadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        'fade-in-up': {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        'fade-in': {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        }
-                    },
-                    animation: {
-                        blink: 'blink 1s step-end infinite',
-                        breath: 'breath 2s ease-in-out infinite',
-                        boxFadeIn: 'boxFadeIn 0.5s ease-out forwards',
-                        'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'fade-in': 'fade-in 1s ease-out forwards',
-                    }
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        /* HIDE MAIN WINDOW SCROLLBAR PERMANENTLY */
-        html::-webkit-scrollbar, body::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-        }
-        html, body {
-            -ms-overflow-style: none !important;  
-            scrollbar-width: none !important;  
-        }
-        /* Responsive proportional scaling: 16px at 1227px viewport (14.5" laptop),
-           scales proportionally for all PC screens. All rem-based Tailwind values
-           (fonts, padding, gaps, widths, border-radius, max-width) auto-scale. */
-        html {
-            font-size: clamp(13px, 1.3032vw, 24px);
-        }
+<style type="text/tailwindcss">
+/* HIDE MAIN WINDOW SCROLLBAR PERMANENTLY */
         /* Custom Scrollbar for inner elements like the leaderboard */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; display: block !important; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-
-        .glass-panel {
-            background: rgba(26, 29, 35, 0.4);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        .glass-card {
-            @apply bg-surface/20 backdrop-blur-sm border border-white/5;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
         /* Exact match for open header sidebar menu */
         .panel-surface {
             background-color: rgba(26, 29, 35, 0.85) !important;
@@ -121,195 +15,7 @@
             --theme-primary-rgb: 0, 208, 255;
         }
 
-        .menu-btn { 
-            transition: all 0.2s ease; 
-            outline: none !important;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .menu-btn:focus, .menu-btn:active { outline: none !important; background: transparent; }
-        .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
-        .menu-btn.is-active { color: var(--theme-primary) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.8); }
-
-        .slide-ease {
-            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
-        .expanding-bubble {
-            position: absolute;
-            top: 0;
-            left: 0;
-            box-sizing: border-box;
-            width: 40px;
-            height: 40px;
-            border-radius: 20px;
-            overflow: hidden;
-            cursor: default;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            z-index: 100;
-        }
-
-        .expanding-bubble:not(.is-open):hover {
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
-            background-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
-            color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
-        }
-
-        .expanding-bubble.is-open {
-            border-color: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-        }
-
-        #bubble-toggle {
-            appearance: none;
-            -webkit-appearance: none;
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            z-index: 2;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            margin: 0;
-            border: none;
-            background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 0;
-            font-size: 0;
-            cursor: pointer;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        #bubble-toggle:focus,
-        #bubble-toggle:active {
-            outline: none;
-            background: transparent;
-        }
-
-        .bubble-icon-stack {
-            position: relative;
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
-        }
-
-        .bubble-toggle-icon {
-            position: absolute;
-            inset: 0;
-            margin: auto;
-            display: block;
-            width: 24px;
-            height: 24px;
-            color: var(--theme-primary);
-            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
-            transform-origin: center center;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        z-index 0s step-end 0.4s,
-                        color 0.2s ease,
-                        filter 0.2s ease;
-        }
-
-        .bubble-toggle-icon-menu {
-            opacity: 1;
-            transform: rotate(0deg) scale(1);
-            z-index: 2;
-        }
-
-        .bubble-toggle-icon-close {
-            opacity: 0;
-            transform: rotate(90deg) scale(0.75);
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .expanding-bubble.is-icon-open .bubble-toggle-icon-menu {
-            opacity: 0;
-            transform: rotate(-90deg) scale(0.75);
-            z-index: 1;
-            pointer-events: none;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        z-index 0s step-start 0s,
-                        color 0.2s ease,
-                        filter 0.2s ease;
-        }
-
-        .expanding-bubble.is-icon-open .bubble-toggle-icon-close {
-            opacity: 1;
-            transform: rotate(0deg) scale(1);
-            z-index: 2;
-            pointer-events: auto;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                        z-index 0s step-start 0s,
-                        color 0.2s ease,
-                        filter 0.2s ease;
-        }
-
-        #bubble-toggle:hover .bubble-toggle-icon {
-            color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
-        }
-
-        .bubble-content {
-            width: 260px;
-            margin-top: 40px;
-            pointer-events: none;
-        }
-
-        .expanding-bubble.is-open .bubble-content {
-            pointer-events: auto;
-        }
-
-        .bubble-nav-link {
-            cursor: pointer;
-            color: #cbd5e1;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        .bubble-nav-link:hover {
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .bubble-nav-link.is-active {
-            color: var(--theme-primary);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .bubble-nav-link .nav-icon {
-            transition: color 0.2s ease, text-shadow 0.2s ease;
-        }
-        .bubble-nav-link:hover .nav-icon,
-        .bubble-nav-link.is-active .nav-icon {
-            color: var(--theme-primary);
-            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);
-        }
-        .bubble-user-avatar {
-            background-color: var(--theme-primary);
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.4);
-        }
-        .bubble-user-tier {
-            color: var(--theme-primary);
-        }
-
-        .zen-hidden {
-            opacity: 0 !important;
-            pointer-events: none !important;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        .zen-element {
-            transition: opacity 0.5s ease-in-out;
-        }
-        
         body {
             color: #cbd5e1; /* slate-300 */
         }
@@ -355,133 +61,9 @@
         }
     
         /* Header Logo */
-        .header-logo-link { display: flex; align-items: center; justify-content: center; height: 48px; width: 180px; }
-        .header-logo-container { position: relative; width: 500px; height: 500px; transform: scale(0.5); margin: -250px; flex-shrink: 0; pointer-events: none; }
-        .header-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
-        .header-typ-layer { background-color: #95efff; -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
-        .header-user-layer { background-color: #ffffff; -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
-        .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; animation: header-fade-o 1s ease-out 0s forwards; }
-        .header-typ-wrapper { z-index: 1; animation: header-fade-typ 1s ease-out 0s forwards; }
-        .header-user-wrapper { z-index: 2; animation: header-fade-user 1s ease-out 0s forwards; }
-        @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(128, 235, 255, 0)); } 100% { filter: drop-shadow(0 0 6px #95efff) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); } }
-        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); } }
-        @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); } }
-    </style>
-</head>
+</style>
 
-<body class="bg-transparent text-slate-300 font-sans h-screen flex flex-col relative overflow-hidden" id="app-body">
-
-    <div class="fixed inset-0 z-0" style="background-color: #020016;"></div>
-
-
-    <header class="flex items-center justify-between p-4 bg-transparent shrink-0 relative z-20">
-        <div class="flex items-center gap-3 w-1/3 zen-element">
-            <!-- Expanding Bubble Menu -->
-            <div class="relative overflow-visible" id="expanding-menu-wrapper" style="width: 40px; height: 40px;">
-                <div id="expanding-bubble" class="expanding-bubble glass-panel bg-surface/85 !backdrop-blur-sm transition-all">
-                    <button type="button" id="bubble-toggle" aria-label="Open menu" aria-expanded="false">
-                        <span class="bubble-icon-stack" aria-hidden="true">
-                            <svg class="bubble-toggle-icon bubble-toggle-icon-menu" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="6" width="16" height="2" rx="1"></rect>
-                                <rect x="4" y="11" width="16" height="2" rx="1"></rect>
-                                <rect x="4" y="16" width="16" height="2" rx="1"></rect>
-                            </svg>
-                            <svg class="bubble-toggle-icon bubble-toggle-icon-close" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 7L17 17M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-                            </svg>
-                        </span>
-                    </button>
-
-                    <!-- Floating Dropdown Content -->
-                    <div id="bubble-content" class="bubble-content flex flex-col">
-                        <nav class="flex flex-col gap-2 py-1 px-3">
-                            <a href="index.html"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">keyboard</span>
-                                <span class="font-bold text-sm tracking-wide">Typing Test</span>
-                            </a>
-                            <a href="friends.html"
-                                class="bubble-nav-link is-active flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">group</span>
-                                <span class="font-bold text-sm tracking-wide">Friends</span>
-                            </a>
-                            <a href="leaderboards.html"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">emoji_events</span>
-                                <span class="font-bold text-sm tracking-wide">Leaderboards</span>
-                            </a>
-                            <a href="#"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <div class="relative flex items-center justify-center">
-                                    <span class="material-symbols-outlined nav-icon text-[20px]">notifications</span>
-                                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] border border-surface"></span>
-                                </div>
-                                <span class="font-bold text-sm tracking-wide">Notifications</span>
-                            </a>
-
-                            <div class="h-px bg-white/10 w-full my-1 mx-auto" style="width: calc(100% - 2rem);"></div>
-
-                            <a href="settings.html"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">settings</span>
-                                <span class="font-bold text-sm tracking-wide">Settings</span>
-                            </a>
-                            <a href="#"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">info</span>
-                                <span class="font-bold text-sm tracking-wide">About</span>
-                            </a>
-                            
-                            <div class="h-px bg-white/10 w-full my-1 mx-auto" style="width: calc(100% - 2rem);"></div>
-                        </nav>
-
-                        <!-- User Card -->
-                        <div class="px-2 pb-2 pt-1">
-                            <a href="userstats.html"
-                                class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group/link">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
-                                        G
-                                    </div>
-                                    <div class="flex flex-col justify-center">
-                                        <span class="text-white font-bold text-xs leading-tight">GAMER_42</span>
-                                        <span class="bubble-user-tier text-[10px] font-bold tracking-wide">Pro Member</span>
-                                    </div>
-                                </div>
-                                <button class="text-slate-500 group-hover/link:text-white transition-colors mr-1">
-                                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                                </button>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-center w-1/3">
-            <a href="index.html" class="header-logo-link">
-                <div class="header-logo-container">
-                    <div class="header-logo-layer header-typ-wrapper">
-                        <div class="header-logo-layer header-dynamic-layer header-typ-layer"></div>
-                    </div>
-                    <div class="header-logo-layer header-user-wrapper">
-                        <div class="header-logo-layer header-dynamic-layer header-user-layer"></div>
-                    </div>
-                    <img src="logo-assets/o.png" class="header-logo-layer header-static-layer">
-                </div>
-            </a>
-        </div>
-
-        <div class="flex items-center justify-end w-1/3 gap-8 zen-element">
-            <a href="userstats.html"
-                class="flex items-center justify-center rounded-full bg-surface/40 border border-white/5 w-10 h-10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] group">
-                <span
-                    class="material-symbols-outlined text-[18px] text-primary group-hover:text-white transition-colors">person</span>
-            </a>
-        </div>
-    </header>
-    <!-- Main Content -->
+<!-- Main Content -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-6 pt-0 pb-4 flex flex-col lg:flex-row relative z-10 min-h-0">
         <!-- Left Column: Friends List & Search -->
         <div class="flex-1 flex flex-col gap-6 min-h-0">
@@ -1037,16 +619,8 @@
     </main>
 
     <!-- Footer (matching testpage) -->
-    <footer class="px-8 py-4 flex justify-end items-center relative z-20 zen-element">
-        <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-            <span class="material-symbols-outlined text-[14px]">palette</span>
-            <span>Themes and Languages</span>
-            <button type="button" data-footer-picker
-                class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
-        </div>
-    </footer>
 
-    <!-- Room Menu Container -->
+<!-- Room Menu Container -->
     <div class="fixed bottom-8 left-8 z-50 flex flex-col gap-2 items-start" id="room-menu-container">
         <!-- Expanded Options -->
         <div id="room-options"
@@ -1511,97 +1085,55 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- EXPANDING BUBBLE MENU LOGIC ---
-            const expandingBubble = document.getElementById('expanding-bubble');
-            const bubbleToggle = document.getElementById('bubble-toggle');
-            let bubbleOpen = false;
-            let bubbleExpandedHeight = null;
-            const BUBBLE_W_COLLAPSED = 40;
-            const BUBBLE_H_COLLAPSED = 40;
-            const BUBBLE_W_EXPANDED = 260;
-            const BUBBLE_ANIM_MS = 400;
-            const BUBBLE_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
+<script>
+// --- SPA lifecycle (auto-injected) ---
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+const __pageTimers = [];
+const __origDocAEL = document.addEventListener.bind(document);
+const __origWinAEL = window.addEventListener.bind(window);
+const __origSetInterval = window.setInterval.bind(window);
+const __origSetTimeout = window.setTimeout.bind(window);
+const __origClearInterval = window.clearInterval.bind(window);
+const __origClearTimeout = window.clearTimeout.bind(window);
+function __spaMergeSignal(options) {
+    if (options && typeof options === 'object') {
+        if (options.signal) return options;
+        return Object.assign({}, options, { signal: __pageSignal });
+    }
+    if (typeof options === 'boolean') return { capture: options, signal: __pageSignal };
+    return { signal: __pageSignal };
+}
+document.addEventListener = function(type, listener, options) {
+    return __origDocAEL(type, listener, __spaMergeSignal(options));
+};
+window.addEventListener = function(type, listener, options) {
+    return __origWinAEL(type, listener, __spaMergeSignal(options));
+};
+window.setInterval = function(handler, timeout) {
+    const id = __origSetInterval(handler, timeout);
+    __pageTimers.push({ kind: 'interval', id: id });
+    return id;
+};
+window.setTimeout = function(handler, timeout) {
+    const id = __origSetTimeout(handler, timeout);
+    __pageTimers.push({ kind: 'timeout', id: id });
+    return id;
+};
 
-            function measureBubbleExpandedHeight() {
-                expandingBubble.style.visibility = 'hidden';
-                expandingBubble.classList.add('is-open');
-                expandingBubble.style.transition = 'none';
-                expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
-                expandingBubble.style.height = 'auto';
-                const height = expandingBubble.scrollHeight;
-                expandingBubble.classList.remove('is-open');
-                expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-                expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
-                expandingBubble.style.visibility = '';
-                expandingBubble.style.transition = '';
-                return height;
-            }
+window.__spaPageInit = function() {
+            const FRIENDS_MODAL_IDS = [
+                'add-friends-modal',
+                'join-room-modal',
+                'create-room-modal',
+                'configure-dual-modal',
+                'find-match-modal'
+            ];
 
-            function runBubbleAnimation(open) {
-                if (!bubbleExpandedHeight) {
-                    bubbleExpandedHeight = measureBubbleExpandedHeight();
-                }
-
-                const transition = `width ${BUBBLE_ANIM_MS}ms ${BUBBLE_EASING}, height ${BUBBLE_ANIM_MS}ms ${BUBBLE_EASING}`;
-
-                if (open) {
-                    bubbleOpen = true;
-                    bubbleToggle.setAttribute('aria-label', 'Close menu');
-                    bubbleToggle.setAttribute('aria-expanded', 'true');
-                    expandingBubble.classList.add('is-open');
-                    expandingBubble.classList.add('is-icon-open');
-                    expandingBubble.style.transition = 'none';
-                    expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-                    expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
-                    void expandingBubble.offsetWidth;
-                    expandingBubble.style.transition = transition;
-                    expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
-                    expandingBubble.style.height = bubbleExpandedHeight + 'px';
-                } else {
-                    if (!bubbleOpen) return;
-                    bubbleOpen = false;
-                    bubbleToggle.setAttribute('aria-label', 'Open menu');
-                    bubbleToggle.setAttribute('aria-expanded', 'false');
-                    expandingBubble.classList.remove('is-icon-open');
-                    expandingBubble.classList.remove('is-open');
-                    expandingBubble.style.transition = transition;
-                    expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-                    expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
-                    setTimeout(() => {
-                        if (!bubbleOpen) {
-                            expandingBubble.style.transition = '';
-                            expandingBubble.style.width = '';
-                            expandingBubble.style.height = '';
-                        }
-                    }, BUBBLE_ANIM_MS);
-                }
-            }
-
-            function openBubble() {
-                runBubbleAnimation(true);
-            }
-
-            function closeBubble() {
-                runBubbleAnimation(false);
-            }
-
-            if (expandingBubble && bubbleToggle) {
-                bubbleToggle.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (bubbleOpen) {
-                        closeBubble();
-                    } else {
-                        openBubble();
-                    }
-                });
-
-                expandingBubble.addEventListener('mouseleave', () => {
-                    if (bubbleOpen) {
-                        closeBubble();
-                    }
-                });
+            function getFriendsModals() {
+                return FRIENDS_MODAL_IDS
+                    .map(id => document.getElementById(id))
+                    .filter(Boolean);
             }
 
             function isModalVisible(modal) {
@@ -1609,25 +1141,29 @@
             }
 
             function setPageBackgroundInert(inert) {
-                document.querySelectorAll('body > *').forEach(el => {
-                    if (el.id && el.id.endsWith('-modal')) return;
-                    // Never inert the dual matchmaking widget
-                    if (el.id === 'dual-global-widget') {
-                        el.removeAttribute('inert');
-                        return;
-                    }
+                const mainEl = document.querySelector('#spa-page-root > main, #spa-content > main');
+                const roomMenu = document.getElementById('room-menu-container');
+                [mainEl, roomMenu].forEach(el => {
+                    if (!el) return;
                     if (inert) el.setAttribute('inert', '');
                     else el.removeAttribute('inert');
                 });
+                getFriendsModals().forEach(modal => modal.removeAttribute('inert'));
+                document.getElementById('dual-global-widget')?.removeAttribute('inert');
             }
 
-            function releaseInertIfNoModals(...modals) {
-                const extra = ['configure-dual-modal', 'find-match-modal']
-                    .map(id => document.getElementById(id))
-                    .filter(Boolean);
-                const allModals = [...modals, ...extra];
-                if (!allModals.some(isModalVisible)) setPageBackgroundInert(false);
+            function releaseInertIfNoModals() {
+                if (!getFriendsModals().some(isModalVisible)) setPageBackgroundInert(false);
             }
+
+            function markModalClosed(modal) {
+                if (!modal) return;
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                releaseInertIfNoModals();
+            }
+
+            // Reset any stale inert left from a prior visit or aborted modal close.
+            setPageBackgroundInert(false);
 
             // --- ADD FRIENDS MODAL LOGIC ---
             const addFriendsBtn = document.getElementById('add-friends-btn');
@@ -1638,18 +1174,16 @@
 
             function openModal() {
                 addFriendsModal.classList.remove('opacity-0', 'pointer-events-none');
+                addFriendsModal.removeAttribute('inert');
                 modalContent.classList.remove('scale-95');
                 modalContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
             }
 
             function closeModal() {
+                markModalClosed(addFriendsModal);
                 modalContent.classList.remove('scale-100');
                 modalContent.classList.add('scale-95');
-                setTimeout(() => {
-                    addFriendsModal.classList.add('opacity-0', 'pointer-events-none');
-                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
-                }, 100);
             }
 
             if (addFriendsBtn) addFriendsBtn.addEventListener('click', openModal);
@@ -1792,7 +1326,7 @@
             function navigateToJoinedRoom(pin) {
                 const code = String(pin).replace(/\D/g, '').slice(0, 4);
                 if (code.length !== 4) return;
-                window.location.href = `room.html?join=1&room=${code}`;
+                navigateTo('/room?' + new URLSearchParams({join:'1',room:code}).toString());
             }
 
             function handleJoinPinInput() {
@@ -1815,19 +1349,17 @@
                 }
 
                 joinRoomModal.classList.remove('opacity-0', 'pointer-events-none');
+                joinRoomModal.removeAttribute('inert');
                 joinRoomContent.classList.remove('scale-95');
                 joinRoomContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
             }
 
             function closeJoinModal() {
+                markModalClosed(joinRoomModal);
                 joinRoomContent.classList.remove('scale-100');
                 joinRoomContent.classList.add('scale-95');
-                setTimeout(() => {
-                    joinRoomModal.classList.add('opacity-0', 'pointer-events-none');
-                    if (joinRoomPinInput) joinRoomPinInput.value = '';
-                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
-                }, 100);
+                if (joinRoomPinInput) joinRoomPinInput.value = '';
             }
 
             if (joinRoomBtn) joinRoomBtn.addEventListener('click', openJoinModal);
@@ -1870,23 +1402,19 @@
                 resetCreateRoomForm();
 
                 createRoomModal.classList.remove('opacity-0', 'pointer-events-none');
+                createRoomModal.removeAttribute('inert');
                 createRoomContent.classList.remove('scale-95');
                 createRoomContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
             }
 
             function closeCreateModal() {
+                markModalClosed(createRoomModal);
                 createRoomContent.classList.remove('scale-100');
                 createRoomContent.classList.add('scale-95');
-                setTimeout(() => {
-                    createRoomModal.classList.add('opacity-0', 'pointer-events-none');
-                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
-                    setTimeout(() => {
-                        createRoomForm.classList.remove('hidden');
-                        createRoomConfirmation.classList.add('hidden');
-                        createRoomConfirmation.classList.remove('flex');
-                    }, 300);
-                }, 100);
+                createRoomForm.classList.remove('hidden');
+                createRoomConfirmation.classList.add('hidden');
+                createRoomConfirmation.classList.remove('flex');
             }
 
             if (createRoomBtn) createRoomBtn.addEventListener('click', openCreateModal);
@@ -2062,7 +1590,7 @@
                         room: roomId,
                         name: roomName
                     });
-                    window.location.href = `room.html?${params.toString()}`;
+                    navigateTo('/room?' + params.toString());
                 });
             }
 
@@ -2217,19 +1745,17 @@
                 resetConfigureDualForm();
 
                 configureDualModal.classList.remove('opacity-0', 'pointer-events-none');
+                configureDualModal.removeAttribute('inert');
                 configureDualContent.classList.remove('scale-95');
                 configureDualContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
             }
 
             function closeConfigureDualModal() {
+                markModalClosed(configureDualModal);
                 configureDualContent.classList.remove('scale-100');
                 configureDualContent.classList.add('scale-95');
-                setTimeout(() => {
-                    configureDualModal.classList.add('opacity-0', 'pointer-events-none');
-                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
-                    dualTargetFriend = null;
-                }, 100);
+                dualTargetFriend = null;
             }
 
             function collectDualConfig() {
@@ -2400,18 +1926,16 @@
             function openFindMatchModal() {
                 resetFindMatchForm();
                 findMatchModal.classList.remove('opacity-0', 'pointer-events-none');
+                findMatchModal.removeAttribute('inert');
                 findMatchContent.classList.remove('scale-95');
                 findMatchContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
             }
 
             function closeFindMatchModal() {
+                markModalClosed(findMatchModal);
                 findMatchContent.classList.remove('scale-100');
                 findMatchContent.classList.add('scale-95');
-                setTimeout(() => {
-                    findMatchModal.classList.add('opacity-0', 'pointer-events-none');
-                    releaseInertIfNoModals(joinRoomModal, createRoomModal, addFriendsModal);
-                }, 100);
             }
 
             function collectFmConfig() {
@@ -2488,151 +2012,9 @@
                 });
             }
 
-            /**
-             * Self-contained Find Match flow. Owned by friends.html so a stale
-             * dual.js ticker on this (or another) page cannot hide/clear it.
-             */
-            let findMatchTick = null;
             function startFindMatchFlow(cfg) {
-                if (findMatchTick) {
-                    clearInterval(findMatchTick);
-                    findMatchTick = null;
-                }
-
-                // Stop any dual.js ticker that might fight us for the widget.
-                try {
-                    if (window.DualMatch && typeof window.DualMatch._stopTicker === 'function') {
-                        window.DualMatch._stopTicker();
-                    }
-                } catch (_) { }
-
-                const STORAGE_KEY = 'usertypo_dual_request';
-                const WIDGET_ID = 'dual-global-widget';
-                const PENDING_MS = 30000;
-                const CONNECT_SECONDS = 3;
-                const opponents = ['SpeedDemon', 'QuickKeys', 'NeonRacer', 'GhostByte', 'RapidFire', 'KeyStorm', 'FlashType', 'TypeMaster', 'ByteRunner', 'ZeroLatency'];
-                const opponent = opponents[Math.floor(Math.random() * opponents.length)];
-                const data = {
-                    mode: 'matchmaking',
-                    status: 'searching',
-                    sentAt: Date.now(),
-                    foundAt: null,
-                    config: Object.assign({}, cfg || {}, { opponent })
-                };
-
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) { }
-
-                // Also notify DualMatch (if present) so other pages show the same state,
-                // but we own the UI/timer on this page.
-                try {
-                    if (window.DualMatch && typeof window.DualMatch.sendMatchmaking === 'function') {
-                        // Re-seed memory with our payload timing
-                        window.DualMatch._stopTicker && window.DualMatch._stopTicker();
-                    }
-                } catch (_) { }
-
-                let widget = document.getElementById(WIDGET_ID);
-                if (!widget) {
-                    widget = document.createElement('div');
-                    widget.id = WIDGET_ID;
-                    document.body.appendChild(widget);
-                }
-
-                // Stay above inert/modal layers and ignore dual.js display:none raids.
-                widget.style.cssText = 'position:fixed !important;z-index:99999 !important;right:2rem;bottom:2rem;display:block !important;pointer-events:auto;';
-                widget.removeAttribute('inert');
-                widget.innerHTML = `
-                    <button type="button" id="find-match-widget-btn" style="
-                        display:flex;align-items:center;justify-content:center;gap:0;
-                        height:3.5rem;min-width:3.5rem;max-width:3.5rem;padding:0;
-                        border-radius:9999px;border:1px solid rgba(var(--theme-primary-rgb), 0.35);
-                        background:rgba(26,29,35,0.92);backdrop-filter:blur(12px);
-                        color:var(--theme-primary, #00d0ff);box-shadow:0 0 24px rgba(var(--theme-primary-rgb), 0.18);
-                        overflow:hidden;white-space:nowrap;cursor:default;
-                        transition:max-width 0.5s cubic-bezier(0.16,1,0.3,1),padding 0.5s cubic-bezier(0.16,1,0.3,1),gap 0.35s ease;">
-                        <span data-role="icon" style="display:flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;flex-shrink:0;">
-                            <svg viewBox="0 0 50 50" width="26" height="26" style="animation:fm-spin 0.9s linear infinite;">
-                                <circle cx="25" cy="25" r="20" fill="none" stroke-width="5" style="stroke: rgba(var(--theme-primary-rgb), 0.18);"></circle>
-                                <circle cx="25" cy="25" r="20" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 200" style="stroke: var(--theme-primary, #00d0ff);"></circle>
-                            </svg>
-                        </span>
-                        <span data-role="label" style="opacity:0;max-width:0;overflow:hidden;font-size:0.8125rem;font-weight:700;color:#e2e8f0;letter-spacing:0.01em;white-space:nowrap;transition:opacity 0.25s ease 0.15s,max-width 0.5s cubic-bezier(0.16,1,0.3,1);"></span>
-                    </button>
-                `;
-
-                if (!document.getElementById('find-match-spin-style')) {
-                    const st = document.createElement('style');
-                    st.id = 'find-match-spin-style';
-                    st.textContent = '@keyframes fm-spin{to{transform:rotate(360deg)}}';
-                    document.head.appendChild(st);
-                }
-
-                // Guard against dual.js (or inert logic) wiping the widget every tick.
-                const guard = setInterval(() => {
-                    const w = document.getElementById(WIDGET_ID);
-                    if (!w) return;
-                    w.style.setProperty('display', 'block', 'important');
-                    w.style.setProperty('z-index', '99999', 'important');
-                    w.removeAttribute('inert');
-                }, 100);
-
-                function goToMatch() {
-                    clearInterval(findMatchTick);
-                    findMatchTick = null;
-                    clearInterval(guard);
-                    try { localStorage.removeItem(STORAGE_KEY); } catch (_) { }
-                    try { window.DualMatch && window.DualMatch.clearRequest && window.DualMatch.clearRequest({ force: true }); } catch (_) { }
-                    const params = new URLSearchParams({
-                        mode: cfg.mode || 'time',
-                        amount: String(cfg.amount || 30),
-                        lang: cfg.lang || 'english',
-                        punct: cfg.punct || '0',
-                        nums: cfg.nums || '1',
-                        opponent,
-                        avatar: cfg.avatar || ''
-                    });
-                    window.location.href = `dual.html?${params.toString()}`;
-                }
-
-                findMatchTick = setInterval(() => {
-                    const elapsed = Date.now() - data.sentAt;
-                    const btn = document.getElementById('find-match-widget-btn');
-                    const icon = widget.querySelector('[data-role="icon"]');
-                    const label = widget.querySelector('[data-role="label"]');
-                    if (!btn || !icon || !label) return;
-
-                    // Keep visible through any external display:none.
-                    widget.style.setProperty('display', 'block', 'important');
-
-                    if (elapsed < PENDING_MS) return;
-
-                    if (!data.foundAt) {
-                        data.foundAt = data.sentAt + PENDING_MS;
-                        data.status = 'found';
-                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) { }
-                    }
-
-                    const since = Date.now() - data.foundAt;
-                    const left = Math.max(0, CONNECT_SECONDS - Math.floor(since / 1000));
-
-                    btn.style.maxWidth = '32rem';
-                    btn.style.padding = '0 1.35rem';
-                    btn.style.gap = '0.65rem';
-                    btn.style.cursor = 'pointer';
-                    label.style.opacity = '1';
-                    label.style.maxWidth = '26rem';
-                    label.textContent = `Match Found. Connecting in ${left}...`;
-                    icon.innerHTML = '<span class="material-symbols-outlined" style="font-size:22px;color:#4ade80;">check_circle</span>';
-
-                    if (since >= (CONNECT_SECONDS + 1) * 1000) {
-                        goToMatch();
-                    }
-                }, 250);
-
-                // Clicking the pill during countdown also starts the match.
-                widget.addEventListener('click', () => {
-                    if (data.foundAt) goToMatch();
-                });
+                if (!window.DualMatch || typeof window.DualMatch.sendMatchmaking !== 'function') return;
+                window.DualMatch.sendMatchmaking(cfg);
             }
 
             // --- CUSTOM SCROLLBAR LOGIC ---
@@ -2740,15 +2122,25 @@
                     e.preventDefault();
                 }
             });
-        });
-    </script>
+};
 
-    <!-- Apply saved settings globally -->
-    <script src="dual.js?v=4"></script>
-    <script src="languages.js"></script>
-    <script src="settings.js"></script>
-    <script src="footer-picker.js"></script>
-    <script src="settings-search.js"></script>
-</body>
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function() {
+    __pageAbort.abort();
+    __pageTimers.forEach(function(t) {
+        if (t.kind === 'interval') __origClearInterval(t.id);
+        else __origClearTimeout(t.id);
+    });
+    document.querySelectorAll('#spa-page-root > main, #spa-content > main, #room-menu-container').forEach(function(el) {
+        el.removeAttribute('inert');
+    });
+    document.addEventListener = __origDocAEL;
+    window.addEventListener = __origWinAEL;
+    window.setInterval = __origSetInterval;
+    window.setTimeout = __origSetTimeout;
+    if (typeof __prevSpaCleanup === 'function') {
+        try { __prevSpaCleanup(); } catch (e) {}
+    }
+};
 
-</html>
+</script>

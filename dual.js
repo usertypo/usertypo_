@@ -32,6 +32,8 @@
 
     const WIDGET_ID = 'dual-global-widget';
     const STYLE_ID = 'dual-global-styles';
+    const _nativeSetInterval = window.setInterval.bind(window);
+    const _nativeClearInterval = window.clearInterval.bind(window);
 
     let tickTimer = null;
     // In-memory copy wins over localStorage so a stale dual.js on another tab
@@ -311,6 +313,11 @@
         injectStyles();
 
         let widget = document.getElementById(WIDGET_ID);
+        // Friends page find-match UI reuses this id with different markup — rebuild if needed.
+        if (widget && !widget.querySelector('.dual-widget-btn')) {
+            widget.remove();
+            widget = null;
+        }
         if (widget) return widget;
 
         widget = document.createElement('div');
@@ -381,6 +388,11 @@
         const btn = widget.querySelector('.dual-widget-btn');
         const icon = widget.querySelector('[data-role="icon"]');
         const label = widget.querySelector('[data-role="label"]');
+        if (!btn || !icon || !label) {
+            widget.remove();
+            delete widget.dataset.phase;
+            return renderWidget();
+        }
 
         setWidgetVisible(true);
 
@@ -499,19 +511,31 @@
         });
         // Clear after we've committed to navigation so a tick can't race it.
         clearRequest();
-        window.location.href = `dual.html?${params.toString()}`;
+        const qs = params.toString();
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo('/dual?' + qs);
+            // dual.js stays loaded in the SPA shell; release the guard after navigation.
+            setTimeout(function () { joining = false; }, 500);
+        } else {
+            window.location.href = 'dual.html?' + qs;
+        }
+    }
+
+    function resetJoining() {
+        joining = false;
     }
 
     function stopTicker() {
         if (tickTimer) {
-            clearInterval(tickTimer);
+            _nativeClearInterval(tickTimer);
             tickTimer = null;
         }
     }
 
     function startTicker() {
-        if (tickTimer) return;
-        tickTimer = setInterval(() => {
+        stopTicker();
+        tickTimer = _nativeSetInterval(() => {
+            try {
             // Rehydrate from localStorage if memory was wiped externally
             if (!memoryRequest) {
                 try {
@@ -530,6 +554,9 @@
                 return;
             }
             renderAll();
+            } catch (e) {
+                console.warn('DualMatch ticker', e);
+            }
         }, TICK_MS);
     }
 
@@ -577,6 +604,7 @@
         getPhase: () => getPhase(ensureAccepted(loadRequest())),
         refresh: renderAll,
         _stopTicker: stopTicker,
+        _resetJoining: resetJoining,
         version: SCRIPT_VERSION
     };
 

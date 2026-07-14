@@ -1,94 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Dual Match | usertypo_ </title>
-
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet" />
-    <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00d0ff',
-                        'primary-dark': '#0090b0',
-                        'primary-light': '#33d9ff',
-                        background: '#121418',
-                        'background-dark': '#0e1013',
-                        surface: '#1a1d23',
-                        'surface-light': '#252932',
-                        error: '#ff3333',
-                        'on-primary': '#004a5d',
-                        'on-surface': '#f3f3f9',
-                    },
-                    fontFamily: {
-                        mono: ['"Roboto Mono"', 'monospace'],
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['"Space Grotesk"'],
-                    },
-                    keyframes: {
-                        breath: {
-                            '0%, 100%': { opacity: '1', textShadow: '0 0 10px rgba(0,208,255,0.6)' },
-                            '50%': { opacity: '0.2', textShadow: '0 0 2px rgba(0,208,255,0.1)' },
-                        },
-                        'fade-in-up': {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        'crown-bounce': {
-                            '0%,100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-4px)' }
-                        }
-                    },
-                    animation: {
-                        breath: 'breath 2s ease-in-out infinite',
-                        'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'crown-bounce': 'crown-bounce 2s ease-in-out infinite'
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        html::-webkit-scrollbar,
-        body::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-        }
-
-        html,
-        body {
-            -ms-overflow-style: none !important;
-            scrollbar-width: none !important;
-            background-color: #020016;
-        }
-
-        html {
+<style>
+html {
             font-size: clamp(13px, 1.3032vw, 24px);
         }
-
-        body {
-            animation: appLoad 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes appLoad {
-            0% { opacity: 0; transform: translateY(15px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .zen-element { transition: opacity 0.5s ease-in-out; }
 
         /* --- USER CARET --- */
         #caret {
@@ -163,6 +76,12 @@
         .test-box-outer {
             width: 88vw;
             max-width: none !important;
+            /* Offset so the typing area (not just the in-flow box) sits at visual center */
+            transform: translateY(clamp(2rem, 6vh, 4.5rem));
+        }
+
+        #app-views {
+            height: 100%;
         }
 
         /* Proportional desktop scaling for typing test (matches index page) */
@@ -173,10 +92,6 @@
 
         /* Header Logo (non-clickable) */
         .header-logo-link { display: flex; align-items: center; justify-content: center; height: 48px; width: 180px; }
-        .menu-btn { transition: all 0.2s ease; outline: none !important; }
-        .menu-btn:focus, .menu-btn:active { outline: none !important; }
-        .menu-btn.is-active { color: #00d0ff !important; }
-        .slide-ease { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
         .header-logo-container { position: relative; width: 500px; height: 500px; transform: scale(0.5); margin: -250px; flex-shrink: 0; pointer-events: none; }
         .header-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
@@ -191,21 +106,10 @@
             0% { opacity: 0; transform: translateY(18px); }
             100% { opacity: 1; transform: translateY(0); }
         }
-    </style>
+</style>
 
-    <style type="text/tailwindcss">
-        .glass-panel {
-            @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        .glass-card {
-            @apply bg-surface/20 backdrop-blur-sm border border-white/5;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .stats-animate-card { animation: statsCardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+<style type="text/tailwindcss">
+.stats-animate-card { animation: statsCardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .winner-glow { box-shadow: 0 0 25px rgba(0, 208, 255, 0.12), 0 4px 30px rgba(0, 0, 0, 0.15); border-color: rgba(0, 208, 255, 0.15) !important; }
         .loser-card { box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15); }
 
@@ -383,18 +287,10 @@
         .bubble-user-tier {
             color: var(--theme-primary);
         }
-    </style>
-</head>
+</style>
 
-<body class="bg-transparent text-slate-300 font-sans min-h-screen flex flex-col relative overflow-hidden h-screen"
-    id="app-body">
-
-    <div class="fixed inset-0 z-0" style="background-color: #020016;"></div>
-
-    <!-- SIDEBAR MENU (used by the full stats-view header) -->
-
-    <!-- SPA Container -->
-    <div id="app-views" class="flex-1 flex flex-col relative w-full min-h-0">
+<!-- SPA Container -->
+    <div id="app-views" class="flex-1 flex flex-col relative w-full min-h-0 h-full">
 
         <!-- TEST VIEW -->
         <div id="test-view" class="flex-1 flex flex-col relative w-full transition-opacity duration-300">
@@ -418,7 +314,7 @@
                 <div class="flex items-center justify-end w-1/3 gap-8 zen-element"></div>
             </header>
 
-            <main class="flex-1 flex items-center justify-center p-6 relative z-10">
+            <main class="flex-1 flex flex-col items-center justify-center p-6 relative z-10 min-h-0">
 
                 <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none">
 
@@ -534,11 +430,24 @@
 
                 </div>
             </main>
+
+            <footer class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 shrink-0 mt-auto">
+                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
+                    title="Mute sounds" aria-label="Mute sounds">
+                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                </button>
+                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                    <span>Themes and Languages</span>
+                    <button type="button" data-footer-picker
+                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                </div>
+            </footer>
         </div> <!-- End TEST VIEW -->
 
         <!-- STATS VIEW (Dual Race Results) -->
         <div id="stats-view"
-            class="hidden flex-1 flex-col relative w-full opacity-0 transition-opacity duration-150 overflow-hidden">
+            class="hidden flex-1 flex-col relative w-full opacity-0 transition-opacity duration-150">
 
             <!-- STATS HEADER: complete header with menu icon + account icon -->
             <header class="flex items-center justify-between p-4 bg-transparent shrink-0 relative z-20">
@@ -562,17 +471,17 @@
                     <!-- Floating Dropdown Content -->
                     <div id="bubble-content" class="bubble-content flex flex-col">
                         <nav class="flex flex-col gap-2 py-1 px-3">
-                            <a href="index.html"
+                            <a href="/" data-spa-link
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <span class="material-symbols-outlined nav-icon text-[20px]">keyboard</span>
                                 <span class="font-bold text-sm tracking-wide">Typing Test</span>
                             </a>
-                            <a href="friends.html"
+                            <a href="/friends" data-spa-link
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <span class="material-symbols-outlined nav-icon text-[20px]">group</span>
                                 <span class="font-bold text-sm tracking-wide">Friends</span>
                             </a>
-                            <a href="leaderboards.html"
+                            <a href="/leaderboards" data-spa-link
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <span class="material-symbols-outlined nav-icon text-[20px]">emoji_events</span>
                                 <span class="font-bold text-sm tracking-wide">Leaderboards</span>
@@ -588,7 +497,7 @@
 
                             <div class="h-px bg-white/10 w-full my-1 mx-auto" style="width: calc(100% - 2rem);"></div>
 
-                            <a href="settings.html"
+                            <a href="/settings" data-spa-link
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <span class="material-symbols-outlined nav-icon text-[20px]">settings</span>
                                 <span class="font-bold text-sm tracking-wide">Settings</span>
@@ -604,7 +513,7 @@
 
                         <!-- User Card -->
                         <div class="px-2 pb-2 pt-1">
-                            <a href="userstats.html"
+                            <a href="/userstats" data-spa-link
                                 class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group/link">
                                 <div class="flex items-center gap-2.5">
                                     <div class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
@@ -625,7 +534,7 @@
             </div>
                 </div>
                 <div class="flex items-center justify-center w-1/3">
-                    <a href="index.html" class="header-logo-link">
+                    <a href="/" data-spa-link class="header-logo-link">
                         <div class="header-logo-container">
                             <div class="header-logo-layer header-typ-wrapper">
                                 <div class="header-logo-layer header-dynamic-layer header-typ-layer"></div>
@@ -638,7 +547,7 @@
                     </a>
                 </div>
                 <div class="flex items-center justify-end w-1/3 gap-8">
-                    <a href="userstats.html"
+                    <a href="/userstats" data-spa-link
                         class="flex items-center justify-center rounded-full bg-surface/40 border border-white/5 w-10 h-10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] group">
                         <span class="material-symbols-outlined text-[18px] text-primary group-hover:text-white transition-colors">person</span>
                     </a>
@@ -646,7 +555,7 @@
             </header>
 
             <main
-                class="flex-1 w-full max-w-7xl mx-auto px-6 pt-0 pb-0 flex flex-col lg:flex-row items-stretch gap-6 relative z-10 min-h-0 overflow-hidden">
+                class="flex-1 w-full max-w-7xl mx-auto px-6 pt-0 pb-6 flex flex-col lg:flex-row items-stretch gap-6 relative z-10 min-h-0">
 
                 <div class="flex-1 flex flex-col justify-center gap-3 min-w-0 min-h-0">
 
@@ -660,19 +569,30 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-row items-center gap-0 opacity-0 stats-animate-card [animation-delay:200ms] min-h-0">
+                    <div class="flex flex-col gap-3 opacity-0 stats-animate-card [animation-delay:200ms] min-h-0">
 
-                        <!-- WINNER (LEFT) -->
-                        <div class="flex-1 flex flex-col justify-center gap-3 px-4">
-                            <div class="flex justify-center">
+                        <!-- Place badges -->
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-x-0">
+                            <div class="flex justify-center px-4">
                                 <div class="flex items-center gap-2 bg-primary/10 border border-primary/25 rounded-full px-4 py-1.5">
                                     <span class="material-symbols-outlined text-primary text-[18px] animate-crown-bounce">emoji_events</span>
                                     <span class="text-[11px] font-black text-primary uppercase tracking-widest"
                                         style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.5);">Winner</span>
                                 </div>
                             </div>
+                            <div class="w-8 shrink-0" aria-hidden="true"></div>
+                            <div class="flex justify-center px-4">
+                                <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
+                                    <span class="material-symbols-outlined text-slate-500 text-[18px]">person</span>
+                                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">2nd Place</span>
+                                </div>
+                            </div>
+                        </div>
 
-                            <div class="glass-panel rounded-xl p-4 relative overflow-hidden winner-glow"
+                        <!-- Main cards + VS (VS centred between the two main cards) -->
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-x-0 items-stretch">
+                            <div class="px-4">
+                            <div class="glass-panel rounded-xl p-4 relative overflow-hidden winner-glow h-full"
                                 style="border: 1px solid rgba(var(--theme-primary-rgb), 0.12);">
                                 <div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-primary to-transparent opacity-80"></div>
 
@@ -708,48 +628,18 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
 
-                            <div class="glass-panel rounded-xl p-3 opacity-0 stats-animate-card [animation-delay:400ms]">
-                                <div class="grid grid-cols-4 gap-0">
-                                    <div class="text-center px-2">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Raw Speed</span>
-                                        <span class="text-lg font-bold text-white" id="w-raw">0</span>
-                                    </div>
-                                    <div class="text-center px-2 border-l border-white/5">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Errors</span>
-                                        <span class="text-lg font-bold text-error" id="w-err">0</span>
-                                    </div>
-                                    <div class="text-center px-2 border-l border-white/5">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Correct</span>
-                                        <span class="text-lg font-bold text-primary"><span id="w-correct">0</span><span class="text-xs text-slate-500 font-bold">/<span id="w-total">0</span></span></span>
-                                    </div>
-                                    <div class="text-center px-2 border-l border-white/5">
-                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Extra</span>
-                                        <span class="text-lg font-bold text-amber-400" id="w-extra">0</span>
-                                    </div>
+                            <div class="flex flex-col items-center justify-center shrink-0 self-stretch px-1">
+                                <div class="w-px flex-1 min-h-[1rem] bg-gradient-to-b from-transparent to-primary/30"></div>
+                                <div class="w-8 h-8 rounded-full glass-panel border border-primary/20 flex items-center justify-center my-3 shadow-[0_0_15px_rgba(0,208,255,0.15)]">
+                                    <span class="text-primary text-xs font-black">VS</span>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- VS DIVIDER -->
-                        <div class="flex flex-col items-center shrink-0 py-4 h-full">
-                            <div class="w-px h-16 bg-gradient-to-b from-transparent to-primary/30"></div>
-                            <div class="w-8 h-8 rounded-full glass-panel border border-primary/20 flex items-center justify-center my-3 shadow-[0_0_15px_rgba(0,208,255,0.15)]">
-                                <span class="text-primary text-xs font-black">VS</span>
-                            </div>
-                            <div class="w-px h-16 bg-gradient-to-b from-primary/30 to-transparent"></div>
-                        </div>
-
-                        <!-- LOSER (RIGHT) -->
-                        <div class="flex-1 flex flex-col justify-center gap-3 px-4">
-                            <div class="flex justify-center">
-                                <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-                                    <span class="material-symbols-outlined text-slate-500 text-[18px]">person</span>
-                                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">2nd Place</span>
-                                </div>
+                                <div class="w-px flex-1 min-h-[1rem] bg-gradient-to-b from-primary/30 to-transparent"></div>
                             </div>
 
-                            <div class="glass-panel rounded-xl p-4 relative overflow-hidden loser-card">
+                            <div class="px-4">
+                            <div class="glass-panel rounded-xl p-4 relative overflow-hidden loser-card h-full">
                                 <div class="flex items-center justify-center gap-3 mb-3">
                                     <div id="l-avatar"
                                         class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-sm">
@@ -778,7 +668,35 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
+                        </div>
 
+                        <!-- Secondary stats -->
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-x-0">
+                            <div class="px-4">
+                            <div class="glass-panel rounded-xl p-3 opacity-0 stats-animate-card [animation-delay:400ms]">
+                                <div class="grid grid-cols-4 gap-0">
+                                    <div class="text-center px-2">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Raw Speed</span>
+                                        <span class="text-lg font-bold text-white" id="w-raw">0</span>
+                                    </div>
+                                    <div class="text-center px-2 border-l border-white/5">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Errors</span>
+                                        <span class="text-lg font-bold text-error" id="w-err">0</span>
+                                    </div>
+                                    <div class="text-center px-2 border-l border-white/5">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Correct</span>
+                                        <span class="text-lg font-bold text-primary"><span id="w-correct">0</span><span class="text-xs text-slate-500 font-bold">/<span id="w-total">0</span></span></span>
+                                    </div>
+                                    <div class="text-center px-2 border-l border-white/5">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Extra</span>
+                                        <span class="text-lg font-bold text-amber-400" id="w-extra">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div class="w-8 shrink-0" aria-hidden="true"></div>
+                            <div class="px-4">
                             <div class="glass-panel rounded-xl p-3 opacity-0 stats-animate-card [animation-delay:400ms]">
                                 <div class="grid grid-cols-4 gap-0">
                                     <div class="text-center px-2">
@@ -799,6 +717,7 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
                         </div>
                     </div>
 
@@ -812,7 +731,7 @@
                             <span>Rematch</span>
                             <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
                         </button>
-                        <a href="index.html"
+                        <a href="/" data-spa-link
                             class="px-7 py-2.5 panel-surface rounded-xl font-display font-bold text-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all">
                             New Test
                         </a>
@@ -825,14 +744,15 @@
 
                 </div>
 
-                <!-- Ad Section (room.html stats ad; sits on the right and spans the screen height) -->
-                <div class="w-[10rem] shrink-0 panel-surface rounded-xl flex flex-col relative overflow-hidden hidden lg:flex self-stretch my-2">
-                    <div class="w-full py-2 bg-white/5 text-center border-b border-white/5">
+                <!-- Ad Section (leaderboards-style sticky skyscraper) -->
+                <div class="w-[10rem] shrink-0 glass-panel rounded-xl flex flex-col relative overflow-hidden hidden lg:flex sticky top-4 self-start"
+                    style="height: calc(100vh - 2rem); align-self: flex-start;">
+                    <div class="w-full py-2 bg-black/20 text-center border-b border-white/5">
                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
                     </div>
                     <div class="flex-1 flex flex-col items-center justify-center p-3">
                         <div
-                            class="w-full h-full border border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center gap-6 bg-white/5 py-8">
+                            class="w-full h-full border border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center gap-6 bg-black/10 py-8">
                             <span class="material-symbols-outlined text-slate-600 text-4xl">ads_click</span>
                             <div class="text-center px-1">
                                 <p class="text-xs text-slate-400 font-bold">YOUR AD HERE</p>
@@ -845,19 +765,60 @@
                     </div>
                 </div>
             </main>
+
+            <footer class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 shrink-0 mt-auto">
+                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
+                    title="Mute sounds" aria-label="Mute sounds">
+                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                </button>
+                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                    <span>Themes and Languages</span>
+                    <button type="button" data-footer-picker
+                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                </div>
+            </footer>
         </div> <!-- End STATS VIEW -->
 
     </div> <!-- End SPA Container -->
 
-    <script src="languages.js"></script>
-    <script src="audio.js"></script>
-    <script src="screenshot.js"></script>
-    <script src="dual.js?v=4"></script>
-    <script src="settings.js"></script>
-    <script src="settings-search.js"></script>
+<script>
+// --- SPA lifecycle (auto-injected) ---
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+const __pageTimers = [];
+const __origDocAEL = document.addEventListener.bind(document);
+const __origWinAEL = window.addEventListener.bind(window);
+const __origSetInterval = window.setInterval.bind(window);
+const __origSetTimeout = window.setTimeout.bind(window);
+const __origClearInterval = window.clearInterval.bind(window);
+const __origClearTimeout = window.clearTimeout.bind(window);
+function __spaMergeSignal(options) {
+    if (options && typeof options === 'object') {
+        if (options.signal) return options;
+        return Object.assign({}, options, { signal: __pageSignal });
+    }
+    if (typeof options === 'boolean') return { capture: options, signal: __pageSignal };
+    return { signal: __pageSignal };
+}
+document.addEventListener = function(type, listener, options) {
+    return __origDocAEL(type, listener, __spaMergeSignal(options));
+};
+window.addEventListener = function(type, listener, options) {
+    return __origWinAEL(type, listener, __spaMergeSignal(options));
+};
+window.setInterval = function(handler, timeout) {
+    const id = __origSetInterval(handler, timeout);
+    __pageTimers.push({ kind: 'interval', id: id });
+    return id;
+};
+window.setTimeout = function(handler, timeout) {
+    const id = __origSetTimeout(handler, timeout);
+    __pageTimers.push({ kind: 'timeout', id: id });
+    return id;
+};
 
-    <script>
-        // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
         //  DUAL MATCH ENGINE
         // ─────────────────────────────────────────────────────────────
 
@@ -1963,10 +1924,10 @@
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
 
-            // Keep the page locked to the viewport (no scrolling on the stats view)
-            const appBody = document.getElementById('app-body');
-            appBody.classList.add('overflow-hidden', 'h-screen');
-            appBody.classList.remove('min-h-screen');
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            window.scrollTo(0, 0);
 
             // Restart card animations
             const cards = statsView.querySelectorAll('.stats-animate-card');
@@ -1985,9 +1946,9 @@
             statsView.classList.remove('flex');
             statsView.style.display = 'none';
 
-            const appBody = document.getElementById('app-body');
-            appBody.classList.remove('min-h-screen');
-            appBody.classList.add('overflow-hidden', 'h-screen');
+            if (typeof window.usertypo_lockTypingScroll === 'function') {
+                window.usertypo_lockTypingScroll();
+            }
             window.scrollTo(0, 0);
 
             testView.classList.remove('hidden');
@@ -2016,10 +1977,77 @@
         // ─────────────────────────────────────────────────────────────
         //  INIT
         // ─────────────────────────────────────────────────────────────
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- EXPANDING BUBBLE MENU LOGIC ---
-            const expandingBubble = document.getElementById('expanding-bubble');
-            const bubbleToggle = document.getElementById('bubble-toggle');
+        window.__spaPageInit = function() {
+            if (window.DualMatch && typeof window.DualMatch._resetJoining === 'function') {
+                window.DualMatch._resetJoining();
+            }
+            if (window.DualMatch && typeof window.DualMatch.clearRequest === 'function') {
+                window.DualMatch.clearRequest({ force: true });
+            }
+
+            if (typeof window.usertypo_lockTypingScroll === 'function') {
+                window.usertypo_lockTypingScroll();
+            }
+
+            applyConfigIcons();
+            applyOpponentAvatar();
+            applyDualLiveFeedSettings();
+
+            if (window.usertypo_settingsApi?.applyAllSettings) {
+                window.usertypo_settingsApi.applyAllSettings();
+            }
+
+            const savedCaps = sessionStorage.getItem('usertypo_capslock');
+            if (savedCaps === 'true' && getTestRule('capslockWarning')) {
+                const warning = document.getElementById('capslock-warning');
+                if (warning) {
+                    warning.classList.remove('opacity-0');
+                    warning.classList.add('opacity-100');
+                }
+            }
+
+            // Load language words (falls back to built-in list on file://)
+            if (typeof loadLanguage === 'function') {
+                const savedLang = (typeof getSavedLanguage === 'function') ? getSavedLanguage() : 'english_10k';
+                loadLanguage(savedLang).then(() => buildTest()).catch(() => buildTest());
+            } else {
+                buildTest();
+            }
+
+            window.addEventListener('resize', () => {
+                if (!testComplete) { updateLineLayout(); updateCaretPosition(); }
+            });
+
+            const rematchBtn = document.getElementById('rematch-btn');
+            if (rematchBtn) rematchBtn.addEventListener('click', startRematch);
+            const screenshotBtn = document.getElementById('screenshot-btn');
+            if (screenshotBtn) screenshotBtn.addEventListener('click', captureScreenshot);
+
+            // Pressing Enter on the stats view triggers a rematch
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                const statsView = document.getElementById('stats-view');
+                if (!testComplete || !statsView || statsView.classList.contains('hidden')) return;
+                e.preventDefault();
+                startRematch();
+            });
+
+            // Prevent spacebar from scrolling the stats view
+            window.addEventListener('keydown', (e) => {
+                if (e.key !== ' ' && e.key !== 'Spacebar') return;
+                const statsView = document.getElementById('stats-view');
+                if (!testComplete || !statsView || statsView.classList.contains('hidden')) return;
+                const activeEl = document.activeElement;
+                if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+                    return;
+                }
+                e.preventDefault();
+            });
+
+            // Expanding bubble menu (stats-view header — scoped to avoid shell header IDs)
+            const statsViewEl = document.getElementById('stats-view');
+            const expandingBubble = statsViewEl?.querySelector('#expanding-bubble');
+            const bubbleToggle = statsViewEl?.querySelector('#bubble-toggle');
             let bubbleOpen = false;
             let bubbleExpandedHeight = null;
             const BUBBLE_W_COLLAPSED = 40;
@@ -2027,8 +2055,6 @@
             const BUBBLE_W_EXPANDED = 260;
             const BUBBLE_ANIM_MS = 400;
             const BUBBLE_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
-
-            
 
             function measureBubbleExpandedHeight() {
                 expandingBubble.style.visibility = 'hidden';
@@ -2085,82 +2111,38 @@
                 }
             }
 
-            function openBubble() {
-                runBubbleAnimation(true);
-            }
-
-            function closeBubble() {
-                runBubbleAnimation(false);
-            }
-
             if (expandingBubble && bubbleToggle) {
                 bubbleToggle.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (bubbleOpen) {
-                        closeBubble();
+                        runBubbleAnimation(false);
                     } else {
-                        openBubble();
+                        runBubbleAnimation(true);
                     }
                 });
 
                 expandingBubble.addEventListener('mouseleave', () => {
                     if (bubbleOpen) {
-                        closeBubble();
+                        runBubbleAnimation(false);
                     }
                 });
             }
+        };
 
-            // Clear the pending dual invite indicator now that the match started
-            if (window.DualMatch && typeof window.DualMatch.clearRequest === 'function') {
-                window.DualMatch.clearRequest({ force: true });
-            }
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function() {
+    __pageAbort.abort();
+    __pageTimers.forEach(function(t) {
+        if (t.kind === 'interval') __origClearInterval(t.id);
+        else __origClearTimeout(t.id);
+    });
+    document.addEventListener = __origDocAEL;
+    window.addEventListener = __origWinAEL;
+    window.setInterval = __origSetInterval;
+    window.setTimeout = __origSetTimeout;
+    if (typeof __prevSpaCleanup === 'function') {
+        try { __prevSpaCleanup(); } catch (e) {}
+    }
+};
 
-            applyConfigIcons();
-            applyOpponentAvatar();
-            applyDualLiveFeedSettings();
-
-            if (window.usertypo_settingsApi?.applyAllSettings) {
-                window.usertypo_settingsApi.applyAllSettings();
-            }
-
-            const savedCaps = sessionStorage.getItem('usertypo_capslock');
-            if (savedCaps === 'true' && getTestRule('capslockWarning')) {
-                const warning = document.getElementById('capslock-warning');
-                if (warning) {
-                    warning.classList.remove('opacity-0');
-                    warning.classList.add('opacity-100');
-                }
-            }
-
-            // Load language words (falls back to built-in list on file://)
-            if (typeof loadLanguage === 'function') {
-                const savedLang = (typeof getSavedLanguage === 'function') ? getSavedLanguage() : 'english_10k';
-                loadLanguage(savedLang).then(() => buildTest()).catch(() => buildTest());
-            } else {
-                buildTest();
-            }
-
-            window.addEventListener('resize', () => {
-                if (!testComplete) { updateLineLayout(); updateCaretPosition(); }
-            });
-
-            const rematchBtn = document.getElementById('rematch-btn');
-            if (rematchBtn) rematchBtn.addEventListener('click', startRematch);
-            const screenshotBtn = document.getElementById('screenshot-btn');
-            if (screenshotBtn) screenshotBtn.addEventListener('click', captureScreenshot);
-
-            // Pressing Enter on the stats view triggers a rematch
-            document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter') return;
-                const statsView = document.getElementById('stats-view');
-                if (!testComplete || !statsView || statsView.classList.contains('hidden')) return;
-                e.preventDefault();
-                startRematch();
-            });
-
-            // Sidebar menu (full stats-view header)
-        });
-    </script>
-</body>
-
-</html>
+</script>

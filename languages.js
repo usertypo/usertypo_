@@ -547,6 +547,8 @@ function selectLangOpt(btn) {
     }
 }
 
+window.selectLangOpt = selectLangOpt;
+
 // Auto-load the saved language on page load (for index.html)
 if (typeof document !== 'undefined') {
     window._initLang = (opts = {}) => {
@@ -555,8 +557,8 @@ if (typeof document !== 'undefined') {
             loadLanguage(saved).then(() => {
                 const testActive = typeof window.usertypo_testRuntime?.isActive === 'function'
                     && window.usertypo_testRuntime.isActive();
-                if (!opts.skipRestart && !testActive && typeof restartTest === 'function') {
-                    restartTest();
+                if (!opts.skipRestart && !testActive && typeof window.restartTest === 'function') {
+                    window.restartTest();
                 }
             });
             

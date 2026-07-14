@@ -408,15 +408,25 @@
     }
 
     async function ensureSearchIndex() {
-        if (searchIndex) return searchIndex;
+        if (searchIndex && searchIndex.length) return searchIndex;
         if (indexPromise) return indexPromise;
 
         indexPromise = (async () => {
             if (document.querySelector('.category-content')) {
                 indexDoc = document;
             } else {
-                const res = await fetch('settings.html');
-                const html = await res.text();
+                var html = null;
+                if (typeof window.__USERTYPO_GET_PAGE_FRAGMENT__ === 'function') {
+                    html = window.__USERTYPO_GET_PAGE_FRAGMENT__('pages/settings.html');
+                }
+                if (!html && window.__USERTYPO_PAGE_FRAGMENTS__) {
+                    html = window.__USERTYPO_PAGE_FRAGMENTS__['pages/settings.html'];
+                }
+                if (!html) {
+                    const res = await fetch('pages/settings.html');
+                    if (!res.ok) throw new Error('Failed to load settings search index');
+                    html = await res.text();
+                }
                 indexDoc = new DOMParser().parseFromString(html, 'text/html');
             }
             searchIndex = buildSearchIndexFromDoc(indexDoc);
@@ -726,8 +736,8 @@
     }
 
     function isMultiplayerTestPage() {
-        const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
-        return page === 'room.html' || page === 'dual.html';
+        const path = (location.pathname || '').replace(/\/+$/, '') || '/';
+        return path === '/room' || path === '/dual';
     }
 
     function isTestViewActive() {

@@ -37,7 +37,7 @@ const DEFAULTS = {
         clickSounds: false,
         errorSounds: 'beep', // Changed from boolean to string
         masterVolume: 50,
-        muted: false,
+        muted: true,
         soundPack: 'Steelseries Apex Pro V2',
     },
     languageContent: {
@@ -654,8 +654,21 @@ function applyThemeSettings(settings) {
         .hover\\:\\[text-shadow\\:0_0_10px_rgba\\(0\\,208\\,255\\,0\\.8\\)\\]:hover { text-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
 
         /* ── Base backgrounds ── */
-        html { background-color: ${p.bgMain} !important; }
-        body { color: ${p.textMuted}; }
+        html,
+        body {
+            background-color: ${p.bgMain} !important;
+        }
+        #app-body,
+        #spa-page-root,
+        #spa-shell-footer,
+        body > header {
+            color: ${p.textMuted};
+            background-color: transparent !important;
+        }
+        #spa-content,
+        #app-backdrop {
+            background-color: ${p.bgMain} !important;
+        }
         [style*="background-color: #020016"],
         [style*="background:#020016"],
         .fixed.inset-0.z-0,
@@ -1563,32 +1576,29 @@ function applyFooterSettings(settings) {
 
 function updateFooterMuteUI(settings) {
     if (!settings) settings = loadSettings();
-    const muted = !!settings.soundscape?.muted;
-    const icon = muted ? 'volume_off' : 'volume_up';
-    const label = muted ? 'Unmute sounds' : 'Mute sounds';
+    const clickSoundsOn = !!settings.soundscape?.clickSounds;
+    const icon = clickSoundsOn ? 'volume_up' : 'volume_off';
+    const label = clickSoundsOn ? 'Mute sounds' : 'Unmute sounds';
 
     document.querySelectorAll('.footer-mute-btn').forEach(btn => {
         btn.title = label;
         btn.setAttribute('aria-label', label);
-        btn.classList.toggle('text-primary', muted);
-        btn.classList.toggle('text-slate-600', !muted);
     });
     document.querySelectorAll('[data-footer-mute-icon]').forEach(el => {
         el.textContent = icon;
     });
-    document.querySelectorAll('[data-setting="soundscape.muted"]').forEach(track => {
-        track.classList.toggle('on', muted);
+    document.querySelectorAll('[data-setting="soundscape.clickSounds"]').forEach(track => {
+        track.classList.toggle('on', clickSoundsOn);
     });
 }
 
 /**
- * Toggle global mute from the index footer volume icon.
- * Preserves clickSounds / volume preferences — only flips soundscape.muted.
+ * Toggle click sounds from the footer volume icon (synced with Click Sounds setting only).
  */
 function toggleFooterMute() {
     const settings = loadSettings();
     if (!settings.soundscape) settings.soundscape = structuredClone(DEFAULTS.soundscape);
-    settings.soundscape.muted = !settings.soundscape.muted;
+    settings.soundscape.clickSounds = !settings.soundscape.clickSounds;
     saveSettings(settings);
     applySoundscapeSettings(settings);
 }
@@ -1716,6 +1726,7 @@ function applyKeyboardLayoutSettings(settings) {
 function applyLiveFeedSettings(settings) {
     if (!settings) settings = loadSettings();
     const lf = settings.liveFeed || DEFAULTS.liveFeed;
+    const testActive = isTestSessionActive();
 
     const liveWpmWrapper = document.getElementById('live-wpm-wrapper');
     if (liveWpmWrapper) {
@@ -1753,10 +1764,29 @@ function applyLiveFeedSettings(settings) {
                     wordProgressBarContainer?.classList.add('hidden');
                 }
             }
-            timerProgressWrapper.style.opacity = timerOpacity.toString();
+            // Only paint live opacity while typing — never override .opacity-0 pre-test
+            if (testActive) {
+                timerProgressWrapper.style.opacity = timerOpacity.toString();
+            } else {
+                timerProgressWrapper.style.opacity = '';
+            }
         }
         if (liveStatsContainer) {
-            liveStatsContainer.style.opacity = timerOpacity.toString();
+            if (testActive) {
+                liveStatsContainer.style.opacity = timerOpacity.toString();
+            } else {
+                // Clear any leftover inline opacity so Tailwind .opacity-0 works again
+                liveStatsContainer.style.opacity = '';
+                liveStatsContainer.classList.add('opacity-0');
+            }
+        }
+
+        // Keep timer/progress digits hidden until the test starts
+        if (!testActive) {
+            document.querySelectorAll('.typing-stat').forEach(el => {
+                el.style.opacity = '';
+                el.classList.add('opacity-0');
+            });
         }
     }
 
@@ -1952,6 +1982,126 @@ function persistFromToggle(track) {
 }
 
 
+function restoreCustomButtonValues() {
+    const settings = loadSettings();
+    const thresholdPaths = [
+        { path: 'resultsAndGraphs.minWPM', labels: ['Custom'] },
+        { path: 'resultsAndGraphs.minAccuracy', labels: ['Custom'] },
+        { path: 'resultsAndGraphs.minBurst', labels: ['Fixed', 'Flex'] }
+    ];
+
+    thresholdPaths.forEach(({ path, labels }) => {
+        const saved = getByPath(settings, path);
+        if (!saved || saved === 'Off') return;
+
+        const container = document.querySelector(`[data-setting="${path}"]`);
+        if (!container) return;
+
+        let matchedRegular = false;
+        container.querySelectorAll('.opt-btn').forEach(b => {
+            if (!b.closest('.custom-popover-wrapper')) {
+                const btnText = b.textContent.trim();
+                if (btnText === String(saved)) matchedRegular = true;
+            }
+        });
+        if (matchedRegular) return;
+
+        container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
+            const btnLabel = triggerBtn.textContent.trim();
+
+            if (path === 'resultsAndGraphs.minBurst') {
+                if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
+                    triggerBtn.setAttribute('data-original-text', 'Flex');
+                    triggerBtn.textContent = String(saved).split(':')[1];
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
+                    triggerBtn.setAttribute('data-original-text', 'Fixed');
+                    triggerBtn.textContent = saved;
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                }
+            } else {
+                if (btnLabel === 'Custom') {
+                    triggerBtn.setAttribute('data-original-text', 'Custom');
+                    triggerBtn.textContent = saved;
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                }
+            }
+        });
+    });
+}
+
+/** Wire settings page controls after DOM is present (standalone load or SPA navigation). */
+function initSettingsPage() {
+    const root = document.getElementById('settings-container');
+    if (!root) return;
+
+    const settings = loadSettings();
+    restoreUI(settings);
+    restoreCustomButtonValues();
+
+    if (!root.dataset.usertypoOptWired) {
+        root.dataset.usertypoOptWired = '1';
+
+        if (typeof window.selectOpt === 'function') {
+            const _orig = window.selectOpt;
+            window.selectOpt = function (btn) {
+                const container = btn.closest('[data-setting]');
+                if (container) {
+                    container.querySelectorAll('.opt-btn').forEach(b => {
+                        if (b.hasAttribute('data-original-text')) {
+                            b.textContent = b.getAttribute('data-original-text');
+                            b.removeAttribute('data-original-text');
+                        }
+                    });
+                }
+                _orig(btn);
+                persistFromOpt(btn);
+                const path = getSettingPath(btn);
+                if (path && path.startsWith('keyboardLayout.')) {
+                    applyKeymapDisplay(loadSettings());
+                }
+            };
+        }
+
+        if (typeof window.toggleSwitch === 'function') {
+            const _orig = window.toggleSwitch;
+            window.toggleSwitch = function (track) {
+                _orig(track);
+                persistFromToggle(track);
+            };
+        }
+    }
+
+    if (!root.dataset.usertypoSliderDelegation) {
+        root.dataset.usertypoSliderDelegation = '1';
+        root.addEventListener('change', (e) => {
+            const slider = e.target;
+            if (!slider.matches || !slider.matches('input[type="range"].custom-slider')) return;
+            const container = slider.closest('[data-setting]');
+            if (!container) return;
+            const path = container.dataset.setting;
+            const sets = loadSettings();
+            setByPath(sets, path, parseInt(slider.value, 10));
+            saveSettings(sets);
+            applySoundscapeSettings(sets);
+            if (typeof window.triggerSave === 'function') window.triggerSave();
+
+            if (path === 'soundscape.masterVolume' && typeof window.playKeystrokeSound === 'function') {
+                window.playKeystrokeSound('a');
+            }
+        });
+    }
+
+    applyKeymapDisplay(settings);
+    if (typeof window._initLang === 'function') {
+        try { window._initLang({ skipRestart: true }); } catch (e) { /* ignore */ }
+    }
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  8. INITIALISATION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1972,14 +2122,6 @@ function persistFromToggle(track) {
         applyThemeSettings(settings);
         applyFooterSettings(settings);
 
-        // Index-only mute toggle in the footer
-        document.querySelectorAll('.footer-mute-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                toggleFooterMute();
-            });
-        });
-
         if (window.usertypo_footerPicker?.init) {
             window.usertypo_footerPicker.init();
         }
@@ -1987,44 +2129,7 @@ function persistFromToggle(track) {
         // Setup caret width guard for "line" style
         setupCaretWidthGuard();
 
-        // Restore settings page UI controls
-        restoreUI(settings);
-
-        // ── Wrap selectOpt ──
-        if (typeof window.selectOpt === 'function') {
-            const _orig = window.selectOpt;
-            window.selectOpt = function (btn) {
-                _orig(btn);
-                persistFromOpt(btn);
-            };
-        }
-
-        // ── Wrap toggleSwitch ──
-        if (typeof window.toggleSwitch === 'function') {
-            const _orig = window.toggleSwitch;
-            window.toggleSwitch = function (track) {
-                _orig(track);
-                persistFromToggle(track);
-            };
-        }
-
-        // ── Bind Range Sliders ──
-        document.querySelectorAll('[data-setting] input[type="range"]').forEach(slider => {
-            slider.addEventListener('change', () => {
-                const container = slider.closest('[data-setting]');
-                if (!container) return;
-                const path = container.dataset.setting;
-                const sets = loadSettings();
-                setByPath(sets, path, parseInt(slider.value));
-                saveSettings(sets);
-                applySoundscapeSettings(sets);
-                if (typeof triggerSave === 'function') triggerSave();
-
-                if (path === 'soundscape.masterVolume' && typeof window.playKeystrokeSound === 'function') {
-                    window.playKeystrokeSound('a');
-                }
-            });
-        });
+        initSettingsPage();
     });
 })();
 
@@ -2039,18 +2144,26 @@ function persistFromToggle(track) {
 //  3. `visibilitychange` — fires when the user switches back to this tab
 // ─────────────────────────────────────────────────────────────────────────────
 
+function _isOnSettingsPage() {
+    const path = location.pathname || '';
+    if (path === '/settings') return true;
+    return /settings\.html/i.test(path.split('/').pop() || '');
+}
+
 function _reapplyAllSettings() {
     const settings = loadSettings();
     applyAllSettings(settings);
 
-    const onSettingsPage = /settings\.html/i.test(location.pathname.split('/').pop() || '');
-    if (onSettingsPage) {
+    if (_isOnSettingsPage()) {
         restoreUI(settings);
+        applyKeymapDisplay(settings);
     }
 
-    // Only restart when idle — never interrupt an active typing session
-    if (!isTestSessionActive() && typeof restartTest === 'function') {
-        restartTest();
+    // Only restart when on a typing page — never on settings or other routes
+    const path = (location.pathname || '').replace(/\/+$/, '') || '/';
+    const onTypingPage = path === '/' || path === '/room' || path === '/dual';
+    if (onTypingPage && !isTestSessionActive() && typeof window.restartTest === 'function') {
+        try { window.restartTest(); } catch (e) { /* typing DOM may not be mounted yet */ }
     }
 }
 
@@ -2337,6 +2450,7 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     const settings = loadSettings();
     setByPath(settings, path, finalVal);
     saveSettings(settings);
+    applyAllSettings(settings);
     if (typeof triggerSave === 'function') triggerSave();
 
     // UI update — set button text to the entered value
@@ -2393,93 +2507,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Monkey-patch selectOpt to reset custom button text when a regular option is picked
-(function patchSelectOpt() {
-    function doPatch() {
-        if (typeof window.selectOpt !== 'function') return;
-        const _origSelectOpt = window.selectOpt;
-        window.selectOpt = function (btn) {
-            // Before calling original, reset any custom buttons in this group
-            const container = btn.closest('[data-setting]');
-            if (container) {
-                container.querySelectorAll('.opt-btn').forEach(b => {
-                    if (b.hasAttribute('data-original-text')) {
-                        b.textContent = b.getAttribute('data-original-text');
-                        b.removeAttribute('data-original-text');
-                    }
-                });
-            }
-            _origSelectOpt(btn);
-        };
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(doPatch, 100));
-    } else {
-        setTimeout(doPatch, 100);
-    }
-})();
+// (handled inside initSettingsPage for SPA + standalone)
 
 // On page load, restore custom values on buttons from saved settings
-(function restoreCustomButtonValues() {
-    function doRestore() {
-        const settings = loadSettings();
-        const thresholdPaths = [
-            { path: 'resultsAndGraphs.minWPM', labels: ['Custom'] },
-            { path: 'resultsAndGraphs.minAccuracy', labels: ['Custom'] },
-            { path: 'resultsAndGraphs.minBurst', labels: ['Fixed', 'Flex'] }
-        ];
-
-        thresholdPaths.forEach(({ path, labels }) => {
-            const saved = getByPath(settings, path);
-            if (!saved || saved === 'Off') return;
-
-            const container = document.querySelector(`[data-setting="${path}"]`);
-            if (!container) return;
-
-            // Check if any regular button matches
-            let matchedRegular = false;
-            container.querySelectorAll('.opt-btn').forEach(b => {
-                if (!b.closest('.custom-popover-wrapper')) {
-                    const btnText = b.textContent.trim();
-                    if (btnText === String(saved)) matchedRegular = true;
-                }
-            });
-            if (matchedRegular) return;
-
-            // It's a custom value — find the right trigger button
-            container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
-                const btnLabel = triggerBtn.textContent.trim();
-
-                if (path === 'resultsAndGraphs.minBurst') {
-                    if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
-                        triggerBtn.setAttribute('data-original-text', 'Flex');
-                        triggerBtn.textContent = String(saved).split(':')[1];
-                        // Remove active from others, set this active
-                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                        triggerBtn.classList.add('active');
-                    } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
-                        triggerBtn.setAttribute('data-original-text', 'Fixed');
-                        triggerBtn.textContent = saved;
-                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                        triggerBtn.classList.add('active');
-                    }
-                } else {
-                    if (btnLabel === 'Custom') {
-                        triggerBtn.setAttribute('data-original-text', 'Custom');
-                        triggerBtn.textContent = saved;
-                        container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                        triggerBtn.classList.add('active');
-                    }
-                }
-            });
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(doRestore, 200));
-    } else {
-        setTimeout(doRestore, 200);
-    }
-})();
+// (handled inside initSettingsPage for SPA + standalone)
 
 // Public API for the global settings search overlay (settings-search.js)
 window.usertypo_settingsApi = {
@@ -2487,6 +2518,7 @@ window.usertypo_settingsApi = {
     saveSettings,
     setByPath,
     restoreUI,
+    initSettingsPage,
     persistFromOpt,
     persistFromToggle,
     applySoundscapeSettings,

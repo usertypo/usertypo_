@@ -1,0 +1,766 @@
+<style>
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Keyframes Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        @keyframes fadeInUp {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes caretBreath {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 12px rgba(0, 208, 255, 1)
+            }
+
+            50% {
+                opacity: 0.3;
+                box-shadow: 0 0 4px rgba(0, 208, 255, 0.2)
+            }
+        }
+
+        @keyframes rippleOut {
+            to {
+                transform: scale(2.8);
+                opacity: 0
+            }
+        }
+
+        @keyframes pillGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(0, 208, 255, .35)
+            }
+
+            50% {
+                box-shadow: 0 0 18px rgba(0, 208, 255, .6)
+            }
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Reset Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            /* Prevent page scroll */
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+            background-color: #020016;
+            /* Prevent white flash on load */
+        }
+
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+        }
+
+        /* Header Logo */
+
+        /* Side Logo */
+        .side-logo-container { position: relative; width: 500px; height: 500px; transform: scale(1.5); margin: -250px; left: 24px; flex-shrink: 0; pointer-events: none; }
+        .side-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .side-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; opacity: 1; }
+        .side-user-layer { background-color: #ffffff; -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
+        .side-t-layer { background-color: #64748b; -webkit-mask-image: url('logo-assets/t.png'); mask-image: url('logo-assets/t.png'); animation: color-typ 0s var(--typing-delay) forwards; }
+        .side-y-layer { background-color: #64748b; -webkit-mask-image: url('logo-assets/y.png'); mask-image: url('logo-assets/y.png'); animation: color-typ 0s calc(var(--typing-delay) + 0.18s) forwards; }
+        .side-p-layer { background-color: #64748b; -webkit-mask-image: url('logo-assets/p.png'); mask-image: url('logo-assets/p.png'); animation: color-typ 0s calc(var(--typing-delay) + 0.36s) forwards; }
+        .side-o-layer { background-color: #64748b; -webkit-mask-image: url('logo-assets/o.png'); mask-image: url('logo-assets/o.png'); animation: color-o 0s calc(var(--typing-delay) + 0.54s) forwards; }
+        
+        @keyframes color-typ { to { background-color: #95efff; } }
+        @keyframes glow-typ { to { filter: drop-shadow(0 0 6px #95efff) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); } }
+        @keyframes color-o { to { background-color: #ff3344; } }
+        @keyframes glow-o { to { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); } }
+        
+        .side-underscore {
+            position: absolute;
+            left: 132px; /* Start position */
+            top: 294px;
+            width: 40px;
+            height: 8px;
+            background-color: #95efff;
+            border-radius: 2px;
+            z-index: 50;
+            box-shadow: 0 0 12px rgba(149, 239, 255, 0.7);
+            animation: side-caret-typing 0.72s linear var(--typing-delay) forwards, side-underscore-breath 2s ease-in-out calc(var(--typing-delay) + 0.72s) infinite;
+        }
+
+        @keyframes side-caret-typing {
+            0% { left: 132px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            20%, 25% { left: 176px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            45%, 50% { left: 225px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            70%, 75% { left: 274px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            95%, 100% { left: 326px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); }
+        }
+
+        @keyframes side-underscore-breath {
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); }
+            50% { opacity: 0.3; box-shadow: 0 0 4px rgba(149, 239, 255, 0.2); }
+        }
+        @keyframes initialFade {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); } }
+
+        .side-user-wrapper { z-index: 1; animation: header-fade-user 1s ease-out 0s forwards; }
+        .side-t-wrapper { z-index: 2; animation: glow-typ 0s var(--typing-delay) forwards; }
+        .side-y-wrapper { z-index: 3; animation: glow-typ 0s calc(var(--typing-delay) + 0.18s) forwards; }
+        .side-p-wrapper { z-index: 4; animation: glow-typ 0s calc(var(--typing-delay) + 0.36s) forwards; }
+        .side-o-wrapper { z-index: 5; animation: glow-o 0s calc(var(--typing-delay) + 0.54s) forwards; }
+</style>
+
+<style type="text/tailwindcss">
+        .glass-panel {
+            @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
+            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        #spa-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+           PILL TAB SWITCHER
+        Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+        .tab-pill {
+            display: flex;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 9999px;
+            padding: 4px;
+            gap: 2px;
+            position: relative;
+        }
+        .tab-pill button {
+            position: relative;
+            z-index: 2;
+            padding: .45rem 1.6rem;
+            border-radius: 9999px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            cursor: pointer;
+            transition: color .3s ease;
+        }
+        .tab-pill button.active {
+            color: #fff;
+        }
+        .tab-pill-indicator {
+            position: absolute;
+            top: 4px;
+            height: calc(100% - 8px);
+            border-radius: 9999px;
+            background: rgba(0,208,255,.18);
+            border: 1px solid rgba(0,208,255,.5);
+            box-shadow: 0 0 10px rgba(0,208,255,.25);
+            transition: left .35s cubic-bezier(0.16,1,0.3,1), width .35s cubic-bezier(0.16,1,0.3,1);
+            pointer-events: none;
+            animation: pillGlow 3s ease infinite;
+        }
+
+        /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+           LAYOUT: Two floating halves, side by side
+           Ã¢â‚¬â€œ Only one is visible at a time
+           Ã¢â‚¬â€œ Switching fades both out, swaps them, fades in
+        Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+        #auth-stage {
+            display: flex;
+            align-items: center; /* Vertically center the logo and form */
+            justify-content: center;
+            gap: 12rem;
+            width: 100%;
+            max-width: 1300px;
+            padding: 0 2rem;
+        }
+
+        /* The "brand" side (logo + welcome) */
+        #brand-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+            flex: 1;
+            max-width: 440px;
+        }
+
+        /* The form side wrapper for local scrolling */
+        #form-side-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* ensures nested flex elements center */
+        }
+
+        /* The form side */
+        #form-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            width: 100%;
+            max-height: calc(100vh - 10.5rem);
+            overflow-y: auto;
+            padding-right: 4px;
+            padding-bottom: 0.5rem;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+        #form-side::-webkit-scrollbar { display: none !important; width: 0 !important; }
+
+        /* State: sign-in Ã¢â€ â€™ brand left, form right.
+           State: sign-up  Ã¢â€ â€™ form left, brand right.
+           We achieve this with ordering and a flex-direction flip on #auth-stage. */
+        #auth-stage.show-signup {
+            flex-direction: row-reverse;
+        }
+
+        /* Fade classes */
+        .fade-target {
+            transition: opacity .5s ease;
+        }
+        .fade-target.fading-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Panel subtitle Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        #panel-subtitle {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 0 18px rgba(255,255,255,.6), 0 0 36px rgba(255,255,255,.25);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            text-align: center;
+            opacity: 1;
+            transition: opacity .5s ease;
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Form title Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .form-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -.02em;
+            text-align: center;
+        }
+
+        /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+           INPUT FIELDS Ã¢â‚¬â€œ underline style, clean & open
+        Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+        .field-wrap {
+            position: relative;
+            width: 100%;
+        }
+        .field-wrap input {
+            width: 100%;
+            padding: 1.6rem 0 .5rem;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            background: transparent;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(255,255,255,.15) !important;
+            border-radius: 0 !important;
+            outline: none !important;
+            box-shadow: none !important;
+            transition: border-bottom-color .25s ease;
+        }
+        .field-wrap input::placeholder { color: transparent; }
+        .field-wrap input:focus {
+            border-bottom-color: rgba(0,208,255,.5) !important;
+        }
+        .field-wrap label {
+            position: absolute;
+            left: 0;
+            top: 1.6rem;
+            font-size: 1rem;
+            color: #64748b;
+            pointer-events: none;
+            transition: top .25s cubic-bezier(0.16,1,0.3,1), font-size .25s cubic-bezier(0.16,1,0.3,1), color .25s cubic-bezier(0.16,1,0.3,1);
+        }
+        .field-wrap input:focus ~ label,
+        .field-wrap input:not(:placeholder-shown) ~ label {
+            top: 0;
+            font-size: .85rem;
+            color: #00d0ff;
+        }
+        /* Animated underline bar */
+        .field-wrap::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 1px;
+            background: #00d0ff;
+            box-shadow: 0 0 8px rgba(0,208,255,.6);
+            transition: width .3s ease, left .3s ease;
+        }
+        .field-wrap:focus-within::after {
+            width: 100%;
+            left: 0;
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Primary Button Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .btn-primary {
+            width: 100%;
+            padding: .9rem 1rem;
+            font-size: .875rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            background: transparent;
+            border: 1px solid rgba(0,208,255,.5);
+            border-radius: 9999px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            transition: all .25s ease;
+        }
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0,208,255,.08) 0%, rgba(0,208,255,.18) 100%);
+            transition: opacity .25s ease;
+        }
+        .btn-primary:hover {
+            border-color: rgba(0,208,255,.9);
+            box-shadow: 0 0 20px rgba(0,208,255,.25), 0 0 40px rgba(0,208,255,.1);
+            transform: translateY(-1px);
+            letter-spacing: .08em;
+        }
+        .btn-primary:hover::before { opacity: 2; }
+        .btn-primary:active { transform: translateY(0); box-shadow: none; }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Google button Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .btn-google {
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: .6rem;
+            padding: .75rem 1rem;
+            font-size: .8rem; font-weight: 500; font-family: 'Inter', sans-serif;
+            letter-spacing: .03em;
+            color: #94a3b8;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+        .btn-google:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: #e2e8f0; }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Divider Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .divider {
+            display: flex; align-items: center; gap: .75rem;
+            width: 100%; color: #334155; font-size: .7rem;
+            letter-spacing: .08em;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: rgba(255,255,255,.07);
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ White-glow links Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .white-link {
+            color: rgba(255,255,255,.55);
+            font-size: .78rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            background: none; border: none; padding: 0;
+            cursor: pointer;
+            transition: color .2s, text-shadow .2s;
+        }
+        .white-link:hover { color: #fff; text-shadow: 0 0 12px rgba(255,255,255,.6); }
+        .white-link.accent { color: #00d0ff; }
+        .white-link.accent:hover { text-shadow: 0 0 14px rgba(0,208,255,.8); }
+
+        .bottom-note { font-size: .75rem; color: #475569; text-align: center; }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Staggered reveal Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .reveal {
+            opacity: 0;
+            animation: fadeInUp .55s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ form inner wrapper Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+        .form-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+        }
+        .fields-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+        .field-row { display: flex; gap: 1rem; width: 100%; }
+        /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
+        /* Header Logo */
+</style>
+
+<!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â MAIN Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
+    <main class="opacity-0 animate-fade-in-up [animation-delay:200ms]" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+                 padding:.75rem 1.5rem;position:relative;z-index:10;min-height:0;gap:1.5rem;padding-top:4vh;">
+
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Pill Tab Switcher Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+        <div class="tab-pill">
+            <div class="tab-pill-indicator" id="pill-indicator"></div>
+            <button id="tab-signup">Sign Up</button>
+            <button id="tab-signin" class="active">Sign In</button>
+        </div>
+
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Auth Stage Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+        <div id="auth-stage" style="transform: scale(0.9); transform-origin: top center; gap: 10rem;">
+
+            <!-- BRAND SIDE -->
+            <div id="brand-side" class="fade-target">
+                <!-- Static logo -->
+                <div style="display: flex; align-items: center; justify-content: center; height: 100px; width: 300px; margin-bottom: 10px;">
+                    <div class="side-logo-container" style="--typing-delay: 1.2s; animation: initialFade 0.6s ease-out 0.6s forwards; opacity: 0; position: relative; width: 500px; height: 500px; transform: scale(1.5); transform-origin: center; left: 24px;">
+                        <div class="side-logo-layer side-user-wrapper">
+                            <div class="side-logo-layer side-dynamic-layer side-user-layer"></div>
+                        </div>
+                        <div class="side-logo-layer side-t-wrapper">
+                            <div class="side-logo-layer side-dynamic-layer side-t-layer"></div>
+                        </div>
+                        <div class="side-logo-layer side-y-wrapper">
+                            <div class="side-logo-layer side-dynamic-layer side-y-layer"></div>
+                        </div>
+                        <div class="side-logo-layer side-p-wrapper">
+                            <div class="side-logo-layer side-dynamic-layer side-p-layer"></div>
+                        </div>
+                        <div class="side-logo-layer side-o-wrapper">
+                            <div class="side-logo-layer side-dynamic-layer side-o-layer"></div>
+                        </div>
+                        <div class="side-underscore"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM SIDE -->
+            <div id="form-side-wrapper">
+                <div id="view-scroll-track"
+                    class="absolute top-2 bottom-2 right-[-24px] w-1.5 z-[20] opacity-0 translate-x-4 transition-all duration-300 pointer-events-none">
+                    <div id="view-scroll-thumb"
+                        class="absolute top-0 right-0 w-full bg-primary/40 hover:bg-primary shadow-[0_0_15px_rgba(0,208,255,0.4)] backdrop-blur-md rounded-full cursor-pointer pointer-events-auto transition-colors duration-200">
+                    </div>
+                </div>
+                <div id="form-side" class="fade-target">
+
+                    <!-- Sign-In panel -->
+                    <div id="signin-panel" class="form-inner">
+                        <div class="form-title">Welcome Back!</div>
+                        <div class="fields-stack">
+                            <div class="field-wrap">
+                                <input id="si-username" type="text" placeholder=" " autocomplete="off" />
+                                <label for="si-username">Username</label>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:.4rem;">
+                                <div class="field-wrap">
+                                    <input id="si-password" type="password" placeholder=" " />
+                                    <label for="si-password">Password</label>
+                                </div>
+                                <button class="white-link" style="align-self:flex-end;font-size:.7rem;">Forgot
+                                    Password?</button>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:.75rem;">
+                            <button class="btn-primary">Sign In</button>
+                            <div class="divider">or</div>
+                            <button class="btn-google">
+                                <svg width="15" height="15" viewBox="0 0 48 48">
+                                    <path fill="#EA4335"
+                                        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                                    <path fill="#4285F4"
+                                        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                                    <path fill="#FBBC05"
+                                        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                                    <path fill="#34A853"
+                                        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                                </svg>
+                                Continue with Google
+                            </button>
+                        </div>
+                        <p class="bottom-note">
+                            No account? <button class="white-link accent" id="go-to-signup"
+                                style="margin-left:.15rem;">Sign Up</button>
+                        </p>
+                    </div>
+
+                    <!-- Sign-Up panel (hidden initially) -->
+                    <div id="signup-panel" class="form-inner" style="display:none;">
+                        <div class="form-title">Welcome!</div>
+                        <div class="fields-stack">
+                            <div class="field-wrap">
+                                <input id="su-username" type="text" placeholder=" " autocomplete="off" />
+                                <label for="su-username">Username</label>
+                            </div>
+                            <div class="field-wrap">
+                                <input id="su-email" type="email" placeholder=" " autocomplete="off" />
+                                <label for="su-email">Email</label>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-wrap">
+                                    <input id="su-password" type="password" placeholder=" " />
+                                    <label for="su-password">Password</label>
+                                </div>
+                                <div class="field-wrap">
+                                    <input id="su-verify" type="password" placeholder=" " />
+                                    <label for="su-verify">Confirm</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:.75rem;">
+                            <button class="btn-primary">Create Account</button>
+                            <div class="divider">or</div>
+                            <button class="btn-google">
+                                <svg width="15" height="15" viewBox="0 0 48 48">
+                                    <path fill="#EA4335"
+                                        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                                    <path fill="#4285F4"
+                                        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                                    <path fill="#FBBC05"
+                                        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                                    <path fill="#34A853"
+                                        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                                </svg>
+                                Continue with Google
+                            </button>
+                        </div>
+                        <p class="bottom-note">
+                            Already have an account? <button class="white-link accent" id="go-to-signin"
+                                style="margin-left:.15rem;">Sign In</button>
+                        </p>
+                    </div>
+
+                </div><!-- /#form-side -->
+            </div><!-- /#form-side-wrapper -->
+        </div><!-- /#auth-stage -->
+
+    </main>
+
+    <!-- Footer (matching testpage) -->
+    <footer class="px-8 py-4 flex justify-end items-center relative z-20 zen-element shrink-0">
+        <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+            <span class="material-symbols-outlined text-[14px]">palette</span>
+            <span>Themes and Languages</span>
+            <button type="button" data-footer-picker
+                class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+        </div>
+    </footer>
+
+<script>
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+
+window.__spaPageInit = function() {
+    const tabSignin = document.getElementById('tab-signin');
+    const tabSignup = document.getElementById('tab-signup');
+    const indicator = document.getElementById('pill-indicator');
+    const authStage = document.getElementById('auth-stage');
+    const brandSide = document.getElementById('brand-side');
+    const formSide = document.getElementById('form-side');
+    const signinPanel = document.getElementById('signin-panel');
+    const signupPanel = document.getElementById('signup-panel');
+    const goToSignup = document.getElementById('go-to-signup');
+    const goToSignin = document.getElementById('go-to-signin');
+
+    if (!tabSignin || !tabSignup || !indicator || !authStage || !brandSide || !formSide) return;
+
+    function updateIndicator(btn) {
+        if (!btn) return;
+        indicator.style.left = btn.offsetLeft + 'px';
+        indicator.style.width = btn.offsetWidth + 'px';
+    }
+    updateIndicator(tabSignin);
+
+    let currentMode = 'signin';
+    let switching = false;
+
+    function switchTo(mode) {
+        if (mode === currentMode || switching) return;
+        switching = true;
+
+        brandSide.classList.add('fading-out');
+        formSide.classList.add('fading-out');
+
+        setTimeout(() => {
+            currentMode = mode;
+
+            if (mode === 'signup') {
+                authStage.classList.add('show-signup');
+                signinPanel.style.display = 'none';
+                signupPanel.style.display = 'flex';
+                tabSignup.classList.add('active');
+                tabSignin.classList.remove('active');
+                updateIndicator(tabSignup);
+            } else {
+                authStage.classList.remove('show-signup');
+                signinPanel.style.display = 'flex';
+                signupPanel.style.display = 'none';
+                tabSignin.classList.add('active');
+                tabSignup.classList.remove('active');
+                updateIndicator(tabSignin);
+            }
+
+            const logoContainer = document.querySelector('.side-logo-container');
+            if (logoContainer) {
+                const newLogo = logoContainer.cloneNode(true);
+                newLogo.style.setProperty('--typing-delay', '0.2s');
+                newLogo.style.animation = 'none';
+                newLogo.style.opacity = '1';
+                logoContainer.parentNode.replaceChild(newLogo, logoContainer);
+            }
+
+            brandSide.classList.remove('fading-out');
+            formSide.classList.remove('fading-out');
+            switching = false;
+        }, 510);
+    }
+
+    tabSignin.addEventListener('click', () => switchTo('signin'), { signal: __pageSignal });
+    tabSignup.addEventListener('click', () => switchTo('signup'), { signal: __pageSignal });
+    if (goToSignup) goToSignup.addEventListener('click', () => switchTo('signup'), { signal: __pageSignal });
+    if (goToSignin) goToSignin.addEventListener('click', () => switchTo('signin'), { signal: __pageSignal });
+
+    document.querySelectorAll('.btn-primary').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            const r = document.createElement('span');
+            const rc = btn.getBoundingClientRect();
+            const sz = Math.max(rc.width, rc.height);
+            r.style.cssText = `position:absolute;border-radius:50%;
+                    width:${sz}px;height:${sz}px;
+                    left:${e.clientX - rc.left - sz / 2}px;top:${e.clientY - rc.top - sz / 2}px;
+                    background:rgba(255,255,255,.18);transform:scale(0);
+                    animation:rippleOut .55s linear;pointer-events:none;`;
+            btn.appendChild(r);
+            setTimeout(() => r.remove(), 560);
+        }, { signal: __pageSignal });
+    });
+
+    const observer = new MutationObserver(() => {
+        updateIndicator(document.querySelector('.tab-pill button.active'));
+    });
+    observer.observe(authStage, { childList: true, subtree: true, attributes: true });
+    __pageAbort.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+
+    const viewTrack = document.getElementById('view-scroll-track');
+    const viewThumb = document.getElementById('view-scroll-thumb');
+    const formSideWrapper = document.getElementById('form-side-wrapper');
+    let isDragging = false;
+    let startY;
+    let startScrollTop;
+
+    if (viewTrack && viewThumb && formSideWrapper && formSide) {
+        document.addEventListener('mousemove', (e) => {
+            const rect = formSideWrapper.getBoundingClientRect();
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            const inVerticalBounds = mouseY >= rect.top && mouseY <= rect.bottom;
+            const inHorizontalBounds = mouseX >= rect.right - 50 && mouseX <= rect.right + 40;
+
+            if (isDragging || (inVerticalBounds && inHorizontalBounds)) {
+                viewTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
+                viewTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
+            } else {
+                viewTrack.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
+                viewTrack.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
+            }
+        }, { signal: __pageSignal });
+
+        function updateViewScrollbar() {
+            const scrollHeight = formSide.scrollHeight;
+            const clientHeight = formSide.clientHeight;
+            const scrollableDistance = scrollHeight - clientHeight;
+
+            if (scrollableDistance <= 0) {
+                viewTrack.style.display = 'none';
+                return;
+            }
+            viewTrack.style.display = 'block';
+
+            const scrollPercentage = formSide.scrollTop / scrollableDistance;
+            const trackHeight = viewTrack.clientHeight;
+            const viewportRatio = clientHeight / scrollHeight;
+            const thumbHeight = Math.max(trackHeight * viewportRatio, 40);
+            viewThumb.style.height = `${thumbHeight}px`;
+
+            const maxThumbTop = trackHeight - thumbHeight;
+            viewThumb.style.top = `${scrollPercentage * maxThumbTop}px`;
+        }
+
+        formSide.addEventListener('scroll', updateViewScrollbar, { signal: __pageSignal });
+        window.addEventListener('resize', updateViewScrollbar, { signal: __pageSignal });
+
+        viewThumb.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startY = e.clientY;
+            startScrollTop = formSide.scrollTop;
+            document.body.style.userSelect = 'none';
+            viewThumb.classList.add('bg-primary');
+        }, { signal: __pageSignal });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const scrollHeight = formSide.scrollHeight;
+            const clientHeight = formSide.clientHeight;
+            const maxScroll = scrollHeight - clientHeight;
+            const maxThumbTop = viewTrack.clientHeight - viewThumb.clientHeight;
+            const deltaY = e.clientY - startY;
+            const scrollRatio = deltaY / maxThumbTop;
+            formSide.scrollTop = startScrollTop + (scrollRatio * maxScroll);
+            updateViewScrollbar();
+        }, { signal: __pageSignal });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.userSelect = '';
+                viewThumb.classList.remove('bg-primary');
+            }
+        }, { signal: __pageSignal });
+
+        setTimeout(updateViewScrollbar, 200);
+        const scrollObserver = new MutationObserver(updateViewScrollbar);
+        scrollObserver.observe(formSide, { childList: true, subtree: true, attributes: true });
+        __pageAbort.signal.addEventListener('abort', () => scrollObserver.disconnect(), { once: true });
+    }
+
+    window.scrollTo(0, 0);
+};
+
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function() {
+    __pageAbort.abort();
+    document.body.style.userSelect = '';
+    if (typeof __prevSpaCleanup === 'function') __prevSpaCleanup();
+};
+</script>
