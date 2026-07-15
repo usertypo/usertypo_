@@ -8,6 +8,7 @@
         '/': { page: 'pages/home.html', title: 'Home - Typing Test | usertypo_', navId: 'nav-typing', hideShellFooter: true, compact: false, typingLayout: true },
         '/settings': { page: 'pages/settings.html', title: 'Settings - Configure Your Experience | usertypo_', navId: 'nav-settings', compact: false },
         '/signin': { page: 'pages/signin.html', title: 'Sign In - Continue the Fun! | usertypo_', navId: null, compact: false, signinLayout: true, hideShellFooter: true },
+        '/sso-callback': { page: 'pages/sso-callback.html', title: 'Signing in... | usertypo_', navId: null, compact: false, hideShellFooter: true, hideShellHeader: true },
         '/friends': { page: 'pages/friends.html', title: 'Friends | usertypo_', navId: 'nav-friends', compact: true },
         '/room': { page: 'pages/room.html', title: 'Room | usertypo_', navId: null, compact: true, typingLayout: true, hideShellFooter: true },
         '/dual': { page: 'pages/dual.html', title: 'Dual Match | usertypo_', navId: null, compact: true, typingLayout: true, hideShellHeader: true, hideShellFooter: true },

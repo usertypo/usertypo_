@@ -1,0 +1,71 @@
+<style>
+    .sso-callback-wrap {
+        min-height: 40vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        text-align: center;
+        padding: 2rem;
+    }
+    .sso-callback-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #f1f5f9;
+    }
+    .sso-callback-msg {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        max-width: 28rem;
+    }
+    .sso-callback-error {
+        color: #ff6b6b;
+        font-size: 0.85rem;
+    }
+</style>
+
+<main class="sso-callback-wrap">
+    <div class="sso-callback-title">Finishing sign-in...</div>
+    <p class="sso-callback-msg" id="sso-callback-msg">Please wait while we connect your account.</p>
+    <p class="sso-callback-error hidden" id="sso-callback-error"></p>
+    <div id="clerk-captcha"></div>
+</main>
+
+<script>
+const __pageAbort = new AbortController();
+
+window.__spaPageInit = function () {
+    var msgEl = document.getElementById('sso-callback-msg');
+    var errEl = document.getElementById('sso-callback-error');
+
+    function showError(text) {
+        if (msgEl) msgEl.textContent = 'We could not finish signing you in.';
+        if (errEl) {
+            errEl.textContent = text;
+            errEl.classList.remove('hidden');
+        }
+    }
+
+    if (!window.usertypoAuth) {
+        showError('Auth is not loaded.');
+        return;
+    }
+
+    window.usertypoAuth.handleSsoCallback()
+        .then(function () {
+            if (window.navigateTo) {
+                window.navigateTo('/');
+            } else {
+                window.location.href = '/';
+            }
+        })
+        .catch(function (err) {
+            showError(window.usertypoAuth.formatError(err));
+        });
+};
+
+window.__spaPageCleanup = function () {
+    __pageAbort.abort();
+};
+</script>

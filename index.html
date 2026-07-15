@@ -647,21 +647,25 @@
 
                         <!-- User Card -->
                         <div class="px-2 pb-2 pt-1">
-                            <a href="/userstats" data-spa-link id="nav-userstats"
-                                class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group/link">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
-                                        G
+                            <div id="shell-user-card"
+                                class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+                                <a href="/userstats" data-spa-link id="nav-userstats"
+                                    class="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity">
+                                    <div id="shell-user-avatar"
+                                        class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm shrink-0">
+                                        ?
                                     </div>
-                                    <div class="flex flex-col justify-center">
-                                        <span class="text-white font-bold text-xs leading-tight">GAMER_42</span>
-                                        <span class="bubble-user-tier text-[10px] font-bold tracking-wide">Pro Member</span>
+                                    <div class="flex flex-col justify-center min-w-0">
+                                        <span id="shell-user-name" class="text-white font-bold text-xs leading-tight truncate">Guest</span>
+                                        <span id="shell-user-tier" class="bubble-user-tier text-[10px] font-bold tracking-wide">Not signed in</span>
                                     </div>
-                                </div>
-                                <button class="text-slate-500 group-hover/link:text-white transition-colors mr-1">
-                                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                                </button>
-                            </a>
+                                </a>
+                                <a href="/signin" data-spa-link id="shell-auth-action"
+                                    class="text-slate-500 hover:text-white transition-colors mr-1 shrink-0"
+                                    title="Sign in" aria-label="Sign in">
+                                    <span class="material-symbols-outlined text-[18px]" id="shell-auth-action-icon">login</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -683,9 +687,10 @@
         </div>
 
         <div id="header-right" class="flex items-center justify-end w-1/3 gap-8 zen-element">
-            <a href="/userstats" data-spa-link
-                class="flex items-center justify-center rounded-full bg-surface/40 border border-white/5 w-10 h-10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] group">
-                <span
+            <a href="/signin" data-spa-link id="header-account-btn"
+                class="flex items-center justify-center rounded-full bg-surface/40 border border-white/5 w-10 h-10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] group"
+                title="Sign in" aria-label="Sign in">
+                <span id="header-account-icon"
                     class="material-symbols-outlined text-[18px] text-primary group-hover:text-white transition-colors">person</span>
             </a>
         </div>
@@ -789,6 +794,10 @@
     <script src="settings.js"></script>
     <script src="footer-picker.js"></script>
     <script src="settings-search.js"></script>
+    <!-- Auth: config first, then bootstrap (before router) -->
+    <script src="js/clerk-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/header-auth.js"></script>
     <script src="js/page-fragments.js"></script>
     <script src="js/router.js"></script>
     <script>

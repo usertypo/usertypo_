@@ -33,6 +33,7 @@ const SPA_ROUTES = new Set([
     '/index.html',
     '/settings',
     '/signin',
+    '/sso-callback',
     '/friends',
     '/room',
     '/dual',

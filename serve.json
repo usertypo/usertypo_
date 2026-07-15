@@ -1,0 +1,15 @@
+{
+  "public": ".",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/signin", "destination": "/index.html" },
+    { "source": "/friends", "destination": "/index.html" },
+    { "source": "/room", "destination": "/index.html" },
+    { "source": "/dual", "destination": "/index.html" },
+    { "source": "/leaderboards", "destination": "/index.html" },
+    { "source": "/userstats", "destination": "/index.html" }
+  ],
+  "directoryListing": false
+}

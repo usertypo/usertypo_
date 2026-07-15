@@ -5,6 +5,6 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build:pages": "node scripts/build-page-fragments.js",
-    "serve": "npx --yes serve ."
+    "serve": "npx --yes serve . --single --listen 3000"
   }
 }
