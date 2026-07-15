@@ -1,9 +1,9 @@
 /**
- * Builds js/page-fragments.js — embeds pages/*.html so the SPA works on any
- * static host (npx serve, Live Server, Netlify, Vercel, etc.), even when SPA
- * rewrites send /pages/* to index.html.
+ * Builds js/page-fragments.js — embeds all HTML under pages/ (including subfolders)
+ * so the SPA works on any static host (npx serve, Live Server, Cloudflare Pages, etc.),
+ * even when SPA rewrites send /pages/* to index.html.
  *
- * Run after editing files in pages/:  node scripts/build-page-fragments.js
+ * Run after editing files in pages/:  npm run build:pages
  */
 const fs = require('fs');
 const path = require('path');
@@ -12,13 +12,30 @@ const ROOT = path.resolve(__dirname, '..');
 const PAGES_DIR = path.join(ROOT, 'pages');
 const OUT_FILE = path.join(ROOT, 'js', 'page-fragments.js');
 
-const files = fs.readdirSync(PAGES_DIR).filter((f) => f.endsWith('.html')).sort();
+function collectHtmlFiles(dir, baseKey) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const files = [];
+
+    for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        const key = baseKey + '/' + entry.name;
+        if (entry.isDirectory()) {
+            files.push(...collectHtmlFiles(full, key));
+        } else if (entry.isFile() && entry.name.endsWith('.html')) {
+            files.push({ key: key.replace(/\\/g, '/'), full });
+        }
+    }
+
+    return files;
+}
+
+const found = collectHtmlFiles(PAGES_DIR, 'pages').sort(function (a, b) {
+    return a.key.localeCompare(b.key);
+});
 const map = {};
 
-for (const file of files) {
-    const key = 'pages/' + file;
-    const html = fs.readFileSync(path.join(PAGES_DIR, file), 'utf8');
-    map[key] = html;
+for (const file of found) {
+    map[file.key] = fs.readFileSync(file.full, 'utf8');
 }
 
 const header = `/**
@@ -47,4 +64,4 @@ fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
 fs.writeFileSync(OUT_FILE, header + body + footer, 'utf8');
 
 const sizeKb = Math.round(fs.statSync(OUT_FILE).size / 1024);
-console.log('Wrote ' + OUT_FILE + ' (' + files.length + ' pages, ~' + sizeKb + ' KB)');
+console.log('Wrote ' + OUT_FILE + ' (' + found.length + ' pages, ~' + sizeKb + ' KB)');

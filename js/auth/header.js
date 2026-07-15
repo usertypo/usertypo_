@@ -1,5 +1,5 @@
 /**
- * Keeps the shell header in sync with Clerk auth state.
+ * Shell header ↔ auth state binding.
  */
 (function () {
     function displayName(user) {

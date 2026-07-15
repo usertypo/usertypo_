@@ -5,6 +5,32 @@ const path = require('path');
 const ROOT = path.resolve(__dirname);
 const PORT = Number(process.env.PORT) || 3000;
 
+/** Load `.env` into process.env without requiring a dependency. */
+function loadDotEnv() {
+    const envPath = path.join(ROOT, '.env');
+    if (!fs.existsSync(envPath)) return;
+    const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq <= 0) continue;
+        const key = trimmed.slice(0, eq).trim();
+        let value = trimmed.slice(eq + 1).trim();
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+        if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+            process.env[key] = value;
+        }
+    }
+}
+
+loadDotEnv();
+
 const MIME = {
     '.html': 'text/html; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
@@ -46,6 +72,47 @@ function isInsideRoot(filePath) {
     const root = ROOT.toLowerCase();
     const file = resolved.toLowerCase();
     return file === root || file.startsWith(root + path.sep);
+}
+
+/**
+ * For local/prod deploys: allow `.env` to override publishable config
+ * when serving js/config/public.js (never injects secret keys).
+ */
+function maybeInjectPublicConfig(filePath, data) {
+    const normalized = filePath.replace(/\\/g, '/');
+    if (!normalized.endsWith('/js/config/public.js')) return data;
+
+    let source = data.toString('utf8');
+    const clerkKey = process.env.CLERK_PUBLISHABLE_KEY;
+    const clerkHost = process.env.CLERK_FRONTEND_API;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnon = process.env.SUPABASE_ANON_KEY;
+
+    if (clerkKey) {
+        source = source.replace(
+            /publishableKey:\s*'[^']*'/,
+            "publishableKey: '" + clerkKey.replace(/'/g, "\\'") + "'"
+        );
+    }
+    if (clerkHost) {
+        source = source.replace(
+            /frontendApi:\s*'[^']*'/,
+            "frontendApi: '" + clerkHost.replace(/'/g, "\\'") + "'"
+        );
+    }
+    if (supabaseUrl) {
+        source = source.replace(
+            /url:\s*''/,
+            "url: '" + supabaseUrl.replace(/'/g, "\\'") + "'"
+        );
+    }
+    if (supabaseAnon) {
+        source = source.replace(
+            /anonKey:\s*''/,
+            "anonKey: '" + supabaseAnon.replace(/'/g, "\\'") + "'"
+        );
+    }
+    return Buffer.from(source, 'utf8');
 }
 
 function safePath(urlPath) {
@@ -91,6 +158,7 @@ function sendStaticFile(res, filePath) {
             res.end('Not found');
             return;
         }
+        const body = maybeInjectPublicConfig(filePath, data);
         const headers = {
             'Content-Type': type,
             'X-Usertypo-Response': 'static',
@@ -104,7 +172,7 @@ function sendStaticFile(res, filePath) {
             }
         }
         res.writeHead(200, headers);
-        res.end(data);
+        res.end(body);
     });
 }
 

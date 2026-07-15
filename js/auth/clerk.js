@@ -1,10 +1,16 @@
 /**
- * Clerk bootstrap + auth helpers for the usertypo_ SPA.
+ * Auth client — Clerk load + session helpers.
+ * Public API: window.usertypoAuth
  */
 (function () {
-    var config = window.USERTYPO_CLERK;
+    function getClerkConfig() {
+        var root = window.USERTYPO_CONFIG || {};
+        return root.clerk || window.USERTYPO_CLERK || null;
+    }
+
+    var config = getClerkConfig();
     if (!config || !config.publishableKey || !config.frontendApi) {
-        console.error('[usertypo auth] Missing window.USERTYPO_CLERK config.');
+        console.error('[usertypo auth] Missing USERTYPO_CONFIG.clerk in js/config/public.js');
         return;
     }
 
@@ -115,7 +121,6 @@
             signUpUrl: config.signUpUrl,
             afterSignInUrl: config.afterSignInUrl,
             afterSignUpUrl: config.afterSignUpUrl,
-            // Keep OAuth / hosted fallbacks on this site, not Clerk Account Portal
             signInForceRedirectUrl: config.afterSignInUrl || '/',
             signUpForceRedirectUrl: config.afterSignUpUrl || '/',
             signInFallbackRedirectUrl: config.afterSignInUrl || '/',
@@ -235,7 +240,6 @@
         var callbackUrl = window.location.origin + (config.ssoCallbackUrl || '/sso-callback');
         var completeUrl = window.location.origin + (config.afterSignInUrl || '/');
 
-        // Custom OAuth flow: Google → back to /sso-callback on this site
         if (typeof clerk.client.signIn.authenticateWithRedirect === 'function') {
             await clerk.client.signIn.authenticateWithRedirect({
                 strategy: 'oauth_google',
@@ -245,7 +249,6 @@
             return;
         }
 
-        // Newer clerk-js builds
         if (typeof clerk.client.signIn.create === 'function') {
             var signIn = await clerk.client.signIn.create({});
             if (signIn && typeof signIn.authenticateWithRedirect === 'function') {
@@ -259,7 +262,7 @@
         }
 
         throw new Error(
-            'Google sign-in could not start. In Clerk Dashboard, enable Google under User & authentication → Social connections, and set Paths to your localhost URLs.'
+            'Google sign-in could not start. Enable Google in Clerk and set Paths to your app URLs.'
         );
     }
 
@@ -280,7 +283,6 @@
             signUpForceRedirectUrl: home,
             continueSignUpUrl: window.location.origin + (config.signInUrl || '/signin'),
         }, function (to) {
-            // Keep navigation on our SPA instead of leaving to Clerk.com
             var path = to;
             try {
                 if (String(to).indexOf('http') === 0) {
