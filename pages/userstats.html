@@ -72,51 +72,55 @@
                     class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-2 opacity-0 animate-fade-in-up [animation-delay:250ms]">
                     Timed Bests</h3>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]"
+                    data-best-card data-mode="time" data-amount="15">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">15 Seconds</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">142</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">98.4%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]"
+                    data-best-card data-mode="time" data-amount="30">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">30 Seconds</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">135</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">97.2%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]"
+                    data-best-card data-mode="time" data-amount="60">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">60 Seconds</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">128</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">99.1%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]"
+                    data-best-card data-mode="time" data-amount="120">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">120 Seconds</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">118</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">97.8%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
             </div>
@@ -137,33 +141,33 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
                     <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
-                        <span class="font-headline text-lg font-semibold text-slate-100 truncate block">1.2k</span>
+                        <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                            1,248 Tests Taken
+                            <span id="stat-tests-tooltip">0 Tests Taken</span>
                             <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
                     <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
-                        <span class="font-headline text-lg font-semibold text-slate-100 truncate block">42h</span>
+                        <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                            42 Hours of Typing
+                            <span id="stat-time-tooltip">0 Seconds of Typing</span>
                             <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
                     <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
-                        <span class="font-headline text-lg font-semibold text-slate-100 truncate block">84k</span>
+                        <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                            84,200 Words Typed
+                            <span id="stat-words-tooltip">0 Words Typed</span>
                             <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
                     <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
-                        <span class="font-headline text-lg font-semibold text-primary truncate block">#102</span>
+                        <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                            Rank #102
+                            <span id="stat-rank-tooltip">Leaderboards coming soon</span>
                             <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
@@ -175,51 +179,55 @@
                     class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-2 opacity-0 animate-fade-in-up [animation-delay:250ms]">
                     Word Bests</h3>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]"
+                    data-best-card data-mode="words" data-amount="10">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">10 Words</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">168</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">100%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]"
+                    data-best-card data-mode="words" data-amount="25">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">25 Words</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">154</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">99.2%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]"
+                    data-best-card data-mode="words" data-amount="50">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">50 Words</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">147</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">98.5%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
                 <div
-                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]">
+                    class="glass-panel p-6 rounded-lg neon-border-glow flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]"
+                    data-best-card data-mode="words" data-amount="100">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">100 Words</span>
-                        <span class="font-headline text-4xl font-bold text-primary cyan-glow-text">131</span>
+                        <span data-best-wpm class="font-headline text-4xl font-bold text-primary cyan-glow-text">—</span>
                         <span class="text-xs text-primary ml-1">WPM</span>
                     </div>
                     <div class="text-right">
                         <span class="text-slate-500 text-xs block">Accuracy</span>
-                        <span class="font-headline text-xl text-slate-500">97.4%</span>
+                        <span data-best-acc class="font-headline text-xl text-slate-500">—</span>
                     </div>
                 </div>
             </div>
@@ -657,9 +665,7 @@
                         <span>More</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1.5 overflow-x-auto scrollbar-hide py-2">
-                    <div id="activity-map-grid" class="contents"></div>
-                </div>
+                <div id="activity-map-grid" class="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1.5 overflow-x-auto scrollbar-hide py-2"></div>
                 <div
                     class="flex justify-between mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-headline">
                     <span>Mar 2023</span>
@@ -712,40 +718,12 @@
                                 <th class="px-6 py-4 font-medium">Date</th>
                             </tr>
                         </thead>
-                        <tbody class="text-sm divide-y divide-white/5">
-                            <tr class="hover:bg-white/5 transition-colors">
-                                <td class="px-6 py-4 font-headline text-slate-400">timed 60s</td>
-                                <td class="px-6 py-4 font-headline font-bold text-primary">128</td>
-                                <td class="px-6 py-4 text-slate-500">99.1%</td>
-                                <td class="px-6 py-4 text-slate-500">134</td>
-                                <td class="px-6 py-4 text-xs text-slate-500">2 mins ago</td>
-                            </tr>
-                            <tr class="hover:bg-white/5 transition-colors">
-                                <td class="px-6 py-4 font-headline text-slate-400">words 50</td>
-                                <td class="px-6 py-4 font-headline font-bold text-primary">147</td>
-                                <td class="px-6 py-4 text-slate-500">98.5%</td>
-                                <td class="px-6 py-4 text-slate-500">151</td>
-                                <td class="px-6 py-4 text-xs text-slate-500">1 hour ago</td>
-                            </tr>
-                            <tr class="hover:bg-white/5 transition-colors">
-                                <td class="px-6 py-4 font-headline text-slate-400">timed 30s</td>
-                                <td class="px-6 py-4 font-headline font-bold text-primary">135</td>
-                                <td class="px-6 py-4 text-slate-500">97.2%</td>
-                                <td class="px-6 py-4 text-slate-500">142</td>
-                                <td class="px-6 py-4 text-xs text-slate-500">5 hours ago</td>
-                            </tr>
-                            <tr class="hover:bg-white/5 transition-colors">
-                                <td class="px-6 py-4 font-headline text-slate-400">timed 15s</td>
-                                <td class="px-6 py-4 font-headline font-bold text-primary">142</td>
-                                <td class="px-6 py-4 text-slate-500">98.4%</td>
-                                <td class="px-6 py-4 text-slate-500">145</td>
-                                <td class="px-6 py-4 text-xs text-slate-500">Yesterday</td>
-                            </tr>
+                        <tbody id="test-history-body" class="text-sm divide-y divide-white/5">
                         </tbody>
                     </table>
                 </div>
-                <div class="p-4 bg-background-dark text-center">
-                    <button class="font-headline text-sm text-primary hover:underline transition-all">Load More
+                <div id="test-history-footer" class="p-4 bg-background-dark text-center hidden">
+                    <button id="test-history-load-more" type="button" class="font-headline text-sm text-primary hover:underline transition-all">Load More
                         Records</button>
                 </div>
             </div>
@@ -789,7 +767,7 @@ window.setTimeout = function(handler, timeout) {
     return id;
 };
 
-function initActivityMapGrid() {
+window.initActivityMapGrid = function initActivityMapGrid() {
     const grid = document.getElementById('activity-map-grid');
     if (!grid) return;
     const colors = ['bg-surface-light', 'bg-primary/10', 'bg-primary/30', 'bg-primary/50', 'bg-primary/80'];
@@ -800,7 +778,7 @@ function initActivityMapGrid() {
         html += '<div class="aspect-square rounded-sm ' + color + ' ' + glow + '"></div>';
     }
     grid.innerHTML = html;
-}
+};
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {
@@ -862,8 +840,8 @@ if ('scrollRestoration' in history) {
         window.scrollTo(0, 0);
 
         window.__spaPageInit = function() {
-            if (typeof initActivityMapGrid === 'function') {
-                initActivityMapGrid();
+            if (typeof window.initActivityMapGrid === 'function') {
+                window.initActivityMapGrid();
             }
 
             async function fillProfileIdentity() {
@@ -912,6 +890,206 @@ if ('scrollRestoration' in history) {
             }
 
             fillProfileIdentity();
+
+            var historyOffset = 0;
+            var historyPageSize = 20;
+            var historyTotal = 0;
+            var historyLoading = false;
+
+            function renderBestCards(bests) {
+                if (!bests || !window.usertypoSessions) return;
+                var cards = document.querySelectorAll('[data-best-card]');
+                cards.forEach(function (card) {
+                    var mode = card.getAttribute('data-mode');
+                    var amount = Number(card.getAttribute('data-amount'));
+                    var key = mode + ':' + amount;
+                    var best = bests[key];
+                    var wpmEl = card.querySelector('[data-best-wpm]');
+                    var accEl = card.querySelector('[data-best-acc]');
+
+                    if (!best) {
+                        if (wpmEl) wpmEl.textContent = '—';
+                        if (accEl) accEl.textContent = '—';
+                        return;
+                    }
+
+                    if (wpmEl) wpmEl.textContent = String(Math.round(best.wpm));
+                    if (accEl) accEl.textContent = window.usertypoSessions.formatAccuracy(best.accuracy);
+                });
+            }
+
+            function renderSummary(summary) {
+                if (!summary || !window.usertypoSessions) return;
+
+                var testsDisplay = document.getElementById('stat-tests-display');
+                var testsTooltip = document.getElementById('stat-tests-tooltip');
+                var timeDisplay = document.getElementById('stat-time-display');
+                var timeTooltip = document.getElementById('stat-time-tooltip');
+                var wordsDisplay = document.getElementById('stat-words-display');
+                var wordsTooltip = document.getElementById('stat-words-tooltip');
+
+                if (testsDisplay) {
+                    testsDisplay.textContent = window.usertypoSessions.formatCompactNumber(summary.tests);
+                }
+                if (testsTooltip) {
+                    testsTooltip.textContent = summary.tests.toLocaleString() + ' Tests Taken';
+                }
+                if (timeDisplay) {
+                    timeDisplay.textContent = window.usertypoSessions.formatDurationShort(summary.totalSeconds);
+                }
+                if (timeTooltip) {
+                    var hours = summary.totalSeconds / 3600;
+                    timeTooltip.textContent = hours >= 1
+                        ? (Math.round(hours * 10) / 10).toLocaleString() + ' Hours of Typing'
+                        : summary.totalSeconds.toLocaleString() + ' Seconds of Typing';
+                }
+                if (wordsDisplay) {
+                    wordsDisplay.textContent = window.usertypoSessions.formatCompactNumber(summary.totalWords);
+                }
+                if (wordsTooltip) {
+                    wordsTooltip.textContent = summary.totalWords.toLocaleString() + ' Words Typed';
+                }
+            }
+
+            function buildHistoryRow(session) {
+                var tr = document.createElement('tr');
+                tr.className = 'hover:bg-white/5 transition-colors';
+                if (session.failed) tr.classList.add('opacity-60');
+
+                var mode = window.usertypoSessions.formatModeLabel(session.mode, session.amount);
+                var wpm = session.failed ? '—' : String(Math.round(Number(session.wpm) || 0));
+                var acc = session.failed ? '—' : window.usertypoSessions.formatAccuracy(session.accuracy);
+                var raw = session.failed ? '—' : String(Math.round(Number(session.raw_wpm) || 0));
+                var date = window.usertypoSessions.formatRelativeTime(session.created_at);
+
+                tr.innerHTML =
+                    '<td class="px-6 py-4 font-headline text-slate-400">' + mode + (session.failed ? ' (failed)' : '') + '</td>' +
+                    '<td class="px-6 py-4 font-headline font-bold text-primary">' + wpm + '</td>' +
+                    '<td class="px-6 py-4 text-slate-500">' + acc + '</td>' +
+                    '<td class="px-6 py-4 text-slate-500">' + raw + '</td>' +
+                    '<td class="px-6 py-4 text-xs text-slate-500">' + date + '</td>';
+
+                return tr;
+            }
+
+            function renderHistoryRows(sessions, append) {
+                var tbody = document.getElementById('test-history-body');
+                if (!tbody) return;
+
+                if (!append) tbody.innerHTML = '';
+
+                if (!sessions.length && !append) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">No tests yet. Complete a typing test to see your history here.</td></tr>';
+                    return;
+                }
+
+                sessions.forEach(function (session) {
+                    tbody.appendChild(buildHistoryRow(session));
+                });
+            }
+
+            function updateHistoryFooter() {
+                var footer = document.getElementById('test-history-footer');
+                if (!footer) return;
+                var hasMore = historyOffset < historyTotal;
+                footer.classList.toggle('hidden', !hasMore);
+            }
+
+            async function loadMoreHistory() {
+                if (historyLoading || !window.usertypoSessions) return;
+                if (historyOffset >= historyTotal && historyTotal > 0) return;
+
+                historyLoading = true;
+                try {
+                    var result = await window.usertypoSessions.listMySessions({
+                        limit: historyPageSize,
+                        offset: historyOffset,
+                    });
+                    historyTotal = result.total;
+                    renderHistoryRows(result.sessions, true);
+                    historyOffset += result.sessions.length;
+                    updateHistoryFooter();
+                } catch (err) {
+                    console.error('[usertypo userstats] history load failed', err);
+                } finally {
+                    historyLoading = false;
+                }
+            }
+
+            async function loadUserRank() {
+                var display = document.getElementById('stat-rank-display');
+                var tooltip = document.getElementById('stat-rank-tooltip');
+                if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
+                    if (display) display.textContent = '—';
+                    if (tooltip) tooltip.textContent = 'Global rank unavailable';
+                    return;
+                }
+
+                try {
+                    await window.usertypoAuth.ready();
+                    var state = window.usertypoAuth.getState();
+                    if (!state.isSignedIn) {
+                        window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, {
+                            mode: 'time',
+                            amount: 60,
+                            timeframe: 'alltime',
+                        });
+                        return;
+                    }
+
+                    var result = await window.usertypoLeaderboards.getMyRank({
+                        mode: 'time',
+                        amount: 60,
+                        timeframe: 'alltime',
+                    });
+
+                    window.usertypoLeaderboards.renderRankStat(display, tooltip, result, {
+                        mode: 'time',
+                        amount: 60,
+                        timeframe: 'alltime',
+                    });
+                } catch (err) {
+                    console.error('[usertypo userstats] rank load failed', err);
+                    if (display) display.textContent = '—';
+                    if (tooltip) tooltip.textContent = 'Could not load global rank';
+                }
+            }
+
+            async function loadUserStats() {
+                if (!window.usertypoSessions || typeof window.usertypoSessions.getMyStats !== 'function') {
+                    return;
+                }
+
+                try {
+                    await window.usertypoAuth.ready();
+                    var state = window.usertypoAuth.getState();
+                    if (!state.isSignedIn) return;
+
+                    var stats = await window.usertypoSessions.getMyStats();
+                    if (stats.error) return;
+
+                    renderBestCards(stats.bests);
+                    renderSummary(stats.summary);
+
+                    historyOffset = 0;
+                    historyTotal = stats.totalSessions || 0;
+                    renderHistoryRows(stats.recentSessions || [], false);
+                    historyOffset = (stats.recentSessions || []).length;
+                    updateHistoryFooter();
+                } catch (err) {
+                    console.error('[usertypo userstats] stats load failed', err);
+                }
+            }
+
+            loadUserStats();
+            loadUserRank();
+
+            var loadMoreBtn = document.getElementById('test-history-load-more');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function () {
+                    loadMoreHistory();
+                });
+            }
 
             const pageTrack = document.getElementById('page-scroll-track');
             const pageThumb = document.getElementById('page-scroll-thumb');

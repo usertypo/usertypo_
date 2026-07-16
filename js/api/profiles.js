@@ -3,8 +3,11 @@
  * Public API: window.usertypoProfiles
  */
 (function () {
+    var STORAGE_KEY = 'usertypo:profile-cache:v1';
     var lastSyncedUserId = null;
     var syncInFlight = null;
+    var cachedProfile = null;
+    var lastFingerprint = null;
 
     function pickUsername(user) {
         if (!user) return null;
@@ -20,17 +23,119 @@
         return (user && user.imageUrl) || null;
     }
 
+    function userFingerprint(user) {
+        if (!user) return '';
+        var email = user.primaryEmailAddress && user.primaryEmailAddress.emailAddress;
+        return [
+            user.id,
+            user.username || '',
+            user.fullName || '',
+            user.firstName || '',
+            user.imageUrl || '',
+            email || '',
+        ].join('|');
+    }
+
+    function clearProfileCache() {
+        cachedProfile = null;
+        lastFingerprint = null;
+        lastSyncedUserId = null;
+        window.__USERTYPO_PROFILE__ = null;
+    }
+
+    function readStoredProfiles() {
+        try {
+            var raw = window.localStorage.getItem(STORAGE_KEY);
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function writeStoredProfiles(map) {
+        try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map || {}));
+        } catch (e) { /* ignore storage failures */ }
+    }
+
+    function loadStoredProfile(userId, fingerprint) {
+        if (!userId || !fingerprint) return null;
+        var entries = readStoredProfiles();
+        var entry = entries[userId];
+        if (!entry || entry.fingerprint !== fingerprint || !entry.profile) {
+            return null;
+        }
+        return entry.profile;
+    }
+
+    function storeProfile(userId, fingerprint, profile) {
+        if (!userId || !fingerprint || !profile) return;
+        var entries = readStoredProfiles();
+        entries[userId] = {
+            fingerprint: fingerprint,
+            profile: profile,
+        };
+        writeStoredProfiles(entries);
+    }
+
+    function hydrateProfileCache(user, fingerprint) {
+        if (!user || !user.id || !fingerprint) return null;
+        var storedProfile = loadStoredProfile(user.id, fingerprint);
+        if (!storedProfile) return null;
+
+        cachedProfile = storedProfile;
+        lastFingerprint = fingerprint;
+        lastSyncedUserId = user.id;
+        window.__USERTYPO_PROFILE__ = storedProfile;
+        return storedProfile;
+    }
+
+    function notifyProfileSynced(profile) {
+        window.__USERTYPO_PROFILE__ = profile;
+        try {
+            window.dispatchEvent(new CustomEvent('usertypo:profile-synced', { detail: { profile: profile } }));
+        } catch (e) { /* ignore */ }
+    }
+
     async function getMyProfile() {
+        if (cachedProfile) return cachedProfile;
+        if (window.__USERTYPO_PROFILE__) return window.__USERTYPO_PROFILE__;
+        if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+            var authState = window.usertypoAuth.getState();
+            if (authState && authState.isSignedIn && authState.user) {
+                var hydrated = hydrateProfileCache(authState.user, userFingerprint(authState.user));
+                if (hydrated) return hydrated;
+            }
+        }
         if (!window.usertypoDb) throw new Error('usertypoDb is not loaded');
         var client = await window.usertypoDb.getClient();
         var result = await client.from('profiles').select('*').maybeSingle();
         if (result.error) throw result.error;
-        return result.data || null;
+        cachedProfile = result.data || null;
+        window.__USERTYPO_PROFILE__ = cachedProfile;
+        return cachedProfile;
     }
 
-    async function ensureMyProfile(user) {
+    async function ensureMyProfile(user, options) {
         if (!user || !user.id) return null;
         if (!window.usertypoDb) throw new Error('usertypoDb is not loaded');
+
+        var force = !!(options && options.force);
+        var fingerprint = userFingerprint(user);
+
+        if (!force && cachedProfile && cachedProfile.user_id === user.id && lastFingerprint === fingerprint) {
+            return cachedProfile;
+        }
+
+        if (!force) {
+            var hydratedProfile = hydrateProfileCache(user, fingerprint);
+            if (hydratedProfile) {
+                notifyProfileSynced(hydratedProfile);
+                return hydratedProfile;
+            }
+        }
 
         if (syncInFlight && lastSyncedUserId === user.id) {
             return syncInFlight;
@@ -52,7 +157,13 @@
                     (avatarUrl && existing.data.avatar_url !== avatarUrl) ||
                     (displayName && existing.data.display_name !== displayName);
 
-                if (!needsUpdate) return existing.data;
+                if (!needsUpdate) {
+                    cachedProfile = existing.data;
+                    lastFingerprint = fingerprint;
+                    storeProfile(user.id, fingerprint, existing.data);
+                    notifyProfileSynced(existing.data);
+                    return existing.data;
+                }
 
                 var updated = await client
                     .from('profiles')
@@ -66,6 +177,10 @@
                     .single();
 
                 if (updated.error) throw updated.error;
+                cachedProfile = updated.data;
+                lastFingerprint = fingerprint;
+                storeProfile(user.id, fingerprint, updated.data);
+                notifyProfileSynced(updated.data);
                 return updated.data;
             }
 
@@ -81,6 +196,10 @@
                 .single();
 
             if (inserted.error) throw inserted.error;
+            cachedProfile = inserted.data;
+            lastFingerprint = fingerprint;
+            storeProfile(user.id, fingerprint, inserted.data);
+            notifyProfileSynced(inserted.data);
             return inserted.data;
         })();
 
@@ -99,13 +218,17 @@
 
         window.usertypoAuth.onChange(function (state) {
             if (!state || !state.isSignedIn || !state.user) {
-                lastSyncedUserId = null;
+                clearProfileCache();
+                return;
+            }
+
+            var fingerprint = userFingerprint(state.user);
+            if (cachedProfile && cachedProfile.user_id === state.user.id && lastFingerprint === fingerprint) {
                 return;
             }
 
             ensureMyProfile(state.user)
                 .then(function (profile) {
-                    window.__USERTYPO_PROFILE__ = profile;
                     console.info(
                         '[usertypo profiles] synced',
                         profile && profile.username ? profile.username : '(no username)',
@@ -140,5 +263,6 @@
     window.usertypoProfiles = {
         getMyProfile: getMyProfile,
         ensureMyProfile: ensureMyProfile,
+        clearCache: clearProfileCache,
     };
 })();

@@ -176,7 +176,7 @@
                 class="flex flex-col relative opacity-0 animate-fade-in-up [animation-delay:200ms] px-1 py-2">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-100 mb-1">Leaderboards</h1>
-                    <p class="text-slate-400 text-sm">See where you stand and climb the ranks.</p>
+                    <p id="lb-status" class="text-slate-400 text-sm">See where you stand and climb the ranks.</p>
                 </div>
             </div>
 
@@ -269,89 +269,143 @@ window.setTimeout = function(handler, timeout) {
 };
 
 window.__spaPageInit = function() {
-// LEADERBOARD DATA
-            const players = [
-                { rank: '01', name: 'AlexTypist', wpm: 165, acc: '99.5%', date: '2023-10-24', colorClass: 'bg-primary/20 text-primary border-primary/30', letter: 'A' },
-                { rank: '02', name: 'SpeedDemon', wpm: 160, acc: '98.2%', date: '2023-10-24', colorClass: 'bg-purple-500/20 text-purple-400 border-purple-500/30', letter: 'S' },
-                { rank: '03', name: 'GAMER_42', wpm: 158, acc: '98.0%', date: 'Today', colorClass: 'bg-primary text-background-dark', letter: 'G', isMe: true },
-                { rank: '04', name: 'FastFingers', wpm: 155, acc: '97.8%', date: '2023-10-23', colorClass: 'bg-green-500/20 text-green-400 border-green-500/30', letter: 'F' },
-                { rank: '05', name: 'TypingPro', wpm: 150, acc: '99.1%', date: '2023-10-23', colorClass: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', letter: 'T' },
-                { rank: '06', name: 'KeyboardNinja', wpm: 148, acc: '96.5%', date: '2023-10-22', colorClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30', letter: 'K' },
-                { rank: '07', name: 'KeyMaster', wpm: 145, acc: '97.2%', date: '2023-10-22', colorClass: 'bg-orange-500/20 text-orange-400 border-orange-500/30', letter: 'K' },
-                { rank: '08', name: 'SwiftTyper', wpm: 142, acc: '95.8%', date: '2023-10-21', colorClass: 'bg-pink-500/20 text-pink-400 border-pink-500/30', letter: 'S' },
-                { rank: '09', name: 'WordSmith', wpm: 140, acc: '98.5%', date: '2023-10-21', colorClass: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', letter: 'W' },
-                { rank: '10', name: 'QuickKeys', wpm: 138, acc: '96.0%', date: '2023-10-20', colorClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', letter: 'Q' },
-                { rank: '11', name: 'RapidTyper', wpm: 135, acc: '95.5%', date: '2023-10-19', colorClass: 'bg-primary/20 text-primary border-primary/30', letter: 'R' },
-                { rank: '12', name: 'DashTyper', wpm: 132, acc: '94.8%', date: '2023-10-18', colorClass: 'bg-purple-500/20 text-purple-400 border-purple-500/30', letter: 'D' },
-                { rank: '13', name: 'VelocityKeys', wpm: 130, acc: '94.2%', date: '2023-10-17', colorClass: 'bg-green-500/20 text-green-400 border-green-500/30', letter: 'V' },
-                { rank: '14', name: 'TurboType', wpm: 128, acc: '93.9%', date: '2023-10-16', colorClass: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', letter: 'T' },
-                { rank: '15', name: 'MasterKeys', wpm: 125, acc: '93.0%', date: '2023-10-15', colorClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30', letter: 'M' },
-                { rank: '16', name: 'ByteRunner', wpm: 123, acc: '92.8%', date: '2023-10-14', colorClass: 'bg-teal-500/20 text-teal-400 border-teal-500/30', letter: 'B' },
-                { rank: '17', name: 'FlashType', wpm: 121, acc: '92.5%', date: '2023-10-14', colorClass: 'bg-orange-500/20 text-orange-400 border-orange-500/30', letter: 'F' },
-                { rank: '18', name: 'ProKeys', wpm: 119, acc: '91.9%', date: '2023-10-13', colorClass: 'bg-rose-500/20 text-rose-400 border-rose-500/30', letter: 'P' },
-                { rank: '19', name: 'TypeLord', wpm: 117, acc: '91.5%', date: '2023-10-13', colorClass: 'bg-violet-500/20 text-violet-400 border-violet-500/30', letter: 'T' },
-                { rank: '20', name: 'SprintKeys', wpm: 115, acc: '91.2%', date: '2023-10-12', colorClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30', letter: 'S' },
-                { rank: '21', name: 'NightTypist', wpm: 114, acc: '90.8%', date: '2023-10-12', colorClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30', letter: 'N' },
-                { rank: '22', name: 'GridRunner', wpm: 112, acc: '90.5%', date: '2023-10-11', colorClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', letter: 'G' },
-                { rank: '23', name: 'AlphaKeys', wpm: 111, acc: '90.1%', date: '2023-10-11', colorClass: 'bg-primary/20 text-primary border-primary/30', letter: 'A' },
-                { rank: '24', name: 'NeonTypist', wpm: 110, acc: '89.8%', date: '2023-10-10', colorClass: 'bg-green-500/20 text-green-400 border-green-500/30', letter: 'N' },
-                { rank: '25', name: 'ZeroLag', wpm: 108, acc: '89.5%', date: '2023-10-10', colorClass: 'bg-purple-500/20 text-purple-400 border-purple-500/30', letter: 'Z' },
-                { rank: '26', name: 'WarpTyper', wpm: 107, acc: '89.2%', date: '2023-10-09', colorClass: 'bg-pink-500/20 text-pink-400 border-pink-500/30', letter: 'W' },
-                { rank: '27', name: 'SonicKeys', wpm: 106, acc: '88.9%', date: '2023-10-09', colorClass: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', letter: 'S' },
-                { rank: '28', name: 'MaxSpeed', wpm: 105, acc: '88.6%', date: '2023-10-08', colorClass: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', letter: 'M' },
-                { rank: '29', name: 'CodeFingers', wpm: 103, acc: '88.3%', date: '2023-10-08', colorClass: 'bg-teal-500/20 text-teal-400 border-teal-500/30', letter: 'C' },
-                { rank: '30', name: 'QuantumType', wpm: 102, acc: '88.0%', date: '2023-10-07', colorClass: 'bg-orange-500/20 text-orange-400 border-orange-500/30', letter: 'Q' },
-                { rank: '31', name: 'LightSpeed', wpm: 101, acc: '87.8%', date: '2023-10-07', colorClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30', letter: 'L' },
-                { rank: '32', name: 'HyperTyper', wpm: 100, acc: '87.5%', date: '2023-10-06', colorClass: 'bg-rose-500/20 text-rose-400 border-rose-500/30', letter: 'H' },
-                { rank: '33', name: 'DeltaKeys', wpm: 99, acc: '87.2%', date: '2023-10-06', colorClass: 'bg-violet-500/20 text-violet-400 border-violet-500/30', letter: 'D' },
-                { rank: '34', name: 'OmegaTypist', wpm: 98, acc: '86.9%', date: '2023-10-05', colorClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', letter: 'O' },
-                { rank: '35', name: 'PhaseTyper', wpm: 97, acc: '86.6%', date: '2023-10-05', colorClass: 'bg-green-500/20 text-green-400 border-green-500/30', letter: 'P' },
-                { rank: '36', name: 'NovaPulse', wpm: 96, acc: '86.3%', date: '2023-10-04', colorClass: 'bg-primary/20 text-primary border-primary/30', letter: 'N' },
-                { rank: '37', name: 'EchoFingers', wpm: 95, acc: '86.0%', date: '2023-10-04', colorClass: 'bg-purple-500/20 text-purple-400 border-purple-500/30', letter: 'E' },
-                { rank: '38', name: 'BlastKeys', wpm: 94, acc: '85.8%', date: '2023-10-03', colorClass: 'bg-pink-500/20 text-pink-400 border-pink-500/30', letter: 'B' },
-                { rank: '39', name: 'CoreTypist', wpm: 93, acc: '85.5%', date: '2023-10-03', colorClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30', letter: 'C' },
-                { rank: '40', name: 'PlumaType', wpm: 92, acc: '85.2%', date: '2023-10-02', colorClass: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', letter: 'P' },
-                { rank: '41', name: 'VortexKeys', wpm: 91, acc: '85.0%', date: '2023-10-02', colorClass: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', letter: 'V' },
-                { rank: '42', name: 'MachType', wpm: 90, acc: '84.8%', date: '2023-10-01', colorClass: 'bg-teal-500/20 text-teal-400 border-teal-500/30', letter: 'M' },
-                { rank: '43', name: 'PeakTyper', wpm: 89, acc: '84.5%', date: '2023-10-01', colorClass: 'bg-orange-500/20 text-orange-400 border-orange-500/30', letter: 'P' },
-                { rank: '44', name: 'AbyssKeys', wpm: 88, acc: '84.2%', date: '2023-09-30', colorClass: 'bg-rose-500/20 text-rose-400 border-rose-500/30', letter: 'A' },
-                { rank: '45', name: 'ZephyrType', wpm: 87, acc: '83.9%', date: '2023-09-30', colorClass: 'bg-violet-500/20 text-violet-400 border-violet-500/30', letter: 'Z' },
-                { rank: '46', name: 'PulseTypist', wpm: 86, acc: '83.7%', date: '2023-09-29', colorClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30', letter: 'P' },
-                { rank: '47', name: 'ChronoKeys', wpm: 85, acc: '83.4%', date: '2023-09-29', colorClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', letter: 'C' },
-                { rank: '48', name: 'GhostTyper', wpm: 84, acc: '83.1%', date: '2023-09-28', colorClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30', letter: 'G' },
-                { rank: '49', name: 'IonType', wpm: 83, acc: '82.8%', date: '2023-09-28', colorClass: 'bg-green-500/20 text-green-400 border-green-500/30', letter: 'I' },
-                { rank: '50', name: 'ArcTypist', wpm: 82, acc: '82.5%', date: '2023-09-27', colorClass: 'bg-primary/20 text-primary border-primary/30', letter: 'A' },
-            ];
+            var lbState = {
+                scope: 'global',
+                timeframe: 'daily',
+                amount: 30,
+            };
+            var lbRequestId = 0;
 
-            function renderTable() {
-                const tbody = document.getElementById('lb-tbody');
-                tbody.innerHTML = players.map(p => {
-                    if (p.isMe) {
-                        return `<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">
-                        <td class="py-2.5 px-5 font-bold text-primary">${p.rank}</td>
-                        <td class="py-2.5 px-5"><div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full ${p.colorClass} flex items-center justify-center font-sans font-bold text-xs shadow-[0_0_10px_rgba(0,208,255,0.5)]">${p.letter}</div>
-                            <span class="font-sans font-bold text-white tracking-wide">${p.name}</span>
-                            <span class="material-symbols-outlined text-primary text-sm" title="You">person</span>
-                        </div></td>
-                        <td class="py-2.5 px-5 text-right font-bold text-white text-base">${p.wpm}</td>
-                        <td class="py-2.5 px-5 text-right text-white font-medium">${p.acc}</td>
-                        <td class="py-2.5 px-5 text-right text-primary/70 hidden sm:table-cell">${p.date}</td>
-                    </tr>`;
+            function getCurrentUserId() {
+                if (!window.usertypoAuth) return null;
+                try {
+                    var state = window.usertypoAuth.getState();
+                    return state.isSignedIn && state.user ? state.user.id : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function setStatus(text) {
+                var el = document.getElementById('lb-status');
+                if (el) el.textContent = text;
+            }
+
+            function renderAvatar(entry, colorClass, isMe) {
+                var lb = window.usertypoLeaderboards;
+                var letter = lb ? lb.initialFor(entry.username) : '?';
+                if (entry.avatarUrl) {
+                    return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center overflow-hidden border border-transparent' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : '') + '">' +
+                        '<img src="' + entry.avatarUrl + '" alt="" class="w-full h-full object-cover" loading="lazy" />' +
+                        '</div>';
+                }
+                return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center font-sans font-bold text-xs' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : ' border border-transparent group-hover:border-white/10 transition-colors') + '">' + letter + '</div>';
+            }
+
+            function renderLoading() {
+                var tbody = document.getElementById('lb-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="5" class="py-10 px-5 text-center text-slate-500 text-sm">Loading leaderboard...</td></tr>';
+            }
+
+            function renderMessage(message) {
+                var tbody = document.getElementById('lb-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="5" class="py-10 px-5 text-center text-slate-500 text-sm">' + message + '</td></tr>';
+            }
+
+            function renderTable(entries, myUserId) {
+                var tbody = document.getElementById('lb-tbody');
+                var lb = window.usertypoLeaderboards;
+                if (!tbody || !lb) return;
+
+                if (!entries.length) {
+                    renderMessage('No scores yet for this filter. Complete a timed test to appear here.');
+                    return;
+                }
+
+                tbody.innerHTML = entries.map(function (entry, index) {
+                    var isMe = !!(myUserId && entry.userId === myUserId);
+                    var colorClass = isMe ? 'bg-primary text-background-dark' : lb.colorClassForIndex(index);
+                    var rank = lb.formatRank(entry.rank);
+                    var wpm = String(Math.round(entry.wpm));
+                    var acc = lb.formatAccuracy(entry.accuracy);
+                    var date = lb.formatRelativeTime(entry.createdAt);
+
+                    if (isMe) {
+                        return '<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">' +
+                            '<td class="py-2.5 px-5 font-bold text-primary">' + rank + '</td>' +
+                            '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
+                            renderAvatar(entry, colorClass, true) +
+                            '<span class="font-sans font-bold text-white tracking-wide">' + entry.username + '</span>' +
+                            '<span class="material-symbols-outlined text-primary text-sm" title="You">person</span>' +
+                            '</div></td>' +
+                            '<td class="py-2.5 px-5 text-right font-bold text-white text-base">' + wpm + '</td>' +
+                            '<td class="py-2.5 px-5 text-right text-white font-medium">' + acc + '</td>' +
+                            '<td class="py-2.5 px-5 text-right text-primary/70 hidden sm:table-cell">' + date + '</td>' +
+                            '</tr>';
                     }
-                    return `<tr class="hover:bg-white/5 transition-colors group border-l-4 border-transparent">
-                    <td class="py-2.5 px-5 text-slate-400">${p.rank}</td>
-                    <td class="py-2.5 px-5"><div class="flex items-center gap-3">
-                        <div class="w-7 h-7 rounded-full ${p.colorClass} flex items-center justify-center font-sans font-bold text-xs border border-transparent group-hover:border-white/10 transition-colors">${p.letter}</div>
-                        <span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">${p.name}</span>
-                    </div></td>
-                    <td class="py-2.5 px-5 text-right font-bold text-primary/80">${p.wpm}</td>
-                    <td class="py-2.5 px-5 text-right text-slate-300">${p.acc}</td>
-                    <td class="py-2.5 px-5 text-right text-slate-500 hidden sm:table-cell">${p.date}</td>
-                </tr>`;
+
+                    return '<tr class="hover:bg-white/5 transition-colors group border-l-4 border-transparent">' +
+                        '<td class="py-2.5 px-5 text-slate-400">' + rank + '</td>' +
+                        '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
+                        renderAvatar(entry, colorClass, false) +
+                        '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + entry.username + '</span>' +
+                        '</div></td>' +
+                        '<td class="py-2.5 px-5 text-right font-bold text-primary/80">' + wpm + '</td>' +
+                        '<td class="py-2.5 px-5 text-right text-slate-300">' + acc + '</td>' +
+                        '<td class="py-2.5 px-5 text-right text-slate-500 hidden sm:table-cell">' + date + '</td>' +
+                        '</tr>';
                 }).join('');
             }
-            renderTable();
+
+            async function loadLeaderboard() {
+                if (!window.usertypoLeaderboards) {
+                    renderMessage('Leaderboard module is not loaded.');
+                    return;
+                }
+
+                if (lbState.scope !== 'global') {
+                    setStatus(lbState.scope === 'country' ? 'Country leaderboards are coming soon.' : 'Friends leaderboards are coming soon.');
+                    renderMessage('This leaderboard view is coming soon. Switch back to Global for now.');
+                    return;
+                }
+
+                var reqId = ++lbRequestId;
+                setStatus('Loading leaderboard...');
+                renderLoading();
+
+                try {
+                    if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
+                        await window.usertypoAuth.ready();
+                    }
+
+                    var result = await window.usertypoLeaderboards.getLeaderboard({
+                        mode: 'time',
+                        amount: lbState.amount,
+                        timeframe: lbState.timeframe,
+                        limit: 50,
+                    });
+
+                    if (reqId !== lbRequestId) return;
+
+                    var labels = {
+                        daily: 'Daily',
+                        weekly: 'Weekly',
+                        monthly: 'Monthly',
+                        alltime: 'All-time',
+                    };
+                    setStatus((labels[lbState.timeframe] || 'All-time') + ' timed ' + lbState.amount + 's leaderboard');
+                    renderTable(result.entries, getCurrentUserId());
+                } catch (err) {
+                    if (reqId !== lbRequestId) return;
+                    console.error('[usertypo leaderboards] load failed', err);
+                    setStatus('Could not load leaderboard.');
+                    renderMessage('Could not load leaderboard. Please refresh and try again.');
+                }
+            }
+
+            loadLeaderboard();
 
             // Ã¢â€â‚¬Ã¢â€â‚¬ CONFIG BAR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             const configBar = document.getElementById('config-bar');
@@ -387,9 +441,25 @@ window.__spaPageInit = function() {
                 clickedEl.classList.add('text-primary', 'font-bold');
                 clickedEl.classList.remove('text-slate-400');
             }
-            function setScope(v, el) { setActive('.is-scope', el); }
-            function setTime(v, el) { setActive('.is-time', el); }
-            function setDur(v, el) { setActive('.is-dur', el); }
+            function setScope(v, el) {
+                setActive('.is-scope', el);
+                lbState.scope = v;
+                loadLeaderboard();
+            }
+            function setTime(v, el) {
+                setActive('.is-time', el);
+                lbState.timeframe = v;
+                loadLeaderboard();
+            }
+            function setDur(v, el) {
+                setActive('.is-dur', el);
+                lbState.amount = Number(v) || 30;
+                loadLeaderboard();
+            }
+
+            window.setScope = setScope;
+            window.setTime = setTime;
+            window.setDur = setDur;
 
             // Ã¢â€â‚¬Ã¢â€â‚¬ SIDEBAR MENU Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 

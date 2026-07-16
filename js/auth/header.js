@@ -93,14 +93,14 @@
         }
         window.usertypoAuth.onChange(function (state) {
             updateHeader(state);
-            // Refresh header again after profile sync lands
-            if (state && state.isSignedIn && state.user && window.usertypoProfiles) {
-                window.usertypoProfiles.ensureMyProfile(state.user).then(function (profile) {
-                    window.__USERTYPO_PROFILE__ = profile;
-                    updateHeader(window.usertypoAuth.getState());
-                }).catch(function () { /* profiles.js already logs */ });
-            }
         });
+
+        // profiles.js will dispatch an event after it syncs/updates the row.
+        // Re-render header using the cached profile, without making extra DB calls.
+        window.addEventListener('usertypo:profile-synced', function () {
+            try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
+        });
+
         window.usertypoAuth.ready().then(function () {
             updateHeader(window.usertypoAuth.getState());
         }).catch(function () {

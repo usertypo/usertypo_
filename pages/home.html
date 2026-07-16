@@ -853,8 +853,8 @@
                                             <span class="text-[9px] font-bold text-primary uppercase tracking-widest"
                                                 style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.6);">Global
                                                 Rank</span>
-                                            <span
-                                                class="text-[10px] font-black text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,208,255,0.4)]">#12,402</span>
+                                            <span id="stats-global-rank"
+                                                class="text-[10px] font-black text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,208,255,0.4)]">—</span>
                                         </div>
                                         <div class="h-px bg-white/5 w-full"></div>
                                     </div>
@@ -2988,6 +2988,55 @@ window.setTimeout = function(handler, timeout) {
             localStorage.setItem('usertypo_previous_wpm', wpm.toString());
 
             document.getElementById('stats-rank-wpm').innerText = wpm;
+
+            function loadStatsGlobalRank() {
+                var rankEl = document.getElementById('stats-global-rank');
+                if (!rankEl) return;
+                if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
+                    rankEl.textContent = '—';
+                    return;
+                }
+
+                rankEl.textContent = '...';
+                window.usertypoLeaderboards.getMyRank({
+                    mode: testMode,
+                    amount: testAmount,
+                    timeframe: 'alltime',
+                }).then(function (result) {
+                    rankEl.textContent = window.usertypoLeaderboards.formatGlobalRankLabel(result.rank);
+                }).catch(function (err) {
+                    console.error('[usertypo leaderboards] stats rank failed', err);
+                    rankEl.textContent = '—';
+                });
+            }
+
+            // Persist completed test for signed-in users, then refresh global rank
+            if (window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
+                window.usertypoSessions.saveSession({
+                    mode: testMode,
+                    amount: testAmount,
+                    language: window.usertypoSessions.currentLanguage(),
+                    punctuation: usePunctuation,
+                    numbers: useNumbers,
+                    wpm: failedReason ? 0 : exactWpm,
+                    raw_wpm: failedReason ? 0 : exactRawWpm,
+                    accuracy: failedReason ? 0 : acc,
+                    consistency: (failedReason || consistency === '--') ? null : consistency,
+                    errors: failedReason ? 0 : errorsMade,
+                    correct_chars: failedReason ? 0 : validChars,
+                    total_chars: failedReason ? 0 : rawChars,
+                    duration_seconds: elapsedSeconds,
+                    failed: !!failedReason,
+                    fail_reason: failedReason || null,
+                }).then(function () {
+                    loadStatsGlobalRank();
+                }).catch(function (err) {
+                    console.error('[usertypo sessions] save failed', err);
+                    loadStatsGlobalRank();
+                });
+            } else {
+                loadStatsGlobalRank();
+            }
 
             // SPA Transition â€” INSTANT, no delay
             const testView = document.getElementById('test-view');
