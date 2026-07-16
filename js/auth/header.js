@@ -2,7 +2,9 @@
  * Shell header ↔ auth state binding.
  */
 (function () {
-    function displayName(user) {
+    function displayName(user, profile) {
+        if (profile && profile.username) return profile.username;
+        if (profile && profile.display_name) return profile.display_name;
         if (!user) return 'Guest';
         if (user.username) return user.username;
         if (user.fullName) return user.fullName;
@@ -24,7 +26,8 @@
 
     function updateHeader(state) {
         var isSignedIn = !!(state && state.isSignedIn && state.user);
-        var name = isSignedIn ? displayName(state.user) : 'Guest';
+        var profile = window.__USERTYPO_PROFILE__ || null;
+        var name = isSignedIn ? displayName(state.user, profile) : 'Guest';
         var tier = isSignedIn ? 'Signed in' : 'Not signed in';
 
         setText('shell-user-name', name);
@@ -48,6 +51,7 @@
                     e.stopPropagation();
                     if (!window.usertypoAuth) return;
                     window.usertypoAuth.signOut().then(function () {
+                        window.__USERTYPO_PROFILE__ = null;
                         if (window.navigateTo) window.navigateTo('/signin');
                         else window.location.href = '/signin';
                     }).catch(function (err) {
@@ -87,7 +91,16 @@
             updateHeader({ isSignedIn: false, user: null });
             return;
         }
-        window.usertypoAuth.onChange(updateHeader);
+        window.usertypoAuth.onChange(function (state) {
+            updateHeader(state);
+            // Refresh header again after profile sync lands
+            if (state && state.isSignedIn && state.user && window.usertypoProfiles) {
+                window.usertypoProfiles.ensureMyProfile(state.user).then(function (profile) {
+                    window.__USERTYPO_PROFILE__ = profile;
+                    updateHeader(window.usertypoAuth.getState());
+                }).catch(function () { /* profiles.js already logs */ });
+            }
+        });
         window.usertypoAuth.ready().then(function () {
             updateHeader(window.usertypoAuth.getState());
         }).catch(function () {

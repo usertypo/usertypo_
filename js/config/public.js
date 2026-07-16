@@ -17,9 +17,10 @@ window.USERTYPO_CONFIG = {
         afterSignUpUrl: '/',
         ssoCallbackUrl: '/sso-callback',
     },
-    // Filled in when we connect Supabase
     supabase: {
-        url: '',
-        anonKey: '',
+        url: 'https://skebosepedaxnvcaizka.supabase.co',
+        // Prefer new publishable key; anon kept as fallback for older clients
+        publishableKey: 'sb_publishable_NvfpUKNOtSQ8KuIP1H-JkA_ZriwgB72',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZWJvc2VwZWRheG52Y2FpemthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMjc5MDEsImV4cCI6MjA5OTYwMzkwMX0.OhFRFJQfzlL3DJJXtv-lKWZYDWnrkJ5cQhu3dwduDFI',
     },
 };
