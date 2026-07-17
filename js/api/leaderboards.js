@@ -132,15 +132,19 @@
     }
 
     function mapEntry(row) {
+        var rawWpm = row.raw_wpm != null ? row.raw_wpm : row.rawWpm;
+        var consistency = row.consistency;
         return {
             rank: Number(row.rank) || 0,
             userId: row.user_id,
             username: row.username || 'Player',
             avatarUrl: row.avatar_url || null,
             wpm: Number(row.wpm) || 0,
-            rawWpm: row.raw_wpm == null ? null : Number(row.raw_wpm),
+            rawWpm: rawWpm == null || rawWpm === '' ? null : Number(rawWpm),
             accuracy: row.accuracy == null ? null : Number(row.accuracy),
-            consistency: row.consistency == null ? null : Number(row.consistency),
+            consistency: consistency == null || consistency === '' || consistency === '--'
+                ? null
+                : Number(consistency),
             createdAt: row.session_created_at || null,
         };
     }

@@ -276,9 +276,23 @@ async function upsertBoardScore(options: {
 }) {
   const zkey = boardKey(options.mode, options.amount, options.timeframe, options.at);
   const mkey = metaKey(zkey);
-  const zadd = await redisCommand(["ZADD", zkey, "GT", options.wpm, options.userId]);
-  const updated = Number(zadd) === 1;
-  if (!updated) return false;
+
+  const beforeRaw = await redisCommand(["ZSCORE", zkey, options.userId]);
+  const before = beforeRaw == null ? null : Number(beforeRaw);
+
+  await redisCommand(["ZADD", zkey, "GT", options.wpm, options.userId]);
+
+  const afterRaw = await redisCommand(["ZSCORE", zkey, options.userId]);
+  const after = afterRaw == null ? null : Number(afterRaw);
+
+  // ZADD returns new-member count only (0 on score update). Compare scores instead.
+  const scoreApplied =
+    after != null &&
+    isFinite(after) &&
+    Math.abs(after - options.wpm) < 0.02 &&
+    (before == null || options.wpm > before + 0.001);
+
+  if (!scoreApplied) return false;
 
   const followUp: Array<Array<string | number>> = [
     ["HSET", mkey, options.userId, options.metaValue],
@@ -290,6 +304,110 @@ async function upsertBoardScore(options: {
   }
   await redisPipeline(followUp);
   return true;
+}
+
+type BoardEntryMeta = {
+  user_id: string;
+  wpm: number;
+  accuracy: number | null;
+  raw_wpm: number | null;
+  consistency: number | null;
+  session_created_at: string | null;
+};
+
+function pickSessionForBoardScore(
+  rows: Array<{
+    user_id: string;
+    wpm: number | string;
+    raw_wpm: number | string | null;
+    accuracy: number | string | null;
+    consistency: number | string | null;
+    created_at: string | null;
+  }>,
+  userId: string,
+  boardWpm: number,
+) {
+  const userRows = rows.filter((row) => row.user_id === userId);
+  if (!userRows.length) return null;
+
+  const exactMatches = userRows
+    .filter((row) => Math.abs(Number(row.wpm) - boardWpm) < 0.05)
+    .sort((a, b) => {
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      return ta - tb;
+    });
+
+  if (exactMatches.length) return exactMatches[0];
+
+  return userRows.sort((a, b) => Number(b.wpm) - Number(a.wpm))[0];
+}
+
+async function hydrateDisplayFieldsFromPostgres(
+  mode: Mode,
+  amount: number,
+  entries: BoardEntryMeta[],
+) {
+  if (!entries.length) return;
+
+  const sb = serviceClient();
+  const userIds = [...new Set(entries.map((entry) => entry.user_id))];
+  const result = await sb
+    .from("typing_sessions")
+    .select("user_id, wpm, raw_wpm, accuracy, consistency, created_at")
+    .eq("mode", mode)
+    .eq("amount", amount)
+    .eq("failed", false)
+    .in("user_id", userIds);
+
+  if (result.error) throw result.error;
+  const rows = result.data || [];
+
+  for (const entry of entries) {
+    const match = pickSessionForBoardScore(rows, entry.user_id, entry.wpm);
+    if (!match) continue;
+
+    entry.accuracy = match.accuracy == null ? null : Number(match.accuracy);
+    entry.raw_wpm = match.raw_wpm == null ? null : Number(match.raw_wpm);
+    entry.consistency = match.consistency == null ? null : Number(match.consistency);
+    entry.session_created_at = match.created_at || entry.session_created_at;
+  }
+}
+
+async function cacheEntryMeta(
+  zkey: string,
+  entries: BoardEntryMeta[],
+) {
+  if (!entries.length) return;
+  const mkey = metaKey(zkey);
+  const commands: Array<Array<string | number>> = [];
+
+  for (const entry of entries) {
+    if (
+      entry.accuracy == null &&
+      entry.raw_wpm == null &&
+      entry.consistency == null &&
+      !entry.session_created_at
+    ) {
+      continue;
+    }
+    commands.push([
+      "HSET",
+      mkey,
+      entry.user_id,
+      buildMetaValue({
+        accuracy: entry.accuracy,
+        raw_wpm: entry.raw_wpm,
+        consistency: entry.consistency,
+        created_at: entry.session_created_at || new Date().toISOString(),
+      }),
+    ]);
+  }
+
+  if (!commands.length) return;
+  for (let i = 0; i < commands.length; i += 40) {
+    await redisPipeline(commands.slice(i, i + 40));
+  }
 }
 
 async function removeFromBoard(mode: Mode, amount: number, timeframe: Timeframe, userId: string, at = new Date()) {
@@ -346,6 +464,10 @@ async function handleTop(body: Record<string, unknown>) {
       entries[i].session_created_at = parsed.session_created_at;
     }
   }
+
+  // Postgres is source of truth for display fields tied to the board WPM.
+  await hydrateDisplayFieldsFromPostgres(mode, amount, entries);
+  await cacheEntryMeta(zkey, entries);
 
   let eligibleEntries = entries;
   if (timeframe === "alltime" && entries.length) {
@@ -408,7 +530,6 @@ async function handleRank(body: Record<string, unknown>, authHeader: string | nu
   const timeframe = normalizeTimeframe(body.timeframe);
   const userId = auth.profile.user_id;
   const zkey = boardKey(mode, amount, timeframe);
-  const mkey = metaKey(zkey);
 
   // All-time: never report a rank for users who do not meet the gates.
   // Also self-heal stale Redis members left over from before the rule change.
@@ -443,13 +564,11 @@ async function handleRank(body: Record<string, unknown>, authHeader: string | nu
     ["ZREVRANK", zkey, userId],
     ["ZSCORE", zkey, userId],
     ["ZCARD", zkey],
-    ["HGET", mkey, userId],
   ]);
 
   const rank0 = pipeline[0]?.result;
   const score = pipeline[1]?.result;
   const total = pipeline[2]?.result;
-  const meta = parseMeta(pipeline[3]?.result);
 
   if (rank0 == null) {
     return json(200, {
@@ -463,13 +582,28 @@ async function handleRank(body: Record<string, unknown>, authHeader: string | nu
     });
   }
 
+  const boardWpm = score == null ? null : Number(score);
+  const displayEntry: BoardEntryMeta = {
+    user_id: userId,
+    wpm: boardWpm || 0,
+    accuracy: null,
+    raw_wpm: null,
+    consistency: null,
+    session_created_at: null,
+  };
+
+  if (boardWpm != null && isFinite(boardWpm)) {
+    await hydrateDisplayFieldsFromPostgres(mode, amount, [displayEntry]);
+    await cacheEntryMeta(zkey, [displayEntry]);
+  }
+
   return json(200, {
     source: "redis",
     rank: Number(rank0) + 1,
-    wpm: score == null ? null : Number(score),
-    accuracy: meta.accuracy,
-    raw_wpm: meta.raw_wpm,
-    consistency: meta.consistency,
+    wpm: boardWpm,
+    accuracy: displayEntry.accuracy,
+    raw_wpm: displayEntry.raw_wpm,
+    consistency: displayEntry.consistency,
     totalPlayers: Number(total) || 0,
   });
 }
