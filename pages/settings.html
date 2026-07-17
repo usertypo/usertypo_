@@ -3552,7 +3552,10 @@
                                             <p class="text-xs text-slate-500">Make your scores publicly visible</p>
                                         </div>
 
-                                        <div class="toggle-track on" onclick="toggleSwitch(this)">
+                                        <div id="setting-show-on-leaderboard"
+                                            class="toggle-track on"
+                                            data-leaderboard-visibility="show"
+                                            onclick="toggleLeaderboardVisibility(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
                                     </div>
@@ -3846,11 +3849,12 @@
                                                         <p class="text-xs text-slate-500">Hide your profile from public
                                                             leaderboards</p>
                                                     </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                    <div id="setting-opt-out-leaderboards"
+                                                        class="toggle-track"
+                                                        data-leaderboard-visibility="optout"
+                                                        onclick="toggleLeaderboardVisibility(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
-                                                </div>
-                                                <!-- Reset personal bests -->
                                                 <div class="danger-zone p-4 flex flex-col gap-3 mt-2">
                                                     <div class="flex items-center justify-between">
                                                         <div>
@@ -4969,6 +4973,86 @@ window.__spaPageInit = function() {
         });
 
         // â”€â”€ TOGGLE SWITCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        var leaderboardVisibilitySaving = false;
+
+        function setLeaderboardToggleUI(showOnLeaderboard) {
+            var show = !!showOnLeaderboard;
+            document.querySelectorAll('[data-leaderboard-visibility="show"]').forEach(function (el) {
+                el.classList.toggle('on', show);
+            });
+            document.querySelectorAll('[data-leaderboard-visibility="optout"]').forEach(function (el) {
+                el.classList.toggle('on', !show);
+            });
+        }
+
+        async function loadLeaderboardVisibilitySetting() {
+            if (!window.usertypoAuth || !window.usertypoProfiles) return;
+            try {
+                await window.usertypoAuth.ready();
+                var state = window.usertypoAuth.getState();
+                if (!state.isSignedIn || !state.user) return;
+
+                var profile = window.__USERTYPO_PROFILE__
+                    || await window.usertypoProfiles.ensureMyProfile(state.user);
+                if (!profile) return;
+
+                var show = profile.show_on_leaderboard !== false;
+                setLeaderboardToggleUI(show);
+            } catch (err) {
+                console.error('[usertypo settings] leaderboard visibility load failed', err);
+            }
+        }
+
+        async function toggleLeaderboardVisibility(track) {
+            if (leaderboardVisibilitySaving) return;
+
+            var kind = track && track.getAttribute('data-leaderboard-visibility');
+            var currentlyOn = track.classList.contains('on');
+            var nextShow;
+
+            // Click flips the clicked toggle; derive show_on_leaderboard from that.
+            if (kind === 'optout') {
+                nextShow = currentlyOn; // turning opt-out OFF means show ON, and vice versa after flip
+                // We'll flip UI ourselves: if currently opted-out (on), clicking turns it off → show=true
+                nextShow = currentlyOn ? true : false;
+            } else {
+                // show toggle: if currently on, click turns off
+                nextShow = currentlyOn ? false : true;
+            }
+
+            if (!window.usertypoAuth) {
+                setLeaderboardToggleUI(nextShow);
+                if (typeof triggerSave === 'function') triggerSave();
+                return;
+            }
+
+            await window.usertypoAuth.ready();
+            var state = window.usertypoAuth.getState();
+            if (!state.isSignedIn) {
+                if (window.navigateTo) window.navigateTo('/signin');
+                else window.location.href = '/signin';
+                return;
+            }
+
+            // Optimistic UI
+            setLeaderboardToggleUI(nextShow);
+            if (typeof triggerSave === 'function') triggerSave();
+
+            leaderboardVisibilitySaving = true;
+            try {
+                if (!window.usertypoProfiles || typeof window.usertypoProfiles.setShowOnLeaderboard !== 'function') {
+                    throw new Error('profiles helper missing');
+                }
+                await window.usertypoProfiles.setShowOnLeaderboard(nextShow);
+            } catch (err) {
+                console.error('[usertypo settings] leaderboard visibility save failed', err);
+                setLeaderboardToggleUI(!nextShow);
+                if (typeof triggerSave === 'function') triggerSave();
+            } finally {
+                leaderboardVisibilitySaving = false;
+            }
+        }
+
         function toggleSwitch(track) {
             const isOn = track.classList.toggle('on');
 
@@ -5054,6 +5138,9 @@ window.__spaPageInit = function() {
         window.filterSubOptions = filterSubOptions;
         window.toggleSwitch = toggleSwitch;
         window.selectOpt = selectOpt;
+        window.toggleLeaderboardVisibility = toggleLeaderboardVisibility;
+
+        loadLeaderboardVisibilitySetting();
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {

@@ -110,13 +110,6 @@
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">all
                             time</span>
                     </button>
-                    <button id="cfg-monthly"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
-                        onclick="setTime('monthly',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0">calendar_month</span>
-                        <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">monthly</span>
-                    </button>
                     <button id="cfg-weekly"
                         class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setTime('weekly',this)">
@@ -194,8 +187,14 @@
                                 class="py-3 px-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">
                                 WPM</th>
                             <th
+                                class="py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right hidden md:table-cell">
+                                Raw</th>
+                            <th
                                 class="py-3 px-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">
-                                Accuracy</th>
+                                Acc</th>
+                            <th
+                                class="py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right hidden md:table-cell">
+                                Cons</th>
                             <th
                                 class="py-3 px-5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right hidden sm:table-cell">
                                 Date</th>
@@ -305,13 +304,13 @@ window.__spaPageInit = function() {
             function renderLoading() {
                 var tbody = document.getElementById('lb-tbody');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="5" class="py-10 px-5 text-center text-slate-500 text-sm">Loading leaderboard...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-10 px-5 text-center text-slate-500 text-sm">Loading leaderboard...</td></tr>';
             }
 
             function renderMessage(message) {
                 var tbody = document.getElementById('lb-tbody');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="5" class="py-10 px-5 text-center text-slate-500 text-sm">' + message + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-10 px-5 text-center text-slate-500 text-sm">' + message + '</td></tr>';
             }
 
             function renderTable(entries, myUserId) {
@@ -328,8 +327,10 @@ window.__spaPageInit = function() {
                     var isMe = !!(myUserId && entry.userId === myUserId);
                     var colorClass = isMe ? 'bg-primary text-background-dark' : lb.colorClassForIndex(index);
                     var rank = lb.formatRank(entry.rank);
-                    var wpm = String(Math.round(entry.wpm));
+                    var wpm = lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm));
+                    var raw = lb.formatWpm ? lb.formatWpm(entry.rawWpm) : '—';
                     var acc = lb.formatAccuracy(entry.accuracy);
+                    var cons = lb.formatConsistency ? lb.formatConsistency(entry.consistency) : lb.formatAccuracy(entry.consistency);
                     var date = lb.formatRelativeTime(entry.createdAt);
 
                     if (isMe) {
@@ -341,7 +342,9 @@ window.__spaPageInit = function() {
                             '<span class="material-symbols-outlined text-primary text-sm" title="You">person</span>' +
                             '</div></td>' +
                             '<td class="py-2.5 px-5 text-right font-bold text-white text-base">' + wpm + '</td>' +
+                            '<td class="py-2.5 px-4 text-right text-white/80 hidden md:table-cell">' + raw + '</td>' +
                             '<td class="py-2.5 px-5 text-right text-white font-medium">' + acc + '</td>' +
+                            '<td class="py-2.5 px-4 text-right text-white/80 hidden md:table-cell">' + cons + '</td>' +
                             '<td class="py-2.5 px-5 text-right text-primary/70 hidden sm:table-cell">' + date + '</td>' +
                             '</tr>';
                     }
@@ -353,7 +356,9 @@ window.__spaPageInit = function() {
                         '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + entry.username + '</span>' +
                         '</div></td>' +
                         '<td class="py-2.5 px-5 text-right font-bold text-primary/80">' + wpm + '</td>' +
+                        '<td class="py-2.5 px-4 text-right text-slate-400 hidden md:table-cell">' + raw + '</td>' +
                         '<td class="py-2.5 px-5 text-right text-slate-300">' + acc + '</td>' +
+                        '<td class="py-2.5 px-4 text-right text-slate-400 hidden md:table-cell">' + cons + '</td>' +
                         '<td class="py-2.5 px-5 text-right text-slate-500 hidden sm:table-cell">' + date + '</td>' +
                         '</tr>';
                 }).join('');
@@ -392,7 +397,6 @@ window.__spaPageInit = function() {
                     var labels = {
                         daily: 'Daily',
                         weekly: 'Weekly',
-                        monthly: 'Monthly',
                         alltime: 'All-time',
                     };
                     setStatus((labels[lbState.timeframe] || 'All-time') + ' timed ' + lbState.amount + 's leaderboard');

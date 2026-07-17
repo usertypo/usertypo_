@@ -96,6 +96,28 @@
             payload.failed ? '(failed)' : (payload.is_pb ? '(PB)' : '')
         );
 
+        // Keep Postgres as source of truth for history. Redis rankings are updated
+        // separately through a secure Edge Function (never from browser Redis keys).
+        if (
+            !payload.failed &&
+            Number(payload.wpm) > 0 &&
+            window.usertypoLeaderboards &&
+            typeof window.usertypoLeaderboards.ingestScore === 'function'
+        ) {
+            window.usertypoLeaderboards.ingestScore(inserted.data).then(function (ingest) {
+                if (ingest && !ingest.skipped) {
+                    console.info(
+                        '[usertypo leaderboards] redis ingest',
+                        ingest.updated ? 'updated' : 'unchanged',
+                        payload.mode + ' ' + payload.amount,
+                        payload.wpm + ' wpm'
+                    );
+                }
+            }).catch(function (err) {
+                console.warn('[usertypo leaderboards] redis ingest failed', err);
+            });
+        }
+
         return { skipped: false, session: inserted.data };
     }
 

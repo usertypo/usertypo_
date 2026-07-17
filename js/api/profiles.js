@@ -213,6 +213,55 @@
         }
     }
 
+    /**
+     * Update leaderboard privacy preference in Postgres, then sync Redis.
+     */
+    async function setShowOnLeaderboard(enabled) {
+        if (!window.usertypoAuth || !window.usertypoDb) {
+            throw new Error('auth_or_db_missing');
+        }
+
+        await window.usertypoAuth.ready();
+        var state = window.usertypoAuth.getState();
+        if (!state.isSignedIn || !state.user) {
+            throw new Error('guest');
+        }
+
+        var user = state.user;
+        var show = !!enabled;
+        var client = await window.usertypoDb.getClient();
+        var updated = await client
+            .from('profiles')
+            .update({ show_on_leaderboard: show })
+            .eq('user_id', user.id)
+            .select('*')
+            .single();
+
+        if (updated.error) throw updated.error;
+
+        cachedProfile = updated.data;
+        lastFingerprint = userFingerprint(user);
+        lastSyncedUserId = user.id;
+        storeProfile(user.id, lastFingerprint, updated.data);
+        notifyProfileSynced(updated.data);
+
+        var redisSync = null;
+        if (window.usertypoLeaderboards && typeof window.usertypoLeaderboards.syncVisibility === 'function') {
+            redisSync = await window.usertypoLeaderboards.syncVisibility(show);
+        }
+
+        console.info(
+            '[usertypo profiles] show_on_leaderboard =',
+            show,
+            redisSync && redisSync.ok ? '(redis synced)' : '(redis sync skipped/failed)'
+        );
+
+        return {
+            profile: updated.data,
+            redisSync: redisSync,
+        };
+    }
+
     function bindAuthSync() {
         if (!window.usertypoAuth) return;
 
@@ -263,6 +312,7 @@
     window.usertypoProfiles = {
         getMyProfile: getMyProfile,
         ensureMyProfile: ensureMyProfile,
+        setShowOnLeaderboard: setShowOnLeaderboard,
         clearCache: clearProfileCache,
     };
 })();
