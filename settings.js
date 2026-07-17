@@ -706,6 +706,9 @@ function applyThemeSettings(settings) {
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
+        #save-toast-inner {
+            border-radius: 9999px !important;
+        }
         .footer-pill,
         #footer-picker-box,
         .footer-picker-search,

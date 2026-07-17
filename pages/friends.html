@@ -9,6 +9,32 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
+
+        #friends-list-empty-text button[data-empty-action] {
+            text-decoration: none !important;
+            background: none !important;
+            border: none !important;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            font: inherit;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+            transition: none !important;
+        }
+        #friends-list-empty-text button[data-empty-action]:hover,
+        #friends-list-empty-text button[data-empty-action]:focus,
+        #friends-list-empty-text button[data-empty-action]:active {
+            text-decoration: none !important;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+            outline: none !important;
+            filter: none !important;
+        }
         
         :root {
             --theme-primary: #00d0ff;
@@ -94,420 +120,42 @@
                 <!-- Tabs -->
                 <div class="flex border-b border-white/10 px-4 items-center gap-2 flex-wrap">
                     <button id="tab-online"
-                        class="friends-tab-btn px-6 py-4 text-primary border-b-2 border-primary font-semibold text-sm transition-colors is-active"
-                        data-show="online">Online</button>
+                        class="friends-tab-btn px-6 py-4 text-slate-400 hover:text-slate-200 border-b-2 border-transparent hover:border-white/20 font-semibold text-sm transition-colors flex items-center gap-2"
+                        data-show="online">Online
+                        <span id="friends-online-badge" class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </button>
                     <button id="tab-all"
-                        class="friends-tab-btn px-6 py-4 text-slate-400 hover:text-slate-200 border-b-2 border-transparent hover:border-white/20 font-semibold text-sm transition-colors"
-                        data-show="all">All</button>
+                        class="friends-tab-btn px-6 py-4 text-primary border-b-2 border-primary font-semibold text-sm transition-colors is-active flex items-center gap-2"
+                        data-show="all">All
+                        <span id="friends-all-badge" class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </button>
                     <button id="tab-pending"
                         class="friends-tab-btn px-6 py-4 text-slate-400 hover:text-slate-200 border-b-2 border-transparent hover:border-white/20 font-semibold text-sm transition-colors flex items-center gap-2"
                         data-show="pending">
                         Pending
-                        <span class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">1</span>
+                        <span id="friends-pending-badge" class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full hidden">0</span>
                     </button>
                     <div class="relative py-2 flex-1 ml-4 max-w-none">
                         <span
                             class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
                         <input
                             class="w-full bg-black/20 border border-white/10 rounded-lg py-1.5 pl-9 pr-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
-                            placeholder="Search Friends" type="text" />
+                            id="friends-filter-input" placeholder="Search Friends" type="text" autocomplete="off" />
                     </div>
                 </div>
                 <!-- List Items -->
                 <div class="flex flex-col px-2 pt-0 pb-2 overflow-y-auto scrollbar-hide flex-1"
                     id="friends-scroll-content">
-                    <!-- Friend Card 1 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="online">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10"
-                                data-alt="Avatar player Alpha"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">AlphaC0der</h3>
-                                <span
-                                    class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Online</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">110</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">145</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">98%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="AlphaC0der" data-friend-status="Online"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
+                    <div id="friends-list-loading" class="p-8 text-center text-slate-500 text-sm">Loading friends...</div>
+                    <div id="friends-list-empty" class="hidden p-8 text-center">
+                        <span class="material-symbols-outlined text-slate-600 text-4xl mb-2">group_off</span>
+                        <p id="friends-list-empty-text" class="text-slate-500 text-sm">No friends yet. Use <button type="button" class="text-primary font-semibold" data-empty-action="add-friends">Add Friends</button> to find people.</p>
                     </div>
-                    <!-- Friend Card 2 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="online">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10"
-                                data-alt="Avatar player Neon"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-yellow-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">NeonTypist</h3>
-                                <span
-                                    class="text-xs text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/20">In
-                                    Match</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">95</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">120</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">96%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/10 text-white transition-colors border border-white/10"
-                                title="Chat" data-friend-name="NeonTypist" data-friend-status="In Match"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
+                    <div id="friends-list-guest" class="hidden p-8 text-center">
+                        <p class="text-slate-500 text-sm mb-3">Sign in to manage friends and send requests.</p>
+                        <a href="/signin" data-spa-link class="text-primary hover:underline text-sm font-semibold">Sign in</a>
                     </div>
-                    <!-- Friend Card 3 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Zero"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">ZeroLatency</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">132</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">158</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">99%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="ZeroLatency" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Friend Card 4 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Speedy"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">SpeedyGonzalez</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">115</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">130</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">96%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="SpeedyGonzalez" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Friend Card 5 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Dash"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">DashKeys</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">88</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">105</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">92%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="DashKeys" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Friend Card 6 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Type Lord"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">TypeLord</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">140</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">165</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">98%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="TypeLord" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Friend Card 7 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Flash"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">FlashType</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">125</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">140</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">95%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="FlashType" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBFLSCnTbyKsMyJItR8PcIpcwCBBF3CHDoCgEfKaWyNNHDhYpT6tZD29rqLYSPrs8mkVivTumByuAha38Xl_9yQYcHUTIYzz2LPmQjsD7Pdkk2pLJeYb30Yy6d6F5W6bjMrtBseVDyjL68z0QOwGYQxrRDUel-jWCww9BEaIadoPXIE3Q3j2C9YvUaGyERWQE3vuVzq4lwGsalPC8pJCvg-4OGJ7tMUR2s2twyU3yTeZ23btdnn0M9O42AP0SS6FirqNSOhhq_bD58E">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Friend Card 8 -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="offline" style="display: none;">
-                        <div class="relative">
-                            <div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10 opacity-70"
-                                data-alt="Avatar player Byte"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J');">
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-slate-500 border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 opacity-70">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">ByteRunner</h3>
-                                <span
-                                    class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-mono">
-                                <span title="Average WPM">Avg: <span class="text-slate-200">102</span> wpm</span>
-                                <span title="Top WPM">Top: <span class="text-slate-200">118</span> wpm</span>
-                                <span title="Accuracy">Acc: <span class="text-slate-200">93%</span></span>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5"
-                                title="Chat" data-friend-name="ByteRunner" data-friend-status="Offline"
-                                data-friend-avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuC1Hw5WNIOTB-Dh5yC6PZf6T_5gimJlEtsgnpjRAfHDeidEHW4QnnUmxYYH5L5dgioWaaXxZwPCqbOYUAKhCHM2IuEsMSqWhietHZ2ANTjN2sB0UeiPcS5DwmU4sTgcJ741eww0GxHXv_agOW4_KIrcuZlTZniWpT0BBka-6nIs3tc-OAmnZMPtkAjokE5h5c6nZkT_HqIxpLWTEJ9gcQtIzDua4Wxs1m0MQJlcfLq4jdBzUf8vbvKQglB59_-QX4gXakkATEAIPa0J">
-                                <span class="material-symbols-outlined text-xl">chat_bubble</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-[0_0_10px_rgba(0,208,255,0)] hover:shadow-[0_0_10px_rgba(0,208,255,0.2)]"
-                                title="Challenge">
-                                <span class="material-symbols-outlined text-xl">swords</span>
-                            </button>
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all shadow-[0_0_10px_rgba(255,51,51,0)] hover:shadow-[0_0_10px_rgba(255,51,51,0.2)]"
-                                title="Remove Friend">
-                                <span class="material-symbols-outlined text-xl">person_remove</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Pending Request Card -->
-                    <div class="friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group"
-                        data-status="pending" style="display: none;">
-                        <div class="relative">
-                            <div
-                                class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
-                                <span
-                                    class="material-symbols-outlined text-slate-400 text-3xl">sentiment_satisfied</span>
-                            </div>
-                            <div
-                                class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-background-dark rounded-full">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-bold text-slate-100 truncate">RandomUser99</h3>
-                                <span
-                                    class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Sent
-                                    Request</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-                                <span>Requested 2 hours ago</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                            <button
-                                class="flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all font-bold text-xs px-3"
-                                title="Cancel Request">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-
+                    <div id="friends-list-items" class="flex flex-col"></div>
                 </div>
             </div>
         </div>
@@ -660,7 +308,7 @@
         <div id="modal-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="modal-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-white tracking-tight">Add Friends</h2>
@@ -670,24 +318,55 @@
                 </button>
             </div>
 
-            <p class="text-slate-400 text-sm mb-6">Search for users by their exact username or unique ID to send a
-                friend request.</p>
+            <p class="text-slate-400 text-sm mb-6">Search users by username — results update as you type.</p>
 
             <div class="relative mb-6">
                 <span
                     class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/70 text-xl">person_search</span>
-                <input type="text" placeholder="Enter username or ID..."
-                    class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all font-mono">
-                <button
-                    class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary/20 text-primary hover:bg-primary hover:text-background-dark px-3 py-1.5 rounded-lg text-sm font-bold transition-all border border-primary/30 hover:border-transparent">
-                    Search
+                <input id="add-friends-search-input" type="text" placeholder="Enter username or ID..."
+                    class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-11 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all font-mono"
+                    autocomplete="off">
+                <button id="add-friends-search-clear" type="button" aria-label="Clear search"
+                    class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
                 </button>
             </div>
 
-            <!-- Placeholder for results -> initially hidden in design -->
-            <div class="border-t border-white/10 pt-4 text-center">
+            <div id="add-friends-status" class="hidden text-xs font-mono mb-3"></div>
+
+            <div id="add-friends-results" class="flex flex-col gap-2 max-h-56 overflow-y-auto mb-4"></div>
+
+            <div id="add-friends-empty" class="border-t border-white/10 pt-4 text-center">
                 <span class="material-symbols-outlined text-slate-600 text-4xl mb-2">person_add_disabled</span>
-                <p class="text-slate-500 text-sm font-mono">No recent searches.</p>
+                <p class="text-slate-500 text-sm font-mono">Type a username to search.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remove Friend Confirm Modal -->
+    <div id="remove-friend-modal"
+        class="fixed inset-0 z-[210] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="remove-friend-backdrop" class="absolute inset-0 cursor-pointer"></div>
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-sm rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
+            id="remove-friend-content">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-error/10 border border-error/20 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-error">person_remove</span>
+                </div>
+                <h2 class="text-xl font-bold text-white tracking-tight">Remove Friend</h2>
+            </div>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                Remove <span id="remove-friend-name" class="text-slate-100 font-semibold">this user</span> from your friends list?
+            </p>
+            <div class="flex gap-3">
+                <button type="button" id="remove-friend-cancel-btn"
+                    class="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-semibold text-sm transition-colors">
+                    Cancel
+                </button>
+                <button type="button" id="remove-friend-confirm-btn"
+                    class="flex-1 py-2.5 rounded-xl bg-error/15 hover:bg-error/25 text-error border border-error/30 font-bold text-sm transition-colors">
+                    Remove
+                </button>
             </div>
         </div>
     </div>
@@ -699,7 +378,7 @@
         <div id="join-room-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="panel-surface w-full max-w-sm rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-sm rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="join-room-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-white tracking-tight">Join Room</h2>
@@ -738,7 +417,7 @@
         <div id="create-room-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Content -->
-        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="create-room-content">
             <div id="create-room-form">
                 <div class="flex items-center justify-between mb-6">
@@ -888,7 +567,7 @@
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="configure-dual-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
-        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="configure-dual-content">
             <div id="configure-dual-form">
                 <div class="flex items-center justify-between mb-6">
@@ -994,7 +673,7 @@
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="find-match-backdrop" class="absolute inset-0 cursor-pointer"></div>
 
-        <div class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300"
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="find-match-content">
             <div id="find-match-form">
                 <div class="flex items-center justify-between mb-6">
@@ -1124,6 +803,7 @@ window.setTimeout = function(handler, timeout) {
 window.__spaPageInit = function() {
             const FRIENDS_MODAL_IDS = [
                 'add-friends-modal',
+                'remove-friend-modal',
                 'join-room-modal',
                 'create-room-modal',
                 'configure-dual-modal',
@@ -1173,14 +853,18 @@ window.__spaPageInit = function() {
             const modalContent = document.getElementById('modal-content');
 
             function openModal() {
+                resetAddFriendsSearchForm();
                 addFriendsModal.classList.remove('opacity-0', 'pointer-events-none');
                 addFriendsModal.removeAttribute('inert');
                 modalContent.classList.remove('scale-95');
                 modalContent.classList.add('scale-100');
                 setPageBackgroundInert(true);
+                if (typeof startAddFriendsLiveRefresh === 'function') startAddFriendsLiveRefresh();
             }
 
             function closeModal() {
+                if (typeof stopAddFriendsLiveRefresh === 'function') stopAddFriendsLiveRefresh();
+                resetAddFriendsSearchForm();
                 markModalClosed(addFriendsModal);
                 modalContent.classList.remove('scale-100');
                 modalContent.classList.add('scale-95');
@@ -1190,100 +874,660 @@ window.__spaPageInit = function() {
             if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
             if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
 
-            // --- DYNAMIC CHAT WINDOW LOGIC ---
-            const chatBtns = document.querySelectorAll('.chat-btn');
+            // --- REMOVE FRIEND MODAL ---
+            const removeFriendModal = document.getElementById('remove-friend-modal');
+            const removeFriendBackdrop = document.getElementById('remove-friend-backdrop');
+            const removeFriendContent = document.getElementById('remove-friend-content');
+            const removeFriendNameEl = document.getElementById('remove-friend-name');
+            const removeFriendCancelBtn = document.getElementById('remove-friend-cancel-btn');
+            const removeFriendConfirmBtn = document.getElementById('remove-friend-confirm-btn');
+            let pendingRemoveUserId = null;
+
+            function openRemoveFriendModal(userId, name) {
+                pendingRemoveUserId = userId;
+                if (removeFriendNameEl) removeFriendNameEl.textContent = name || 'this user';
+                if (!removeFriendModal || !removeFriendContent) return;
+                removeFriendModal.classList.remove('opacity-0', 'pointer-events-none');
+                removeFriendModal.removeAttribute('inert');
+                removeFriendContent.classList.remove('scale-95');
+                removeFriendContent.classList.add('scale-100');
+                setPageBackgroundInert(true);
+            }
+
+            function closeRemoveFriendModal() {
+                pendingRemoveUserId = null;
+                if (!removeFriendModal || !removeFriendContent) return;
+                markModalClosed(removeFriendModal);
+                removeFriendContent.classList.remove('scale-100');
+                removeFriendContent.classList.add('scale-95');
+            }
+
+            if (removeFriendCancelBtn) removeFriendCancelBtn.addEventListener('click', closeRemoveFriendModal);
+            if (removeFriendBackdrop) removeFriendBackdrop.addEventListener('click', closeRemoveFriendModal);
+            if (removeFriendConfirmBtn) {
+                removeFriendConfirmBtn.addEventListener('click', async function () {
+                    if (!pendingRemoveUserId || !window.usertypoFriends) return;
+                    removeFriendConfirmBtn.disabled = true;
+                    try {
+                        await window.usertypoFriends.removeFriend(pendingRemoveUserId);
+                        closeRemoveFriendModal();
+                        await refreshFriends();
+                        if (addFriendsSearchInput && addFriendsSearchInput.value.trim()) {
+                            await runAddFriendsSearch({ quiet: true });
+                        }
+                    } catch (err) {
+                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                            window.usertypoNotifications.showToast(
+                                window.usertypoFriends.mapRpcError(err).message,
+                                'error'
+                            );
+                        } else {
+                            alert(window.usertypoFriends.mapRpcError(err).message);
+                        }
+                    } finally {
+                        removeFriendConfirmBtn.disabled = false;
+                    }
+                });
+            }
+
+            // --- FRIENDS DATA (search, requests, list) ---
+            const friendsListLoading = document.getElementById('friends-list-loading');
+            const friendsListEmpty = document.getElementById('friends-list-empty');
+            const friendsListGuest = document.getElementById('friends-list-guest');
+            const friendsListItems = document.getElementById('friends-list-items');
+            const friendsPendingBadge = document.getElementById('friends-pending-badge');
+            const friendsOnlineBadge = document.getElementById('friends-online-badge');
+            const friendsAllBadge = document.getElementById('friends-all-badge');
+            const friendsListEmptyText = document.getElementById('friends-list-empty-text');
+            const friendsFilterInput = document.getElementById('friends-filter-input');
+            const addFriendsSearchInput = document.getElementById('add-friends-search-input');
+            const addFriendsSearchClear = document.getElementById('add-friends-search-clear');
+            const addFriendsResults = document.getElementById('add-friends-results');
+            const addFriendsStatus = document.getElementById('add-friends-status');
+            const addFriendsEmpty = document.getElementById('add-friends-empty');
+            const tabBtns = document.querySelectorAll('.friends-tab-btn');
             const chatWindow = document.getElementById('chat-window');
-            const closeChatBtn = document.getElementById('close-chat-btn');
             const chatHeaderName = document.getElementById('chat-header-name');
             const chatHeaderStatus = document.getElementById('chat-header-status');
             const chatHeaderAvatar = document.getElementById('chat-header-avatar');
             const chatHeaderStatusIndicator = document.getElementById('chat-header-status-indicator');
             let currentOpenChatName = null;
 
+            let friendsState = { friends: [], incoming: [], outgoing: [] };
+            let activeFriendsTab = 'all';
+            /** @type {Record<string, object>} optimistic outgoing rows keyed by user_id */
+            var optimisticOutgoingByUser = {};
+            let friendsFilterQuery = '';
+
+            function displayName(profile) {
+                return profile.username || profile.display_name || profile.user_id || 'Unknown';
+            }
+
+            function avatarStyle(profile) {
+                if (profile && profile.avatar_url) {
+                    return 'background-image: url(\'' + String(profile.avatar_url).replace(/'/g, '%27') + '\')';
+                }
+                return '';
+            }
+
+            function relativeTime(iso) {
+                if (!iso) return '';
+                var then = new Date(iso).getTime();
+                if (!isFinite(then)) return '';
+                var diff = Math.max(0, Date.now() - then);
+                var mins = Math.floor(diff / 60000);
+                if (mins < 1) return 'just now';
+                if (mins < 60) return mins + ' min ago';
+                var hours = Math.floor(mins / 60);
+                if (hours < 24) return hours + 'h ago';
+                var days = Math.floor(hours / 24);
+                return days + 'd ago';
+            }
+
+            function setFriendsStatus(el, message, tone) {
+                if (!el) return;
+                if (!message) {
+                    el.classList.add('hidden');
+                    el.textContent = '';
+                    return;
+                }
+                el.textContent = message;
+                el.classList.remove('hidden', 'text-error', 'text-primary', 'text-slate-400');
+                if (tone === 'error') el.classList.add('text-error');
+                else if (tone === 'success') el.classList.add('text-primary');
+                else el.classList.add('text-slate-400');
+            }
+
+            function updatePendingBadge() {
+                var onlineCount = friendsState.friends.filter(function (f) { return !!f.is_online; }).length;
+                var allCount = friendsState.friends.length;
+                var pendingCount = friendsState.incoming.length + friendsState.outgoing.length;
+
+                if (friendsOnlineBadge) {
+                    friendsOnlineBadge.textContent = String(onlineCount);
+                    friendsOnlineBadge.classList.toggle('hidden', onlineCount === 0);
+                }
+                if (friendsAllBadge) {
+                    friendsAllBadge.textContent = String(allCount);
+                    friendsAllBadge.classList.toggle('hidden', allCount === 0);
+                }
+                if (friendsPendingBadge) {
+                    friendsPendingBadge.textContent = String(pendingCount);
+                    friendsPendingBadge.classList.toggle('hidden', pendingCount === 0);
+                }
+            }
+
+            function setActiveFriendsTab(showType) {
+                activeFriendsTab = showType || 'all';
+                tabBtns.forEach(function (t) {
+                    var isActive = t.getAttribute('data-show') === activeFriendsTab;
+                    t.classList.toggle('text-primary', isActive);
+                    t.classList.toggle('border-primary', isActive);
+                    t.classList.toggle('is-active', isActive);
+                    t.classList.toggle('text-slate-400', !isActive);
+                    t.classList.toggle('border-transparent', !isActive);
+                });
+                applyFriendsTabFilter();
+            }
+
             function openChat(name, status, avatarUrl) {
-                // If clicking the same user that is already open, close it
+                if (!chatWindow) return;
                 if (currentOpenChatName === name && chatWindow.classList.contains('chat-expanded')) {
                     closeChat();
                     return;
                 }
-
                 currentOpenChatName = name;
-
-                // Update header details
-                chatHeaderName.textContent = name;
-                chatHeaderStatus.textContent = status;
-                chatHeaderAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-
-                // Update status indicator color based on status text
-                chatHeaderStatusIndicator.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-background-dark rounded-full';
-                if (status === 'Online') {
-                    chatHeaderStatusIndicator.classList.add('bg-green-500');
-                    chatHeaderStatus.className = 'text-xs text-green-400';
-                } else if (status === 'Offline') {
-                    chatHeaderStatusIndicator.classList.add('bg-slate-500');
-                    chatHeaderStatus.className = 'text-xs text-slate-400';
-                } else {
-                    chatHeaderStatusIndicator.classList.add('bg-yellow-500');
-                    chatHeaderStatus.className = 'text-xs text-yellow-400';
+                if (chatHeaderName) chatHeaderName.textContent = name;
+                if (chatHeaderStatus) chatHeaderStatus.textContent = status;
+                if (chatHeaderAvatar && avatarUrl) {
+                    chatHeaderAvatar.style.backgroundImage = 'url(\'' + String(avatarUrl).replace(/'/g, '%27') + '\')';
                 }
-
-                // Show the chat window
+                if (chatHeaderStatusIndicator) {
+                    chatHeaderStatusIndicator.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-background-dark rounded-full';
+                    if (status === 'Online') {
+                        chatHeaderStatusIndicator.classList.add('bg-green-500');
+                        if (chatHeaderStatus) chatHeaderStatus.className = 'text-xs text-green-400';
+                    } else {
+                        chatHeaderStatusIndicator.classList.add('bg-slate-500');
+                        if (chatHeaderStatus) chatHeaderStatus.className = 'text-xs text-slate-400';
+                    }
+                }
                 chatWindow.classList.remove('chat-collapsed');
                 chatWindow.classList.add('chat-expanded');
             }
 
             function closeChat() {
+                if (!chatWindow) return;
                 chatWindow.classList.remove('chat-expanded');
                 chatWindow.classList.add('chat-collapsed');
                 currentOpenChatName = null;
             }
 
-            chatBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const name = btn.getAttribute('data-friend-name');
-                    const status = btn.getAttribute('data-friend-status');
-                    const avatarUrl = btn.getAttribute('data-friend-avatar');
-                    openChat(name, status, avatarUrl);
+            function matchesFilter(name, query) {
+                if (!query) return true;
+                return String(name || '').toLowerCase().includes(query);
+            }
+
+            function renderFriendCard(friend) {
+                var name = displayName(friend);
+                var isOnline = !!friend.is_online;
+                var avatarUrl = friend.avatar_url || '';
+                var card = document.createElement('div');
+                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group';
+                card.dataset.status = isOnline ? 'online' : 'offline';
+                card.dataset.cardType = 'friend';
+                card.dataset.friendName = name;
+                card.dataset.friendUserId = friend.user_id;
+                card.dataset.searchName = name.toLowerCase();
+
+                var avatarOpacity = isOnline ? '' : ' opacity-90';
+                var avatarBlock = avatarUrl
+                    ? '<div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10' + avatarOpacity + '" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '" style="' + avatarStyle(friend) + '"></div>'
+                    : '<div class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center' + avatarOpacity + '"><span class="material-symbols-outlined text-slate-400 text-3xl">person</span></div>';
+
+                var statusDot = isOnline ? 'bg-green-500' : 'bg-slate-500';
+                var statusLabel = isOnline ? 'Online' : 'Offline';
+                var statusBadge = isOnline
+                    ? '<span class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Online</span>'
+                    : '<span class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>';
+
+                var actions = '';
+                if (isOnline) {
+                    actions +=
+                        '<button type="button" class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5" title="Chat"' +
+                        ' data-friend-name="' + name.replace(/"/g, '&quot;') + '" data-friend-status="Online" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '">' +
+                        '<span class="material-symbols-outlined text-xl">chat_bubble</span></button>' +
+                        '<button type="button" class="dual-challenge-btn flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
+                        '<span class="material-symbols-outlined text-xl">swords</span></button>';
+                }
+                actions +=
+                    '<button type="button" class="remove-friend-btn flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + friend.user_id + '">' +
+                    '<span class="material-symbols-outlined text-xl">person_remove</span></button>';
+
+                card.innerHTML =
+                    '<div class="relative">' + avatarBlock +
+                    '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 ' + statusDot + ' border-2 border-background-dark rounded-full"></div></div>' +
+                    '<div class="flex-1 min-w-0' + (isOnline ? '' : ' opacity-90') + '">' +
+                    '<div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' +
+                    statusBadge + '</div>' +
+                    '<div class="text-xs text-slate-500 font-mono">Friends since ' + relativeTime(friend.friends_since) + '</div></div>' +
+                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">' +
+                    actions + '</div>';
+
+                var chatBtn = card.querySelector('.chat-btn');
+                if (chatBtn) {
+                    chatBtn.addEventListener('click', function () {
+                        openChat(name, statusLabel, avatarUrl);
+                    });
+                }
+                var challengeBtn = card.querySelector('.dual-challenge-btn');
+                if (challengeBtn) {
+                    challengeBtn.addEventListener('click', function () {
+                        if (typeof openConfigureDualModal === 'function') {
+                            openConfigureDualModal(name, avatarUrl);
+                        }
+                    });
+                }
+                card.querySelector('.remove-friend-btn').addEventListener('click', function () {
+                    openRemoveFriendModal(friend.user_id, name);
+                });
+
+                return card;
+            }
+
+            function renderPendingCard(request, direction) {
+                var name = displayName(request);
+                var card = document.createElement('div');
+                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group';
+                card.dataset.status = 'pending';
+                card.dataset.cardType = direction;
+                card.dataset.requestId = request.request_id;
+                card.dataset.searchName = name.toLowerCase();
+
+                var avatarBlock = request.avatar_url
+                    ? '<div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10" style="' + avatarStyle(request) + '"></div>'
+                    : '<div class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400 text-3xl">person</span></div>';
+
+                var badge = direction === 'incoming'
+                    ? '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Incoming</span>'
+                    : '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Sent Request</span>';
+
+                var actions = direction === 'incoming'
+                    ? '<button type="button" class="accept-request-btn flex-1 sm:flex-none px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold">Accept</button>' +
+                      '<button type="button" class="decline-request-btn flex-1 sm:flex-none px-3 py-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Decline</button>'
+                    : '<button type="button" class="cancel-request-btn flex-1 sm:flex-none px-3 py-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Cancel</button>';
+
+                card.innerHTML =
+                    '<div class="relative">' + avatarBlock +
+                    '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-background-dark rounded-full"></div></div>' +
+                    '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' + badge + '</div>' +
+                    '<div class="text-xs text-slate-400">Requested ' + relativeTime(request.created_at) + '</div></div>' +
+                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">' + actions + '</div>';
+
+                if (direction === 'incoming') {
+                    card.querySelector('.accept-request-btn').addEventListener('click', async function () {
+                        try {
+                            await window.usertypoFriends.acceptRequest(request.request_id);
+                            await refreshFriends();
+                        } catch (err) {
+                            alert(window.usertypoFriends.mapRpcError(err).message);
+                        }
+                    });
+                    card.querySelector('.decline-request-btn').addEventListener('click', async function () {
+                        try {
+                            await window.usertypoFriends.declineRequest(request.request_id);
+                            await refreshFriends();
+                        } catch (err) {
+                            alert(window.usertypoFriends.mapRpcError(err).message);
+                        }
+                    });
+                } else {
+                    card.querySelector('.cancel-request-btn').addEventListener('click', async function () {
+                        try {
+                            if (request.user_id) delete optimisticOutgoingByUser[request.user_id];
+                            await window.usertypoFriends.cancelRequest(request.request_id);
+                            await refreshFriends();
+                        } catch (err) {
+                            alert(window.usertypoFriends.mapRpcError(err).message);
+                        }
+                    });
+                }
+
+                return card;
+            }
+
+            function applyFriendsTabFilter() {
+                var cards = friendsListItems ? friendsListItems.querySelectorAll('.friend-card') : [];
+                cards.forEach(function (card) {
+                    var status = card.getAttribute('data-status');
+                    var cardType = card.getAttribute('data-card-type');
+                    var searchName = card.getAttribute('data-search-name') || '';
+                    var visible = matchesFilter(searchName, friendsFilterQuery);
+
+                    if (visible) {
+                        if (activeFriendsTab === 'all') {
+                            visible = status !== 'pending';
+                        } else if (activeFriendsTab === 'online') {
+                            visible = status === 'online';
+                        } else if (activeFriendsTab === 'pending') {
+                            visible = status === 'pending';
+                        }
+                    }
+
+                    card.style.display = visible ? 'flex' : 'none';
+                });
+
+                var visibleCount = 0;
+                cards.forEach(function (card) {
+                    if (card.style.display !== 'none') visibleCount++;
+                });
+
+                if (friendsListEmpty) {
+                    var showEmpty = visibleCount === 0;
+                    friendsListEmpty.classList.toggle('hidden', !showEmpty);
+                    if (showEmpty && friendsListEmptyText) {
+                        if (activeFriendsTab === 'pending') {
+                            friendsListEmptyText.textContent = 'No pending friend requests.';
+                        } else if (activeFriendsTab === 'online') {
+                            friendsListEmptyText.innerHTML = 'No friends online right now. Check the <button type="button" class="text-primary font-semibold" data-empty-action="goto-all">All</button> tab.';
+                        } else {
+                            friendsListEmptyText.innerHTML = 'No friends yet. Use <button type="button" class="text-primary font-semibold" data-empty-action="add-friends">Add Friends</button> to find people.';
+                        }
+                    }
+                }
+
+                setTimeout(updateScrollbar, 50);
+            }
+
+            function renderFriendsList() {
+                if (!friendsListItems) return;
+                friendsListItems.innerHTML = '';
+
+                friendsState.friends.forEach(function (friend) {
+                    friendsListItems.appendChild(renderFriendCard(friend));
+                });
+                friendsState.incoming.forEach(function (req) {
+                    friendsListItems.appendChild(renderPendingCard(req, 'incoming'));
+                });
+                friendsState.outgoing.forEach(function (req) {
+                    friendsListItems.appendChild(renderPendingCard(req, 'outgoing'));
+                });
+
+                updatePendingBadge();
+
+                if (friendsListLoading) friendsListLoading.classList.add('hidden');
+                if (friendsListEmpty) {
+                    friendsListEmpty.classList.toggle('hidden', friendsState.friends.length > 0 || activeFriendsTab === 'pending');
+                }
+
+                applyFriendsTabFilter();
+            }
+
+            async function refreshFriends() {
+                if (!window.usertypoFriends) return;
+                try {
+                    var data = await window.usertypoFriends.loadDashboard();
+                    var serverOutgoing = data.outgoing || [];
+                    var serverIds = {};
+                    serverOutgoing.forEach(function (r) {
+                        if (r && r.user_id) {
+                            serverIds[r.user_id] = true;
+                            delete optimisticOutgoingByUser[r.user_id];
+                        }
+                    });
+                    Object.keys(optimisticOutgoingByUser).forEach(function (uid) {
+                        if (!serverIds[uid]) {
+                            serverOutgoing = [optimisticOutgoingByUser[uid]].concat(serverOutgoing);
+                        }
+                    });
+                    friendsState = {
+                        friends: data.friends || [],
+                        incoming: data.incoming || [],
+                        outgoing: serverOutgoing,
+                    };
+                    renderFriendsList();
+                } catch (err) {
+                    console.error('[friends] load failed', err);
+                    if (friendsListLoading) {
+                        friendsListLoading.textContent = 'Could not load friends.';
+                    }
+                }
+            }
+
+            async function initFriendsPage() {
+                if (!window.usertypoAuth || !window.usertypoFriends) {
+                    if (friendsListLoading) friendsListLoading.classList.add('hidden');
+                    if (friendsListGuest) friendsListGuest.classList.remove('hidden');
+                    return;
+                }
+
+                await window.usertypoAuth.ready();
+                var authState = window.usertypoAuth.getState();
+                if (!authState.isSignedIn) {
+                    if (friendsListLoading) friendsListLoading.classList.add('hidden');
+                    if (friendsListGuest) friendsListGuest.classList.remove('hidden');
+                    return;
+                }
+
+                if (window.usertypoProfiles && typeof window.usertypoProfiles.ensureMyProfile === 'function') {
+                    await window.usertypoProfiles.ensureMyProfile(authState.user);
+                }
+
+                await refreshFriends();
+                setInterval(function () {
+                    refreshFriends().catch(function () { /* ignore */ });
+                }, 45000);
+            }
+
+            tabBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    setActiveFriendsTab(btn.getAttribute('data-show') || 'all');
                 });
             });
 
+            if (friendsListEmpty) {
+                friendsListEmpty.addEventListener('click', function (e) {
+                    var actionBtn = e.target.closest('[data-empty-action]');
+                    if (!actionBtn) return;
+                    var action = actionBtn.getAttribute('data-empty-action');
+                    if (action === 'goto-all') setActiveFriendsTab('all');
+                    else if (action === 'add-friends') openModal();
+                });
+            }
+
+            if (friendsFilterInput) {
+                friendsFilterInput.addEventListener('input', function () {
+                    friendsFilterQuery = friendsFilterInput.value.trim().toLowerCase();
+                    applyFriendsTabFilter();
+                });
+            }
+
+            function relationshipLabel(relationship) {
+                if (relationship === 'friends') return 'Already friends';
+                if (relationship === 'pending_sent') return 'Request sent';
+                if (relationship === 'pending_received') return 'Accept in Pending tab';
+                return null;
+            }
+
+            function renderSearchResults(results) {
+                if (!addFriendsResults) return;
+                addFriendsResults.innerHTML = '';
+                if (!results || !results.length) {
+                    if (addFriendsEmpty) addFriendsEmpty.classList.remove('hidden');
+                    return;
+                }
+                if (addFriendsEmpty) addFriendsEmpty.classList.add('hidden');
+
+                results.forEach(function (user) {
+                    var name = displayName(user);
+                    var row = document.createElement('div');
+                    row.className = 'flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/10';
+
+                    var avatar = user.avatar_url
+                        ? '<div class="w-10 h-10 rounded-full bg-cover bg-center border border-white/10 shrink-0" style="' + avatarStyle(user) + '"></div>'
+                        : '<div class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-400">person</span></div>';
+
+                    var rel = relationshipLabel(user.relationship);
+                    var actionHtml = rel
+                        ? '<span class="text-xs text-slate-500 font-mono">' + rel + '</span>'
+                        : '<button type="button" class="send-request-btn bg-primary/20 text-primary hover:bg-primary hover:text-background-dark px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-primary/30">Add</button>';
+
+                    row.innerHTML = avatar +
+                        '<div class="flex-1 min-w-0"><div class="font-bold text-slate-100 truncate">' + name + '</div>' +
+                        '<div class="text-[10px] text-slate-500 font-mono truncate">' + user.user_id + '</div></div>' +
+                        '<div class="shrink-0">' + actionHtml + '</div>';
+
+                    if (!rel) {
+                        row.querySelector('.send-request-btn').addEventListener('click', async function () {
+                            setFriendsStatus(addFriendsStatus, 'Sending request...', 'info');
+                            try {
+                                var sent = await window.usertypoFriends.sendRequest(user.user_id);
+                                setFriendsStatus(addFriendsStatus, 'Friend request sent to ' + name + '.', 'success');
+                                var optimisticRow = {
+                                    request_id: sent && sent.requestId,
+                                    created_at: new Date().toISOString(),
+                                    user_id: user.user_id,
+                                    username: user.username,
+                                    display_name: user.display_name,
+                                    avatar_url: user.avatar_url,
+                                };
+                                optimisticOutgoingByUser[user.user_id] = optimisticRow;
+                                friendsState.outgoing = (friendsState.outgoing || []).filter(function (r) {
+                                    return r.user_id !== user.user_id;
+                                });
+                                friendsState.outgoing.unshift(optimisticRow);
+                                renderFriendsList();
+                                setActiveFriendsTab('pending');
+                                closeModal();
+                                await refreshFriends();
+                            } catch (err) {
+                                setFriendsStatus(addFriendsStatus, window.usertypoFriends.mapRpcError(err).message, 'error');
+                            }
+                        });
+                    }
+
+                    addFriendsResults.appendChild(row);
+                });
+            }
+
+            let addFriendsSearchTimer = null;
+            let addFriendsSearchSeq = 0;
+            let addFriendsPollTimer = null;
+
+            function updateAddFriendsClearVisibility() {
+                if (!addFriendsSearchClear) return;
+                var hasText = !!(addFriendsSearchInput && addFriendsSearchInput.value.trim());
+                addFriendsSearchClear.classList.toggle('hidden', !hasText);
+            }
+
+            function resetAddFriendsSearchForm() {
+                if (addFriendsSearchTimer) clearTimeout(addFriendsSearchTimer);
+                addFriendsSearchSeq += 1;
+                if (addFriendsSearchInput) addFriendsSearchInput.value = '';
+                if (addFriendsResults) addFriendsResults.innerHTML = '';
+                setFriendsStatus(addFriendsStatus, '', null);
+                if (addFriendsEmpty) {
+                    addFriendsEmpty.classList.remove('hidden');
+                    var emptyText = addFriendsEmpty.querySelector('p');
+                    if (emptyText) emptyText.textContent = 'Type a username to search.';
+                }
+                updateAddFriendsClearVisibility();
+            }
+
+            async function runAddFriendsSearch(options) {
+                options = options || {};
+                if (!addFriendsSearchInput) return;
+                if (!window.usertypoFriends) {
+                    setFriendsStatus(addFriendsStatus, 'Friends API not loaded. Hard refresh the page.', 'error');
+                    return;
+                }
+                var query = addFriendsSearchInput.value.trim();
+                updateAddFriendsClearVisibility();
+                if (!query) {
+                    resetAddFriendsSearchForm();
+                    return;
+                }
+                var seq = ++addFriendsSearchSeq;
+                if (!options.quiet) setFriendsStatus(addFriendsStatus, 'Searching...', 'info');
+                try {
+                    var results = await window.usertypoFriends.searchUsers(query);
+                    if (seq !== addFriendsSearchSeq) return;
+                    if (!options.quiet) setFriendsStatus(addFriendsStatus, '', null);
+                    renderSearchResults(results);
+                    if (!results.length) {
+                        if (!options.quiet) {
+                            setFriendsStatus(addFriendsStatus, 'No users found matching "' + query + '".', 'error');
+                        }
+                        if (addFriendsEmpty) {
+                            addFriendsEmpty.classList.remove('hidden');
+                            var emptyText = addFriendsEmpty.querySelector('p');
+                            if (emptyText) emptyText.textContent = 'No users found matching "' + query + '".';
+                        }
+                    }
+                } catch (err) {
+                    if (seq !== addFriendsSearchSeq) return;
+                    renderSearchResults([]);
+                    setFriendsStatus(addFriendsStatus, window.usertypoFriends.mapRpcError(err).message, 'error');
+                }
+            }
+
+            function startAddFriendsLiveRefresh() {
+                stopAddFriendsLiveRefresh();
+                addFriendsPollTimer = setInterval(function () {
+                    if (!addFriendsModal || addFriendsModal.classList.contains('opacity-0')) return;
+                    if (!addFriendsSearchInput || !addFriendsSearchInput.value.trim()) return;
+                    runAddFriendsSearch({ quiet: true });
+                }, 3000);
+            }
+
+            function stopAddFriendsLiveRefresh() {
+                if (addFriendsPollTimer) {
+                    clearInterval(addFriendsPollTimer);
+                    addFriendsPollTimer = null;
+                }
+            }
+
+            window.addEventListener('usertypo:friends-changed', function () {
+                refreshFriends().catch(function () { /* ignore */ });
+                if (addFriendsModal && !addFriendsModal.classList.contains('opacity-0') &&
+                    addFriendsSearchInput && addFriendsSearchInput.value.trim()) {
+                    runAddFriendsSearch({ quiet: true });
+                }
+            });
+
+            if (addFriendsSearchClear) {
+                addFriendsSearchClear.addEventListener('click', function () {
+                    resetAddFriendsSearchForm();
+                    if (addFriendsSearchInput) addFriendsSearchInput.focus();
+                });
+            }
+            if (addFriendsSearchInput) {
+                addFriendsSearchInput.addEventListener('input', function () {
+                    updateAddFriendsClearVisibility();
+                    clearTimeout(addFriendsSearchTimer);
+                    addFriendsSearchTimer = setTimeout(function () {
+                        runAddFriendsSearch();
+                    }, 200);
+                });
+                addFriendsSearchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        clearTimeout(addFriendsSearchTimer);
+                        runAddFriendsSearch();
+                    } else if (e.key === 'Escape' && addFriendsSearchInput.value) {
+                        e.preventDefault();
+                        resetAddFriendsSearchForm();
+                    }
+                });
+            }
+
+            initFriendsPage();
+
+            // --- DYNAMIC CHAT WINDOW LOGIC (UI only — not wired to backend) ---
+            const closeChatBtn = document.getElementById('close-chat-btn');
             if (closeChatBtn) {
                 closeChatBtn.addEventListener('click', closeChat);
             }
-
-            // --- FRIENDS TAB FILTERING ---
-            const tabBtns = document.querySelectorAll('.friends-tab-btn');
-            const friendCards = document.querySelectorAll('.friend-card');
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    // Update Active tab styling
-                    tabBtns.forEach(t => {
-                        t.classList.remove('text-primary', 'border-primary', 'is-active');
-                        t.classList.add('text-slate-400', 'border-transparent');
-                    });
-                    btn.classList.add('text-primary', 'border-primary', 'is-active');
-                    btn.classList.remove('text-slate-400', 'border-transparent');
-
-                    const showType = btn.getAttribute('data-show');
-
-                    friendCards.forEach(card => {
-                        const status = card.getAttribute('data-status');
-                        if (showType === 'all') {
-                            if (status === 'pending') card.style.display = 'none';
-                            else card.style.display = 'flex';
-                        } else if (showType === 'online') {
-                            if (status === 'online') card.style.display = 'flex';
-                            else card.style.display = 'none';
-                        } else if (showType === 'pending') {
-                            if (status === 'pending') card.style.display = 'flex';
-                            else card.style.display = 'none';
-                        }
-                    });
-
-                    setTimeout(updateScrollbar, 100);
-                });
-            });
 
             // --- ROOM MENU LOGIC ---
             const roomToggleBtn = document.getElementById('room-toggle-btn');
@@ -1786,15 +2030,7 @@ window.__spaPageInit = function() {
                 };
             }
 
-            document.querySelectorAll('.friend-card button[title="Challenge"]').forEach(btn => {
-                btn.classList.add('dual-challenge-btn');
-                btn.addEventListener('click', () => {
-                    const card = btn.closest('.friend-card');
-                    const friendName = card?.dataset.friendName || card?.querySelector('h3')?.textContent?.trim();
-                    const avatar = card?.querySelector('[data-friend-avatar]')?.getAttribute('data-friend-avatar') || '';
-                    if (friendName) openConfigureDualModal(friendName, avatar);
-                });
-            });
+            // Challenge buttons are bound when friend cards are rendered.
 
             if (dualBtnModeTime) dualBtnModeTime.addEventListener('click', () => setDualMode('time'));
             if (dualBtnModeWords) dualBtnModeWords.addEventListener('click', () => setDualMode('words'));

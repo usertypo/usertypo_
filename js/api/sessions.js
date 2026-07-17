@@ -20,29 +20,6 @@
         }
     }
 
-    async function computeIsPb(client, userId, payload) {
-        if (payload.failed) return false;
-
-        var result = await client
-            .from('typing_sessions')
-            .select('wpm')
-            .eq('user_id', userId)
-            .eq('mode', payload.mode)
-            .eq('amount', payload.amount)
-            .eq('failed', false)
-            .order('wpm', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (result.error) {
-            console.warn('[usertypo sessions] PB lookup failed', result.error);
-            return false;
-        }
-
-        if (!result.data) return true;
-        return Number(payload.wpm) > Number(result.data.wpm);
-    }
-
     async function saveSession(input) {
         if (!window.usertypoAuth || !window.usertypoDb) {
             return { skipped: true, reason: 'auth_or_db_missing' };
@@ -76,10 +53,7 @@
             duration_seconds: Math.max(0, Math.round(Number(input.duration_seconds) || 0)),
             failed: !!input.failed,
             fail_reason: input.fail_reason || null,
-            is_pb: false,
         };
-
-        payload.is_pb = await computeIsPb(client, userId, payload);
 
         var inserted = await client
             .from('typing_sessions')
@@ -93,7 +67,7 @@
             '[usertypo sessions] saved',
             payload.mode + ' ' + payload.amount,
             payload.wpm + ' wpm',
-            payload.failed ? '(failed)' : (payload.is_pb ? '(PB)' : '')
+            payload.failed ? '(failed)' : (inserted.data && inserted.data.is_pb ? '(PB)' : '')
         );
 
         // Keep Postgres as source of truth for history. Redis rankings are updated
@@ -258,6 +232,7 @@
             recentSessions: recentSessions,
             totalSessions: sessions.length,
             hasMore: sessions.length > recentSessions.length,
+            allSessions: sessions,
         };
     }
 

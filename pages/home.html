@@ -2932,12 +2932,18 @@ window.setTimeout = function(handler, timeout) {
                 if (toast) {
                     document.getElementById('toast-msg').textContent = failedReason;
                     document.getElementById('toast-icon').textContent = 'error';
-                    document.getElementById('toast-icon').className = 'material-symbols-outlined text-error text-[18px]';
+                    document.getElementById('toast-icon').className = 'material-symbols-outlined text-error text-[18px] shrink-0';
+                    const toastActions = document.getElementById('save-toast-actions');
+                    if (toastActions) toastActions.classList.add('hidden');
                     toast.classList.add('visible');
+                    toast.style.opacity = '1';
+                    toast.style.pointerEvents = 'auto';
                     setTimeout(() => {
                         toast.classList.remove('visible');
+                        toast.style.opacity = '0';
+                        toast.style.pointerEvents = 'none';
                         setTimeout(() => {
-                            document.getElementById('toast-icon').className = 'material-symbols-outlined text-primary text-[18px]';
+                            document.getElementById('toast-icon').className = 'material-symbols-outlined text-primary text-[18px] shrink-0';
                         }, 350);
                     }, 3500);
                 }

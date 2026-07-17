@@ -651,30 +651,30 @@
                 </div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
-            <div class="col-span-12 glass-panel p-6 rounded-xl overflow-hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-headline text-lg font-bold tracking-tight">Activity Tracker</h2>
-                    <div class="flex items-center gap-2 text-xs text-slate-400 font-headline uppercase tracking-widest">
-                        <span>Less</span>
-                        <div class="flex gap-1">
-                            <div class="w-3 h-3 rounded-sm bg-surface-light"></div>
-                            <div class="w-3 h-3 rounded-sm bg-primary/20"></div>
-                            <div class="w-3 h-3 rounded-sm bg-primary/40"></div>
-                            <div class="w-3 h-3 rounded-sm bg-primary/70 shadow-[0_0_8px_rgba(108,218,255,0.4)]"></div>
+            <div class="col-span-12 overflow-hidden opacity-0 animate-fade-in-up [animation-delay:350ms]">
+                <div id="userstats-test-activity" class="testActivity hidden">
+                    <div class="wrapper">
+                        <div class="top">
+                            <div class="year"><select class="yearSelect" aria-label="Activity period"></select></div>
+                            <div class="title"></div>
+                            <div class="legend">
+                                <span>less</span>
+                                <div data-level="0"></div>
+                                <div data-level="1"></div>
+                                <div data-level="2"></div>
+                                <div data-level="3"></div>
+                                <div data-level="4"></div>
+                                <span>more</span>
+                            </div>
                         </div>
-                        <span>More</span>
+                        <div class="activity"></div>
+                        <div class="months"></div>
+                        <div class="daysFull"></div>
+                        <div class="days"></div>
+                        <div class="nodata hidden">No data found.</div>
+                        <div class="note">Note: All activity data is using UTC time.</div>
                     </div>
                 </div>
-                <div id="activity-map-grid" class="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1.5 overflow-x-auto scrollbar-hide py-2"></div>
-                <div
-                    class="flex justify-between mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-headline">
-                    <span>Mar 2023</span>
-                    <span>Aug 2023</span>
-                    <span>Jan 2024</span>
-                    <span>Present</span>
-                </div>
-                <p class="text-xs text-primary mt-6 italic font-headline tracking-tight">Streak: 12 days. Keep it up!
-                </p>
             </div>
             <div class="col-span-12 glass-panel p-6 rounded-xl">
                 <h2 class="font-headline text-lg font-bold mb-6">Score Distribution</h2>
@@ -767,19 +767,6 @@ window.setTimeout = function(handler, timeout) {
     return id;
 };
 
-window.initActivityMapGrid = function initActivityMapGrid() {
-    const grid = document.getElementById('activity-map-grid');
-    if (!grid) return;
-    const colors = ['bg-surface-light', 'bg-primary/10', 'bg-primary/30', 'bg-primary/50', 'bg-primary/80'];
-    let html = '';
-    for (let i = 0; i < 52 * 7; i++) {
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const glow = color.includes('/80') ? 'shadow-[0_0_5px_rgba(108,218,255,0.3)]' : '';
-        html += '<div class="aspect-square rounded-sm ' + color + ' ' + glow + '"></div>';
-    }
-    grid.innerHTML = html;
-};
-
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {
     __pageAbort.abort();
@@ -840,8 +827,23 @@ if ('scrollRestoration' in history) {
         window.scrollTo(0, 0);
 
         window.__spaPageInit = function() {
-            if (typeof window.initActivityMapGrid === 'function') {
-                window.initActivityMapGrid();
+            var profileSignupDate = null;
+
+            function renderTestActivity(sessions) {
+                var el = document.getElementById('userstats-test-activity');
+                if (!el || !window.usertypoTestActivity) return;
+
+                if (!sessions || !sessions.length) {
+                    window.usertypoTestActivity.clear(el);
+                    return;
+                }
+
+                var signupDate = profileSignupDate;
+                if (!signupDate && window.__USERTYPO_PROFILE__) {
+                    signupDate = window.__USERTYPO_PROFILE__.created_at || null;
+                }
+
+                window.usertypoTestActivity.init(el, sessions, signupDate);
             }
 
             async function fillProfileIdentity() {
@@ -881,6 +883,7 @@ if ('scrollRestoration' in history) {
                         window.__USERTYPO_PROFILE__ = profile;
                         if (profile) {
                             apply(profile.username || profile.display_name || fallbackName, profile.avatar_url || fallbackAvatar);
+                            profileSignupDate = profile.created_at || null;
                         }
                     }
                 } catch (err) {
@@ -889,7 +892,10 @@ if ('scrollRestoration' in history) {
                 }
             }
 
-            fillProfileIdentity();
+            fillProfileIdentity().then(function () {
+                loadUserStats();
+                loadUserRank();
+            });
 
             var historyOffset = 0;
             var historyPageSize = 20;
@@ -1070,6 +1076,7 @@ if ('scrollRestoration' in history) {
 
                     renderBestCards(stats.bests);
                     renderSummary(stats.summary);
+                    renderTestActivity(stats.allSessions || []);
 
                     historyOffset = 0;
                     historyTotal = stats.totalSessions || 0;
@@ -1080,9 +1087,6 @@ if ('scrollRestoration' in history) {
                     console.error('[usertypo userstats] stats load failed', err);
                 }
             }
-
-            loadUserStats();
-            loadUserRank();
 
             var loadMoreBtn = document.getElementById('test-history-load-more');
             if (loadMoreBtn) {
