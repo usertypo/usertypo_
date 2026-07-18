@@ -5,8 +5,44 @@
         }
 
         /* Graph Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 208, 255, 0.4);
+        #graph-container {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        #graph-container::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+        #graph-scroll-track {
+            display: block;
+            visibility: hidden;
+            opacity: 0;
+            height: 2px;
+            margin: 1px 20px 2px 42px;
+            flex: 0 0 2px;
+            position: relative;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.04);
+            transition: opacity 0.15s ease;
+        }
+        #graph-scroll-thumb {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 2px;
+            min-width: 16px;
+            border-radius: 9999px;
+            background: rgba(var(--theme-primary-rgb), 0.55);
+            cursor: ew-resize;
+        }
+
+        #graph-tooltip {
+            background: rgba(26, 29, 35, 0.85) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
         }
 
         /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -893,12 +929,15 @@
                             <!-- Floating tooltip moved outside graph-container to prevent clipping -->
                             <div id="graph-tooltip"
                                 class="absolute pointer-events-none z-50 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold"
-                                style="background:rgba(10,10,30,0.85);border:1px solid rgba(var(--theme-primary-rgb),0.3);backdrop-filter:blur(8px);display:none;white-space:nowrap;line-height:1.8;">
+                                style="display:none;white-space:nowrap;line-height:1.8;">
                             </div>
                             <!-- Dynamic Graph Container -->
                             <div class="flex-1 relative w-full" id="graph-container"
                                 style="transition: opacity 0.35s ease;">
                                 <!-- SVG rendered by JS -->
+                            </div>
+                            <div id="graph-scroll-track" aria-hidden="true">
+                                <div id="graph-scroll-thumb"></div>
                             </div>
                             <!-- Legend bottom-right, below graph container -->
                             <div id="graph-legend"
@@ -910,7 +949,7 @@
                                 <span class="flex items-center gap-1.5"><span class="inline-block w-5"
                                         style="border-top: 2px solid #64748b; height:0; display:inline-block;"></span><span
                                         class="text-slate-500">Raw</span></span>
-                                <span class="flex items-center gap-1.5" style="color:#ff3333;">â—<span
+                                <span class="flex items-center gap-1.5" style="color:#ff3333;">&#9679;<span
                                         class="text-slate-500" style="font-size:9px;">Errors</span></span>
                                 <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm"
                                         style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span
@@ -1094,6 +1133,7 @@ window.setTimeout = function(handler, timeout) {
         let rawHistory = [];   // raw WPM per second
         let errorMarkers = []; // { time, type } per mistake
         let lastSecondKeystrokes = 0; // keystrokes at last second tick
+        let graphEndTime = null;
 
         // --- ADVANCED GRAPH DATA ---
         let keystrokeTimes = [];       // timestamp of every keystroke
@@ -1106,6 +1146,7 @@ window.setTimeout = function(handler, timeout) {
         let graphMode = 'basic';       // 'basic' or 'advanced'
         let graphInfoVisible = false;   // info overlay state
         let advWordsVisible = null;     // number of words visible in advanced graph
+        let graphAnimationPlayed = { basic: false, advanced: false };
 
         let typingTimer;
         let updateInterval;
@@ -1633,6 +1674,9 @@ window.setTimeout = function(handler, timeout) {
                 wpmHistory = [];
                 rawHistory = [];
                 errorMarkers = [];
+                graphEndTime = null;
+                advWordsVisible = null;
+                graphAnimationPlayed = { basic: false, advanced: false };
                 lastSecondKeystrokes = 0;
                 keystrokeTimes = [];
                 wordTimestamps = [];
@@ -2849,6 +2893,7 @@ window.setTimeout = function(handler, timeout) {
                 }
             });
             const currentTime = Date.now();
+            graphEndTime = currentTime;
             const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
             const elapsedMinutes = Math.max((currentTime - startTime) / 60000, 2 / 60);
 
@@ -3100,13 +3145,9 @@ window.setTimeout = function(handler, timeout) {
                 initGraphPillIndicator();
                 graphMode = defaultMode;
                 toggleGraphMode(defaultMode);
-                if (defaultMode === 'advanced') {
-                    renderAdvancedGraph();
-                } else {
-                    renderBasicGraph();
-                }
-                updateLegendForMode(defaultMode);
                 setupGraphCardHover();
+                setupGraphResize();
+                setupGraphScrollbar();
             }, 50);
 
             // Wire up pill button click handlers
@@ -3188,6 +3229,9 @@ window.setTimeout = function(handler, timeout) {
             wpmHistory = [];
             rawHistory = [];
             errorMarkers = [];
+            graphEndTime = null;
+            advWordsVisible = null;
+            graphAnimationPlayed = { basic: false, advanced: false };
             lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             wordTimestamps = [];
@@ -3459,10 +3503,159 @@ window.setTimeout = function(handler, timeout) {
             });
         }
 
+        let graphResizeTimer = null;
+        function setupGraphResize() {
+            const card = document.getElementById('stats-graph-card');
+            if (!card || card.dataset.resizeWired) return;
+            card.dataset.resizeWired = '1';
+            const redrawGraphIfVisible = () => {
+                const statsView = document.getElementById('stats-view');
+                const container = document.getElementById('graph-container');
+                if (document.hidden || !testComplete || !statsView || statsView.classList.contains('hidden') || !container) return;
+                const rect = container.getBoundingClientRect();
+                if (rect.width < 100 || rect.height < 100) return;
+                if (graphMode === 'advanced') renderAdvancedGraph(true);
+                else renderBasicGraph(true);
+            };
+            window.addEventListener('resize', () => {
+                clearTimeout(graphResizeTimer);
+                graphResizeTimer = setTimeout(redrawGraphIfVisible, 100);
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    requestAnimationFrame(() => requestAnimationFrame(redrawGraphIfVisible));
+                }
+            });
+        }
+
+        function animateGraphLineReveal(path, clipRect, graphWidth, padLeft, options = {}) {
+            if (!path) return null;
+            const duration = options.duration || 1200;
+            const delay = options.delay || 300;
+            const length = path.getTotalLength();
+
+            path.style.strokeDasharray = String(length);
+            path.style.strokeDashoffset = String(length);
+            if (clipRect) clipRect.setAttribute('width', '0');
+
+            const animation = path.animate(
+                [{ strokeDashoffset: String(length) }, { strokeDashoffset: '0' }],
+                {
+                    duration,
+                    delay,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    fill: 'both'
+                }
+            );
+
+            function syncGradient() {
+                if (!path.isConnected) return;
+                const timing = animation.effect.getComputedTiming();
+                const progress = Number.isFinite(timing.progress) ? timing.progress : 0;
+                if (clipRect) {
+                    const point = path.getPointAtLength(Math.max(0, Math.min(length, progress * length)));
+                    clipRect.setAttribute('width', String(Math.max(0, point.x - padLeft)));
+                }
+                if (animation.playState === 'finished') {
+                    path.style.strokeDasharray = 'none';
+                    path.style.strokeDashoffset = '0';
+                    if (clipRect) clipRect.setAttribute('width', String(graphWidth));
+                    return;
+                }
+                requestAnimationFrame(syncGradient);
+            }
+            requestAnimationFrame(syncGradient);
+            return animation;
+        }
+
+        function formatGraphTime(seconds) {
+            if (Math.abs(seconds - Math.round(seconds)) < 0.0005) return `${Math.round(seconds)}s`;
+            return `${seconds.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')}s`;
+        }
+
+        function buildGraphTimeLabels(maxX, xOfTime, height) {
+            const values = [0];
+            const step = Math.max(1, Math.floor(maxX / 6));
+            for (let second = step; second < maxX; second += step) values.push(second);
+            if (maxX > 0) {
+                if (values.length > 1 && maxX - values[values.length - 1] < step * 0.6) values.pop();
+                values.push(maxX);
+            }
+            return values.map((second, index) => {
+                const anchor = index === 0 ? 'start' : index === values.length - 1 ? 'end' : 'middle';
+                return `<text x="${xOfTime(second).toFixed(1)}" y="${(height - 8).toFixed(1)}" fill="#64748b" font-size="11" text-anchor="${anchor}" font-family="monospace">${formatGraphTime(second)}</text>`;
+            }).join('');
+        }
+
+        let graphScrollbarDragging = false;
+        let graphScrollbarStartX = 0;
+        let graphScrollbarStartLeft = 0;
+
+        function updateGraphScrollbar() {
+            const container = document.getElementById('graph-container');
+            const track = document.getElementById('graph-scroll-track');
+            const thumb = document.getElementById('graph-scroll-thumb');
+            if (!container || !track || !thumb) return;
+
+            const maxScroll = container.scrollWidth - container.clientWidth;
+            if (graphMode !== 'advanced' || maxScroll <= 1) {
+                track.style.visibility = 'hidden';
+                track.style.opacity = '0';
+                return;
+            }
+
+            track.style.visibility = 'visible';
+            track.style.opacity = '1';
+            const trackWidth = track.clientWidth;
+            const thumbWidth = Math.max(16, trackWidth * (container.clientWidth / container.scrollWidth));
+            const maxThumbLeft = Math.max(0, trackWidth - thumbWidth);
+            thumb.style.width = `${thumbWidth}px`;
+            thumb.style.left = `${maxScroll > 0 ? (container.scrollLeft / maxScroll) * maxThumbLeft : 0}px`;
+        }
+
+        function setupGraphScrollbar() {
+            const container = document.getElementById('graph-container');
+            const track = document.getElementById('graph-scroll-track');
+            const thumb = document.getElementById('graph-scroll-thumb');
+            if (!container || !track || !thumb || track.dataset.wired) return;
+            track.dataset.wired = '1';
+
+            container.addEventListener('scroll', updateGraphScrollbar);
+            thumb.addEventListener('mousedown', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                graphScrollbarDragging = true;
+                graphScrollbarStartX = event.clientX;
+                graphScrollbarStartLeft = parseFloat(thumb.style.left) || 0;
+                document.body.style.userSelect = 'none';
+            });
+            track.addEventListener('mousedown', event => {
+                if (event.target === thumb) return;
+                const rect = track.getBoundingClientRect();
+                const thumbWidth = thumb.offsetWidth;
+                const targetLeft = Math.max(0, Math.min(track.clientWidth - thumbWidth, event.clientX - rect.left - thumbWidth / 2));
+                const maxThumbLeft = track.clientWidth - thumbWidth;
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                container.scrollLeft = maxThumbLeft > 0 ? (targetLeft / maxThumbLeft) * maxScroll : 0;
+            });
+            document.addEventListener('mousemove', event => {
+                if (!graphScrollbarDragging) return;
+                const maxThumbLeft = track.clientWidth - thumb.offsetWidth;
+                const nextLeft = Math.max(0, Math.min(maxThumbLeft, graphScrollbarStartLeft + event.clientX - graphScrollbarStartX));
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                container.scrollLeft = maxThumbLeft > 0 ? (nextLeft / maxThumbLeft) * maxScroll : 0;
+            });
+            document.addEventListener('mouseup', () => {
+                if (!graphScrollbarDragging) return;
+                graphScrollbarDragging = false;
+                document.body.style.userSelect = '';
+            });
+        }
+
         // ─────────────────────────────────────────────────────────────
         //  BASIC PERFORMANCE GRAPH
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        function renderBasicGraph() {
+        function renderBasicGraph(isUpdate = false) {
             const container = document.getElementById('graph-container');
             const tooltip = document.getElementById('graph-tooltip');
             if (!container) return;
@@ -3471,6 +3664,9 @@ window.setTimeout = function(handler, timeout) {
             container.style.overflowX = 'visible';
             container.style.overflowY = 'visible';
             container.classList.remove('custom-scrollbar');
+            container.scrollLeft = 0;
+            if (tooltip) tooltip.style.display = 'none';
+            updateGraphScrollbar();
 
             // Remove old SVG if any
             const old = container.querySelector('svg.dynamic-graph');
@@ -3479,8 +3675,24 @@ window.setTimeout = function(handler, timeout) {
             if (window.testFailedThreshold) return;
 
             // Fallback demo data
-            const wData = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
-            const rData = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
+            const wBase = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
+            const rBase = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
+            const latestWordEnd = wordTimestamps.length > 0
+                ? Math.max(...wordTimestamps.map(wt => Number(wt.endTime) || startTime))
+                : null;
+            const testDurationSec = graphEndTime !== null
+                ? (graphEndTime - startTime) / 1000
+                : latestWordEnd !== null ? (latestWordEnd - startTime) / 1000 : wBase.length;
+            const maxX = Math.max(wBase.length, testDurationSec, 0.001);
+            const times = [0];
+            for (let i = 0; i < wBase.length; i++) times.push(i + 1);
+            const wData = [wBase[0], ...wBase];
+            const rData = [rBase[0], ...rBase];
+            if (maxX > wBase.length) {
+                times.push(maxX);
+                wData.push(wBase[wBase.length - 1]);
+                rData.push(rBase[rBase.length - 1]);
+            }
             const n = wData.length;
 
             const W = container.clientWidth || 600;
@@ -3493,19 +3705,19 @@ window.setTimeout = function(handler, timeout) {
             const rawMax = Math.max(...wData, ...rData, 10) * 1.05;
             const yMax = Math.ceil(rawMax / 30) * 30;
             const yStep = yMax / 3;
-            const startZero = (window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero === true;
             const smoothLines = (window.usertypo_settings || {}).resultsAndGraphs?.smoothGraphLines !== false;
 
             const maxVal = yMax;
-            const minVal = startZero ? 0 : Math.max(0, Math.min(...wData, ...rData) - 10);
+            const minVal = 0;
 
-            const xOf = i => PAD.left + (i / Math.max(n - 1, 1)) * gW;
+            const xOfTime = second => PAD.left + (second / maxX) * gW;
+            const xOfIndex = i => xOfTime(times[i]);
             const yOf = v => PAD.top + gH - ((v - minVal) / (maxVal - minVal)) * gH;
 
             // â”€â”€ Catmull-Rom style cubic bezier path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             function smoothPath(arr) {
                 if (arr.length < 2) return '';
-                const pts = arr.map((v, i) => ({ x: xOf(i), y: yOf(v) }));
+                const pts = arr.map((v, i) => ({ x: xOfIndex(i), y: yOf(v) }));
                 let d = `M ${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
                 if (!smoothLines) {
                     for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x.toFixed(2)},${pts[i].y.toFixed(2)}`;
@@ -3524,14 +3736,14 @@ window.setTimeout = function(handler, timeout) {
             function smoothFillPath(arr) {
                 const lp = smoothPath(arr);
                 if (!lp) return '';
-                return lp + ` L ${xOf(arr.length - 1).toFixed(2)},${(PAD.top + gH).toFixed(2)} L ${xOf(0).toFixed(2)},${(PAD.top + gH).toFixed(2)} Z`;
+                return lp + ` L ${xOfIndex(arr.length - 1).toFixed(2)},${(PAD.top + gH).toFixed(2)} L ${xOfIndex(0).toFixed(2)},${(PAD.top + gH).toFixed(2)} Z`;
             }
 
             // â”€â”€ Path length approximation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             function approxLen(arr) {
                 let len = 0;
                 for (let i = 1; i < arr.length; i++) {
-                    const dx = xOf(i) - xOf(i - 1), dy = yOf(arr[i]) - yOf(arr[i - 1]);
+                    const dx = xOfIndex(i) - xOfIndex(i - 1), dy = yOf(arr[i]) - yOf(arr[i - 1]);
                     len += Math.sqrt(dx * dx + dy * dy) * 1.05;
                 }
                 return Math.ceil(len) + 50;
@@ -3543,19 +3755,14 @@ window.setTimeout = function(handler, timeout) {
 
             // â”€â”€ Grid / axis labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const gridLinesArr = [];
-            for (let v = yStep; v <= yMax; v += yStep) {
-                const f = v / yMax;
-                const yy = PAD.top + gH * (1 - f);
+            for (let v = 0; v <= yMax; v += yStep) {
+                const yy = yOf(v);
                 gridLinesArr.push(`<line x1="${PAD.left}" y1="${yy.toFixed(1)}" x2="${(PAD.left + gW).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
                         <text x="${(PAD.left - 8).toFixed(1)}" y="${(yy + 4).toFixed(1)}" fill="#64748b" font-size="11" text-anchor="end" font-family="monospace">${v}</text>`);
             }
             const gridLines = gridLinesArr.join('');
 
-            const step = Math.max(1, Math.floor(n / 6));
-            let xLabels = '';
-            for (let i = 0; i < n; i += step) {
-                xLabels += `<text x="${xOf(i).toFixed(1)}" y="${(H - 8).toFixed(1)}" fill="#64748b" font-size="11" text-anchor="middle" font-family="monospace">${i + 1}s</text>`;
-            }
+            const xLabels = buildGraphTimeLabels(maxX, xOfTime, H);
 
             const wpmPathD = smoothPath(wData);
             const rawPathD = smoothPath(rData);
@@ -3585,26 +3792,8 @@ window.setTimeout = function(handler, timeout) {
                         <stop offset="100%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0"/>
                     </linearGradient>
                     <clipPath id="fillReveal">
-                        <rect id="fillRevealRect" x="${PAD.left}" y="${PAD.top}" width="0" height="${gH + 2}"/>
+                        <rect id="fillRevealRect" x="${PAD.left}" y="${PAD.top}" width="${isUpdate ? gW : 0}" height="${gH + 2}"/>
                     </clipPath>
-                    <style>
-                        @keyframes drawLine {
-                            from { stroke-dashoffset: var(--len); }
-                            to   { stroke-dashoffset: 0; }
-                        }
-                        .line-wpm {
-                            --len: ${wLen};
-                            stroke-dasharray: ${wLen};
-                            stroke-dashoffset: ${wLen};
-                            animation: drawLine ${DUR}s ${EASE} 0.3s forwards;
-                        }
-                        .line-raw {
-                            --len: ${rLen};
-                            stroke-dasharray: ${rLen};
-                            stroke-dashoffset: ${rLen};
-                            animation: drawLine ${DUR}s ${EASE} 0.5s forwards;
-                        }
-                    </style>
                 </defs>
 
                 ${gridLines}
@@ -3647,35 +3836,30 @@ window.setTimeout = function(handler, timeout) {
             const fillRevealRect = svg.querySelector('#fillRevealRect');
             const wpmLineEl = svg.querySelector('#wpm-line');
             const rawLineEl = svg.querySelector('#raw-line');
-            let animReq;
-
-            function syncClip() {
-                if (!wpmLineEl || !fillRevealRect) return;
-                const offsetStr = window.getComputedStyle(wpmLineEl).strokeDashoffset;
-                const offset = parseFloat(offsetStr);
-                if (!isNaN(offset)) {
-                    // Current drawn path length
-                    const drawLen = Math.max(0, wLen - offset);
-                    try {
-                        const pt = wpmLineEl.getPointAtLength(drawLen);
-                        const clipWidth = Math.max(0, pt.x - PAD.left);
-                        fillRevealRect.setAttribute('width', clipWidth);
-                    } catch (e) { }
+            const actualWLen = wpmLineEl ? wpmLineEl.getTotalLength() : wLen;
+            const actualRLen = rawLineEl ? rawLineEl.getTotalLength() : rLen;
+            if (!isUpdate) {
+                animateGraphLineReveal(wpmLineEl, fillRevealRect, gW, PAD.left, {
+                    duration: DUR * 1000,
+                    delay: 300
+                });
+                if (rawLineEl) {
+                    rawLineEl.animate(
+                        [{ opacity: 0 }, { opacity: 0.65 }],
+                        { duration: 800, delay: 450, easing: 'ease', fill: 'both' }
+                    );
                 }
-                if (offset > 1) {
-                    animReq = requestAnimationFrame(syncClip);
-                } else {
-                    fillRevealRect.setAttribute('width', gW);
-                }
+            } else {
+                wpmLineEl.style.strokeDasharray = 'none';
+                wpmLineEl.style.strokeDashoffset = '0';
+                rawLineEl.style.opacity = '0.65';
             }
-            // Start sync loop
-            setTimeout(() => { animReq = requestAnimationFrame(syncClip); }, 300);
 
             // Error marker dots on WPM line (appear after WPM line finishes drawing)
             // Only show real errors (overshoot, reversal), NOT hesitations
             const realErrorMarkers = errorMarkers.filter(m => m.type !== 'hesitation');
             const errorGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            errorGroup.style.opacity = '0';
+            errorGroup.style.opacity = isUpdate ? '1' : '0';
             errorGroup.style.transition = 'opacity 0.4s ease';
 
             function getBezierY(arr, sec) {
@@ -3694,12 +3878,12 @@ window.setTimeout = function(handler, timeout) {
             }
 
             realErrorMarkers.forEach(m => {
-                const sec = Math.min(m.time, n - 1);
+                const sec = Math.min(m.time, maxX);
                 if (sec < 0) return;
                 const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                dot.setAttribute('cx', xOf(sec).toFixed(2));
-
-                dot.setAttribute('cy', getBezierY(wData, sec).toFixed(2));
+                const markerX = xOfTime(sec);
+                dot.setAttribute('cx', markerX.toFixed(2));
+                dot.setAttribute('cy', getYForX(wpmLineEl, markerX, actualWLen).toFixed(2));
                 dot.setAttribute('r', '3');
                 dot.setAttribute('fill', '#ff3333');
                 dot.setAttribute('opacity', '0.75');
@@ -3710,7 +3894,7 @@ window.setTimeout = function(handler, timeout) {
             const hitAreaEl = svg.querySelector('#graph-hit');
             svg.insertBefore(errorGroup, hitAreaEl);
             // Reveal error dots after the WPM line animation completes
-            setTimeout(() => { errorGroup.style.opacity = '1'; }, (DUR + 0.3) * 1000);
+            if (!isUpdate) setTimeout(() => { errorGroup.style.opacity = '1'; }, (DUR + 0.3) * 1000);
 
             // â”€â”€ Interactive hover â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const scrubber = svg.querySelector('#graph-scrubber');
@@ -3718,8 +3902,8 @@ window.setTimeout = function(handler, timeout) {
             const ballWpm = svg.querySelector('#ball-wpm');
             const ballRaw = svg.querySelector('#ball-raw');
 
-            function errorsAt(frac) {
-                const currentSec = Math.round(frac * (n - 1));
+            function errorsAt(second) {
+                const currentSec = Math.round(second);
                 // Only count real errors, not hesitations
                 return errorMarkers.filter(m => m.type !== 'hesitation' && Math.round(m.time) === currentSec).length;
             }
@@ -3748,8 +3932,8 @@ window.setTimeout = function(handler, timeout) {
                 scrubber.style.display = 'block';
 
                 // Exact Y tracking using path's true curve
-                const wy = getYForX(wpmLineEl, cx, wLen);
-                const ry = getYForX(rawLineEl, cx, rLen);
+                const wy = getYForX(wpmLineEl, cx, actualWLen);
+                const ry = getYForX(rawLineEl, cx, actualRLen);
 
                 // Move balls
                 ballWpm.setAttribute('cx', cx.toFixed(2));
@@ -3760,17 +3944,18 @@ window.setTimeout = function(handler, timeout) {
                 ballRaw.style.display = 'block';
 
                 // Tooltip data (interpolated values, rounded)
-                const fi = frac * (n - 1);
-                const lo = Math.floor(fi);
-                const hi = Math.min(lo + 1, n - 1);
-                const t = fi - lo;
-                const wv = Math.round(wData[lo] * (1 - t) + wData[hi] * t);
-                const rv = Math.round(rData[lo] * (1 - t) + rData[hi] * t);
-                const sec = (frac * (n - 1) + 1).toFixed(1);
-                const errs = errorsAt(frac);
+                const cursorSec = frac * maxX;
+                let index = 0;
+                while (index < times.length - 1 && times[index + 1] <= cursorSec) index++;
+                const nextIndex = Math.min(index + 1, n - 1);
+                const interval = times[nextIndex] - times[index];
+                const t = interval > 0 ? (cursorSec - times[index]) / interval : 0;
+                const wv = Math.round(wData[index] * (1 - t) + wData[nextIndex] * t);
+                const rv = Math.round(rData[index] * (1 - t) + rData[nextIndex] * t);
+                const errs = errorsAt(cursorSec);
 
                 tooltip.innerHTML =
-                    `<div style="color:#94a3b8;margin-bottom:1px;">${sec}s</div>` +
+                    `<div style="color:#94a3b8;margin-bottom:1px;">${formatGraphTime(cursorSec)}</div>` +
                     `<div style="color:var(--theme-primary, #00d0ff);">${wv} <span style="font-weight:400;font-size:9px;">wpm</span></div>` +
                     `<div style="color:#64748b;">${rv} <span style="font-weight:400;font-size:9px;">raw</span></div>` +
                     `<div style="color:#ff6060;">${errs} <span style="font-weight:400;font-size:9px;">err</span></div>`;
@@ -3801,21 +3986,23 @@ window.setTimeout = function(handler, timeout) {
             const btnBasic = document.getElementById('graph-btn-basic');
             const btnAdv = document.getElementById('graph-btn-advanced');
             const indicator = document.getElementById('graph-pill-indicator');
+            const skipAnimation = graphAnimationPlayed[mode] === true;
             if (mode === 'basic') {
                 btnBasic.classList.add('active');
                 btnAdv.classList.remove('active');
                 indicator.style.left = btnBasic.offsetLeft + 'px';
                 indicator.style.width = btnBasic.offsetWidth + 'px';
-                renderBasicGraph();
+                renderBasicGraph(skipAnimation);
                 updateLegendForMode('basic');
             } else {
                 btnAdv.classList.add('active');
                 btnBasic.classList.remove('active');
                 indicator.style.left = btnAdv.offsetLeft + 'px';
                 indicator.style.width = btnAdv.offsetWidth + 'px';
-                renderAdvancedGraph();
+                renderAdvancedGraph(skipAnimation);
                 updateLegendForMode('advanced');
             }
+            graphAnimationPlayed[mode] = true;
             // If info overlay is visible, update its content for the new mode
             if (graphInfoVisible) {
                 renderGraphInfoContent();
@@ -3839,18 +4026,18 @@ window.setTimeout = function(handler, timeout) {
                 legend.innerHTML = `
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-primary rounded"></span><span class="text-slate-400">WPM</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5" style="border-top: 2px solid #64748b; height:0; display:inline-block;"></span><span class="text-slate-500">Raw</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ff3333;">â—<span class="text-slate-500" style="font-size:9px;">Errors</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ff3333;">&#9679;<span class="text-slate-500" style="font-size:9px;">Errors</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
             } else {
                 legend.innerHTML = `
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-primary rounded"></span><span class="text-slate-400">WPM</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-2 rounded-sm" style="background:rgba(100,116,139,0.3);border:1px solid rgba(100,116,139,0.5);"></span><span class="text-slate-500">Cadence</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ff3333;">â—<span class="text-slate-500" style="font-size:9px;">Mistype</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ff6b6b;">â—†<span class="text-slate-500" style="font-size:9px;">Reversal</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ff6b6b;">â–²<span class="text-slate-500" style="font-size:9px;">Overshoot</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ff4466;">âœ•<span class="text-slate-500" style="font-size:9px;">Missed</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ff3333;">&#9679;<span class="text-slate-500" style="font-size:9px;">Mistype</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ff6b6b;">&#9670;<span class="text-slate-500" style="font-size:9px;">Reversal</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ff6b6b;">&#9650;<span class="text-slate-500" style="font-size:9px;">Overshoot</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ff4466;">&#10005;<span class="text-slate-500" style="font-size:9px;">Missed</span></span>
                     <span class="flex items-center gap-1.5" style="color:#ff3333;font-size:14px;font-weight:700;">+<span class="text-slate-500" style="font-size:9px;font-weight:400;">Extra</span></span>
-                    <span class="flex items-center gap-1.5" style="color:#ffaa44;">â– <span class="text-slate-500" style="font-size:9px;">Pause</span></span>
+                    <span class="flex items-center gap-1.5" style="color:#ffaa44;">&#9632;<span class="text-slate-500" style="font-size:9px;">Pause</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span class="text-slate-500" style="font-size:9px;">Difficulty</span></span>`;
             }
         }
@@ -4004,7 +4191,7 @@ window.setTimeout = function(handler, timeout) {
 
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">radio_button_checked</span> The Indicators</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;">
-                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">â—<span style="color:#64748b;font-size:10px;">Errors</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">&#9679;<span style="color:#64748b;font-size:10px;">Errors</span></span>
                         <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></span>
                     </div>
                     <div class="graph-info-label">Red Dots (Errors)</div>
@@ -4025,7 +4212,7 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-desc">You can move your mouse over any part of the graph to see a popup with your exact speed, raw bursts, and any errors for that specific second.</div>
 
                     <div class="graph-info-tip">
-                        <div class="tip-label">ðŸ’¡ Pro Tip</div>
+                        <div class="tip-label"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;">lightbulb</span> Pro Tip</div>
                         <div class="graph-info-desc" style="margin-bottom:0;">Look for the gap between the blue and gray lines. The closer they are together, the more efficient and accurate your typing is!</div>
                     </div>
                 `;
@@ -4054,24 +4241,24 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">bug_report</span> 3. Error DNA</div>
                     <div class="graph-info-desc" style="margin-bottom:8px;">Not all mistakes are the same. The Advanced Graph uses different shapes to show your specific "bad habits":</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;">
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">â—<span style="color:#64748b;font-size:10px;">Mistype</span></span>
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff6b6b;">â—†<span style="color:#64748b;font-size:10px;">Reversal</span></span>
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff6b6b;">â–²<span style="color:#64748b;font-size:10px;">Overshoot</span></span>
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff4466;">âœ•<span style="color:#64748b;font-size:10px;">Missed</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">&#9679;<span style="color:#64748b;font-size:10px;">Mistype</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff6b6b;">&#9670;<span style="color:#64748b;font-size:10px;">Reversal</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff6b6b;">&#9650;<span style="color:#64748b;font-size:10px;">Overshoot</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff4466;">&#10005;<span style="color:#64748b;font-size:10px;">Missed</span></span>
                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ff3333;">+<span style="color:#64748b;font-size:10px;font-weight:400;">Extra</span></span>
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ffaa44;">â– <span style="color:#64748b;font-size:10px;">Hesitation</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#ffaa44;">&#9632;<span style="color:#64748b;font-size:10px;">Hesitation</span></span>
                     </div>
-                    <div class="graph-info-label" style="color:#ff3333;">â— Red Circle â€” Mistype</div>
+                    <div class="graph-info-label" style="color:#ff3333;">&#9679; Red Circle &mdash; Mistype</div>
                     <div class="graph-info-desc">A standard typo where you hit a completely wrong key.</div>
-                    <div class="graph-info-label" style="color:#ff6b6b;">â—† Light Red Diamond â€” Reversal</div>
+                    <div class="graph-info-label" style="color:#ff6b6b;">&#9670; Light Red Diamond &mdash; Reversal</div>
                     <div class="graph-info-desc">You typed the right letter, but in the wrong order (e.g., 'teh' instead of 'the').</div>
-                    <div class="graph-info-label" style="color:#ff6b6b;">â–² Coral Triangle â€” Overshoot</div>
+                    <div class="graph-info-label" style="color:#ff6b6b;">&#9650; Coral Triangle &mdash; Overshoot</div>
                     <div class="graph-info-desc">You were moving too fast and typed an extra character you didn't mean to.</div>
-                    <div class="graph-info-label" style="color:#ff4466;">âœ• Rose Cross â€” Missed</div>
+                    <div class="graph-info-label" style="color:#ff4466;">&#10005; Rose Cross &mdash; Missed</div>
                     <div class="graph-info-desc">You pressed Space too early, skipping over expected characters.</div>
-                    <div class="graph-info-label" style="color:#ff3333;">+ Red Plus â€” Extra</div>
+                    <div class="graph-info-label" style="color:#ff3333;">+ Red Plus &mdash; Extra</div>
                     <div class="graph-info-desc">You typed more characters than the word actually has.</div>
-                    <div class="graph-info-label" style="color:#ffaa44;">â–  Orange Square â€” Hesitation</div>
+                    <div class="graph-info-label" style="color:#ffaa44;">&#9632; Orange Square &mdash; Hesitation</div>
                     <div class="graph-info-desc">You didn't make a mistake, but you paused for an unusually long time before hitting the correct key. This identifies "brain lag."</div>
 
                     <div class="graph-info-divider"></div>
@@ -4081,7 +4268,7 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-desc">If you see <span style="color:#ffaa44;font-family:'Roboto Mono',monospace;">"Slow: 'ou' in 'house'"</span>, it tells you that your fingers struggled specifically with the transition between the <span style="color:#e2e8f0;">'o'</span> and the <span style="color:#e2e8f0;">'u'</span> keys.</div>
 
                     <div class="graph-info-tip">
-                        <div class="tip-label">ðŸŽ¯ The Goal</div>
+                        <div class="tip-label"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;">track_changes</span> The Goal</div>
                         <div class="graph-info-desc" style="margin-bottom:0;">Use this graph to find your "weak" letter combinations and work on keeping the gray ribbon as narrow as possible for a smooth, professional typing flow.</div>
                     </div>
                 `;
@@ -4102,12 +4289,72 @@ window.setTimeout = function(handler, timeout) {
             return 0.9;                 // hard (6+ letters)
         }
 
-        function computeWordDifficulties() {
+        function computeWordDifficulties(totalDurationSec = null) {
             if (!startTime || wordTimestamps.length === 0) return [];
-            return wordTimestamps.map(wt => {
-                const s = Math.max(0, (wt.startTime - startTime) / 1000);
-                const e = (wt.endTime - startTime) / 1000;
-                return { startSec: s, endSec: e, difficulty: computeWordDifficulty(wt.word), word: wt.word, wordIndex: wt.wordIndex };
+
+            // A word may have multiple telemetry records when Freedom Mode lets the
+            // user revisit it. Keep its first completed pass so every logical word
+            // contributes exactly one graph section in test order.
+            const firstRecordByIndex = new Map();
+            wordTimestamps.forEach(wt => {
+                const index = Number(wt.wordIndex);
+                if (!Number.isInteger(index) || index < 0 || firstRecordByIndex.has(index)) return;
+                firstRecordByIndex.set(index, wt);
+            });
+
+            const highestRecordedIndex = Math.max(-1, ...firstRecordByIndex.keys());
+            const requestedCount = testMode === 'words' && testComplete
+                ? Math.min(testAmount, generatedWords.length)
+                : highestRecordedIndex + 1;
+            if (requestedCount <= 0) return [];
+
+            const lastRecordedEnd = Math.max(
+                startTime + 1,
+                ...Array.from(firstRecordByIndex.values(), wt => Number(wt.endTime) || startTime)
+            );
+            const graphDuration = Math.max(
+                0.001,
+                Number.isFinite(totalDurationSec) ? totalDurationSec : (lastRecordedEnd - startTime) / 1000
+            );
+
+            // Use each word's completion interval as its visual weight. Missing or
+            // out-of-order telemetry gets the average duration instead of creating
+            // a missing, overlapping, or zero-width section.
+            const durations = new Array(requestedCount).fill(null);
+            let previousEnd = startTime;
+            for (let index = 0; index < requestedCount; index++) {
+                const record = firstRecordByIndex.get(index);
+                if (!record) continue;
+                const end = Number(record.endTime);
+                if (Number.isFinite(end) && end > previousEnd) {
+                    durations[index] = end - previousEnd;
+                    previousEnd = end;
+                }
+            }
+
+            const validDurations = durations.filter(duration => Number.isFinite(duration) && duration > 0);
+            const fallbackDuration = validDurations.length
+                ? validDurations.reduce((sum, duration) => sum + duration, 0) / validDurations.length
+                : 1;
+            const normalizedDurations = durations.map(duration =>
+                Number.isFinite(duration) && duration > 0 ? duration : fallbackDuration
+            );
+            const durationTotal = normalizedDurations.reduce((sum, duration) => sum + duration, 0);
+
+            let cursorSec = 0;
+            return normalizedDurations.map((duration, index) => {
+                const startSec = cursorSec;
+                cursorSec += (duration / durationTotal) * graphDuration;
+                const endSec = index === requestedCount - 1 ? graphDuration : cursorSec;
+                const record = firstRecordByIndex.get(index);
+                const word = generatedWords[index] || (record && record.word) || '';
+                return {
+                    startSec,
+                    endSec,
+                    difficulty: computeWordDifficulty(word),
+                    word,
+                    wordIndex: index
+                };
             });
         }
 
@@ -4183,11 +4430,9 @@ window.setTimeout = function(handler, timeout) {
                 return;
             }
 
-            container.style.overflowX = 'auto';
+            container.style.overflowX = 'hidden';
             container.style.overflowY = 'hidden';
-
-            // Add custom scrollbar styling if not already present via Tailwind
-            container.classList.add('custom-scrollbar');
+            container.classList.remove('custom-scrollbar');
 
             if (!container.dataset.wheelZoomAttached) {
                 container.dataset.wheelZoomAttached = 'true';
@@ -4207,8 +4452,8 @@ window.setTimeout = function(handler, timeout) {
                     // Otherwise, it's a zoom action (Ctrl+Wheel)
                     e.preventDefault();
 
-                    const totalWords = Math.max(1, wordTimestamps.length || generatedWords.length);
-                    if (advWordsVisible === null) advWordsVisible = Math.min(100, totalWords);
+                    const totalWords = Math.max(1, computeWordDifficulties().length);
+                    if (advWordsVisible === null) advWordsVisible = totalWords;
 
                     // Find mouse position relative to container and data
                     const rect = container.getBoundingClientRect();
@@ -4221,11 +4466,14 @@ window.setTimeout = function(handler, timeout) {
 
                     // Zoom logic: deltaY < 0 (scroll up or pinch out) zooms in (fewer words)
                     const zoomStep = Math.max(1, Math.floor(advWordsVisible * 0.05));
+                    const previousWordsVisible = advWordsVisible;
+                    const minimumWordsVisible = Math.min(3, totalWords);
                     if (e.deltaY < 0) {
-                        advWordsVisible = Math.max(3, advWordsVisible - zoomStep);
+                        advWordsVisible = Math.max(minimumWordsVisible, advWordsVisible - zoomStep);
                     } else {
-                        advWordsVisible = Math.min(100, Math.max(totalWords, 100), advWordsVisible + zoomStep);
+                        advWordsVisible = Math.min(totalWords, advWordsVisible + zoomStep);
                     }
+                    if (advWordsVisible === previousWordsVisible) return;
 
                     // Render updated graph instantly without restarting animations
                     renderAdvancedGraph(true);
@@ -4243,8 +4491,14 @@ window.setTimeout = function(handler, timeout) {
             const wBase = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
             const rBase = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
 
-            const testDurationSec = wordTimestamps.length > 0 ? (wordTimestamps[wordTimestamps.length - 1].endTime - startTime) / 1000 : wBase.length;
+            const latestWordEnd = wordTimestamps.length > 0
+                ? Math.max(...wordTimestamps.map(wt => Number(wt.endTime) || startTime))
+                : null;
+            const testDurationSec = graphEndTime !== null
+                ? (graphEndTime - startTime) / 1000
+                : latestWordEnd !== null ? (latestWordEnd - startTime) / 1000 : wBase.length;
             const maxX = Math.max(wBase.length, testDurationSec, 1);
+            const wordDiffs = computeWordDifficulties(maxX);
 
             const times = [0];
             for (let i = 0; i < wBase.length; i++) times.push(i + 1);
@@ -4258,12 +4512,17 @@ window.setTimeout = function(handler, timeout) {
             }
             const n = wData.length;
 
-            const totalWords = Math.max(1, wordTimestamps.length || generatedWords.length);
-            if (advWordsVisible === null) advWordsVisible = Math.min(100, totalWords);
-            advWordsVisible = Math.max(3, Math.min(100, Math.max(totalWords, 100), advWordsVisible));
+            const totalWords = Math.max(1, wordDiffs.length);
+            if (advWordsVisible === null) advWordsVisible = totalWords;
+            const minimumWordsVisible = Math.min(3, totalWords);
+            advWordsVisible = Math.max(minimumWordsVisible, Math.min(totalWords, advWordsVisible));
 
             const visibleW = container.clientWidth || 600;
             const W = Math.max(visibleW, (visibleW / advWordsVisible) * totalWords);
+            const isHorizontallyScrollable = W > visibleW + 1;
+            container.style.overflowX = isHorizontallyScrollable ? 'auto' : 'hidden';
+            container.classList.toggle('custom-scrollbar', isHorizontallyScrollable);
+            if (!isHorizontallyScrollable) container.scrollLeft = 0;
             const H = container.getBoundingClientRect().height || 220;
             const PAD = { top: 16, right: 20, bottom: 32, left: 42 };
             const gW = W - PAD.left - PAD.right;
@@ -4281,9 +4540,8 @@ window.setTimeout = function(handler, timeout) {
             const yMax = Math.ceil(rawMax / 30) * 30;
             const yStep = yMax / 3;
 
-            const startZero = (window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero === true;
             const smoothLines = (window.usertypo_settings || {}).resultsAndGraphs?.smoothGraphLines !== false;
-            const minVal = startZero ? 0 : Math.max(0, Math.min(...wData, ...rData) - 10);
+            const minVal = 0;
 
             const xOf = sec => PAD.left + (sec / maxX) * gW;
             const xOfIndex = i => xOf(times[i]);
@@ -4327,19 +4585,14 @@ window.setTimeout = function(handler, timeout) {
             const EASE = 'cubic-bezier(0.4,0,0.2,1)';
 
             let gridLines = '';
-            for (let v = yStep; v <= yMax; v += yStep) {
-                const yy = PAD.top + gH * (1 - v / yMax);
+            for (let v = 0; v <= yMax; v += yStep) {
+                const yy = yOf(v);
                 gridLines += `<line x1="${PAD.left}" y1="${yy.toFixed(1)}" x2="${(PAD.left + gW).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
                     <text x="${(PAD.left - 8).toFixed(1)}" y="${(yy + 4).toFixed(1)}" fill="#64748b" font-size="11" text-anchor="end" font-family="monospace">${v}</text>`;
             }
 
-            const step = Math.max(1, Math.floor(maxX / 6));
-            let xLabels = '';
-            for (let sec = step; sec <= maxX; sec += step) {
-                xLabels += `<text x="${xOf(sec).toFixed(1)}" y="${(H - 8).toFixed(1)}" fill="#64748b" font-size="11" text-anchor="middle" font-family="monospace">${sec}s</text>`;
-            }
+            const xLabels = buildGraphTimeLabels(maxX, xOf, H);
 
-            const wordDiffs = computeWordDifficulties();
             let heatDefs = '';
             let heatSvg = '';
             const WORD_GAP = 1.5;
@@ -4399,49 +4652,37 @@ window.setTimeout = function(handler, timeout) {
                 const sec = Math.min(Math.max(m.time, 0), maxX);
                 const cx = xOf(sec);
                 const cy = getBezierY(wData, sec);
+                let markerShape = '';
                 if (m.type === 'overshoot') {
                     const s = 4.5;
-                    errorSvg += `<polygon points="${cx},${cy - s - 1} ${cx - s},${cy + s - 1} ${cx + s},${cy + s - 1}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
+                    markerShape = `<polygon points="${cx},${cy - s} ${cx - s},${cy + s} ${cx + s},${cy + s}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
                 } else if (m.type === 'hesitation') {
                     const s = 3.2;
-                    errorSvg += `<rect x="${cx - s}" y="${cy - s}" width="${s * 2}" height="${s * 2}" fill="#ffaa44" opacity="0.85" rx="1" style="filter:drop-shadow(0 0 2px rgba(255,170,68,0.6));"/>`;
+                    markerShape = `<rect x="${cx - s}" y="${cy - s}" width="${s * 2}" height="${s * 2}" fill="#ffaa44" opacity="0.85" rx="1" style="filter:drop-shadow(0 0 2px rgba(255,170,68,0.6));"/>`;
                 } else if (m.type === 'missed') {
                     const s = 3.5;
-                    errorSvg += `<path d="M ${cx - s},${cy - s} L ${cx + s},${cy + s} M ${cx - s},${cy + s} L ${cx + s},${cy - s}" stroke="#ff4466" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,68,102,0.6));"/>`;
+                    markerShape = `<path d="M ${cx - s},${cy - s} L ${cx + s},${cy + s} M ${cx - s},${cy + s} L ${cx + s},${cy - s}" stroke="#ff4466" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,68,102,0.6));"/>`;
                 } else if (m.type === 'extra') {
                     const s = 3.5;
-                    errorSvg += `<path d="M ${cx - s},${cy} L ${cx + s},${cy} M ${cx},${cy - s} L ${cx},${cy + s}" stroke="#ff3333" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
+                    markerShape = `<path d="M ${cx - s},${cy} L ${cx + s},${cy} M ${cx},${cy - s} L ${cx},${cy + s}" stroke="#ff3333" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
                 } else if (m.type === 'reversal') {
                     const s = 4;
-                    errorSvg += `<polygon points="${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
+                    markerShape = `<polygon points="${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
                 } else {
-                    errorSvg += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="3.2" fill="#ff3333" opacity="0.8" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
+                    markerShape = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="3.2" fill="#ff3333" opacity="0.8" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
                 }
+                errorSvg += `<g class="adv-error-marker" data-marker-x="${cx}" data-marker-y="${cy}">${markerShape}</g>`;
             });
-
-            const animationStyles = isUpdate ? `
-                .adv-line-wpm { stroke-dasharray: ${wLen}; stroke-dashoffset: 0; }
-                .ribbon-fade, .heat-fade, .marker-fade { opacity: 1; }
-                #adv-graph-hit { cursor: default !important; }
-            ` : `
-                @keyframes advDrawLine { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
-                .adv-line-wpm { --len: ${wLen}; stroke-dasharray: ${wLen}; stroke-dashoffset: ${wLen}; animation: advDrawLine ${DUR}s ${EASE} 0.3s forwards; }
-                @keyframes ribbonFadeIn { from { opacity: 0; } to { opacity: 1; } }
-                .ribbon-fade { opacity: 0; animation: ribbonFadeIn 0.8s ease 0.5s forwards; }
-                .heat-fade { opacity: 0; animation: ribbonFadeIn 0.6s ease 0.2s forwards; }
-                .marker-fade { opacity: 0; animation: ribbonFadeIn 0.4s ease 1.2s forwards; }
-                #adv-graph-hit { cursor: default !important; }
-            `;
 
             let svg = container.querySelector('svg.dynamic-graph');
             if (!svg) {
                 svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('class', 'dynamic-graph');
-                // Relative positioning allows the SVG to expand the scrollable container width natively
-                svg.style.cssText = 'position:relative;display:block;overflow:visible;cursor:default;';
                 container.appendChild(svg);
             }
 
+            // Always reset this: a Basic SVG is absolute-positioned and may be reused here.
+            svg.style.cssText = 'position:relative;display:block;overflow:visible;cursor:default;max-width:none;';
             svg.setAttribute('width', W);
             svg.setAttribute('height', H);
             svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -4460,7 +4701,6 @@ window.setTimeout = function(handler, timeout) {
                         <rect x="${PAD.left}" y="${PAD.top}" width="${gW}" height="${gH}"/>
                     </clipPath>
                     ${heatDefs}
-                    <style>${animationStyles}</style>
                 </defs>
 
                 ${gridLines}
@@ -4478,26 +4718,35 @@ window.setTimeout = function(handler, timeout) {
                 <circle id="adv-ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)" style="display:none;filter:drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.9));"/>
                 <rect id="adv-graph-hit" x="${PAD.left}" y="${PAD.top}" width="${gW}" height="${gH}" fill="transparent"/>
             `;
+            requestAnimationFrame(updateGraphScrollbar);
 
             // Sync gradient reveal only on initial render
             if (!isUpdate) {
                 const fillRevealRect = svg.querySelector('#advFillRevealRect');
                 const wpmLineEl = svg.querySelector('#adv-wpm-line');
-                let animReq;
-                function syncClip() {
-                    if (!wpmLineEl || !fillRevealRect) return;
-                    const offset = parseFloat(window.getComputedStyle(wpmLineEl).strokeDashoffset);
-                    if (!isNaN(offset)) {
-                        const drawLen = Math.max(0, wLen - offset);
-                        try {
-                            const pt = wpmLineEl.getPointAtLength(drawLen);
-                            fillRevealRect.setAttribute('width', Math.max(0, pt.x - PAD.left));
-                        } catch (e) { }
-                    }
-                    if (offset > 1) animReq = requestAnimationFrame(syncClip);
-                    else fillRevealRect.setAttribute('width', gW);
+                animateGraphLineReveal(wpmLineEl, fillRevealRect, gW, PAD.left, {
+                    duration: DUR * 1000,
+                    delay: 300
+                });
+                svg.querySelectorAll('.ribbon-fade').forEach(element => {
+                    element.animate(
+                        [{ opacity: 0 }, { opacity: 1 }],
+                        { duration: 800, delay: 450, easing: 'ease', fill: 'both' }
+                    );
+                });
+                const markerLayer = svg.querySelector('.marker-fade');
+                if (markerLayer) {
+                    markerLayer.animate(
+                        [{ opacity: 0 }, { opacity: 1 }],
+                        { duration: 400, delay: 1200, easing: 'ease', fill: 'both' }
+                    );
                 }
-                setTimeout(() => { animReq = requestAnimationFrame(syncClip); }, 300);
+            } else {
+                const wpmLineEl = svg.querySelector('#adv-wpm-line');
+                if (wpmLineEl) {
+                    wpmLineEl.style.strokeDasharray = 'none';
+                    wpmLineEl.style.strokeDashoffset = '0';
+                }
             }
 
             // Bind interactive hover events (since innerHTML replaces hitRect, we rebind)
@@ -4505,6 +4754,7 @@ window.setTimeout = function(handler, timeout) {
             const hitRect = svg.querySelector('#adv-graph-hit');
             const ballWpm = svg.querySelector('#adv-ball-wpm');
             const wpmLineEl2 = svg.querySelector('#adv-wpm-line');
+            const actualWLen = wpmLineEl2 ? wpmLineEl2.getTotalLength() : wLen;
 
             function getYForX(pathElem, targetX, totalLen) {
                 let low = 0, high = totalLen;
@@ -4514,6 +4764,18 @@ window.setTimeout = function(handler, timeout) {
                     if (pt.x > targetX) high = mid; else low = mid;
                 }
                 return pathElem.getPointAtLength((low + high) / 2).y;
+            }
+
+            // Place every marker on the final rendered curve, not on a linear
+            // approximation of the data between samples.
+            if (wpmLineEl2) {
+                svg.querySelectorAll('.adv-error-marker').forEach(marker => {
+                    const markerX = Number(marker.dataset.markerX);
+                    const approximateY = Number(marker.dataset.markerY);
+                    if (!Number.isFinite(markerX) || !Number.isFinite(approximateY)) return;
+                    const exactY = getYForX(wpmLineEl2, markerX, actualWLen);
+                    marker.setAttribute('transform', `translate(0 ${(exactY - approximateY).toFixed(2)})`);
+                });
             }
 
             hitRect.addEventListener('mousemove', e => {
@@ -4530,7 +4792,7 @@ window.setTimeout = function(handler, timeout) {
 
                 let wy = H / 2;
                 if (wpmLineEl2) {
-                    wy = getYForX(wpmLineEl2, cx, wLen);
+                    wy = getYForX(wpmLineEl2, cx, actualWLen);
                     ballWpm.setAttribute('cx', cx.toFixed(2));
                     ballWpm.setAttribute('cy', wy.toFixed(2));
                     ballWpm.style.display = 'block';
@@ -4601,18 +4863,18 @@ window.setTimeout = function(handler, timeout) {
                         }
                     });
 
-                    Object.values(missedGroups).forEach(g => { tipHTML += `<div style="color:#ff4466;font-size:10px;margin-top:2px;">Skipped '${g.expectedStr}' in '${g.word}' <span style="font-weight:400;">âœ•</span></div>`; });
+                    Object.values(missedGroups).forEach(g => { tipHTML += `<div style="color:#ff4466;font-size:10px;margin-top:2px;">Skipped '${g.expectedStr}' in '${g.word}' <span style="font-weight:400;">&#10005;</span></div>`; });
                     Object.values(extraGroups).forEach(g => { tipHTML += `<div style="color:#ff3333;font-size:10px;margin-top:2px;">Extra '${g.typedStr}' after '${g.word}' <span style="font-weight:400;">+</span></div>`; });
                     otherErrors.forEach(err => {
                         let desc, symbol, color;
-                        if (err.type === 'overshoot') { desc = `Too fast on '${err.expected}' in '${err.word}'`; symbol = 'â–²'; color = '#ff6b6b'; }
-                        else if (err.type === 'reversal') { desc = `Swapped '${err.expected}' and '${err.typed}' in '${err.word}'`; symbol = 'â—†'; color = '#ff6b6b'; }
-                        else { desc = `'${err.typed}' instead of '${err.expected}' in '${err.word}'`; symbol = 'â—'; color = '#ff3333'; }
+                        if (err.type === 'overshoot') { desc = `Too fast on '${err.expected}' in '${err.word}'`; symbol = '&#9650;'; color = '#ff6b6b'; }
+                        else if (err.type === 'reversal') { desc = `Swapped '${err.expected}' and '${err.typed}' in '${err.word}'`; symbol = '&#9670;'; color = '#ff6b6b'; }
+                        else { desc = `'${err.typed}' instead of '${err.expected}' in '${err.word}'`; symbol = '&#9679;'; color = '#ff3333'; }
                         tipHTML += `<div style="color:${color};font-size:10px;margin-top:2px;">${desc} <span style="font-weight:400;">${symbol}</span></div>`;
                     });
                 }
-                if (hesitations.length > 0) { tipHTML += `<div style="color:#ffaa44;font-size:10px;margin-top:2px;">${hesitations.length} hesitation(s) <span style="font-weight:400;">â– </span></div>`; }
-                if (bigramInfo) { tipHTML += `<div style="color:#ffaa44;font-size:10px;margin-top:2px;">Slow: '<b>${bigramInfo.bigram}</b>' in '${bigramInfo.word}' <span style="font-weight:400;">(âˆ’${bigramInfo.pctSlower}%)</span></div>`; }
+                if (hesitations.length > 0) { tipHTML += `<div style="color:#ffaa44;font-size:10px;margin-top:2px;">${hesitations.length} hesitation(s) <span style="font-weight:400;">&#9632;</span></div>`; }
+                if (bigramInfo) { tipHTML += `<div style="color:#ffaa44;font-size:10px;margin-top:2px;">Slow: '<b>${bigramInfo.bigram}</b>' in '${bigramInfo.word}' <span style="font-weight:400;">(&minus;${bigramInfo.pctSlower}%)</span></div>`; }
                 if (diffLabel && wordDiffHere) { tipHTML += `<div style="color:${diffColor};font-size:10px;">${diffLabel}: "${wordDiffHere.word}"</div>`; }
 
                 tooltip.innerHTML = tipHTML;

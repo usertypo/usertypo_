@@ -160,6 +160,57 @@
         };
     }
 
+    function computeScoreDistribution(sessions) {
+        var values = sessions
+            .filter(function (session) {
+                return !session.failed && isFinite(Number(session.wpm)) && Number(session.wpm) > 0;
+            })
+            .map(function (session) {
+                return Number(session.wpm);
+            });
+
+        if (!values.length) {
+            return { bins: [], total: 0, average: null, min: null, max: null, maxCount: 0 };
+        }
+
+        var observedMin = Math.min.apply(Math, values);
+        var observedMax = Math.max.apply(Math, values);
+        var binWidth = 5;
+        var lower = 0;
+        // Round upward so the highest PB is never outside the final bucket.
+        var upper = Math.max(binWidth, Math.ceil(observedMax / binWidth) * binWidth);
+        var binCount = Math.max(1, upper / binWidth);
+        var bins = [];
+        for (var i = 0; i < binCount; i++) {
+            bins.push({
+                start: lower + i * binWidth,
+                end: lower + (i + 1) * binWidth,
+                count: 0,
+            });
+        }
+
+        var sum = 0;
+        values.forEach(function (wpm) {
+            var index = Math.floor((wpm - lower) / binWidth);
+            index = Math.max(0, Math.min(bins.length - 1, index));
+            bins[index].count += 1;
+            sum += wpm;
+        });
+
+        var maxCount = bins.reduce(function (max, bin) {
+            return Math.max(max, bin.count);
+        }, 0);
+
+        return {
+            bins: bins,
+            total: values.length,
+            average: sum / values.length,
+            min: observedMin,
+            max: observedMax,
+            maxCount: maxCount,
+        };
+    }
+
     async function listMySessions(options) {
         var auth = await requireAuthClient();
         if (auth.error) {
@@ -199,7 +250,7 @@
         while (true) {
             var result = await auth.client
                 .from('typing_sessions')
-                .select('mode,amount,wpm,accuracy,raw_wpm,correct_chars,duration_seconds,failed,created_at')
+                .select('mode,amount,wpm,accuracy,raw_wpm,consistency,correct_chars,duration_seconds,failed,created_at')
                 .eq('user_id', auth.userId)
                 .order('created_at', { ascending: false })
                 .range(offset, offset + pageSize - 1);
@@ -223,12 +274,13 @@
 
         var sessions = allResult.sessions;
         // We already fetched everything (ordered desc), so we can derive the
-        // "recent 20" without an extra network request.
-        var recentSessions = sessions.slice(0, 20);
+        // "recent 15" without an extra network request.
+        var recentSessions = sessions.slice(0, 15);
 
         return {
             summary: computeSummary(sessions),
             bests: computeBests(sessions),
+            scoreDistribution: computeScoreDistribution(sessions),
             recentSessions: recentSessions,
             totalSessions: sessions.length,
             hasMore: sessions.length > recentSessions.length,
@@ -289,6 +341,7 @@
         currentLanguage: currentLanguage,
         listMySessions: listMySessions,
         getMyStats: getMyStats,
+        computeScoreDistribution: computeScoreDistribution,
         formatCompactNumber: formatCompactNumber,
         formatDurationShort: formatDurationShort,
         formatAccuracy: formatAccuracy,

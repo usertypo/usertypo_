@@ -1,33 +1,29 @@
 /* Monkeytype-style test activity heatmap (adapted from account.scss) */
 
 .testActivity {
-    --mt-bg-color: #0e1013;
-    --mt-sub-alt-color: #1a1d23;
-    --mt-main-color: #00d0ff;
-    --mt-sub-color: #94a3b8;
-    --mt-text-color: #f3f3f9;
+    --mt-bg-color: var(--theme-bg, #0e1013);
+    --mt-sub-alt-color: var(--theme-bg-secondary, #1a1d23);
+    --mt-main-color: var(--theme-primary, #00d0ff);
+    --mt-sub-color: var(--theme-text-muted, #94a3b8);
+    --mt-text-color: var(--theme-text, #f3f3f9);
     --mt-roundness: 0.5rem;
 
-    background: var(--mt-sub-alt-color);
-    border-radius: var(--mt-roundness);
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
+    background: transparent;
+    padding: 0;
+    display: block;
     width: 100%;
 
-    --box-size: 1.1em;
-    --gap-size: calc(var(--box-size) / 4);
-    --font-size: 1em;
+    --gap-size: clamp(2px, 0.28vw, 4px);
+    --font-size: 0.75rem;
     font-family: "Roboto Mono", monospace;
 }
 
 .testActivity .wrapper {
-    width: max-content;
-    max-width: 100%;
+    width: 100%;
     display: grid;
-    grid-template-columns: min-content 1fr;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
     grid-template-rows: min-content 1fr min-content;
-    gap: 1em 1em;
+    gap: 0.65rem 0.75rem;
     grid-template-areas:
         "top top"
         "day chart"
@@ -45,35 +41,112 @@
 .testActivity .top {
     grid-area: top;
     display: grid;
-    grid-template-columns: 15rem 1fr max-content;
+    grid-template-columns: max-content 1fr max-content;
     grid-template-areas: "year title legend";
     gap: 1rem;
     align-items: center;
 }
 
-.testActivity .yearSelect,
 .testActivity .months div,
 .testActivity .days div,
-.testActivity .daysFull div,
 .testActivity .legend {
     color: var(--mt-sub-color);
 }
 
-.testActivity .yearSelect {
-    width: 100%;
-    background: var(--mt-bg-color);
-    border: 0.2em solid var(--mt-bg-color);
-    border-radius: calc(var(--mt-roundness) / 2);
-    color: var(--mt-sub-color);
-    font-family: inherit;
-    font-size: var(--font-size);
-    padding: 0.35em 0.5em;
-    cursor: pointer;
+.testActivity .yearPicker {
+    position: relative;
+    width: 9.5rem;
 }
 
-.testActivity .yearSelect:disabled {
-    opacity: 0.6;
-    cursor: default;
+.testActivity .yearSelectButton {
+    width: 100%;
+    min-height: 1.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    color: var(--mt-sub-color);
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1;
+    padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+    cursor: pointer;
+    outline: none !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.testActivity .yearSelectButton:hover,
+.testActivity .yearSelectButton:focus,
+.testActivity .yearSelectButton:focus-visible,
+.testActivity .yearSelectButton:active {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: var(--mt-text-color);
+}
+
+.testActivity .yearSelectChevron {
+    font-size: 1rem;
+    transition: transform 160ms ease;
+}
+
+.testActivity .yearSelectButton[aria-expanded="true"] .yearSelectChevron {
+    transform: rotate(180deg);
+}
+
+.testActivity .yearSelectMenu {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 100;
+    width: 100%;
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.3rem;
+    background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.85rem;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
+}
+
+.testActivity .yearSelectMenu.hidden {
+    display: none;
+}
+
+.testActivity .yearSelectOption {
+    width: 100%;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.4rem 0.55rem;
+    background: transparent;
+    color: var(--mt-sub-color);
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+}
+
+.testActivity .yearSelectOption:hover,
+.testActivity .yearSelectOption:focus-visible {
+    background: color-mix(in srgb, var(--mt-main-color) 12%, transparent);
+    color: var(--mt-text-color);
+}
+
+.testActivity .yearSelectOption[aria-selected="true"] {
+    background: color-mix(in srgb, var(--mt-main-color) 18%, transparent);
+    color: var(--mt-main-color);
 }
 
 .testActivity .year {
@@ -92,7 +165,8 @@
 .testActivity .months {
     grid-area: month;
     display: grid;
-    grid-template-columns: repeat(53, 1fr);
+    grid-template-columns: repeat(var(--activity-weeks, 53), 1fr);
+    column-gap: var(--gap-size);
     font-size: var(--font-size);
 }
 
@@ -102,27 +176,20 @@
     text-transform: lowercase;
 }
 
-.testActivity .daysFull {
-    margin-right: 2rem;
-}
-
-.testActivity .days,
-.testActivity .daysFull {
+.testActivity .days {
     grid-area: day;
     display: grid;
-    grid-template-rows: repeat(7, 1fr);
-    align-items: center;
+    grid-template-rows: repeat(7, minmax(0, 1fr));
+    gap: var(--gap-size);
+    align-items: stretch;
 }
 
-.testActivity .days .text,
-.testActivity .daysFull .text {
+.testActivity .days .text {
     display: flex;
+    height: 100%;
+    align-items: center;
     font-size: var(--font-size);
     text-transform: lowercase;
-}
-
-.testActivity .days {
-    display: none;
 }
 
 .testActivity .nodata {
@@ -137,10 +204,12 @@
     grid-area: chart;
     display: grid;
     grid-auto-flow: column;
-    grid-template-rows: repeat(7, 1fr);
-    grid-template-columns: repeat(53, 1fr);
+    grid-template-rows: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--activity-weeks, 53), minmax(0, 1fr));
     gap: var(--gap-size);
-    overflow-x: auto;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
 }
 
 .testActivity .activity div:hover {
@@ -176,10 +245,15 @@
 
 .testActivity .activity div,
 .testActivity .legend div {
-    width: var(--box-size);
-    height: 1em;
+    width: 100%;
+    aspect-ratio: 1;
     border-radius: var(--gap-size);
     place-self: center;
+}
+
+.testActivity .legend div {
+    width: 0.9rem;
+    height: 0.9rem;
 }
 
 .testActivity .activity div[data-level="filler"],
@@ -223,39 +297,53 @@
     bottom: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    background: var(--mt-sub-alt-color);
+    background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+    background-image: none !important;
     color: var(--mt-text-color);
-    border: 1px solid var(--mt-sub-color);
-    border-radius: calc(var(--mt-roundness) / 2);
-    padding: 0.35em 0.5em;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 0.45rem 0.75rem;
     font-size: 0.75em;
     white-space: nowrap;
-    z-index: 20;
+    z-index: 50;
     pointer-events: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.testActivity .activity div.tooltip-edge-left[aria-label]:hover::after {
+    left: 0;
+    transform: none;
+}
+
+.testActivity .activity div.tooltip-edge-right[aria-label]:hover::after {
+    right: 0;
+    left: auto;
+    transform: none;
 }
 
 @media (max-width: 900px) {
-    .testActivity {
-        --box-size: 0.9em;
-    }
-
     .testActivity .top {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(9rem, 1fr) auto;
         grid-template-areas:
-            "year"
-            "title"
-            "legend";
+            "year legend"
+            "title title";
     }
 
-    .testActivity .daysFull {
+    .testActivity .legend span {
         display: none;
     }
+}
 
-    .testActivity .days {
-        display: grid;
+@media (max-width: 560px) {
+    .testActivity {
+        --font-size: 0.65rem;
+        --gap-size: 1px;
     }
 
-    .testActivity .daysFull {
-        margin-right: 0;
+    .testActivity .wrapper {
+        grid-template-columns: 1.8rem minmax(0, 1fr);
+        column-gap: 0.35rem;
     }
 }

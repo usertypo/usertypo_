@@ -98,11 +98,8 @@
     }
 
     function getFirstDayOfWeek() {
-        try {
-            var lang = (navigator.language || 'en').toLowerCase();
-            if (lang === 'en-us' || lang.indexOf('en-us') === 0) return 0;
-            if (lang === 'en-gb' || lang.indexOf('en-gb') === 0) return 1;
-        } catch (e) { /* ignore */ }
+        // The activity card always uses Sunday as its first row so the day
+        // labels and heatmap remain consistent across browser locales.
         return 0;
     }
 
@@ -115,7 +112,7 @@
         var earliest = null;
 
         sessions.forEach(function (session) {
-            if (!session || !session.created_at) return;
+            if (!session || session.failed || !session.created_at) return;
             var day = utcFromParts(new Date(session.created_at));
             var key = utcDateKey(day);
             counts[key] = (counts[key] || 0) + 1;
@@ -134,9 +131,20 @@
         return data;
     }
 
-    function TestActivityCalendar(data, lastDay, firstDayOfWeek, fullYear) {
+    function buildTestsByDayMap(sessions) {
+        var counts = {};
+        sessions.forEach(function (session) {
+            if (!session || session.failed || !session.created_at) return;
+            var key = utcDateKey(utcFromParts(new Date(session.created_at)));
+            counts[key] = (counts[key] || 0) + 1;
+        });
+        return counts;
+    }
+
+    function TestActivityCalendar(data, lastDay, firstDayOfWeek, fullYear, countsByDay) {
         this.firstDayOfWeek = firstDayOfWeek;
         this.isFullYear = !!fullYear;
+        this.countsByDay = countsByDay || {};
 
         var local = utcFromParts(lastDay);
         var interval = this.getInterval(local, this.isFullYear);
@@ -172,30 +180,23 @@
     TestActivityCalendar.prototype.getMonths = function () {
         var months = eachUtcMonthOfInterval(this.startDay, this.endDay);
         var results = [];
+        var startOffset = this.startDay.getUTCDay() - this.firstDayOfWeek;
+        if (startOffset < 0) startOffset += 7;
+        var gridStart = addUtcDays(this.startDay, -startOffset);
 
         for (var i = 0; i < months.length; i++) {
             var month = months[i];
-            var start = i === 0 ? new Date(this.startDay.getTime()) : startOfUtcMonth(month);
-            var end = i === months.length - 1 ? new Date(this.endDay.getTime()) : endOfUtcMonth(start);
+            var midpoint = utcDate(month.getUTCFullYear(), month.getUTCMonth(), 16);
 
-            if (!isFirstDayOfWeek(start, this.firstDayOfWeek)) {
-                start = i === 0
-                    ? previousDayOfWeek(start, this.firstDayOfWeek)
-                    : nextDayOfWeek(start, this.firstDayOfWeek);
-            }
-            if (!isLastDayOfWeek(end, this.firstDayOfWeek)) {
-                end = lastDayOfWeek(end, this.firstDayOfWeek);
-            }
+            // Only show a month once its midpoint is visible. This keeps the
+            // label centered beneath the month and includes the current month
+            // as soon as its middle has arrived.
+            if (midpoint < this.startDay || midpoint > this.endDay) continue;
 
-            var weeks = differenceInUtcWeeks(end, start);
-            if (weeks > 2) {
-                results.push({
-                    text: formatUtcMonthShort(month),
-                    weeks: weeks,
-                });
-            } else if (i === 0) {
-                results.push({ text: '', weeks: weeks });
-            }
+            results.push({
+                text: formatUtcMonthShort(month),
+                column: Math.floor(differenceInUtcDays(midpoint, gridStart) / 7) + 1,
+            });
         }
         return results;
     };
@@ -228,29 +229,35 @@
             return '4';
         }
 
+        function makeDay(date, count) {
+            var dayLabel = formatUtcDayLabel(date);
+            return {
+                level: getValue(count),
+                label: count
+                    ? count + ' ' + (count === 1 ? 'test' : 'tests') + ' on ' + dayLabel
+                    : 'no activity on ' + dayLabel,
+            };
+        }
+
         var startOffset = this.startDay.getUTCDay() - this.firstDayOfWeek;
         if (startOffset < 0) startOffset += 7;
         for (var i = 0; i < startOffset; i++) {
-            result.push({ level: 'filler' });
+            var leadingDate = addUtcDays(this.startDay, i - startOffset);
+            result.push(makeDay(leadingDate, this.countsByDay[utcDateKey(leadingDate)] || 0));
         }
 
         var days = differenceInUtcDays(this.endDay, this.startDay);
         var currentDate = new Date(this.startDay.getTime());
         for (var d = 0; d <= days; d++) {
             var count = this.data[d];
-            var dayLabel = formatUtcDayLabel(currentDate);
-            result.push({
-                level: getValue(count),
-                label: count !== undefined && count !== null
-                    ? count + ' ' + (count === 1 ? 'test' : 'tests') + ' on ' + dayLabel
-                    : 'no activity on ' + dayLabel,
-            });
+            result.push(makeDay(currentDate, count || 0));
             currentDate = addUtcDays(currentDate, 1);
         }
 
         var endOffset = this.endDay.getUTCDay() - this.firstDayOfWeek;
         for (var j = endOffset; j < 6; j++) {
-            result.push({ level: 'filler' });
+            var trailingDate = addUtcDays(this.endDay, j - endOffset + 1);
+            result.push(makeDay(trailingDate, this.countsByDay[utcDateKey(trailingDate)] || 0));
         }
 
         return result;
@@ -285,14 +292,20 @@
         }
 
         var data = buildTestsByDays(sessions, lastDay);
-        return new TestActivityCalendar(data, lastDay, firstDayOfWeek, fullYear);
+        return new TestActivityCalendar(
+            data,
+            lastDay,
+            firstDayOfWeek,
+            fullYear,
+            buildTestsByDayMap(sessions)
+        );
     }
 
     function updateMonths(element, months) {
         var el = element.querySelector('.months');
         if (!el) return;
         el.innerHTML = months.map(function (month) {
-            return '<div style="grid-column: span ' + month.weeks + '">' + month.text + '</div>';
+            return '<div style="grid-column: ' + month.column + '">' + month.text + '</div>';
         }).join('');
     }
 
@@ -301,25 +314,17 @@
     function updateLabels(element, firstDayOfWeek) {
         var days = [];
         for (var i = 0; i < 7; i++) {
-            days.push(
-                i % 2 !== firstDayOfWeek % 2
-                    ? daysDisplay[(firstDayOfWeek + i) % 7]
-                    : undefined
-            );
+            days.push(daysDisplay[(firstDayOfWeek + i) % 7]);
         }
 
-        function buildHtml(maxLength) {
+        function buildHtml() {
             return days.map(function (it) {
-                if (it === undefined) return '<div></div>';
-                var text = maxLength ? it.substring(0, maxLength) : it;
-                return '<div><span class="text">' + text + '</span></div>';
+                return '<div><span class="text">' + it.substring(0, 3) + '</span></div>';
             }).join('');
         }
 
-        var daysFull = element.querySelector('.daysFull');
         var daysShort = element.querySelector('.days');
-        if (daysFull) daysFull.innerHTML = buildHtml();
-        if (daysShort) daysShort.innerHTML = buildHtml(3);
+        if (daysShort) daysShort.innerHTML = buildHtml();
     }
 
     function update(element, calendar) {
@@ -344,9 +349,16 @@
         var titleEl = element.querySelector('.title');
         if (titleEl) titleEl.textContent = calendar.getTotalTests() + ' tests';
 
-        calendar.getDays().forEach(function (day) {
+        var renderedDays = calendar.getDays();
+        var weekCount = Math.ceil(renderedDays.length / 7);
+        element.style.setProperty('--activity-weeks', weekCount);
+
+        renderedDays.forEach(function (day, index) {
             var elem = document.createElement('div');
             elem.setAttribute('data-level', day.level);
+            var column = Math.floor(index / 7);
+            if (column < 4) elem.classList.add('tooltip-edge-left');
+            if (column >= weekCount - 4) elem.classList.add('tooltip-edge-right');
             if (day.label) {
                 elem.setAttribute('aria-label', day.label);
                 elem.setAttribute('data-balloon-pos', 'up');
@@ -355,37 +367,98 @@
         });
     }
 
-    function populateYearSelector(select, selected, signupYear) {
-        var currentYear = new Date().getUTCFullYear();
-        var startYear = signupYear || currentYear;
-        var html = '<option value="current"' + (selected === 'current' ? ' selected' : '') + '>last 12 months</option>';
-
-        for (var year = currentYear; year >= startYear; year--) {
-            html += '<option value="' + year + '"' + (String(selected) === String(year) ? ' selected' : '') + '>' + year + '</option>';
-        }
-
-        select.innerHTML = html;
-        select.disabled = currentYear <= startYear;
-    }
-
     function initYearSelector(element, selected, signupYear) {
-        var select = element.querySelector('.yearSelect');
-        if (!select) return;
-
-        populateYearSelector(select, selected, signupYear);
+        var picker = element.querySelector('.yearPicker');
+        var button = element.querySelector('.yearSelectButton');
+        var label = element.querySelector('.yearSelectLabel');
+        var menu = element.querySelector('.yearSelectMenu');
+        if (!picker || !button || !label || !menu) return;
 
         if (yearSelectHandler) {
-            select.removeEventListener('change', yearSelectHandler);
+            yearSelectHandler.button.removeEventListener('click', yearSelectHandler.toggle);
+            document.removeEventListener('pointerdown', yearSelectHandler.outside);
+            document.removeEventListener('keydown', yearSelectHandler.keydown);
         }
 
-        yearSelectHandler = function () {
-            select.disabled = true;
-            var calendar = buildCalendar(cachedSessions, select.value, cachedSignupYear);
-            update(element, calendar);
-            select.disabled = cachedSignupYear >= new Date().getUTCFullYear();
+        var currentYear = new Date().getUTCFullYear();
+        var startYear = Math.min(signupYear || currentYear, currentYear);
+        var options = [{ value: 'current', text: 'last 12 months' }];
+        for (var year = currentYear; year >= startYear; year--) {
+            options.push({ value: String(year), text: String(year) });
+        }
+
+        function closeMenu() {
+            button.setAttribute('aria-expanded', 'false');
+            menu.classList.add('hidden');
+        }
+
+        function choose(value, text) {
+            selected = value;
+            button.dataset.value = value;
+            label.textContent = text;
+            menu.querySelectorAll('.yearSelectOption').forEach(function (option) {
+                option.setAttribute(
+                    'aria-selected',
+                    option.dataset.value === value ? 'true' : 'false'
+                );
+            });
+            closeMenu();
+            update(element, buildCalendar(cachedSessions, value, cachedSignupYear));
+        }
+
+        menu.replaceChildren();
+        options.forEach(function (optionData) {
+            var option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'yearSelectOption';
+            option.dataset.value = optionData.value;
+            option.setAttribute('role', 'option');
+            option.setAttribute(
+                'aria-selected',
+                optionData.value === selected ? 'true' : 'false'
+            );
+            option.textContent = optionData.text;
+            option.addEventListener('click', function () {
+                choose(optionData.value, optionData.text);
+            });
+            menu.appendChild(option);
+        });
+
+        var selectedOption = options.find(function (option) {
+            return option.value === selected;
+        }) || options[0];
+        button.dataset.value = selectedOption.value;
+        label.textContent = selectedOption.text;
+        closeMenu();
+
+        var toggle = function () {
+            var willOpen = button.getAttribute('aria-expanded') !== 'true';
+            button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            menu.classList.toggle('hidden', !willOpen);
+            if (willOpen) {
+                var activeOption = menu.querySelector('[aria-selected="true"]');
+                if (activeOption) activeOption.focus();
+            }
+        };
+        var outside = function (event) {
+            if (!picker.contains(event.target)) closeMenu();
+        };
+        var keydown = function (event) {
+            if (event.key === 'Escape') {
+                closeMenu();
+                button.focus();
+            }
         };
 
-        select.addEventListener('change', yearSelectHandler);
+        button.addEventListener('click', toggle);
+        document.addEventListener('pointerdown', outside);
+        document.addEventListener('keydown', keydown);
+        yearSelectHandler = {
+            button: button,
+            toggle: toggle,
+            outside: outside,
+            keydown: keydown,
+        };
     }
 
     function clear(element) {
@@ -398,7 +471,9 @@
     function init(element, sessions, signupDate) {
         if (!element) return;
 
-        cachedSessions = Array.isArray(sessions) ? sessions : [];
+        cachedSessions = Array.isArray(sessions)
+            ? sessions.filter(function (session) { return session && !session.failed; })
+            : [];
         cachedSignupYear = signupDate
             ? new Date(signupDate).getUTCFullYear()
             : (function () {
@@ -418,7 +493,7 @@
 
         element.classList.remove('hidden');
 
-        if (element.querySelector('.yearSelect')) {
+        if (element.querySelector('.yearSelectButton')) {
             initYearSelector(element, 'current', cachedSignupYear);
         }
 

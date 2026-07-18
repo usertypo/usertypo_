@@ -58,6 +58,160 @@
         .drag-handle:hover { opacity: 1 !important; }
         .drag-handle:active { cursor: grabbing; }
         .card-static .drag-handle { display: none !important; }
+
+        .score-distribution-layout {
+            display: grid;
+            grid-template-columns: 2.25rem minmax(0, 1fr);
+            grid-template-rows: 14rem auto;
+            grid-template-areas:
+                "y chart"
+                "empty x";
+            gap: 0.5rem 0.75rem;
+        }
+
+        .score-distribution-layout.hidden {
+            display: none;
+        }
+
+        .score-distribution-chart {
+            grid-area: chart;
+            height: 14rem;
+            display: flex;
+            align-items: flex-end;
+            gap: clamp(3px, 0.55vw, 8px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background-image: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.035) 0,
+                rgba(255, 255, 255, 0.035) 1px,
+                transparent 1px,
+                transparent 20%
+            );
+        }
+
+        .score-distribution-y-axis {
+            grid-area: y;
+            position: relative;
+            color: var(--theme-text-muted, #94a3b8);
+            font-family: "Roboto Mono", monospace;
+            font-size: 0.6rem;
+            line-height: 1;
+        }
+
+        .score-distribution-y-axis span {
+            position: absolute;
+            right: 0;
+            transform: translateY(-50%);
+        }
+
+        .score-distribution-x-axis {
+            grid-area: x;
+            display: flex;
+            gap: clamp(3px, 0.55vw, 8px);
+            color: var(--theme-text-muted, #94a3b8);
+            font-family: "Roboto Mono", monospace;
+            font-size: clamp(0.42rem, 0.62vw, 0.6rem);
+            line-height: 1;
+        }
+
+        .score-distribution-x-axis span {
+            flex: 1 1 0;
+            min-width: 0;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .score-distribution-column {
+            position: relative;
+            flex: 1 1 0;
+            min-width: 0;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            outline: none !important;
+            cursor: default;
+        }
+
+        .score-distribution-bar {
+            width: 100%;
+            min-height: 3px;
+            height: var(--bar-height);
+            border-radius: 0.3rem 0.3rem 0 0;
+            background: color-mix(
+                in srgb,
+                var(--theme-primary, #00d0ff) var(--bar-strength),
+                var(--theme-bg-secondary, #1a1d23)
+            );
+            transition: filter 160ms ease, transform 160ms ease;
+            transform-origin: bottom;
+        }
+
+        .score-distribution-column.is-empty .score-distribution-bar {
+            min-height: 0;
+        }
+
+        .score-distribution-column:hover .score-distribution-bar,
+        .score-distribution-column:focus-visible .score-distribution-bar {
+            filter: brightness(1.2);
+            transform: scaleY(1.025);
+        }
+
+        .score-distribution-column::after {
+            content: attr(aria-label);
+            position: absolute;
+            left: 50%;
+            bottom: calc(var(--bar-height) + 0.5rem);
+            transform: translateX(-50%) translateY(0.25rem);
+            padding: 0.4rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+            background-image: none !important;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+            color: var(--theme-text, #f3f3f9);
+            font-family: "Roboto Mono", monospace;
+            font-size: 0.65rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 30;
+            transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+        }
+
+        .score-distribution-column:hover::after,
+        .score-distribution-column:focus-visible::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .score-distribution-column.tooltip-edge-left::after {
+            left: 0;
+            transform: translateY(0.25rem);
+        }
+
+        .score-distribution-column.tooltip-edge-left:hover::after,
+        .score-distribution-column.tooltip-edge-left:focus-visible::after {
+            transform: translateY(0);
+        }
+
+        .score-distribution-column.tooltip-edge-right::after {
+            right: 0;
+            left: auto;
+            transform: translateY(0.25rem);
+        }
+
+        .score-distribution-column.tooltip-edge-right:hover::after,
+        .score-distribution-column.tooltip-edge-right:focus-visible::after {
+            transform: translateY(0);
+        }
+
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         /* Header Logo */
 </style>
@@ -651,11 +805,23 @@
                 </div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
-            <div class="col-span-12 overflow-hidden opacity-0 animate-fade-in-up [animation-delay:350ms]">
+            <div class="col-span-12 glass-panel p-6 rounded-xl overflow-hidden opacity-0 animate-fade-in-up [animation-delay:350ms]">
+                <h2 class="font-headline text-lg font-bold mb-6">Activity Tracker</h2>
                 <div id="userstats-test-activity" class="testActivity hidden">
                     <div class="wrapper">
                         <div class="top">
-                            <div class="year"><select class="yearSelect" aria-label="Activity period"></select></div>
+                            <div class="year">
+                                <div class="yearPicker">
+                                    <button type="button" class="yearSelectButton" aria-label="Activity period"
+                                        aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="yearSelectLabel">last 12 months</span>
+                                        <span class="material-symbols-outlined yearSelectChevron"
+                                            aria-hidden="true">expand_more</span>
+                                    </button>
+                                    <div class="yearSelectMenu hidden" role="listbox"
+                                        aria-label="Activity period options"></div>
+                                </div>
+                            </div>
                             <div class="title"></div>
                             <div class="legend">
                                 <span>less</span>
@@ -669,7 +835,6 @@
                         </div>
                         <div class="activity"></div>
                         <div class="months"></div>
-                        <div class="daysFull"></div>
                         <div class="days"></div>
                         <div class="nodata hidden">No data found.</div>
                         <div class="note">Note: All activity data is using UTC time.</div>
@@ -677,23 +842,24 @@
                 </div>
             </div>
             <div class="col-span-12 glass-panel p-6 rounded-xl">
-                <h2 class="font-headline text-lg font-bold mb-6">Score Distribution</h2>
-                <div class="flex items-end gap-1 h-32 w-full max-w-4xl mx-auto">
-                    <div class="bg-surface-light flex-1 h-[10%] rounded-t-sm"></div>
-                    <div class="bg-surface-light flex-1 h-[25%] rounded-t-sm"></div>
-                    <div class="bg-primary/40 flex-1 h-[45%] rounded-t-sm"></div>
-                    <div class="bg-primary/70 flex-1 h-[70%] rounded-t-sm"></div>
-                    <div class="bg-primary flex-1 h-[100%] rounded-t-sm"></div>
-                    <div class="bg-primary/70 flex-1 h-[65%] rounded-t-sm"></div>
-                    <div class="bg-primary/40 flex-1 h-[30%] rounded-t-sm"></div>
-                    <div class="bg-surface-light flex-1 h-[15%] rounded-t-sm"></div>
-                    <div class="bg-surface-light flex-1 h-[5%] rounded-t-sm"></div>
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <h2 class="font-headline text-lg font-bold">Score Distribution</h2>
+                    <span id="score-distribution-summary"
+                        class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Loading…</span>
                 </div>
-                <div
-                    class="flex justify-between mt-2 text-[10px] text-slate-500 font-headline uppercase w-full max-w-4xl mx-auto">
-                    <span>60 WPM</span>
-                    <span>100 WPM</span>
-                    <span>140 WPM</span>
+                <div class="w-full">
+                    <div id="score-distribution-layout" class="score-distribution-layout">
+                        <div id="score-distribution-y-axis" class="score-distribution-y-axis"
+                            aria-label="Number of tests"></div>
+                        <div id="score-distribution-chart" class="score-distribution-chart"
+                            role="img" aria-label="Distribution of completed typing test scores"></div>
+                        <div id="score-distribution-x-axis" class="score-distribution-x-axis"
+                            aria-label="WPM ranges"></div>
+                    </div>
+                    <div id="score-distribution-empty"
+                        class="hidden h-40 items-center justify-center text-sm text-slate-500 font-headline">
+                        Complete a typing test to see your score distribution.
+                    </div>
                 </div>
             </div>
             <!-- Test History Table -->
@@ -701,8 +867,8 @@
                 <div class="p-6 border-b border-white/5 flex justify-between items-center">
                     <h2 class="font-headline text-lg font-bold">Comprehensive Test History</h2>
                     <div class="flex gap-3">
-                        <button
-                            class="text-xs font-headline flex items-center gap-2 text-slate-500 hover:text-slate-100 transition-colors">
+                        <button id="test-history-export" type="button" disabled
+                            class="text-xs font-headline flex items-center gap-2 text-slate-500 hover:text-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                             <span class="material-symbols-outlined text-sm">download</span> Export CSV
                         </button>
                     </div>
@@ -715,6 +881,7 @@
                                 <th class="px-6 py-4 font-medium">WPM</th>
                                 <th class="px-6 py-4 font-medium">Accuracy</th>
                                 <th class="px-6 py-4 font-medium">Raw</th>
+                                <th class="px-6 py-4 font-medium">Consistency</th>
                                 <th class="px-6 py-4 font-medium">Date</th>
                             </tr>
                         </thead>
@@ -898,9 +1065,10 @@ if ('scrollRestoration' in history) {
             });
 
             var historyOffset = 0;
-            var historyPageSize = 20;
+            var historyPageSize = 15;
             var historyTotal = 0;
             var historyLoading = false;
+            var allHistorySessions = [];
 
             function renderBestCards(bests) {
                 if (!bests || !window.usertypoSessions) return;
@@ -957,6 +1125,87 @@ if ('scrollRestoration' in history) {
                 }
             }
 
+            function renderScoreDistribution(distribution) {
+                var layout = document.getElementById('score-distribution-layout');
+                var chart = document.getElementById('score-distribution-chart');
+                var xAxis = document.getElementById('score-distribution-x-axis');
+                var yAxis = document.getElementById('score-distribution-y-axis');
+                var empty = document.getElementById('score-distribution-empty');
+                var summary = document.getElementById('score-distribution-summary');
+                if (!layout || !chart || !xAxis || !yAxis || !empty || !summary) return;
+
+                var bins = distribution && Array.isArray(distribution.bins)
+                    ? distribution.bins
+                    : [];
+
+                chart.replaceChildren();
+                xAxis.replaceChildren();
+                yAxis.replaceChildren();
+
+                if (!bins.length || !distribution.total) {
+                    layout.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    empty.classList.add('flex');
+                    summary.textContent = 'No completed tests';
+                    return;
+                }
+
+                layout.classList.remove('hidden');
+                empty.classList.add('hidden');
+                empty.classList.remove('flex');
+
+                function formatWpm(value) {
+                    var rounded = Math.round(Number(value) * 10) / 10;
+                    return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
+                }
+
+                var yAxisMax = Math.max(5, Math.ceil(distribution.maxCount / 5) * 5);
+                for (var tick = 5; tick >= 0; tick--) {
+                    var yLabel = document.createElement('span');
+                    yLabel.textContent = String((yAxisMax / 5) * tick);
+                    yLabel.style.top = (((5 - tick) / 5) * 100) + '%';
+                    yAxis.appendChild(yLabel);
+                }
+
+                bins.forEach(function (bin, index) {
+                    var heightRatio = yAxisMax > 0
+                        ? bin.count / yAxisMax
+                        : 0;
+                    var colorRatio = distribution.maxCount > 0
+                        ? bin.count / distribution.maxCount
+                        : 0;
+                    var column = document.createElement('button');
+                    column.type = 'button';
+                    column.className = 'score-distribution-column';
+                    if (!bin.count) column.classList.add('is-empty');
+                    if (index < 2) column.classList.add('tooltip-edge-left');
+                    if (index >= bins.length - 2) column.classList.add('tooltip-edge-right');
+
+                    var rangeLabel = formatWpm(bin.start) + '–' + formatWpm(bin.end) + ' WPM';
+                    column.setAttribute(
+                        'aria-label',
+                        rangeLabel + ': ' + bin.count + ' test' + (bin.count === 1 ? '' : 's')
+                    );
+                    column.style.setProperty('--bar-height', (heightRatio * 100) + '%');
+                    column.style.setProperty('--bar-strength', (25 + colorRatio * 75) + '%');
+
+                    var bar = document.createElement('span');
+                    bar.className = 'score-distribution-bar';
+                    bar.setAttribute('aria-hidden', 'true');
+                    column.appendChild(bar);
+                    chart.appendChild(column);
+
+                    var xLabel = document.createElement('span');
+                    xLabel.textContent = formatWpm(bin.start) + '-' + formatWpm(bin.end);
+                    xAxis.appendChild(xLabel);
+                });
+
+                summary.textContent =
+                    distribution.total.toLocaleString() + ' completed test' +
+                    (distribution.total === 1 ? '' : 's') +
+                    ' · ' + formatWpm(distribution.average) + ' average WPM';
+            }
+
             function buildHistoryRow(session) {
                 var tr = document.createElement('tr');
                 tr.className = 'hover:bg-white/5 transition-colors';
@@ -966,6 +1215,9 @@ if ('scrollRestoration' in history) {
                 var wpm = session.failed ? '—' : String(Math.round(Number(session.wpm) || 0));
                 var acc = session.failed ? '—' : window.usertypoSessions.formatAccuracy(session.accuracy);
                 var raw = session.failed ? '—' : String(Math.round(Number(session.raw_wpm) || 0));
+                var consistency = session.failed
+                    ? '—'
+                    : window.usertypoSessions.formatAccuracy(session.consistency);
                 var date = window.usertypoSessions.formatRelativeTime(session.created_at);
 
                 tr.innerHTML =
@@ -973,6 +1225,7 @@ if ('scrollRestoration' in history) {
                     '<td class="px-6 py-4 font-headline font-bold text-primary">' + wpm + '</td>' +
                     '<td class="px-6 py-4 text-slate-500">' + acc + '</td>' +
                     '<td class="px-6 py-4 text-slate-500">' + raw + '</td>' +
+                    '<td class="px-6 py-4 text-slate-500">' + consistency + '</td>' +
                     '<td class="px-6 py-4 text-xs text-slate-500">' + date + '</td>';
 
                 return tr;
@@ -985,7 +1238,7 @@ if ('scrollRestoration' in history) {
                 if (!append) tbody.innerHTML = '';
 
                 if (!sessions.length && !append) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">No tests yet. Complete a typing test to see your history here.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500 text-sm">No tests yet. Complete a typing test to see your history here.</td></tr>';
                     return;
                 }
 
@@ -1001,19 +1254,77 @@ if ('scrollRestoration' in history) {
                 footer.classList.toggle('hidden', !hasMore);
             }
 
-            async function loadMoreHistory() {
+            function escapeCsvValue(value) {
+                if (value == null) return '';
+                var text = String(value);
+                if (/[",\r\n]/.test(text)) {
+                    return '"' + text.replace(/"/g, '""') + '"';
+                }
+                return text;
+            }
+
+            function exportTestHistoryCsv() {
+                if (!allHistorySessions.length) return;
+
+                var rows = [[
+                    'Date (UTC)',
+                    'Mode',
+                    'Amount',
+                    'WPM',
+                    'Raw WPM',
+                    'Accuracy (%)',
+                    'Consistency (%)',
+                    'Failed',
+                ]];
+
+                allHistorySessions.forEach(function (session) {
+                    var createdAt = session.created_at ? new Date(session.created_at) : null;
+                    var isoDate = createdAt && isFinite(createdAt.getTime())
+                        ? createdAt.toISOString()
+                        : '';
+
+                    rows.push([
+                        isoDate,
+                        session.mode || '',
+                        session.amount == null ? '' : session.amount,
+                        session.wpm == null ? '' : session.wpm,
+                        session.raw_wpm == null ? '' : session.raw_wpm,
+                        session.accuracy == null ? '' : session.accuracy,
+                        session.consistency == null ? '' : session.consistency,
+                        session.failed ? 'true' : 'false',
+                    ]);
+                });
+
+                var csv = rows.map(function (row) {
+                    return row.map(escapeCsvValue).join(',');
+                }).join('\r\n');
+                var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                var dateStamp = new Date().toISOString().slice(0, 10);
+
+                link.href = url;
+                link.download = 'usertypo-test-history-' + dateStamp + '.csv';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                }, 0);
+            }
+
+            function loadMoreHistory() {
                 if (historyLoading || !window.usertypoSessions) return;
                 if (historyOffset >= historyTotal && historyTotal > 0) return;
 
                 historyLoading = true;
                 try {
-                    var result = await window.usertypoSessions.listMySessions({
-                        limit: historyPageSize,
-                        offset: historyOffset,
-                    });
-                    historyTotal = result.total;
-                    renderHistoryRows(result.sessions, true);
-                    historyOffset += result.sessions.length;
+                    var nextSessions = allHistorySessions.slice(
+                        historyOffset,
+                        historyOffset + historyPageSize
+                    );
+                    renderHistoryRows(nextSessions, true);
+                    historyOffset += nextSessions.length;
                     updateHistoryFooter();
                 } catch (err) {
                     console.error('[usertypo userstats] history load failed', err);
@@ -1077,12 +1388,17 @@ if ('scrollRestoration' in history) {
                     renderBestCards(stats.bests);
                     renderSummary(stats.summary);
                     renderTestActivity(stats.allSessions || []);
+                    renderScoreDistribution(stats.scoreDistribution);
 
                     historyOffset = 0;
                     historyTotal = stats.totalSessions || 0;
+                    allHistorySessions = stats.allSessions || [];
                     renderHistoryRows(stats.recentSessions || [], false);
                     historyOffset = (stats.recentSessions || []).length;
                     updateHistoryFooter();
+
+                    var exportBtn = document.getElementById('test-history-export');
+                    if (exportBtn) exportBtn.disabled = allHistorySessions.length === 0;
                 } catch (err) {
                     console.error('[usertypo userstats] stats load failed', err);
                 }
@@ -1093,6 +1409,11 @@ if ('scrollRestoration' in history) {
                 loadMoreBtn.addEventListener('click', function () {
                     loadMoreHistory();
                 });
+            }
+
+            var exportBtn = document.getElementById('test-history-export');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportTestHistoryCsv);
             }
 
             const pageTrack = document.getElementById('page-scroll-track');

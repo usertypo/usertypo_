@@ -514,6 +514,8 @@ function applyThemeSettings(settings) {
             --theme-primary-light: ${accentLight};
             --theme-bg: ${p.bgMain};
             --theme-bg-secondary: ${p.bgSecondary};
+            --theme-bg-secondary-rgb: ${bgSecRGB};
+            --theme-menu-bg: rgba(${bgSecRGB}, 0.4);
             --theme-text: ${p.textPrimary};
             --theme-text-muted: ${p.textMuted};
             --theme-error: ${p.error};
@@ -681,7 +683,7 @@ function applyThemeSettings(settings) {
         .glass-card,
         #sidebar-menu,
         #expanding-bubble {
-            background: rgba(${bgSecRGB}, 0.4) !important;
+            background: var(--theme-menu-bg) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
