@@ -18,6 +18,7 @@
         var wordOffsets = [];
         var players = [];
         var bot = null;
+        var matchReason = '';
         var selfUserId = '';
         var selfIndex = -1;
         var opponentIndex = -1;
@@ -26,10 +27,13 @@
         var currentCharIndex = 0;
         var completedCorrectWords = 0;
         var packetSequence = 0;
+        var packetQueue = [];
+        var packetSending = false;
         var totalKeystrokes = 0;
         var errorsMade = 0;
         var extraChars = 0;
         var keystrokeTimes = [];
+        var correctKeystrokeTimes = [];
         var unresolvedError = null;
         var opponentLeft = false;
         var updateTimer = null;
@@ -354,6 +358,12 @@
                 total += words[i].length;
                 if (i > 0) total += 1;
             }
+            var activeWord = document.getElementById('word-' + currentWordIndex);
+            if (activeWord) {
+                activeWord.querySelectorAll('.char.text-primary:not(.extra)').forEach(function () {
+                    total += 1;
+                });
+            }
             return total;
         }
 
@@ -361,7 +371,9 @@
             var elapsedMinutes = startTime ? Math.max((Date.now() - startTime) / 60_000, 1 / 120) : 1 / 120;
             var correct = currentCorrectChars();
             var wpm = Math.max(0, Math.round((correct / 5) / elapsedMinutes));
-            var accuracy = totalKeystrokes ? Math.max(0, Math.min(100, (correct / totalKeystrokes) * 100)) : 100;
+            var accuracy = totalKeystrokes
+                ? Math.max(0, Math.min(100, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100))
+                : 100;
             var consistency = 100;
             if (keystrokeTimes.length > 2) {
                 var intervals = [];
@@ -388,12 +400,23 @@
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
             if (accDisplay) accDisplay.textContent = Math.round(stats.accuracy) + '%';
-            if (burstDisplay) burstDisplay.textContent = '0';
+            if (burstDisplay) {
+                var cutoff = Date.now() - 2000;
+                correctKeystrokeTimes = correctKeystrokeTimes.filter(function (time) { return time >= cutoff; });
+                burstDisplay.textContent = Math.round(correctKeystrokeTimes.length * 6);
+            }
             if (config.mode === 'time') {
                 var elapsed = Math.max(0, (Date.now() - startTime) / 1000);
                 var remaining = Math.max(0, Math.ceil(config.amount - elapsed));
                 progressDisplay.textContent = remaining;
                 if (progressBar) progressBar.style.width = Math.min(100, (elapsed / config.amount) * 100) + '%';
+                if (remaining === 0) {
+                    localFinished = true;
+                    state = 'waiting-result';
+                    clearInterval(updateTimer);
+                    sendThreeWordPacket(true);
+                    showMessage('Finished', 'Calculating race results.');
+                }
             } else {
                 progressDisplay.innerHTML = completedCorrectWords + '<span class="text-slate-500">/</span>' + config.amount;
                 if (progressBar) progressBar.style.width = Math.min(100, (completedCorrectWords / config.amount) * 100) + '%';
@@ -401,15 +424,47 @@
         }
 
         function sendThreeWordPacket(forceFinal) {
-            if (!window.usertypoMultiplayer || state !== 'racing') return;
-            var shouldSend = completedCorrectWords > 0
-                && (completedCorrectWords % 3 === 0 || forceFinal === true);
+            if (!window.usertypoMultiplayer || (state !== 'racing' && state !== 'waiting-result')) return;
+            var shouldSend = (completedCorrectWords > 0 && completedCorrectWords % 3 === 0)
+                || forceFinal === true;
             if (!shouldSend) return;
-            packetSequence += 1;
+            var lastQueued = packetQueue.length ? packetQueue[packetQueue.length - 1] : null;
+            if (!lastQueued || lastQueued.words !== completedCorrectWords || (forceFinal && !lastQueued.final)) {
+                packetQueue.push({
+                    words: completedCorrectWords,
+                    keystrokes: totalKeystrokes,
+                    final: forceFinal === true,
+                    attempts: 0,
+                });
+            }
+            processPacketQueue();
+        }
+
+        function processPacketQueue() {
+            if (packetSending || !packetQueue.length) return;
+            var packet = packetQueue[0];
+            var nextSequence = packetSequence + 1;
+            packetSending = true;
             window.usertypoMultiplayer
-                .sendProgress(roomId, packetSequence, completedCorrectWords, totalKeystrokes)
+                .sendProgress(roomId, nextSequence, packet.words, packet.keystrokes, packet.final)
+                .then(function () {
+                    packetSequence = nextSequence;
+                    packetQueue.shift();
+                    packetSending = false;
+                    processPacketQueue();
+                })
                 .catch(function (error) {
-                    if (window.usertypoNotifications) window.usertypoNotifications.showToast(error.message, 'error');
+                    packetSending = false;
+                    packet.attempts += 1;
+                    if (packet.attempts < 3 && (state === 'racing' || state === 'waiting-result')) {
+                        setTimeout(processPacketQueue, 400 * packet.attempts);
+                        return;
+                    }
+                    packetQueue.shift();
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast(error.message, 'error');
+                    }
+                    processPacketQueue();
                 });
         }
 
@@ -456,6 +511,7 @@
                     : null;
                 if (expectedAtLock && key === expectedAtLock) {
                     paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
+                    correctKeystrokeTimes.push(Date.now());
                     if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                     unresolvedError = null;
                     currentCharIndex += 1;
@@ -470,7 +526,10 @@
             }
 
             if (key === ' ') {
-                if (currentCharIndex === word.length) completeWord();
+                if (currentCharIndex === word.length) {
+                    correctKeystrokeTimes.push(Date.now());
+                    completeWord();
+                }
                 else {
                     if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
@@ -485,6 +544,7 @@
             var expected = word[currentCharIndex];
             if (key === expected) {
                 paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
+                correctKeystrokeTimes.push(Date.now());
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
             } else {
                 if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
@@ -507,6 +567,10 @@
 
         function onKeyDown(event) {
             if (event.ctrlKey || event.altKey || event.metaKey) return;
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                return;
+            }
             updateKeymapHighlight(event.key, true);
             if (event.key === 'Backspace') handleBackspace(event);
             else handlePrintable(event);
@@ -522,7 +586,7 @@
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            startTime = payload.startsAt;
+            startTime = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
             selfUserId = window.usertypoMultiplayer.getReadyState()
                 && window.usertypoMultiplayer.getReadyState().userId || '';
             var self = players.find(function (player) { return player.userId === selfUserId; });
@@ -668,7 +732,55 @@
             statsView.classList.remove('hidden', 'opacity-0');
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
             window.scrollTo(0, 0);
+        }
+
+        async function requestRematch() {
+            if (state !== 'finished' || !config) return;
+            var button = document.getElementById('rematch-btn');
+            if (button) button.disabled = true;
+            try {
+                var opponent = players.find(function (player) { return player.userId !== selfUserId; });
+                if (matchReason === 'friend' && opponent) {
+                    await window.usertypoMultiplayer.sendChallenge(opponent.userId, config);
+                    window.usertypoNotifications?.showToast('Rematch request sent.', 'swords');
+                } else {
+                    await window.usertypoMultiplayer.createPublicDuel(config);
+                    window.usertypoNotifications?.showToast('Searching for your rematch.', 'swords');
+                }
+                window.navigateTo?.('/friends');
+            } catch (error) {
+                if (button) button.disabled = false;
+                window.usertypoNotifications?.showToast(error.message, 'error');
+            }
+        }
+
+        function bindResultActions() {
+            var rematch = document.getElementById('rematch-btn');
+            var screenshot = document.getElementById('screenshot-btn');
+            if (rematch) rematch.addEventListener('click', requestRematch, { signal: signal });
+            if (screenshot) {
+                screenshot.addEventListener('click', function () {
+                    var captureArea = document.getElementById('stats-capture-area');
+                    if (captureArea && window.StatsScreenshot) {
+                        window.StatsScreenshot.capture({
+                            captureArea: captureArea,
+                            button: screenshot,
+                            hideSelectors: ['#stats-action-buttons'],
+                            padding: 56,
+                        });
+                    }
+                }, { signal: signal });
+            }
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && state === 'finished') {
+                    event.preventDefault();
+                    requestRematch();
+                }
+            }, { signal: signal });
         }
 
         function bindEvents() {
@@ -688,6 +800,12 @@
                 }
             });
             listen('race-finished', function (event) { showResults(event.detail); });
+            listen('match-resumed', function () {
+                if (state === 'racing' || state === 'waiting-result') hideMessage();
+            });
+            listen('ready', function () {
+                if (state === 'racing' || state === 'waiting-result') hideMessage();
+            });
             listen('race-invalid', function () {
                 state = 'finished';
                 showMessage('Race invalid', 'The server rejected implausible progress.');
@@ -708,6 +826,7 @@
             }
             showMessage('Joining dual', 'Waiting for the other player.');
             bindEvents();
+            bindResultActions();
             window.addEventListener('resize', function () {
                 if (!words.length) return;
                 updateLineLayout();
@@ -718,6 +837,7 @@
                 config = response.room && response.room.config;
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
+                matchReason = response.room && response.room.reason || '';
                 showMessage('Waiting for opponent', bot ? 'Bot is ready. The countdown will begin shortly.' : 'Both players must open the dual before it starts.');
             } catch (error) {
                 showMessage('Could not join dual', error.message);
@@ -731,7 +851,7 @@
             clearInterval(updateTimer);
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
-            if (state !== 'finished' && roomId && window.usertypoMultiplayer) {
+            if (state !== 'finished' && !localFinished && roomId && window.usertypoMultiplayer) {
                 var activeSocket = window.usertypoMultiplayer.getSocket();
                 if (activeSocket && activeSocket.connected) activeSocket.emit('race:leave', roomId);
             }

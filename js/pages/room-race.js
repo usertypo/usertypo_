@@ -218,10 +218,10 @@
         }
 
         function sendProgress(finalPacket) {
-            if (!(completedWords > 0 && (completedWords % 3 === 0 || finalPacket))) return;
+            if (!((completedWords > 0 && completedWords % 3 === 0) || finalPacket)) return;
             sequence += 1;
             window.usertypoMultiplayer
-                .sendProgress(roomId, sequence, completedWords, totalKeystrokes)
+                .sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket)
                 .catch(function (error) {
                     window.usertypoNotifications?.showToast(error.message, 'error');
                 });
@@ -306,8 +306,14 @@
             var percentage;
             if (config.mode === 'time') {
                 var elapsed = Math.max(0, (Date.now() - startedAt) / 1000);
-                progressDisplay.textContent = Math.max(0, Math.ceil(config.amount - elapsed));
+                var remaining = Math.max(0, Math.ceil(config.amount - elapsed));
+                progressDisplay.textContent = remaining;
                 percentage = Math.min(100, (elapsed / config.amount) * 100);
+                if (remaining === 0) {
+                    state = 'waiting-result';
+                    clearInterval(updateTimer);
+                    sendProgress(true);
+                }
             } else {
                 progressDisplay.innerHTML = completedWords + '<span class="text-slate-500">/</span>' + config.amount;
                 percentage = Math.min(100, (completedWords / config.amount) * 100);
@@ -348,7 +354,7 @@
             config = payload.config;
             words = payload.words || [];
             room.players = payload.players || room.players;
-            startedAt = payload.startsAt;
+            startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
             var self = room.players.find(function (player) { return player.userId === selfUserId; });
             selfIndex = self ? self.index : 0;
             renderText();
@@ -427,6 +433,9 @@
                 window.usertypoNotifications?.showToast('A player left the room.', 'person_remove');
             });
             listen('race-finished', function (event) { renderResults(event.detail); });
+            listen('match-resumed', function () {
+                if (state === 'racing' || state === 'waiting-result') hideLobbyMessage();
+            });
         }
 
         async function readyUp() {
@@ -471,7 +480,7 @@
 
         function cleanup() {
             clearInterval(updateTimer);
-            if (!finished && roomId) {
+            if (!finished && state !== 'waiting-result' && roomId) {
                 var socket = window.usertypoMultiplayer?.getSocket();
                 if (socket?.connected) socket.emit('race:leave', roomId);
             }

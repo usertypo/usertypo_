@@ -11,6 +11,7 @@
     var readyState = null;
     var listings = [];
     var pendingMatches = {};
+    var activeRoomId = '';
 
     function dispatch(name, detail) {
         try {
@@ -89,6 +90,18 @@
             listings = Array.isArray(state.listings) ? state.listings : [];
             dispatch('ready', state);
             dispatch('listings', listings.slice());
+            if (activeRoomId) {
+                activeSocket.emit('match:resume', activeRoomId, function (response) {
+                    if (!response || response.ok === false) {
+                        if (response && response.error === 'room_unavailable') activeRoomId = '';
+                        return;
+                    }
+                    dispatch('match-resumed', response);
+                    if (response.countdown != null) {
+                        dispatch('race-countdown', [activeRoomId, response.countdown]);
+                    }
+                });
+            }
         });
         activeSocket.on('multiplayer:error', function (payload) {
             dispatch('error', { code: payload && payload[0] || 'server_error' });
@@ -169,6 +182,7 @@
             'race:finished', 'race:player-left', 'race:invalid', 'room:state',
         ].forEach(function (eventName) {
             activeSocket.on(eventName, function (payload) {
+                if (eventName === 'race:finished') activeRoomId = '';
                 dispatch(eventName.replace(':', '-'), payload);
             });
         });
@@ -261,14 +275,24 @@
     }
 
     function joinMatch(roomId) {
-        return emitAck('match:join', roomId);
+        return emitAck('match:join', roomId).then(function (response) {
+            activeRoomId = String(roomId || '');
+            return response;
+        });
     }
 
-    function sendProgress(roomId, sequence, completedWords, totalKeystrokes) {
-        return emitAck('race:progress', [roomId, sequence, completedWords, totalKeystrokes], 5000);
+    function sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket) {
+        return emitAck('race:progress', [
+            roomId,
+            sequence,
+            completedWords,
+            totalKeystrokes,
+            finalPacket ? 1 : 0,
+        ], 5000);
     }
 
     function leaveRace(roomId) {
+        activeRoomId = '';
         if (!socket || !socket.connected) return Promise.resolve({ ok: true });
         return emitAck('race:leave', roomId, 2000);
     }
@@ -300,6 +324,7 @@
                 socket = null;
                 readyState = null;
                 pendingMatches = {};
+                activeRoomId = '';
             }
         });
         window.usertypoAuth.ready().then(function () {

@@ -138,6 +138,7 @@ function createMultiplayerServer(httpServer, options) {
             state: 'waiting',
             createdAt: Date.now(),
             startsAt: null,
+            countdownEndsAt: null,
             countdownTimer: null,
             joinTimer: null,
             raceTimer: null,
@@ -205,7 +206,11 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function createBotMatch(listing) {
-        if (!listings.has(listing.id) || !isOnline(listing.ownerUserId)) {
+        if (
+            !listings.has(listing.id)
+            || !isOnline(listing.ownerUserId)
+            || userToRoom.has(listing.ownerUserId)
+        ) {
             removeListing(listing.id);
             return;
         }
@@ -229,11 +234,14 @@ function createMultiplayerServer(httpServer, options) {
     function addListing(userId, config) {
         if (listings.size >= LIMITS.maxPublicListings) throw new Error('listing_capacity');
         for (const listing of listings.values()) {
+            if (!isOnline(listing.ownerUserId) || userToRoom.has(listing.ownerUserId)) {
+                removeListing(listing.id);
+                continue;
+            }
             if (
                 listing.ownerUserId !== userId
                 && listing.status === 'waiting'
                 && listing.key === configKey(config)
-                && isOnline(listing.ownerUserId)
             ) {
                 removeListing(listing.id);
                 return { room: createPublicMatch(listing.ownerUserId, userId, config, 'auto-match') };
@@ -264,6 +272,24 @@ function createMultiplayerServer(httpServer, options) {
             if (i > 0) total += 1;
         }
         return total;
+    }
+
+    function raceStartPayload(room) {
+        return {
+            roomId: room.id,
+            startsAt: room.startsAt,
+            startsInMs: Math.max(0, room.startsAt - Date.now()),
+            config: room.config,
+            words: room.prompt.words,
+            textHash: room.prompt.textHash,
+            players: Array.from(room.players.values()).map((player) => ({
+                index: player.index,
+                userId: player.userId,
+                name: player.name,
+                avatarUrl: player.avatarUrl,
+            })),
+            bot: room.bot ? { index: room.bot.index, name: room.bot.name } : null,
+        };
     }
 
     function playerResult(player, room) {
@@ -319,6 +345,9 @@ function createMultiplayerServer(httpServer, options) {
             results,
             room.opponentLeft ? 1 : 0,
         ]);
+        room.players.forEach((player) => {
+            if (userToRoom.get(player.userId) === room.id) userToRoom.delete(player.userId);
+        });
         room.disposeTimer = setTimeout(() => disposeRoom(room.id), LIMITS.finishedRoomTtlMs);
     }
 
@@ -375,34 +404,23 @@ function createMultiplayerServer(httpServer, options) {
             if (player.status !== 'left') player.status = 'racing';
             player.lastSnapshotAt = room.startsAt;
         });
-        io.to(roomChannel(room.id)).emit('race:start', {
-            roomId: room.id,
-            startsAt: room.startsAt,
-            config: room.config,
-            words: room.prompt.words,
-            textHash: room.prompt.textHash,
-            players: Array.from(room.players.values()).map((player) => ({
-                index: player.index,
-                userId: player.userId,
-                name: player.name,
-                avatarUrl: player.avatarUrl,
-            })),
-            bot: room.bot ? { index: room.bot.index, name: room.bot.name } : null,
-        });
+        io.to(roomChannel(room.id)).emit('race:start', raceStartPayload(room));
         if (room.bot) startBot(room);
         if (room.config.mode === 'time') {
             room.raceTimer = setTimeout(() => {
-                room.players.forEach((player) => {
-                    if (player.status === 'racing') {
-                        player.status = 'finished';
-                        player.finishedAt = Date.now();
+                room.raceTimer = setTimeout(() => {
+                    room.players.forEach((player) => {
+                        if (player.status === 'racing') {
+                            player.status = 'finished';
+                            player.finishedAt = Date.now();
+                        }
+                    });
+                    if (room.bot && room.bot.status === 'racing') {
+                        room.bot.status = 'finished';
+                        room.bot.finishedAt = Date.now();
                     }
-                });
-                if (room.bot && room.bot.status === 'racing') {
-                    room.bot.status = 'finished';
-                    room.bot.finishedAt = Date.now();
-                }
-                finishRoom(room, 'time');
+                    finishRoom(room, 'time');
+                }, 750);
             }, room.config.amount * 1000 + 250);
         }
     }
@@ -412,6 +430,7 @@ function createMultiplayerServer(httpServer, options) {
         cancelTimer(room, 'joinTimer');
         room.state = 'countdown';
         let seconds = LIMITS.countdownSeconds;
+        room.countdownEndsAt = Date.now() + (seconds * 1000);
         io.to(roomChannel(room.id)).emit('race:countdown', [room.id, seconds]);
         room.countdownTimer = setInterval(() => {
             seconds -= 1;
@@ -453,6 +472,12 @@ function createMultiplayerServer(httpServer, options) {
         if (!room) return;
         const player = room.players.get(userId);
         if (!player || player.status === 'left') return;
+        if (player.status === 'finished') {
+            player.joined = false;
+            player.socketId = null;
+            userToRoom.delete(userId);
+            return;
+        }
         player.status = 'left';
         player.leftMidGame = room.state === 'racing';
         player.joined = false;
@@ -639,6 +664,10 @@ function createMultiplayerServer(httpServer, options) {
                 if (!listing || listing.status !== 'waiting') throw new Error('listing_unavailable');
                 if (listing.ownerUserId === userId) throw new Error('own_listing');
                 if (userToRoom.has(userId)) throw new Error('already_in_match');
+                if (!isOnline(listing.ownerUserId) || userToRoom.has(listing.ownerUserId)) {
+                    removeListing(listing.id);
+                    throw new Error('listing_unavailable');
+                }
                 removeListing(listing.id);
                 const room = createPublicMatch(listing.ownerUserId, userId, listing.config, 'listing');
                 safeAck(ack, { ok: true, roomId: room.id });
@@ -671,6 +700,28 @@ function createMultiplayerServer(httpServer, options) {
             if (room.type !== 'custom' && requiredPlayersJoined(room)) startCountdown(room);
         });
 
+        socket.on('match:resume', (roomId, ack) => {
+            const room = rooms.get(String(roomId || ''));
+            const player = room && room.players.get(userId);
+            if (!room || !player || !room.allowedUserIds.has(userId)
+                || !['waiting', 'countdown', 'racing'].includes(room.state)
+                || player.status === 'left') {
+                safeAck(ack, { ok: false, error: 'room_unavailable' });
+                return;
+            }
+            player.joined = true;
+            player.socketId = socket.id;
+            socket.join(roomChannel(room.id));
+            userToRoom.set(userId, room.id);
+            safeAck(ack, {
+                ok: true,
+                room: publicRoomPayload(room, room.type),
+                countdown: room.state === 'countdown'
+                    ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
+                    : null,
+            });
+        });
+
         socket.on('race:progress', (payload, ack) => {
             try {
                 if (!Array.isArray(payload) || payload.length < 4) throw new Error('invalid_payload');
@@ -681,13 +732,26 @@ function createMultiplayerServer(httpServer, options) {
                 const sequence = Number(payload[1]);
                 const completedWords = Number(payload[2]);
                 const totalKeystrokes = Number(payload[3]);
+                if (
+                    sequence === player.sequence
+                    && completedWords === player.completedWords
+                    && totalKeystrokes === player.totalKeystrokes
+                ) {
+                    safeAck(ack, { ok: true, duplicate: true });
+                    return;
+                }
                 if (!Number.isInteger(sequence) || sequence <= player.sequence) throw new Error('invalid_sequence');
                 if (!Number.isInteger(completedWords) || completedWords < player.completedWords) throw new Error('invalid_progress');
                 if (!Number.isInteger(totalKeystrokes) || totalKeystrokes < player.totalKeystrokes) throw new Error('invalid_keystrokes');
                 if (completedWords > room.prompt.targetWordCount) throw new Error('target_overflow');
                 const deltaWords = completedWords - player.completedWords;
                 const isFinal = room.config.mode === 'words' && completedWords === room.prompt.targetWordCount;
-                if (deltaWords !== 3 && !(isFinal && deltaWords > 0 && deltaWords <= 3)) {
+                const finalPacket = payload[4] === 1;
+                const isTimedFinal = room.config.mode === 'time' && finalPacket
+                    && Date.now() >= room.startsAt + (room.config.amount * 1000) - 500;
+                if (deltaWords !== 3
+                    && !(isFinal && deltaWords > 0 && deltaWords <= 3)
+                    && !(isTimedFinal && deltaWords >= 0 && deltaWords <= 3)) {
                     throw new Error('three_word_packets_required');
                 }
                 const now = Date.now();
@@ -703,8 +767,8 @@ function createMultiplayerServer(httpServer, options) {
                 if (sustainedWpm > maxSustainedWpm || burstWpm > maxBurstWpm) {
                     player.anomalyStrikes += 1;
                     if (player.anomalyStrikes >= 2 || sustainedWpm > maxSustainedWpm * 1.5) {
-                        player.status = 'left';
                         socket.emit('race:invalid', ['implausible_progress']);
+                        leaveRace(userId, true);
                         socket.disconnect(true);
                         throw new Error('implausible_progress');
                     }
@@ -749,6 +813,7 @@ function createMultiplayerServer(httpServer, options) {
 
         socket.on('room:create', (payload, ack) => {
             try {
+                if (userToRoom.has(userId)) throw new Error('already_in_match');
                 const config = normalizeConfig(payload && payload.config);
                 const maxPlayers = clampInteger(payload && payload.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
                 let roomCode;
@@ -767,6 +832,10 @@ function createMultiplayerServer(httpServer, options) {
         });
 
         socket.on('room:join-code', (code, ack) => {
+            if (userToRoom.has(userId)) {
+                safeAck(ack, { ok: false, error: 'already_in_match' });
+                return;
+            }
             const room = Array.from(rooms.values()).find((item) => item.roomCode === String(code || ''));
             if (!room || room.type !== 'custom' || room.state !== 'waiting') {
                 safeAck(ack, { ok: false, error: 'room_not_found' });
@@ -824,9 +893,9 @@ function createMultiplayerServer(httpServer, options) {
             }
             if (isOnline(userId)) return;
             io.emit('multiplayer:presence', [userId, 0]);
-            clearUserTransientState(userId);
             const timer = setTimeout(() => {
                 disconnectTimers.delete(userId);
+                clearUserTransientState(userId);
                 leaveRace(userId, false);
             }, LIMITS.reconnectGraceMs);
             disconnectTimers.set(userId, timer);

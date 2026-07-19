@@ -858,13 +858,13 @@
     'use strict';
     let controller = null;
 
-    window.__spaPageInit = function () {
+    window.__spaPageInit = async function () {
         if (!window.usertypoRoomPage) {
             if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
             return;
         }
         controller = window.usertypoRoomPage.createController();
-        controller.init();
+        await controller.init();
         if (typeof window.usertypo_lockTypingScroll === 'function') {
             window.usertypo_lockTypingScroll();
         }

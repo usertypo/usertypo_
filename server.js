@@ -168,7 +168,7 @@ const multiplayer = createMultiplayerServer(server, {
     recordActivity: keepAwake.recordActivity,
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log('usertypo_ server: http://localhost:' + PORT);
     console.log('Serving from: ' + ROOT);
     if (!multiplayer.hasSupabaseServiceRole) {

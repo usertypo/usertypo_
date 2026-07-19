@@ -112,7 +112,21 @@ test('matches authenticated players and starts one server-owned race', { timeout
         const [raceForFirst, raceForSecond] = await Promise.all([firstStart, secondStart]);
         assert.equal(raceForFirst.textHash, raceForSecond.textHash);
         assert.deepEqual(raceForFirst.words, raceForSecond.words);
+        assert.ok(raceForFirst.startsInMs >= 0);
         assert.equal(multiplayer.state.rooms.size, 1);
+
+        first.close();
+        first = await connect(url, signToken(keys.privateKey, 'user_one'));
+        const resumed = await emitAck(first, 'match:resume', firstMatch.roomId);
+        assert.equal(resumed.room.roomId, firstMatch.roomId);
+        assert.equal(resumed.room.state, 'racing');
+
+        await new Promise((resolve) => setTimeout(resolve, raceForFirst.startsInMs + 750));
+        const firstThreeChars = raceForFirst.words.slice(0, 3)
+            .reduce((total, word) => total + word.length, 0) + 2;
+        await emitAck(first, 'race:progress', [firstMatch.roomId, 1, 3, firstThreeChars, 0]);
+        const duplicate = await emitAck(first, 'race:progress', [firstMatch.roomId, 1, 3, firstThreeChars, 0]);
+        assert.equal(duplicate.duplicate, true);
     } finally {
         if (first) first.close();
         if (second) second.close();

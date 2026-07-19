@@ -452,7 +452,7 @@
             window.scrollTo(0, 0);
 
             if (typeof window.__spaPageInit === 'function') {
-                try { window.__spaPageInit(); } catch (e) { console.warn('__spaPageInit', e); }
+                try { await Promise.resolve(window.__spaPageInit()); } catch (e) { console.warn('__spaPageInit', e); }
             }
 
             if (path === '/settings' && window.usertypo_settingsApi && typeof window.usertypo_settingsApi.initSettingsPage === 'function') {

@@ -793,13 +793,13 @@ html {
         isTyping: function () { return !!(controller && controller.isTyping()); },
     };
 
-    window.__spaPageInit = function () {
+    window.__spaPageInit = async function () {
         if (!window.usertypoDualPage) {
             if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
             return;
         }
         controller = window.usertypoDualPage.createController();
-        controller.init();
+        await controller.init();
 
         if (typeof window.usertypo_lockTypingScroll === 'function') {
             window.usertypo_lockTypingScroll();
