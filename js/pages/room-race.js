@@ -179,7 +179,7 @@
                 element.className = 'char extra';
                 wordElement.appendChild(element);
             }
-            element.textContent = key;
+            element.textContent = index < word.length ? word[index] : key;
             element.className = 'char ' + (index >= word.length ? 'extra ' : '') + (
                 correct
                     ? 'text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'
@@ -246,7 +246,7 @@
             if (state !== 'racing' || event.ctrlKey || event.altKey || event.metaKey) return;
             if (event.key === 'Backspace') {
                 event.preventDefault();
-                if (currentCharIndex > 0) {
+                if (currentCharIndex > 0 && (lockedAt == null || currentCharIndex > lockedAt)) {
                     currentCharIndex -= 1;
                     resetCharacter(currentCharIndex);
                     updateCaret();
@@ -258,11 +258,18 @@
             event.preventDefault();
             var word = words[currentWordIndex];
             if (!word) return;
-            totalKeystrokes += 1;
 
             if (lockedAt != null) {
                 if (currentCharIndex - lockedAt >= 20) return;
-                if (currentCharIndex === lockedAt && key === word[lockedAt]) {
+                totalKeystrokes += 1;
+                var correctionKey = lockedAt < word.length ? word[lockedAt] : ' ';
+                if (currentCharIndex === lockedAt && key === correctionKey) {
+                    if (lockedAt >= word.length) {
+                        resetCharacter(lockedAt);
+                        lockedAt = null;
+                        finishWord();
+                        return;
+                    }
                     paint(currentCharIndex, key, true);
                     lockedAt = null;
                 } else {
@@ -273,6 +280,7 @@
                 updateCaret();
                 return;
             }
+            totalKeystrokes += 1;
             if (key === ' ') {
                 if (currentCharIndex === word.length) finishWord();
                 else {

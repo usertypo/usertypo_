@@ -343,7 +343,9 @@
                 wordElement.appendChild(element);
                 extraChars += 1;
             }
-            element.textContent = typed;
+            element.textContent = charIndex < words[wordIndex].length
+                ? words[wordIndex][charIndex]
+                : typed;
             element.className = 'char transition-colors duration-75 ' + (
                 correct && !forcedRed
                     ? 'text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'
@@ -487,6 +489,7 @@
         function handleBackspace(event) {
             event.preventDefault();
             if (currentCharIndex <= 0) return;
+            if (unresolvedError && currentCharIndex <= unresolvedError.charIndex) return;
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
             currentCharIndex -= 1;
             resetCharacter(currentWordIndex, currentCharIndex);
@@ -498,18 +501,27 @@
             var key = event.key === 'Spacebar' ? ' ' : event.key;
             if (key.length !== 1) return;
             event.preventDefault();
-            totalKeystrokes += 1;
-            keystrokeTimes.push(Date.now());
             var word = words[currentWordIndex];
             if (!word) return;
 
             if (unresolvedError) {
                 var trailing = currentCharIndex - unresolvedError.charIndex;
                 if (trailing >= 20) return;
-                var expectedAtLock = currentCharIndex === unresolvedError.charIndex
+                totalKeystrokes += 1;
+                keystrokeTimes.push(Date.now());
+                var atFirstError = currentCharIndex === unresolvedError.charIndex;
+                var correctionKey = unresolvedError.charIndex < word.length
                     ? word[unresolvedError.charIndex]
-                    : null;
-                if (expectedAtLock && key === expectedAtLock) {
+                    : ' ';
+                if (atFirstError && key === correctionKey) {
+                    if (unresolvedError.charIndex >= word.length) {
+                        resetCharacter(currentWordIndex, unresolvedError.charIndex);
+                        unresolvedError = null;
+                        correctKeystrokeTimes.push(Date.now());
+                        if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                        completeWord();
+                        return;
+                    }
                     paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
                     correctKeystrokeTimes.push(Date.now());
                     if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
@@ -525,6 +537,8 @@
                 return;
             }
 
+            totalKeystrokes += 1;
+            keystrokeTimes.push(Date.now());
             if (key === ' ') {
                 if (currentCharIndex === word.length) {
                     correctKeystrokeTimes.push(Date.now());
