@@ -6,6 +6,54 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Home - Typing Test | usertypo_ </title>
+    <link rel="preload" href="/logo-assets/typ_.png" as="image" />
+    <link rel="preload" href="/logo-assets/user.png" as="image" />
+    <link rel="preload" href="/logo-assets/o.png" as="image" />
+    <script>
+        (function installAssetRecovery() {
+            const retryKey = 'usertypo_asset_retry_count';
+            let reloadScheduled = false;
+            const logoUrls = ['/logo-assets/typ_.png', '/logo-assets/user.png', '/logo-assets/o.png'];
+            const logoReady = Promise.all(logoUrls.map((url) => new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = resolve;
+                image.onerror = reject;
+                image.src = url;
+            })));
+
+            window.usertypoRevealLogos = function (root) {
+                logoReady.then(() => {
+                    (root || document).querySelectorAll('.header-logo-container').forEach((logo) => {
+                        logo.classList.add('logo-assets-ready');
+                    });
+                }).catch(() => {
+                    // A same-origin asset failure is handled by the retry listener below.
+                });
+            };
+
+            window.usertypoMarkAssetBootSuccessful = function () {
+                sessionStorage.removeItem(retryKey);
+            };
+
+            window.addEventListener('error', function (event) {
+                const target = event.target;
+                if (!target || !['SCRIPT', 'LINK', 'IMG'].includes(target.tagName)) return;
+                const resource = target.src || target.href;
+                if (!resource) return;
+                let url;
+                try { url = new URL(resource, location.href); } catch (_) { return; }
+                const isLocal = url.origin === location.origin;
+                const isCriticalCdn = target.tagName === 'SCRIPT' && url.hostname === 'cdn.tailwindcss.com';
+                if ((!isLocal && !isCriticalCdn) || reloadScheduled) return;
+
+                const attempts = Number(sessionStorage.getItem(retryKey) || 0);
+                if (attempts >= 2) return;
+                reloadScheduled = true;
+                sessionStorage.setItem(retryKey, String(attempts + 1));
+                setTimeout(() => location.reload(), 500);
+            }, true);
+        })();
+    </script>
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -604,7 +652,8 @@
 
         /* Header Logo */
         .header-logo-link { display: flex; align-items: center; justify-content: center; height: 48px; width: 180px; }
-        .header-logo-container { position: relative; width: 500px; height: 500px; transform: scale(0.5); margin: -250px; flex-shrink: 0; pointer-events: none; }
+        .header-logo-container { position: relative; width: 500px; height: 500px; transform: scale(0.5); margin: -250px; flex-shrink: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
+        .header-logo-container.logo-assets-ready { opacity: 1; }
         .header-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
         .header-typ-layer { background-color: #95efff; -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
@@ -747,7 +796,11 @@
     </header>
 
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
-        <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
+        <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0">
+            <div class="flex-1 flex items-center justify-center text-slate-500 text-sm font-mono">
+                Loading usertypo_…
+            </div>
+        </div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-end items-center relative z-20 zen-element shrink-0 hidden">
             <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-3"
                 title="Mute sounds" aria-label="Mute sounds">
@@ -862,16 +915,19 @@
     <script src="js/api/leaderboards.js"></script>
     <script src="js/api/friends.js"></script>
     <script src="js/api/presence.js"></script>
-    <script src="js/api/notifications.js"></script>
+    <script src="js/api/notifications.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="js/api/multiplayer.js"></script>
-    <script src="js/pages/dual-race.js"></script>
-    <script src="js/pages/room-race.js"></script>
-    <script src="dual.js?v=5"></script>
-    <script src="js/page-fragments.js?v=7"></script>
-    <script src="js/router.js"></script>
+    <script src="js/api/multiplayer.js?v=2"></script>
+    <script src="js/pages/dual-race.js?v=2"></script>
+    <script src="js/pages/room-race.js?v=2"></script>
+    <script src="dual.js?v=6"></script>
+    <script src="js/page-fragments.js?v=8"></script>
+    <script src="js/router.js?v=2"></script>
     <script>
     (function initShellBubbleMenu() {
+        if (typeof window.usertypoRevealLogos === 'function') {
+            window.usertypoRevealLogos(document);
+        }
         const expandingBubble = document.getElementById('expanding-bubble');
         const bubbleToggle = document.getElementById('bubble-toggle');
         if (!expandingBubble || !bubbleToggle) return;

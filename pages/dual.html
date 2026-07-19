@@ -789,8 +789,8 @@ html {
     let controller = null;
 
     window.usertypo_testRuntime = {
-        isActive: function () { return !!controller; },
-        isTyping: function () { return !!controller; },
+        isActive: function () { return !!(controller && controller.isActive()); },
+        isTyping: function () { return !!(controller && controller.isTyping()); },
     };
 
     window.__spaPageInit = function () {

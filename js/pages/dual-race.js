@@ -15,6 +15,7 @@
         var state = 'joining';
         var config = null;
         var words = [];
+        var wordOffsets = [];
         var players = [];
         var bot = null;
         var selfUserId = '';
@@ -34,6 +35,11 @@
         var updateTimer = null;
         var localFinished = false;
         var latestResults = null;
+        var lineHeight = 0;
+        var opponentOffset = 0;
+        var opponentReportedWpm = 0;
+        var opponentFrameAt = 0;
+        var opponentAnimationFrame = null;
 
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
@@ -52,6 +58,43 @@
 
         function listen(name, handler) {
             window.addEventListener('usertypo:multiplayer:' + name, handler, { signal: signal });
+        }
+
+        function updateKeymapHighlight(pressedKey, isKeyDown) {
+            var keyboard = window.usertypo_settings?.keyboardLayout || {};
+            if (!keyboard.keymapMode || keyboard.keymapMode === 'Off') return;
+            var keys = document.querySelectorAll('#test-view .keymap-key');
+            if (keyboard.keymapLegend === 'Dynamic') {
+                var expected = words[currentWordIndex]?.[currentCharIndex] || '';
+                var uppercase = keyboard.keymapMode === 'Next'
+                    ? /[A-Z]/.test(expected)
+                    : (pressedKey === 'Shift' && isKeyDown);
+                keys.forEach(function (key) {
+                    var text = key.querySelector('.keymap-main-text');
+                    if (text && text.textContent.length === 1) {
+                        text.textContent = uppercase ? text.textContent.toUpperCase() : text.textContent.toLowerCase();
+                    }
+                });
+            }
+            if (keyboard.keymapMode === 'Static') return;
+            keys.forEach(function (key) {
+                var chars = key.dataset.chars || '';
+                var special = key.dataset.special || '';
+                var matches = false;
+                if (keyboard.keymapMode === 'Next') {
+                    var next = words[currentWordIndex]?.[currentCharIndex] || ' ';
+                    matches = chars.includes(next) || (next === ' ' && special === 'Space');
+                } else if (pressedKey) {
+                    matches = (pressedKey.length === 1 && chars.includes(pressedKey))
+                        || (pressedKey === ' ' && special === 'Space')
+                        || pressedKey === special;
+                }
+                key.classList.toggle('bg-primary/40', matches);
+                key.classList.toggle('scale-95', matches);
+                key.classList.toggle('ring-2', matches);
+                key.classList.toggle('ring-primary/50', matches);
+                key.classList.toggle('bg-primary/10', !matches);
+            });
         }
 
         function showMessage(message, detail) {
@@ -103,9 +146,9 @@
         }
 
         function appendWord(word, wordIndex) {
-            var wordElement = document.createElement('span');
+            var wordElement = document.createElement('div');
             wordElement.id = 'word-' + wordIndex;
-            wordElement.className = 'word inline-block mr-[0.65em] mb-[0.3em]';
+            wordElement.className = 'word';
             word.split('').forEach(function (character, charIndex) {
                 var characterElement = document.createElement('span');
                 characterElement.id = 'char-' + wordIndex + '-' + charIndex;
@@ -118,48 +161,159 @@
 
         function renderPrompt() {
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
+            wordOffsets = [];
+            var runningOffset = 0;
+            words.forEach(function (word, index) {
+                wordOffsets[index] = runningOffset;
+                runningOffset += word.length + 1;
+            });
             words.forEach(appendWord);
+            textContainer.offsetHeight;
             requestAnimationFrame(function () {
-                if (typingArea) typingArea.style.height = Math.max(112, Math.round(parseFloat(getComputedStyle(typingArea).lineHeight || '42') * 3)) + 'px';
+                updateLineLayout();
                 updateCaret();
             });
         }
 
+        function getTapeMode() {
+            return document.body.getAttribute('data-tape-mode')
+                || window.usertypo_settings?.cursor?.tapeModeInDual
+                || 'letter';
+        }
+
         function wordOffset(wordIndex) {
+            if (wordOffsets[wordIndex] != null) return wordOffsets[wordIndex];
             var offset = 0;
             for (var i = 0; i < wordIndex && i < words.length; i += 1) offset += words[i].length + 1;
             return offset;
         }
 
-        function positionForCompletedWords(completedWords) {
-            var index = Math.max(0, Math.min(words.length - 1, completedWords));
-            return { wordIndex: index, charIndex: 0 };
+        function offsetToPosition(offset) {
+            for (var i = 0; i < words.length; i += 1) {
+                var start = wordOffset(i);
+                if (offset <= start + words[i].length) {
+                    return { wordIndex: i, charIndex: Math.max(0, Math.round(offset - start)) };
+                }
+            }
+            var last = Math.max(0, words.length - 1);
+            return { wordIndex: last, charIndex: words[last] ? words[last].length : 0 };
+        }
+
+        function updateLineLayout() {
+            var wordElements = Array.from(textContainer.querySelectorAll('.word'));
+            if (!wordElements.length) return;
+            var tapeMode = getTapeMode();
+            if (tapeMode === 'word' || tapeMode === 'letter') {
+                wordElements.forEach(function (element) { element.dataset.line = '0'; });
+                lineHeight = wordElements[0].offsetHeight + parseFloat(getComputedStyle(textContainer).rowGap || 0);
+                if (!lineHeight || lineHeight <= wordElements[0].offsetHeight) {
+                    lineHeight = parseFloat(getComputedStyle(wordElements[0]).lineHeight) || 43;
+                }
+                typingArea.style.height = lineHeight + 'px';
+                handleScroll();
+                return;
+            }
+
+            var currentTop = -1;
+            var currentLine = -1;
+            wordElements.forEach(function (element) {
+                if (currentTop < 0 || Math.abs(element.offsetTop - currentTop) > 10) {
+                    currentTop = element.offsetTop;
+                    currentLine += 1;
+                }
+                element.dataset.line = String(currentLine);
+            });
+            var firstLine = textContainer.querySelector('.word[data-line="0"]');
+            var secondLine = textContainer.querySelector('.word[data-line="1"]');
+            lineHeight = firstLine && secondLine
+                ? secondLine.offsetTop - firstLine.offsetTop
+                : (parseFloat(getComputedStyle(wordElements[0]).lineHeight) || 43) * 1.3;
+            typingArea.style.height = (lineHeight * Math.min(3, currentLine + 1)) + 'px';
+            handleScroll();
+        }
+
+        function applyTapeScroll() {
+            var currentWord = document.getElementById('word-' + currentWordIndex);
+            if (!currentWord || !typingArea.clientWidth) return;
+            var center = typingArea.clientWidth / 2;
+            var containerRect = textContainer.getBoundingClientRect();
+            if (getTapeMode() === 'word') {
+                var wordRect = currentWord.getBoundingClientRect();
+                textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
+                return;
+            }
+            var target = document.getElementById('char-' + currentWordIndex + '-' + currentCharIndex);
+            var after = false;
+            if (!target) {
+                target = document.getElementById('char-' + currentWordIndex + '-' + (currentCharIndex - 1));
+                after = true;
+            }
+            if (!target) target = currentWord;
+            var targetRect = target.getBoundingClientRect();
+            var targetLeft = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
+        }
+
+        function handleScroll() {
+            var currentWord = document.getElementById('word-' + currentWordIndex);
+            if (!currentWord) return;
+            var tapeMode = getTapeMode();
+            if (tapeMode === 'word' || tapeMode === 'letter') {
+                applyTapeScroll();
+                return;
+            }
+            var line = Number.parseInt(currentWord.dataset.line || '0', 10);
+            var targetLine = Math.max(0, line - 1);
+            var targetWord = textContainer.querySelector('.word[data-line="' + targetLine + '"]');
+            var firstWord = textContainer.querySelector('.word[data-line="0"]');
+            var offset = targetWord && firstWord
+                ? targetWord.offsetTop - firstWord.offsetTop
+                : Math.max(0, line - 1) * lineHeight;
+            textContainer.style.transform = 'translateY(-' + offset + 'px)';
         }
 
         function positionCaretAt(element, wordIndex, charIndex) {
             if (!element || !textContainer || !words[wordIndex]) return;
-            var target = document.getElementById('char-' + wordIndex + '-' + Math.min(charIndex, words[wordIndex].length - 1));
             var wordElement = document.getElementById('word-' + wordIndex);
-            if (!target || !wordElement) return;
+            if (!wordElement) return;
+            var target = document.getElementById('char-' + wordIndex + '-' + charIndex);
+            var after = false;
+            if (!target) {
+                target = document.getElementById('char-' + wordIndex + '-' + (charIndex - 1));
+                after = true;
+            }
+            if (!target) target = wordElement;
             var targetRect = target.getBoundingClientRect();
             var containerRect = textContainer.getBoundingClientRect();
-            var afterLast = charIndex >= words[wordIndex].length;
             element.style.display = 'block';
-            element.style.position = 'absolute';
-            element.style.left = (targetRect.left - containerRect.left + (afterLast ? targetRect.width : 0)) + 'px';
-            element.style.top = (targetRect.top - containerRect.top) + 'px';
-            element.style.height = targetRect.height + 'px';
-
-            var areaRect = typingArea.getBoundingClientRect();
-            var activeTop = wordElement.getBoundingClientRect().top - areaRect.top;
-            if (activeTop > areaRect.height * 0.55) {
-                var shift = Math.max(0, activeTop - parseFloat(getComputedStyle(typingArea).lineHeight || '42'));
-                textContainer.style.transform = 'translateY(-' + shift + 'px)';
-            }
+            var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var top = targetRect.top - containerRect.top;
+            element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
+            element.style.width = targetRect.width + 'px';
         }
 
         function updateCaret() {
+            handleScroll();
             positionCaretAt(caret, currentWordIndex, currentCharIndex);
+        }
+
+        function animateOpponent(now) {
+            if (state === 'finished') {
+                opponentAnimationFrame = null;
+                return;
+            }
+            if (!opponentFrameAt) opponentFrameAt = now;
+            var elapsedSeconds = Math.min(0.1, Math.max(0, (now - opponentFrameAt) / 1000));
+            opponentFrameAt = now;
+            if (state === 'racing' || state === 'waiting-result') {
+                opponentOffset += (opponentReportedWpm * 5 / 60) * elapsedSeconds;
+                var last = Math.max(0, words.length - 1);
+                var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
+                opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
+                var position = offsetToPosition(opponentOffset);
+                positionCaretAt(opponentCaret, position.wordIndex, position.charIndex);
+            }
+            opponentAnimationFrame = requestAnimationFrame(animateOpponent);
         }
 
         function resetCharacter(wordIndex, charIndex) {
@@ -278,6 +432,7 @@
         function handleBackspace(event) {
             event.preventDefault();
             if (currentCharIndex <= 0) return;
+            if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
             currentCharIndex -= 1;
             resetCharacter(currentWordIndex, currentCharIndex);
             updateCaret();
@@ -301,10 +456,12 @@
                     : null;
                 if (expectedAtLock && key === expectedAtLock) {
                     paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                     unresolvedError = null;
                     currentCharIndex += 1;
                 } else {
                     paintCharacter(currentWordIndex, currentCharIndex, key, false, true);
+                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     currentCharIndex += 1;
                     errorsMade += 1;
                 }
@@ -315,6 +472,7 @@
             if (key === ' ') {
                 if (currentCharIndex === word.length) completeWord();
                 else {
+                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
                     paintCharacter(currentWordIndex, currentCharIndex, ' ', false, true);
                     currentCharIndex += 1;
@@ -327,7 +485,9 @@
             var expected = word[currentCharIndex];
             if (key === expected) {
                 paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
             } else {
+                if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                 unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
                 paintCharacter(currentWordIndex, currentCharIndex, key, false, true);
                 errorsMade += 1;
@@ -347,6 +507,7 @@
 
         function onKeyDown(event) {
             if (event.ctrlKey || event.altKey || event.metaKey) return;
+            updateKeymapHighlight(event.key, true);
             if (event.key === 'Backspace') handleBackspace(event);
             else handlePrintable(event);
         }
@@ -355,6 +516,10 @@
             if (!payload || payload.roomId !== roomId) return;
             config = payload.config;
             words = payload.words || [];
+            window.usertypo_getKeymapRenderArgs = function () {
+                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
+            };
+            window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
             startTime = payload.startsAt;
@@ -369,11 +534,31 @@
             }
             renderPrompt();
             updateConfigUi();
+            opponentOffset = 0;
+            opponentReportedWpm = 0;
+            opponentFrameAt = 0;
+            opponentCaret.style.display = 'block';
+            if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
+            opponentAnimationFrame = requestAnimationFrame(animateOpponent);
             var wait = Math.max(0, startTime - Date.now());
             setTimeout(function () {
                 state = 'racing';
                 hideMessage();
+                if (window.usertypo_settingsApi) {
+                    try {
+                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                    } catch (_) { /* retain race defaults */ }
+                }
+                updateLineLayout();
+                updateCaret();
+                document.querySelectorAll('.typing-stat').forEach(function (element) {
+                    element.classList.remove('opacity-0');
+                });
+                caret.classList.remove('animate-breath');
                 document.addEventListener('keydown', onKeyDown, { signal: signal });
+                document.addEventListener('keyup', function (event) {
+                    updateKeymapHighlight(event.key, false);
+                }, { signal: signal });
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
             }, wait);
@@ -397,8 +582,13 @@
 
         function applyOpponentProgress(payload) {
             if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
-            if (opponentWpmDisplay) opponentWpmDisplay.textContent = payload[1];
-            var position = positionForCompletedWords(Number(payload[4]) || 0);
+            opponentReportedWpm = Math.max(0, Number(payload[1]) || 0);
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(opponentReportedWpm);
+            var completedWords = Math.max(0, Math.min(words.length, Number(payload[4]) || 0));
+            opponentOffset = completedWords >= words.length
+                ? wordOffset(words.length - 1) + words[words.length - 1].length
+                : wordOffset(completedWords);
+            var position = offsetToPosition(opponentOffset);
             positionCaretAt(opponentCaret, position.wordIndex, position.charIndex);
         }
 
@@ -433,6 +623,8 @@
             state = 'finished';
             latestResults = payload;
             clearInterval(updateTimer);
+            if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
+            opponentAnimationFrame = null;
             var rows = payload[2] || [];
             var me = players.find(function (player) { return player.userId === selfUserId; }) || { name: 'You', avatarUrl: '' };
             var other = players.find(function (player) { return player.userId !== selfUserId; })
@@ -516,6 +708,11 @@
             }
             showMessage('Joining dual', 'Waiting for the other player.');
             bindEvents();
+            window.addEventListener('resize', function () {
+                if (!words.length) return;
+                updateLineLayout();
+                updateCaret();
+            }, { signal: signal });
             try {
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 config = response.room && response.room.config;
@@ -532,15 +729,26 @@
 
         function cleanup() {
             clearInterval(updateTimer);
+            if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
+            opponentAnimationFrame = null;
             if (state !== 'finished' && roomId && window.usertypoMultiplayer) {
                 var activeSocket = window.usertypoMultiplayer.getSocket();
                 if (activeSocket && activeSocket.connected) activeSocket.emit('race:leave', roomId);
             }
             abort.abort();
+            if (window.updateKeymapHighlight === updateKeymapHighlight) {
+                window.updateKeymapHighlight = null;
+            }
+            window.usertypo_getKeymapRenderArgs = null;
             latestResults = null;
         }
 
-        return { init: init, cleanup: cleanup };
+        return {
+            init: init,
+            cleanup: cleanup,
+            isActive: function () { return state === 'racing'; },
+            isTyping: function () { return state === 'racing'; },
+        };
     }
 
     window.usertypoDualPage = {

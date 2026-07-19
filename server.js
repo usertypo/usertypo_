@@ -113,13 +113,16 @@ app.use(express.static(ROOT, {
     dotfiles: 'deny',
     fallthrough: true,
     index: false,
-    maxAge: '60s',
+    maxAge: 0,
     setHeaders(res, filePath) {
-        if (path.extname(filePath).toLowerCase() === '.html') {
+        const extension = path.extname(filePath).toLowerCase();
+        if (['.html', '.js', '.css', '.json'].includes(extension)) {
             res.setHeader('Cache-Control', 'no-cache');
-            if (filePath.includes(path.sep + 'pages' + path.sep)) {
-                res.setHeader('X-Usertypo-Fragment', '1');
-            }
+        } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.woff', '.woff2'].includes(extension)) {
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+        if (extension === '.html' && filePath.includes(path.sep + 'pages' + path.sep)) {
+            res.setHeader('X-Usertypo-Fragment', '1');
         }
     },
 }));

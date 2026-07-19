@@ -28,6 +28,7 @@
     };
 
     let isNavigating = false;
+    let queuedPath = null;
     let activePageStyleEl = null;
 
     function normalizePath(pathname) {
@@ -171,7 +172,7 @@
     function executeScripts(scriptTags, path) {
         return scriptTags.reduce(function (promise, tagHtml) {
             return promise.then(function () {
-                return new Promise(function (resolve) {
+                return new Promise(function (resolve, reject) {
                     var tmp = document.createElement('div');
                     tmp.innerHTML = tagHtml;
                     var old = tmp.querySelector('script');
@@ -181,7 +182,7 @@
                         script.setAttribute('data-spa-page-script', '1');
                         script.src = old.src;
                         script.onload = function () { resolve(); };
-                        script.onerror = function () { resolve(); };
+                        script.onerror = function () { reject(new Error('Failed to load page script: ' + old.src)); };
                         document.body.appendChild(script);
                         return;
                     }
@@ -193,6 +194,8 @@
                         runPageScript();
                     } catch (e) {
                         console.error('SPA page script error (' + (path || 'unknown') + '):', e);
+                        reject(e);
+                        return;
                     }
                     resolve();
                 });
@@ -405,7 +408,10 @@
     }
 
     async function loadRoute(path) {
-        if (isNavigating) return;
+        if (isNavigating) {
+            queuedPath = path;
+            return;
+        }
         isNavigating = true;
 
         var routeConfig = routes[path];
@@ -428,6 +434,9 @@
             var parsed = parseFragment(html);
             injectPageStyles(parsed.styles, path);
             container.innerHTML = parsed.content;
+            if (typeof window.usertypoRevealLogos === 'function') {
+                window.usertypoRevealLogos(container);
+            }
             restartAnimations(spaContent || container);
 
             // Always re-execute page scripts on every visit
@@ -472,12 +481,20 @@
             if (path === '/room') {
                 prepareRoomView();
             }
+            if (typeof window.usertypoMarkAssetBootSuccessful === 'function') {
+                window.usertypoMarkAssetBootSuccessful();
+            }
         } catch (err) {
             console.error('SPA load failed:', err);
             container.innerHTML = '<div class="p-12 text-red-400">Failed to load page.</div>';
         }
 
         isNavigating = false;
+        if (queuedPath) {
+            var nextPath = queuedPath;
+            queuedPath = null;
+            loadRoute(nextPath);
+        }
     }
 
     function interceptLinkClick(e) {

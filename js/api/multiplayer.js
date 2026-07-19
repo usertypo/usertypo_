@@ -175,7 +175,7 @@
     }
 
     async function ensureConnected() {
-        if (socket && socket.connected) return socket;
+        if (socket && socket.connected && readyState) return socket;
         if (connectPromise) return connectPromise;
         connectPromise = (async function () {
             if (!window.io) throw new Error('Socket.IO client is not loaded.');
@@ -185,35 +185,33 @@
             if (!state.isSignedIn || !window.Clerk || !window.Clerk.session) {
                 throw new Error('Sign in to use multiplayer.');
             }
-            var url = window.USERTYPO_CONFIG
-                && window.USERTYPO_CONFIG.multiplayer
-                && window.USERTYPO_CONFIG.multiplayer.url;
-            socket = window.io(url || undefined, {
-                autoConnect: false,
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionAttempts: 8,
-                reconnectionDelay: 500,
-                reconnectionDelayMax: 4000,
-                auth: function (callback) {
-                    window.Clerk.session.getToken()
-                        .then(function (token) { callback({ token: token }); })
-                        .catch(function () { callback({ token: '' }); });
-                },
-            });
-            bindSocketEvents(socket);
-            socket.connect();
+            if (!socket) {
+                var url = window.USERTYPO_CONFIG
+                    && window.USERTYPO_CONFIG.multiplayer
+                    && window.USERTYPO_CONFIG.multiplayer.url;
+                socket = window.io(url || undefined, {
+                    autoConnect: false,
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: Infinity,
+                    reconnectionDelay: 500,
+                    reconnectionDelayMax: 4000,
+                    auth: function (callback) {
+                        window.Clerk.session.getToken()
+                            .then(function (token) { callback({ token: token }); })
+                            .catch(function () { callback({ token: '' }); });
+                    },
+                });
+                bindSocketEvents(socket);
+            }
+            if (!socket.active) socket.connect();
             await new Promise(function (resolve, reject) {
                 var timeout = nativeSetTimeout(function () {
                     reject(new Error('Could not connect to the multiplayer server.'));
-                }, 10_000);
+                }, 20_000);
                 socket.once('multiplayer:ready', function () {
                     clearTimeout(timeout);
                     resolve();
-                });
-                socket.once('connect_error', function (error) {
-                    clearTimeout(timeout);
-                    reject(error);
                 });
             });
             return socket;
