@@ -34,6 +34,11 @@ create policy "Users can update their notifications"
   using (user_id = (select auth.jwt() ->> 'sub'))
   with check (user_id = (select auth.jwt() ->> 'sub'));
 
+drop policy if exists "Users can delete their notifications" on public.notifications;
+create policy "Users can delete their notifications"
+  on public.notifications for delete
+  using (user_id = (select auth.jwt() ->> 'sub'));
+
 -- Realtime: allow clients to receive INSERT/UPDATE for their rows
 do $$
 begin
@@ -142,6 +147,7 @@ begin
     n.created_at
   from public.notifications n
   where n.user_id = v_me
+    and n.created_at >= now() - interval '1 day'
   order by n.created_at desc
   limit v_limit;
 end;

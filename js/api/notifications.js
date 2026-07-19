@@ -14,11 +14,14 @@
     var channel = null;
     var started = false;
     var knownIds = {};
+    var dismissedIds = {};
     var pollTimer = null;
-    var toastHideTimer = null;
     var pendingCollapseTimer = null;
     var pendingIndicatorId = null;
+    var lastExpiryPurgeAt = 0;
     var POLL_MS = 2000;
+    var TOAST_MS = 5000;
+    var RETENTION_MS = 24 * 60 * 60 * 1000;
 
     function escapeHtml(str) {
         return String(str == null ? '' : str)
@@ -68,152 +71,170 @@
         } catch (e) { /* ignore */ }
     }
 
-    /** Same bottom-right toast used for "Changes saved" / failed tests. */
-    function hideToast() {
-        var toast = document.getElementById('save-toast');
-        var actions = document.getElementById('save-toast-actions');
-        if (!toast) return;
-        toast.classList.remove('visible');
-        toast.style.opacity = '0';
-        toast.style.pointerEvents = 'none';
-        if (actions) actions.classList.add('hidden');
+    function isRecent(notification) {
+        var created = new Date(notification && notification.created_at).getTime();
+        return !isFinite(created) || Date.now() - created < RETENTION_MS;
     }
 
-    function showToast(notificationOrMessage, iconName) {
-        var toast = document.getElementById('save-toast');
-        var msg = document.getElementById('toast-msg');
-        var icon = document.getElementById('toast-icon');
-        var actions = document.getElementById('save-toast-actions');
-        var acceptBtn = document.getElementById('toast-accept-btn');
-        var declineBtn = document.getElementById('toast-decline-btn');
-        if (!toast || !msg || !icon) return;
+    function removeToastElement(toast) {
+        if (!toast || toast.dataset.removing === 'true') return;
+        toast.dataset.removing = 'true';
+        if (typeof toast._cancelDismiss === 'function') toast._cancelDismiss();
+        toast.classList.remove('is-visible');
+        nativeSetTimeout(function () {
+            var stack = toast.parentNode;
+            if (!stack) return;
+            var before = Array.prototype.map.call(stack.children, function (item) {
+                return { item: item, top: item.getBoundingClientRect().top };
+            });
+            toast.remove();
+            before.forEach(function (entry) {
+                if (!entry.item.isConnected || typeof entry.item.animate !== 'function') return;
+                var delta = entry.top - entry.item.getBoundingClientRect().top;
+                if (delta) entry.item.animate(
+                    [{ transform: 'translateY(' + delta + 'px)' }, { transform: 'translateY(0)' }],
+                    { duration: 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+                );
+            });
+        }, 350);
+    }
 
+    async function deleteNotification(notification, row) {
+        if (!notification || !notification.id) return;
+        if (row) row.classList.add('is-removing');
+        dismissedIds[notification.id] = true;
+        cached = cached.filter(function (item) { return item.id !== notification.id; });
+        delete knownIds[notification.id];
+        unreadCount = cached.filter(function (item) { return !item.read_at; }).length;
+        updateBadges();
+        if (!row) renderNotificationsPanel();
+        else nativeSetTimeout(renderNotificationsPanel, 250);
+
+        if (notification._ephemeral) return;
+        try {
+            var client = await window.usertypoDb.getClient();
+            var result = await client.from('notifications').delete().eq('id', notification.id);
+            if (result.error) throw result.error;
+        } catch (error) {
+            console.warn('[usertypo notifications] delete failed', error);
+        }
+    }
+
+    function actionsFor(notification) {
+        var custom = notification && Array.isArray(notification._actions)
+            ? notification._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
+            : [];
+        if (custom.length) return custom;
+        var requestId = requestIdFromNotification(notification);
+        if (!notification || notification.type !== 'friend_request' || !requestId || !window.usertypoFriends) return [];
+        return [
+            {
+                label: 'Accept',
+                run: function () {
+                    return window.usertypoFriends.acceptRequest(requestId).then(function () {
+                        notifyFriendsChanged();
+                        showToast('Friend request accepted', 'check_circle');
+                    });
+                },
+            },
+            {
+                label: 'Decline',
+                run: function () {
+                    return window.usertypoFriends.declineRequest(requestId).then(function () {
+                        notifyFriendsChanged();
+                        showToast('Friend request declined', 'cancel');
+                    });
+                },
+            },
+        ];
+    }
+
+    function bindAction(button, action, notification, toast, row) {
+        if (!button || !action) return;
+        button.addEventListener('click', async function (event) {
+            event.stopPropagation();
+            var scope = button.parentNode;
+            Array.prototype.forEach.call(scope.querySelectorAll('button'), function (item) { item.disabled = true; });
+            if (toast) removeToastElement(toast);
+            var deletion = deleteNotification(notification, row);
+            try {
+                await action.run(notification);
+                await deletion;
+            } catch (error) {
+                var message = error && error.message ? error.message : 'Action failed';
+                if (window.usertypoFriends && typeof window.usertypoFriends.mapRpcError === 'function') {
+                    try { message = window.usertypoFriends.mapRpcError(error).message; } catch (_) { /* ignore */ }
+                }
+                showToast(message, 'error');
+            }
+        });
+    }
+
+    /** Bottom-right alerts are independent, five-second, opacity-only toasts. */
+    function showToast(notificationOrMessage, iconName) {
+        var stack = document.getElementById('save-toast');
+        if (!stack) return;
         var notification = (typeof notificationOrMessage === 'object' && notificationOrMessage) ? notificationOrMessage : null;
-        var text = notification
-            ? (notification.title || 'Notification')
-            : String(notificationOrMessage || 'Notification');
         var iconText = iconName || 'notifications';
         if (notification) {
             if (notification.type === 'friend_accepted') iconText = 'check_circle';
             else if (notification.type === 'friend_request') iconText = 'person_add';
+            else if (String(notification.type || '').indexOf('duel_') === 0) iconText = 'swords';
         }
 
-        msg.textContent = text;
+        var toast = document.createElement('div');
+        toast.className = 'notification-toast glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]';
+        toast.style.backdropFilter = 'blur(20px)';
+        var icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined ' +
+            ((iconText === 'error' || iconText === 'cancel') ? 'text-error' : 'text-primary') +
+            ' text-[18px] shrink-0';
         icon.textContent = iconText;
-        if (iconText === 'error' || iconText === 'cancel') {
-            icon.className = 'material-symbols-outlined text-error text-[18px] shrink-0';
-        } else {
-            icon.className = 'material-symbols-outlined text-primary text-[18px] shrink-0';
+        var message = document.createElement('span');
+        message.className = 'notification-toast-message text-sm font-semibold text-slate-100';
+        message.textContent = notification ? (notification.title || 'Notification') : String(notificationOrMessage || 'Notification');
+        toast.appendChild(icon);
+        toast.appendChild(message);
+
+        var actions = notification ? actionsFor(notification) : [];
+        if (actions.length) {
+            var actionWrap = document.createElement('div');
+            actionWrap.className = 'notification-toast-actions';
+            actions.forEach(function (action, index) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = action.label || (index ? 'Dismiss' : 'Open');
+                button.className = index
+                    ? 'px-2.5 py-1 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors'
+                    : 'px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors';
+                actionWrap.appendChild(button);
+                bindAction(button, action, notification, toast, null);
+            });
+            toast.appendChild(actionWrap);
         }
 
-        var requestId = notification ? requestIdFromNotification(notification) : null;
-        var customActions = notification && Array.isArray(notification._actions)
-            ? notification._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
-            : [];
-        var canAct = customActions.length > 0
-            || !!(notification && notification.type === 'friend_request' && requestId && !notification._resolved && window.usertypoFriends);
-
-        if (actions) {
-            if (canAct) {
-                actions.classList.remove('hidden');
-                if (customActions.length) {
-                    var firstAction = customActions[0];
-                    var secondAction = customActions[1];
-                    if (acceptBtn) {
-                        acceptBtn.textContent = firstAction.label || 'Open';
-                        acceptBtn.classList.toggle('hidden', !firstAction);
-                        acceptBtn.disabled = false;
-                        acceptBtn.onclick = async function () {
-                            acceptBtn.disabled = true;
-                            if (declineBtn) declineBtn.disabled = true;
-                            try {
-                                await firstAction.run(notification);
-                                if (firstAction.resolve !== false) notification._resolved = true;
-                                renderNotificationsPanel();
-                            } catch (err) {
-                                acceptBtn.disabled = false;
-                                if (declineBtn) declineBtn.disabled = false;
-                                showToast(err && err.message ? err.message : 'Action failed', 'error');
-                            }
-                        };
-                    }
-                    if (declineBtn) {
-                        declineBtn.textContent = secondAction ? (secondAction.label || 'Dismiss') : '';
-                        declineBtn.classList.toggle('hidden', !secondAction);
-                        declineBtn.disabled = false;
-                        declineBtn.onclick = secondAction ? async function () {
-                            declineBtn.disabled = true;
-                            if (acceptBtn) acceptBtn.disabled = true;
-                            try {
-                                await secondAction.run(notification);
-                                if (secondAction.resolve !== false) notification._resolved = true;
-                                renderNotificationsPanel();
-                            } catch (err) {
-                                declineBtn.disabled = false;
-                                if (acceptBtn) acceptBtn.disabled = false;
-                                showToast(err && err.message ? err.message : 'Action failed', 'error');
-                            }
-                        } : null;
-                    }
-                } else {
-                    if (acceptBtn) {
-                        acceptBtn.textContent = 'Accept';
-                        acceptBtn.classList.remove('hidden');
-                    }
-                    if (declineBtn) {
-                        declineBtn.textContent = 'Decline';
-                        declineBtn.classList.remove('hidden');
-                    }
-                if (acceptBtn) {
-                    acceptBtn.onclick = async function () {
-                        acceptBtn.disabled = true;
-                        if (declineBtn) declineBtn.disabled = true;
-                        try {
-                            await window.usertypoFriends.acceptRequest(requestId);
-                            notification._resolved = true;
-                            showToast('Friend request accepted', 'check_circle');
-                            notifyFriendsChanged();
-                            renderNotificationsPanel();
-                        } catch (err) {
-                            acceptBtn.disabled = false;
-                            if (declineBtn) declineBtn.disabled = false;
-                            showToast(window.usertypoFriends.mapRpcError(err).message, 'error');
-                        }
-                    };
-                }
-                if (declineBtn) {
-                    declineBtn.onclick = async function () {
-                        declineBtn.disabled = true;
-                        if (acceptBtn) acceptBtn.disabled = true;
-                        try {
-                            await window.usertypoFriends.declineRequest(requestId);
-                            notification._resolved = true;
-                            showToast('Friend request declined', 'cancel');
-                            notifyFriendsChanged();
-                            renderNotificationsPanel();
-                        } catch (err) {
-                            declineBtn.disabled = false;
-                            if (acceptBtn) acceptBtn.disabled = false;
-                            showToast(window.usertypoFriends.mapRpcError(err).message, 'error');
-                        }
-                    };
-                }
-                if (acceptBtn) acceptBtn.disabled = false;
-                if (declineBtn) declineBtn.disabled = false;
-                }
-            } else {
-                actions.classList.add('hidden');
-                if (acceptBtn) acceptBtn.onclick = null;
-                if (declineBtn) declineBtn.onclick = null;
-            }
+        stack.insertBefore(toast, stack.firstChild);
+        requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+        var remaining = TOAST_MS;
+        var startedAt = 0;
+        var dismissTimer = null;
+        function scheduleDismiss() {
+            startedAt = Date.now();
+            dismissTimer = nativeSetTimeout(function () { removeToastElement(toast); }, remaining);
         }
-
-        toast.classList.add('visible');
-        toast.style.opacity = '1';
-        toast.style.pointerEvents = 'auto';
-
-        if (toastHideTimer) nativeClearTimeout(toastHideTimer);
-        toastHideTimer = nativeSetTimeout(hideToast, 5000);
+        function pauseDismiss() {
+            if (!dismissTimer) return;
+            nativeClearTimeout(dismissTimer);
+            dismissTimer = null;
+            remaining = Math.max(0, remaining - (Date.now() - startedAt));
+        }
+        toast._cancelDismiss = pauseDismiss;
+        toast.addEventListener('mouseenter', pauseDismiss);
+        toast.addEventListener('mouseleave', function () {
+            if (toast.dataset.removing !== 'true') scheduleDismiss();
+        });
+        scheduleDismiss();
+        return toast;
     }
 
     function resolvePending(id) {
@@ -279,135 +300,100 @@
         return !!requestIdFromNotification(n);
     }
 
+    function isFriendsOrMultiplayer(n) {
+        var type = String(n && n.type || '');
+        return type.indexOf('friend_') === 0
+            || type.indexOf('duel_') === 0
+            || type.indexOf('match_') === 0
+            || type.indexOf('room_') === 0
+            || type.indexOf('multiplayer_') === 0;
+    }
+
+    function notificationIcon(n) {
+        var type = String(n && n.type || '');
+        if (type === 'friend_accepted' || type === 'duel_ready') return 'check_circle';
+        if (type === 'friend_request') return 'person_add';
+        if (type.indexOf('duel_') === 0 || type.indexOf('match_') === 0) return 'swords';
+        if (type.indexOf('invalid') !== -1) return 'error';
+        return 'notifications';
+    }
+
+    function buildNotificationRow(n) {
+        var isUnread = !n.read_at;
+        var row = document.createElement('div');
+        row.className = 'notification-row group flex items-center gap-3 px-3 py-3 rounded-xl border ' +
+            (isUnread ? 'bg-primary/10 border-primary/25' : 'bg-white/[0.03] border-white/5');
+
+        var icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined text-primary text-[20px] shrink-0';
+        icon.textContent = notificationIcon(n);
+        row.appendChild(icon);
+
+        var content = document.createElement('div');
+        content.className = 'min-w-0 flex-1';
+        content.innerHTML =
+            '<div class="text-sm font-semibold text-slate-100 break-words">' + escapeHtml(n.title) + '</div>' +
+            (n.body ? '<div class="text-xs text-slate-400 mt-1 break-words">' + escapeHtml(n.body) + '</div>' : '') +
+            '<div class="text-[10px] text-slate-500 font-mono mt-2">' + relativeTime(n.created_at) + '</div>';
+        row.appendChild(content);
+
+        var actions = actionsFor(n);
+        if (actions.length) {
+            var actionWrap = document.createElement('div');
+            actionWrap.className = 'flex items-center gap-2 shrink-0 ml-auto';
+            actions.forEach(function (action, index) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = action.label || (index ? 'Dismiss' : 'Open');
+                button.className = index
+                    ? 'px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold transition-colors'
+                    : 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
+                actionWrap.appendChild(button);
+                bindAction(button, action, n, null, row);
+            });
+            row.appendChild(actionWrap);
+        }
+
+        if (isUnread) {
+            var unread = document.createElement('span');
+            unread.className = 'w-2 h-2 rounded-full bg-red-500 shrink-0';
+            row.appendChild(unread);
+        }
+
+        var deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'notification-delete material-symbols-outlined text-slate-500 hover:text-error shrink-0';
+        deleteButton.textContent = 'delete';
+        deleteButton.title = 'Delete notification';
+        deleteButton.setAttribute('aria-label', 'Delete notification');
+        deleteButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            deleteNotification(n, row);
+        });
+        row.appendChild(deleteButton);
+        return row;
+    }
+
     function renderNotificationsPanel() {
         var friendsList = document.getElementById('notifications-friends-list');
         var friendsEmpty = document.getElementById('notifications-friends-empty');
-        var whatsNewEmpty = document.getElementById('notifications-whatsnew-empty');
-        var invalidEmpty = document.getElementById('notifications-invalid-empty');
+        var generalList = document.getElementById('notifications-general-list');
+        var generalEmpty = document.getElementById('notifications-general-empty');
+        if (!friendsList || !generalList) return;
 
-        if (whatsNewEmpty) whatsNewEmpty.classList.remove('hidden');
-        if (invalidEmpty) invalidEmpty.classList.remove('hidden');
-        if (!friendsList) return;
-
-        var friendNotes = cached.filter(function (n) {
-            return n.type === 'friend_request'
-                || n.type === 'friend_accepted'
-                || String(n.type || '').indexOf('duel_') === 0;
-        });
-
+        cached = cached.filter(isRecent);
+        var friendNotes = cached.filter(isFriendsOrMultiplayer);
+        var generalNotes = cached.filter(function (n) { return !isFriendsOrMultiplayer(n); });
         friendsList.innerHTML = '';
-        if (!friendNotes.length) {
-            if (friendsEmpty) friendsEmpty.classList.remove('hidden');
-            return;
-        }
-        if (friendsEmpty) friendsEmpty.classList.add('hidden');
-
-        friendNotes.forEach(function (n) {
-            var isUnread = !n.read_at;
-            var requestId = requestIdFromNotification(n);
-            var customActions = Array.isArray(n._actions)
-                ? n._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
-                : [];
-            var canAct = !n._resolved && (customActions.length > 0 || isActionableFriendRequest(n));
-            var row = document.createElement('div');
-            row.className = 'flex items-start gap-3 px-3 py-3 rounded-xl border transition-colors ' +
-                (isUnread ? 'bg-primary/10 border-primary/25' : 'bg-white/[0.03] border-white/5');
-
-            var actionsHtml = '';
-            if (canAct) {
-                var firstLabel = customActions.length ? (customActions[0].label || 'Open') : 'Accept';
-                var secondLabel = customActions.length > 1 ? (customActions[1].label || 'Dismiss') : 'Decline';
-                actionsHtml =
-                    '<div class="flex items-center gap-2 mt-3">' +
-                    '<button type="button" class="notif-accept-btn px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors">' + escapeHtml(firstLabel) + '</button>' +
-                    (customActions.length === 1 ? '' : '<button type="button" class="notif-decline-btn px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold transition-colors">' + escapeHtml(secondLabel) + '</button>') +
-                    '</div>';
-            }
-
-            row.innerHTML =
-                '<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">' +
-                (n.type === 'friend_accepted' || n.type === 'duel_ready' ? 'check_circle' : (String(n.type).indexOf('duel_') === 0 ? 'swords' : 'person_add')) +
-                '</span>' +
-                '<div class="min-w-0 flex-1">' +
-                '<div class="text-sm font-semibold text-slate-100">' + escapeHtml(n.title) + '</div>' +
-                (n.body ? '<div class="text-xs text-slate-400 mt-1">' + escapeHtml(n.body) + '</div>' : '') +
-                '<div class="text-[10px] text-slate-500 font-mono mt-2">' + relativeTime(n.created_at) + '</div>' +
-                actionsHtml +
-                '</div>' +
-                (isUnread ? '<span class="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-2"></span>' : '');
-
-            if (canAct && customActions.length) {
-                var customAcceptBtn = row.querySelector('.notif-accept-btn');
-                var customDeclineBtn = row.querySelector('.notif-decline-btn');
-                var bindCustom = function (button, action) {
-                    if (!button || !action) return;
-                    button.addEventListener('click', async function (e) {
-                        e.stopPropagation();
-                        button.disabled = true;
-                        try {
-                            await action.run(n);
-                            if (action.resolve !== false) n._resolved = true;
-                            renderNotificationsPanel();
-                        } catch (err) {
-                            button.disabled = false;
-                            showToast(err && err.message ? err.message : 'Action failed', 'error');
-                        }
-                    });
-                };
-                bindCustom(customAcceptBtn, customActions[0]);
-                bindCustom(customDeclineBtn, customActions[1]);
-            } else if (canAct && requestId && window.usertypoFriends) {
-                var acceptBtn = row.querySelector('.notif-accept-btn');
-                var declineBtn = row.querySelector('.notif-decline-btn');
-                if (acceptBtn) {
-                    acceptBtn.addEventListener('click', async function (e) {
-                        e.stopPropagation();
-                        acceptBtn.disabled = true;
-                        if (declineBtn) declineBtn.disabled = true;
-                        try {
-                            await window.usertypoFriends.acceptRequest(requestId);
-                            n._resolved = true;
-                            n.body = 'Accepted';
-                            showToast('Friend request accepted', 'check_circle');
-                            notifyFriendsChanged();
-                            renderNotificationsPanel();
-                            if (typeof window.usertypoFriends.loadDashboard === 'function') {
-                                /* friends page listens via event */
-                            }
-                        } catch (err) {
-                            acceptBtn.disabled = false;
-                            if (declineBtn) declineBtn.disabled = false;
-                            showToast(window.usertypoFriends.mapRpcError(err).message, 'error');
-                        }
-                    });
-                }
-                if (declineBtn) {
-                    declineBtn.addEventListener('click', async function (e) {
-                        e.stopPropagation();
-                        declineBtn.disabled = true;
-                        if (acceptBtn) acceptBtn.disabled = true;
-                        try {
-                            await window.usertypoFriends.declineRequest(requestId);
-                            n._resolved = true;
-                            n.body = 'Declined';
-                            showToast('Friend request declined', 'cancel');
-                            notifyFriendsChanged();
-                            renderNotificationsPanel();
-                        } catch (err) {
-                            declineBtn.disabled = false;
-                            if (acceptBtn) acceptBtn.disabled = false;
-                            showToast(window.usertypoFriends.mapRpcError(err).message, 'error');
-                        }
-                    });
-                }
-            }
-
-            friendsList.appendChild(row);
-        });
+        generalList.innerHTML = '';
+        friendNotes.forEach(function (n) { friendsList.appendChild(buildNotificationRow(n)); });
+        generalNotes.forEach(function (n) { generalList.appendChild(buildNotificationRow(n)); });
+        if (friendsEmpty) friendsEmpty.classList.toggle('hidden', friendNotes.length > 0);
+        if (generalEmpty) generalEmpty.classList.toggle('hidden', generalNotes.length > 0);
     }
 
     function ingestNotification(row, opts) {
-        if (!row || !row.id) return;
+        if (!row || !row.id || dismissedIds[row.id] || !isRecent(row)) return;
         var isNew = !knownIds[row.id];
         knownIds[row.id] = true;
 
@@ -439,6 +425,12 @@
 
     async function fetchNotifications() {
         var client = await window.usertypoDb.getClient();
+        if (Date.now() - lastExpiryPurgeAt > 60 * 60 * 1000) {
+            lastExpiryPurgeAt = Date.now();
+            var cutoff = new Date(Date.now() - RETENTION_MS).toISOString();
+            var purge = await client.from('notifications').delete().lt('created_at', cutoff);
+            if (purge.error) console.warn('[usertypo notifications] expiry cleanup failed', purge.error);
+        }
         var result = await client.rpc('get_my_notifications', { p_limit: 50 });
         if (result.error) throw result.error;
         return Array.isArray(result.data) ? result.data : [];
@@ -447,8 +439,12 @@
     async function refresh(opts) {
         opts = opts || {};
         await requireAuth();
-        var rows = await fetchNotifications();
-        var ephemeralRows = cached.filter(function (n) { return n && n._ephemeral; });
+        var rows = (await fetchNotifications()).filter(function (n) {
+            return n && !dismissedIds[n.id] && isRecent(n);
+        });
+        var ephemeralRows = cached.filter(function (n) {
+            return n && n._ephemeral && !dismissedIds[n.id] && isRecent(n);
+        });
         var resolvedMap = {};
         cached.forEach(function (n) {
             if (n && n.id && n._resolved) resolvedMap[n.id] = true;
@@ -592,6 +588,7 @@
                 cached = [];
                 unreadCount = 0;
                 knownIds = {};
+                dismissedIds = {};
                 unsubscribeRealtime();
                 stopPolling();
                 updateBadges();
@@ -650,6 +647,16 @@
                     console.warn('[usertypo notifications] open/mark read failed', err);
                 });
         };
+
+        var modal = document.getElementById('notifications-modal');
+        if (modal && modal.dataset.outsideCloseBound !== 'true') {
+            modal.dataset.outsideCloseBound = 'true';
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal && typeof window.closeNotifications === 'function') {
+                    window.closeNotifications();
+                }
+            });
+        }
     }
 
     if (document.readyState === 'loading') {

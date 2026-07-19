@@ -480,24 +480,69 @@
             display: none !important;
         }
 
-        #save-toast.visible {
-            opacity: 1 !important;
-            pointer-events: auto !important;
+        #save-toast {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.6rem;
+            width: min(92vw, 32rem);
+            transition: bottom 280ms cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        #save-toast-inner {
-            border-radius: 9999px !important;
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            width: max-content;
-            max-width: min(92vw, 28rem);
+        .notification-toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: fit-content;
+            max-width: 100%;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.25rem !important;
+            opacity: 0;
+            pointer-events: auto;
+            transition: opacity 350ms ease;
         }
 
-        #save-toast-actions:not(.hidden) {
-            display: flex !important;
+        .notification-toast.is-visible { opacity: 1; }
+        .notification-toast-message {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal;
+            line-height: 1.35;
+        }
+        .notification-toast-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             flex-shrink: 0;
+        }
+
+        #notifications-scroll {
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 1.25rem, black calc(100% - 1.25rem), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, black 1.25rem, black calc(100% - 1.25rem), transparent 100%);
+            padding-top: 1.25rem;
+            padding-bottom: 1.25rem;
+        }
+        .notification-row {
+            transition: opacity 250ms ease, margin 250ms ease, padding 250ms ease, max-height 250ms ease;
+            max-height: 12rem;
+        }
+        .notification-row.is-removing {
+            opacity: 0;
+            max-height: 0;
+            margin: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
+        .notification-delete {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 180ms ease, color 180ms ease;
+        }
+        .notification-row:hover .notification-delete,
+        .notification-delete:focus-visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         @keyframes dualPendingSpin {
@@ -901,31 +946,24 @@
                     <span id="notifications-title">Notifications</span>
                 </div>
             </div>
-            <div
+            <div id="notifications-scroll"
                 class="flex-1 flex flex-col font-sans text-base text-slate-300 overflow-y-auto pr-4 pb-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-primary/50 [&::-webkit-scrollbar-thumb]:rounded-full">
                 <div class="mb-6">
                     <h3 class="text-xs font-bold text-primary tracking-widest uppercase mb-3 ml-2 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[14px]">update</span>
-                        What's New
-                    </h3>
-                    <p id="notifications-whatsnew-empty" class="text-sm font-bold text-slate-300 text-center py-10 opacity-70">Nothing to show</p>
-                </div>
-                <hr class="border-t-[3px] border-white/10 mb-6 mt-2 rounded-full">
-                <div class="mb-6">
-                    <h3 class="text-xs font-bold text-primary tracking-widest uppercase mb-3 ml-2 flex items-center gap-2">
                         <span class="material-symbols-outlined text-[14px]">group</span>
-                        Friends
+                        Friends and Multiplayer
                     </h3>
                     <div id="notifications-friends-list" class="flex flex-col gap-2"></div>
                     <p id="notifications-friends-empty" class="text-sm font-bold text-slate-300 text-center py-10 opacity-70">Nothing to show</p>
                 </div>
                 <hr class="border-t-[3px] border-white/10 mb-6 mt-2 rounded-full">
-                <div class="mb-2">
+                <div class="mb-6">
                     <h3 class="text-xs font-bold text-primary tracking-widest uppercase mb-3 ml-2 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[14px]">emoji_events</span>
-                        Invalid Test
+                        <span class="material-symbols-outlined text-[14px]">notifications</span>
+                        General
                     </h3>
-                    <p id="notifications-invalid-empty" class="text-sm font-bold text-slate-300 text-center py-10 opacity-70">Nothing to show</p>
+                    <div id="notifications-general-list" class="flex flex-col gap-2"></div>
+                    <p id="notifications-general-empty" class="text-sm font-bold text-slate-300 text-center py-10 opacity-70">Nothing to show</p>
                 </div>
             </div>
         </div>
@@ -953,22 +991,10 @@
         </div>
     </div>
 
-    <!-- Save Toast (also used for friend notifications) — same pill as failed-test -->
+    <!-- Bottom-right notification stack -->
     <div id="save-toast"
-        style="position:fixed;bottom:2rem;right:2rem;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.35s ease;">
-        <div id="save-toast-inner"
-            class="flex items-center gap-3 px-5 py-3 rounded-full glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
-            style="backdrop-filter:blur(20px);">
-            <span class="material-symbols-outlined text-primary text-[18px] shrink-0" id="toast-icon">check_circle</span>
-            <span class="text-sm font-semibold text-slate-100 whitespace-nowrap truncate" id="toast-msg">Settings saved</span>
-            <div id="save-toast-actions" class="hidden items-center gap-2 ml-1 shrink-0">
-                <button type="button" id="toast-accept-btn"
-                    class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors">Accept</button>
-                <button type="button" id="toast-decline-btn"
-                    class="px-2.5 py-1 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors">Decline</button>
-            </div>
-        </div>
-    </div>
+        aria-live="polite" aria-relevant="additions"
+        style="position:fixed;bottom:2rem;right:2rem;z-index:9999;pointer-events:none;"></div>
 
     <div id="dual-pending-indicator" role="status" aria-live="polite">
         <div id="dual-pending-inner"
@@ -1004,7 +1030,7 @@
     <script src="js/api/leaderboards.js"></script>
     <script src="js/api/friends.js"></script>
     <script src="js/api/presence.js"></script>
-    <script src="js/api/notifications.js?v=3"></script>
+    <script src="js/api/notifications.js?v=4"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/api/multiplayer.js?v=4"></script>
     <script src="js/pages/dual-race.js?v=5"></script>
