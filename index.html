@@ -500,6 +500,78 @@
             flex-shrink: 0;
         }
 
+        @keyframes dualPendingSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        #dual-pending-indicator {
+            position: fixed;
+            right: 2rem;
+            bottom: 2rem;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 180ms ease;
+        }
+
+        #dual-pending-indicator.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        body:has(#dual-pending-indicator.visible) #save-toast {
+            bottom: 6rem !important;
+        }
+
+        #dual-pending-inner {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 46px;
+            width: min(92vw, 29rem);
+            padding: 0.65rem 0.8rem 0.65rem 1rem;
+            border-radius: 9999px;
+            overflow: hidden;
+            transition: width 280ms cubic-bezier(0.16, 1, 0.3, 1), padding 280ms ease, border-radius 280ms ease;
+        }
+
+        #dual-pending-icon {
+            animation: dualPendingSpin 900ms linear infinite;
+        }
+
+        #dual-pending-content,
+        #dual-pending-cancel {
+            opacity: 1;
+            transition: opacity 140ms ease;
+        }
+
+        #dual-pending-indicator.is-collapsed #dual-pending-inner {
+            width: 46px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        #dual-pending-indicator.is-collapsed #dual-pending-content,
+        #dual-pending-indicator.is-collapsed #dual-pending-cancel {
+            display: none;
+            opacity: 0;
+        }
+
+        #dual-pending-indicator.is-collapsed:hover #dual-pending-inner,
+        #dual-pending-indicator.is-collapsed:focus-within #dual-pending-inner {
+            width: min(92vw, 29rem);
+            padding: 0.65rem 0.8rem 0.65rem 1rem;
+            justify-content: flex-start;
+        }
+
+        #dual-pending-indicator.is-collapsed:hover #dual-pending-content,
+        #dual-pending-indicator.is-collapsed:hover #dual-pending-cancel,
+        #dual-pending-indicator.is-collapsed:focus-within #dual-pending-content,
+        #dual-pending-indicator.is-collapsed:focus-within #dual-pending-cancel {
+            display: block;
+            opacity: 1;
+        }
+
         .expanding-bubble:not(.is-open):hover {
             border-color: rgba(255, 255, 255, 0.2) !important;
             box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
@@ -898,6 +970,23 @@
         </div>
     </div>
 
+    <div id="dual-pending-indicator" role="status" aria-live="polite">
+        <div id="dual-pending-inner"
+            class="glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
+            style="backdrop-filter:blur(20px);">
+            <span id="dual-pending-icon"
+                class="material-symbols-outlined text-primary text-[20px] shrink-0">progress_activity</span>
+            <div id="dual-pending-content" class="min-w-0 flex-1">
+                <div id="dual-pending-title" class="text-sm font-semibold text-slate-100 whitespace-nowrap truncate"></div>
+                <div id="dual-pending-body" class="text-[11px] text-slate-400 whitespace-nowrap truncate"></div>
+            </div>
+            <button id="dual-pending-cancel" type="button"
+                class="shrink-0 px-3 py-1.5 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+
     <script src="languages.js"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
@@ -915,13 +1004,13 @@
     <script src="js/api/leaderboards.js"></script>
     <script src="js/api/friends.js"></script>
     <script src="js/api/presence.js"></script>
-    <script src="js/api/notifications.js?v=2"></script>
+    <script src="js/api/notifications.js?v=3"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="js/api/multiplayer.js?v=3"></script>
+    <script src="js/api/multiplayer.js?v=4"></script>
     <script src="js/pages/dual-race.js?v=5"></script>
     <script src="js/pages/room-race.js?v=5"></script>
-    <script src="dual.js?v=6"></script>
-    <script src="js/page-fragments.js?v=9"></script>
+    <script src="dual.js?v=7"></script>
+    <script src="js/page-fragments.js?v=10"></script>
     <script src="js/router.js?v=3"></script>
     <script>
     (function initShellBubbleMenu() {

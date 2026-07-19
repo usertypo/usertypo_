@@ -85,6 +85,15 @@ test('matches authenticated players and starts one server-owned race', { timeout
     try {
         first = await connect(url, signToken(keys.privateKey, 'user_one'));
         second = await connect(url, signToken(keys.privateKey, 'user_two'));
+        const challenge = await emitAck(first, 'duel:challenge', {
+            toUserId: 'user_two',
+            config: { mode: 'words', amount: 10, lang: 'english' },
+        });
+        await emitAck(first, 'duel:cancel-invite', challenge.inviteId);
+        await assert.rejects(
+            emitAck(second, 'duel:respond', [challenge.inviteId, 1]),
+            /invite_not_found/
+        );
         const firstReady = once(first, 'duel:ready');
         const secondReady = once(second, 'duel:ready');
 
@@ -94,6 +103,14 @@ test('matches authenticated players and starts one server-owned race', { timeout
             lang: 'english',
         });
         assert.ok(firstSearch.listingId);
+        await assert.rejects(
+            emitAck(first, 'duel:create', { mode: 'words', amount: 10, lang: 'english' }),
+            /already_searching/
+        );
+        await assert.rejects(
+            emitAck(first, 'duel:join-listing', firstSearch.listingId),
+            /own_listing/
+        );
         const secondSearch = await emitAck(second, 'duel:create', {
             mode: 'words',
             amount: 10,

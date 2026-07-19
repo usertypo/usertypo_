@@ -686,16 +686,18 @@
                 <p class="text-sm text-slate-400 mb-5">Join a waiting player or create a dual with your own settings.</p>
                 <div class="grid grid-cols-2 gap-3">
                     <button id="join-public-dual-btn" type="button"
-                        class="p-5 rounded-xl border border-primary/25 bg-primary/10 hover:bg-primary/15 text-left transition-colors">
+                        class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
                         <span class="material-symbols-outlined text-primary text-2xl">groups</span>
                         <span class="block text-white font-bold mt-2">Join a dual</span>
                         <span class="block text-xs text-slate-400 mt-1">Browse available matches</span>
+                        <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500">Enter</span>
                     </button>
                     <button id="create-public-dual-btn" type="button"
-                        class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] text-left transition-colors">
+                        class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
                         <span class="material-symbols-outlined text-primary text-2xl">add_circle</span>
                         <span class="block text-white font-bold mt-2">Create a dual</span>
                         <span class="block text-xs text-slate-400 mt-1">Choose match settings</span>
+                        <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500">Tab + Enter</span>
                     </button>
                 </div>
             </div>
@@ -2144,7 +2146,6 @@ window.__spaPageInit = function() {
                     submitDualRequestBtn.disabled = true;
                     try {
                         await window.DualMatch.sendRequest(target, collectDualConfig());
-                        window.usertypoNotifications?.showToast('Dual request sent to ' + target.name, 'swords');
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not send dual request', 'error');
                     } finally {
@@ -2179,6 +2180,7 @@ window.__spaPageInit = function() {
             const fmBtnNum = document.getElementById('fm-btn-num');
             const fmLangSelect = document.getElementById('fm-language-select');
             let fmCurrentMode = 'time';
+            let dualChoiceKeyboardTarget = 'join';
 
             function setFmMode(mode) {
                 fmCurrentMode = mode;
@@ -2240,6 +2242,10 @@ window.__spaPageInit = function() {
 
             function openFindMatchModal() {
                 resetFindMatchForm();
+                dualChoiceKeyboardTarget = 'join';
+                if (document.activeElement === createPublicDualBtn || document.activeElement === joinPublicDualBtn) {
+                    document.activeElement.blur();
+                }
                 findMatchChoice?.classList.remove('hidden');
                 findMatchForm?.classList.add('hidden');
                 findMatchListView?.classList.add('hidden');
@@ -2257,6 +2263,7 @@ window.__spaPageInit = function() {
             }
 
             function showFindMatchChoice() {
+                dualChoiceKeyboardTarget = 'join';
                 findMatchChoice?.classList.remove('hidden');
                 findMatchForm?.classList.add('hidden');
                 findMatchListView?.classList.add('hidden');
@@ -2360,6 +2367,14 @@ window.__spaPageInit = function() {
             }
             joinPublicDualBtn?.addEventListener('click', showPublicDualList);
             createPublicDualBtn?.addEventListener('click', () => {
+                const request = window.DualMatch?.loadRequest?.();
+                if (request?.mode === 'matchmaking' && request?.status === 'searching') {
+                    window.usertypoNotifications?.showToast(
+                        'You cannot create a dual while already looking for a dual.',
+                        'error'
+                    );
+                    return;
+                }
                 findMatchChoice?.classList.add('hidden');
                 findMatchListView?.classList.add('hidden');
                 findMatchForm?.classList.remove('hidden');
@@ -2397,7 +2412,22 @@ window.__spaPageInit = function() {
             if (findMatchBackdrop) findMatchBackdrop.addEventListener('click', closeFindMatchModal);
 
             document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' || !isModalVisible(findMatchModal)) return;
+                if (!isModalVisible(findMatchModal)) return;
+                if (!findMatchChoice?.classList.contains('hidden')) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        dualChoiceKeyboardTarget = 'create';
+                        createPublicDualBtn?.focus();
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (dualChoiceKeyboardTarget === 'create') createPublicDualBtn?.click();
+                        else joinPublicDualBtn?.click();
+                    }
+                    return;
+                }
+                if (e.key !== 'Enter') return;
                 if (findMatchForm?.classList.contains('hidden')) return;
                 if (e.target && e.target.closest && e.target.closest('#close-find-match-btn')) return;
                 e.preventDefault();
@@ -2411,7 +2441,6 @@ window.__spaPageInit = function() {
                     try {
                         await startFindMatchFlow(config);
                         closeFindMatchModal();
-                        window.usertypoNotifications?.showToast('Looking for a matching dual. A bot will join after 30 seconds.', 'search');
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not create dual', 'error');
                     } finally {

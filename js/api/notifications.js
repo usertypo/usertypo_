@@ -16,6 +16,8 @@
     var knownIds = {};
     var pollTimer = null;
     var toastHideTimer = null;
+    var pendingCollapseTimer = null;
+    var pendingIndicatorId = null;
     var POLL_MS = 2000;
 
     function escapeHtml(str) {
@@ -212,6 +214,55 @@
 
         if (toastHideTimer) nativeClearTimeout(toastHideTimer);
         toastHideTimer = nativeSetTimeout(hideToast, 5000);
+    }
+
+    function resolvePending(id) {
+        if (id && pendingIndicatorId && id !== pendingIndicatorId) return false;
+        var indicator = document.getElementById('dual-pending-indicator');
+        if (pendingCollapseTimer) nativeClearTimeout(pendingCollapseTimer);
+        pendingCollapseTimer = null;
+        pendingIndicatorId = null;
+        if (indicator) {
+            indicator.classList.remove('visible', 'is-collapsed');
+            indicator.setAttribute('aria-hidden', 'true');
+        }
+        return true;
+    }
+
+    function showPending(options) {
+        options = options || {};
+        var indicator = document.getElementById('dual-pending-indicator');
+        var title = document.getElementById('dual-pending-title');
+        var body = document.getElementById('dual-pending-body');
+        var cancel = document.getElementById('dual-pending-cancel');
+        if (!indicator || !title || !body || !cancel) return null;
+
+        pendingIndicatorId = String(options.id || ('pending:' + Date.now()));
+        title.textContent = options.title || 'Waiting for a dual';
+        body.textContent = options.body || '';
+        cancel.textContent = options.cancelLabel || 'Cancel';
+        cancel.disabled = false;
+        cancel.onclick = typeof options.onCancel === 'function' ? async function () {
+            var idForCancel = pendingIndicatorId;
+            cancel.disabled = true;
+            try {
+                await options.onCancel();
+                resolvePending(idForCancel);
+            } catch (error) {
+                cancel.disabled = false;
+                showToast(error && error.message ? error.message : 'Could not cancel', 'error');
+            }
+        } : null;
+        cancel.classList.toggle('hidden', typeof options.onCancel !== 'function');
+
+        indicator.classList.remove('is-collapsed');
+        indicator.classList.add('visible');
+        indicator.removeAttribute('aria-hidden');
+        if (pendingCollapseTimer) nativeClearTimeout(pendingCollapseTimer);
+        pendingCollapseTimer = nativeSetTimeout(function () {
+            if (indicator.classList.contains('visible')) indicator.classList.add('is-collapsed');
+        }, 5000);
+        return pendingIndicatorId;
     }
 
     function requestIdFromNotification(n) {
@@ -619,5 +670,7 @@
         getCached: function () { return cached.slice(); },
         showToast: showToast,
         addEphemeral: addEphemeral,
+        showPending: showPending,
+        resolvePending: resolvePending,
     };
 })();

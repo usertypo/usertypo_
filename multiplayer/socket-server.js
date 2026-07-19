@@ -542,10 +542,28 @@ function createMultiplayerServer(httpServer, options) {
             logger.warn('[multiplayer] profile lookup failed:', error && error.message);
             profiles.set(userId, { userId, name: 'Player', avatarUrl: '' });
         }
+        const ownListing = Array.from(listings.values()).find((listing) => (
+            listing.ownerUserId === userId && listing.status === 'waiting'
+        ));
+        const outgoingChallenges = Array.from(invites.values())
+            .filter((invite) => invite.fromUserId === userId)
+            .map((invite) => ({
+                inviteId: invite.id,
+                targetUserId: invite.toUserId,
+                targetName: (profiles.get(invite.toUserId) || {}).name || 'your friend',
+                config: invite.config,
+                createdAt: invite.createdAt,
+            }));
         socket.emit('multiplayer:ready', {
             userId,
             profile: profiles.get(userId),
             listings: serializeListings(),
+            search: ownListing ? {
+                listingId: ownListing.id,
+                config: ownListing.config,
+                createdAt: ownListing.createdAt,
+            } : null,
+            outgoingChallenges,
         });
         io.emit('multiplayer:presence', [userId, 1]);
 
@@ -593,6 +611,19 @@ function createMultiplayerServer(httpServer, options) {
             } catch (error) {
                 safeAck(ack, { ok: false, error: error.message || 'challenge_failed' });
             }
+        });
+
+        socket.on('duel:cancel-invite', (inviteIdValue, ack) => {
+            const inviteId = String(inviteIdValue || '');
+            const invite = invites.get(inviteId);
+            if (!invite || invite.fromUserId !== userId) {
+                safeAck(ack, { ok: false, error: 'invite_not_found' });
+                return;
+            }
+            clearTimeout(invite.timeout);
+            invites.delete(inviteId);
+            emitToUser(invite.toUserId, 'duel:expired', [invite.id, userId, 'cancelled']);
+            safeAck(ack, { ok: true, cancelled: true });
         });
 
         socket.on('duel:respond', (payload, ack) => {

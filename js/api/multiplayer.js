@@ -43,7 +43,8 @@
             not_friends: 'You can only challenge friends.',
             invite_not_found: 'That dual request has expired.',
             listing_unavailable: 'That dual is no longer available.',
-            already_searching: 'You are already looking for a dual.',
+            already_searching: 'You cannot create a dual while already looking for a dual.',
+            own_listing: 'You cannot join your own dual.',
             already_in_match: 'You are already in a match.',
             server_capacity: 'The multiplayer server is currently full.',
             rate_limited: 'Too many multiplayer actions. Please wait a moment.',
@@ -255,6 +256,10 @@
         return emitAck('duel:respond', [inviteId, accepted ? 1 : 0]);
     }
 
+    function cancelChallenge(inviteId) {
+        return emitAck('duel:cancel-invite', String(inviteId || ''));
+    }
+
     function createPublicDuel(config) {
         return emitAck('duel:create', config);
     }
@@ -336,6 +341,7 @@
     window.usertypoMultiplayer = {
         connect: ensureConnected,
         sendChallenge: sendChallenge,
+        cancelChallenge: cancelChallenge,
         respondToChallenge: respondToChallenge,
         createPublicDuel: createPublicDuel,
         cancelPublicDuel: cancelPublicDuel,
