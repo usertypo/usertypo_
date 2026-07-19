@@ -35,6 +35,7 @@
         var keystrokeTimes = [];
         var correctKeystrokeTimes = [];
         var unresolvedError = null;
+        var errorHistory = [];
         var opponentLeft = false;
         var updateTimer = null;
         var localFinished = false;
@@ -475,6 +476,7 @@
             currentWordIndex += 1;
             currentCharIndex = 0;
             unresolvedError = null;
+            errorHistory = [];
             var finalWord = config.mode === 'words' && completedCorrectWords >= config.amount;
             sendThreeWordPacket(finalWord);
             if (finalWord) {
@@ -488,8 +490,22 @@
 
         function handleBackspace(event) {
             event.preventDefault();
+            if (unresolvedError && errorHistory.length) {
+                var errorEntry = errorHistory.pop();
+                if (errorEntry.kind === 'space') {
+                    currentWordIndex = errorEntry.wordIndex;
+                    currentCharIndex = errorEntry.charIndex;
+                } else {
+                    currentWordIndex = errorEntry.wordIndex;
+                    currentCharIndex = errorEntry.charIndex;
+                    resetCharacter(currentWordIndex, currentCharIndex);
+                }
+                if (!errorHistory.length) unresolvedError = null;
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+                updateCaret();
+                return;
+            }
             if (currentCharIndex <= 0) return;
-            if (unresolvedError && currentCharIndex <= unresolvedError.charIndex) return;
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
             currentCharIndex -= 1;
             resetCharacter(currentWordIndex, currentCharIndex);
@@ -505,34 +521,28 @@
             if (!word) return;
 
             if (unresolvedError) {
-                var trailing = currentCharIndex - unresolvedError.charIndex;
-                if (trailing >= 20) return;
+                if (errorHistory.length >= 20) return;
                 totalKeystrokes += 1;
                 keystrokeTimes.push(Date.now());
-                var atFirstError = currentCharIndex === unresolvedError.charIndex;
-                var correctionKey = unresolvedError.charIndex < word.length
-                    ? word[unresolvedError.charIndex]
-                    : ' ';
-                if (atFirstError && key === correctionKey) {
-                    if (unresolvedError.charIndex >= word.length) {
-                        resetCharacter(currentWordIndex, unresolvedError.charIndex);
-                        unresolvedError = null;
-                        correctKeystrokeTimes.push(Date.now());
-                        if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
-                        completeWord();
-                        return;
-                    }
-                    paintCharacter(currentWordIndex, currentCharIndex, key, true, false);
-                    correctKeystrokeTimes.push(Date.now());
-                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
-                    unresolvedError = null;
-                    currentCharIndex += 1;
+                if (key === ' ' && currentCharIndex >= word.length && words[currentWordIndex + 1]) {
+                    errorHistory.push({
+                        kind: 'space',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    });
+                    currentWordIndex += 1;
+                    currentCharIndex = 0;
                 } else {
+                    errorHistory.push({
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    });
                     paintCharacter(currentWordIndex, currentCharIndex, key, false, true);
-                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     currentCharIndex += 1;
-                    errorsMade += 1;
                 }
+                if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
+                errorsMade += 1;
                 updateCaret();
                 return;
             }
@@ -547,6 +557,11 @@
                 else {
                     if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
+                    errorHistory = [{
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    }];
                     paintCharacter(currentWordIndex, currentCharIndex, ' ', false, true);
                     currentCharIndex += 1;
                     errorsMade += 1;
@@ -563,6 +578,11 @@
             } else {
                 if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                 unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
+                errorHistory = [{
+                    kind: 'char',
+                    wordIndex: currentWordIndex,
+                    charIndex: currentCharIndex,
+                }];
                 paintCharacter(currentWordIndex, currentCharIndex, key, false, true);
                 errorsMade += 1;
             }

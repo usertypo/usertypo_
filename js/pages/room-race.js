@@ -27,6 +27,7 @@
         var totalKeystrokes = 0;
         var errors = 0;
         var lockedAt = null;
+        var errorHistory = [];
         var updateTimer = null;
         var progressByIndex = {};
         var finished = false;
@@ -232,6 +233,7 @@
             currentWordIndex += 1;
             currentCharIndex = 0;
             lockedAt = null;
+            errorHistory = [];
             var isFinal = config.mode === 'words' && completedWords >= config.amount;
             sendProgress(isFinal);
             if (isFinal) {
@@ -246,7 +248,19 @@
             if (state !== 'racing' || event.ctrlKey || event.altKey || event.metaKey) return;
             if (event.key === 'Backspace') {
                 event.preventDefault();
-                if (currentCharIndex > 0 && (lockedAt == null || currentCharIndex > lockedAt)) {
+                if (lockedAt != null && errorHistory.length) {
+                    var errorEntry = errorHistory.pop();
+                    if (errorEntry.kind === 'space') {
+                        currentWordIndex = errorEntry.wordIndex;
+                        currentCharIndex = errorEntry.charIndex;
+                    } else {
+                        currentWordIndex = errorEntry.wordIndex;
+                        currentCharIndex = errorEntry.charIndex;
+                        resetCharacter(currentCharIndex);
+                    }
+                    if (!errorHistory.length) lockedAt = null;
+                    updateCaret();
+                } else if (currentCharIndex > 0) {
                     currentCharIndex -= 1;
                     resetCharacter(currentCharIndex);
                     updateCaret();
@@ -260,23 +274,26 @@
             if (!word) return;
 
             if (lockedAt != null) {
-                if (currentCharIndex - lockedAt >= 20) return;
+                if (errorHistory.length >= 20) return;
                 totalKeystrokes += 1;
-                var correctionKey = lockedAt < word.length ? word[lockedAt] : ' ';
-                if (currentCharIndex === lockedAt && key === correctionKey) {
-                    if (lockedAt >= word.length) {
-                        resetCharacter(lockedAt);
-                        lockedAt = null;
-                        finishWord();
-                        return;
-                    }
-                    paint(currentCharIndex, key, true);
-                    lockedAt = null;
+                if (key === ' ' && currentCharIndex >= word.length && words[currentWordIndex + 1]) {
+                    errorHistory.push({
+                        kind: 'space',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    });
+                    currentWordIndex += 1;
+                    currentCharIndex = 0;
                 } else {
+                    errorHistory.push({
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    });
                     paint(currentCharIndex, key, false);
-                    errors += 1;
+                    currentCharIndex += 1;
                 }
-                currentCharIndex += 1;
+                errors += 1;
                 updateCaret();
                 return;
             }
@@ -285,6 +302,11 @@
                 if (currentCharIndex === word.length) finishWord();
                 else {
                     lockedAt = currentCharIndex;
+                    errorHistory = [{
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: currentCharIndex,
+                    }];
                     paint(currentCharIndex, key, false);
                     currentCharIndex += 1;
                     errors += 1;
@@ -295,6 +317,11 @@
             if (key === word[currentCharIndex]) paint(currentCharIndex, key, true);
             else {
                 lockedAt = currentCharIndex;
+                errorHistory = [{
+                    kind: 'char',
+                    wordIndex: currentWordIndex,
+                    charIndex: currentCharIndex,
+                }];
                 paint(currentCharIndex, key, false);
                 errors += 1;
             }
