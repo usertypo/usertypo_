@@ -675,7 +675,51 @@
 
         <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
             id="find-match-content">
-            <div id="find-match-form">
+            <div id="find-match-choice">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Dual</h2>
+                    <button id="close-find-match-choice-btn"
+                        class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <p class="text-sm text-slate-400 mb-5">Join a waiting player or create a dual with your own settings.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="join-public-dual-btn" type="button"
+                        class="p-5 rounded-xl border border-primary/25 bg-primary/10 hover:bg-primary/15 text-left transition-colors">
+                        <span class="material-symbols-outlined text-primary text-2xl">groups</span>
+                        <span class="block text-white font-bold mt-2">Join a dual</span>
+                        <span class="block text-xs text-slate-400 mt-1">Browse available matches</span>
+                    </button>
+                    <button id="create-public-dual-btn" type="button"
+                        class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] text-left transition-colors">
+                        <span class="material-symbols-outlined text-primary text-2xl">add_circle</span>
+                        <span class="block text-white font-bold mt-2">Create a dual</span>
+                        <span class="block text-xs text-slate-400 mt-1">Choose match settings</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="find-match-list-view" class="hidden">
+                <div class="flex items-center justify-between mb-5">
+                    <button id="back-from-dual-list-btn" type="button"
+                        class="flex items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-lg">arrow_back</span>
+                        <span class="text-sm font-semibold">Back</span>
+                    </button>
+                    <h2 class="text-xl font-bold text-white">Available Duals</h2>
+                    <button id="close-find-match-list-btn"
+                        class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div id="public-dual-list" class="flex flex-col gap-2 max-h-80 overflow-y-auto"></div>
+                <div id="public-dual-list-empty" class="hidden text-center py-10 text-sm text-slate-500">
+                    No players are waiting right now.
+                </div>
+            </div>
+
+            <div id="find-match-form" class="hidden">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-white tracking-tight">Find a Match</h2>
                     <button id="close-find-match-btn"
@@ -1124,7 +1168,7 @@ window.__spaPageInit = function() {
                 if (challengeBtn) {
                     challengeBtn.addEventListener('click', function () {
                         if (typeof openConfigureDualModal === 'function') {
-                            openConfigureDualModal(name, avatarUrl);
+                            openConfigureDualModal(friend.user_id, name, avatarUrl);
                         }
                     });
                 }
@@ -1567,10 +1611,19 @@ window.__spaPageInit = function() {
             const joinRoomPinInput = document.getElementById('join-room-pin-input');
             const submitJoinRoomBtn = document.getElementById('submit-join-room-btn');
 
-            function navigateToJoinedRoom(pin) {
+            async function navigateToJoinedRoom(pin) {
                 const code = String(pin).replace(/\D/g, '').slice(0, 4);
                 if (code.length !== 4) return;
-                navigateTo('/room?' + new URLSearchParams({join:'1',room:code}).toString());
+                if (!window.usertypoMultiplayer) return;
+                submitJoinRoomBtn.disabled = true;
+                try {
+                    const result = await window.usertypoMultiplayer.joinRoomCode(code);
+                    navigateTo('/room?' + new URLSearchParams({join:'1',room:result.roomId,code}).toString());
+                } catch (error) {
+                    window.usertypoNotifications?.showToast(error.message || 'Room not found', 'error');
+                } finally {
+                    submitJoinRoomBtn.disabled = false;
+                }
             }
 
             function handleJoinPinInput() {
@@ -1788,7 +1841,7 @@ window.__spaPageInit = function() {
             }
 
             if (submitCreateRoomBtn) {
-                submitCreateRoomBtn.addEventListener('click', () => {
+                submitCreateRoomBtn.addEventListener('click', async () => {
                     // Collect room configuration from the form
                     let selectedAmount = currentMode === 'time' ? 30 : 50;
 
@@ -1816,25 +1869,33 @@ window.__spaPageInit = function() {
                     const usePunct = punctBtn && punctBtn.classList.contains('text-primary') ? '1' : '0';
                     const useNums = numBtn && numBtn.classList.contains('text-slate-400') ? '0' : '1';
 
-                    // Generate a random room ID
-                    const roomId = Math.floor(1000 + Math.random() * 9000);
-
                     const roomNameInput = document.getElementById('create-room-name-input');
                     const roomName = roomNameInput && roomNameInput.value.trim()
                         ? roomNameInput.value.trim()
-                        : `Room-${roomId}`;
+                        : 'Private Room';
 
-                    // Navigate to room.html with config params
-                    const params = new URLSearchParams({
-                        mode: currentMode,
-                        amount: selectedAmount,
-                        lang: selectedLang,
-                        punct: usePunct,
-                        nums: useNums,
-                        room: roomId,
-                        name: roomName
-                    });
-                    navigateTo('/room?' + params.toString());
+                    submitCreateRoomBtn.disabled = true;
+                    try {
+                        const result = await window.usertypoMultiplayer.createRoom({
+                            name: roomName,
+                            maxPlayers: 8,
+                            config: {
+                                mode: currentMode,
+                                amount: selectedAmount,
+                                lang: selectedLang,
+                                punct: usePunct,
+                                nums: useNums,
+                            },
+                        });
+                        navigateTo('/room?' + new URLSearchParams({
+                            room: result.roomId,
+                            code: result.roomCode,
+                            host: '1',
+                        }).toString());
+                    } catch (error) {
+                        window.usertypoNotifications?.showToast(error.message || 'Could not create room', 'error');
+                        submitCreateRoomBtn.disabled = false;
+                    }
                 });
             }
 
@@ -1983,8 +2044,8 @@ window.__spaPageInit = function() {
                 if (dualLangSelect) dualLangSelect.value = 'english';
             }
 
-            function openConfigureDualModal(friendName, avatar) {
-                dualTargetFriend = friendName;
+            function openConfigureDualModal(friendUserId, friendName, avatar) {
+                dualTargetFriend = { userId: friendUserId, name: friendName };
                 dualTargetAvatar = avatar || '';
                 resetConfigureDualForm();
 
@@ -2077,10 +2138,18 @@ window.__spaPageInit = function() {
             }
 
             if (submitDualRequestBtn) {
-                submitDualRequestBtn.addEventListener('click', () => {
+                submitDualRequestBtn.addEventListener('click', async () => {
                     if (!dualTargetFriend || !window.DualMatch) return;
-
-                    window.DualMatch.sendRequest(dualTargetFriend, collectDualConfig());
+                    const target = dualTargetFriend;
+                    submitDualRequestBtn.disabled = true;
+                    try {
+                        await window.DualMatch.sendRequest(target, collectDualConfig());
+                        window.usertypoNotifications?.showToast('Dual request sent to ' + target.name, 'swords');
+                    } catch (error) {
+                        window.usertypoNotifications?.showToast(error.message || 'Could not send dual request', 'error');
+                    } finally {
+                        submitDualRequestBtn.disabled = false;
+                    }
                     closeConfigureDualModal();
                 });
             }
@@ -2091,7 +2160,17 @@ window.__spaPageInit = function() {
             const findMatchBackdrop = document.getElementById('find-match-backdrop');
             const findMatchContent = document.getElementById('find-match-content');
             const closeFindMatchBtn = document.getElementById('close-find-match-btn');
+            const closeFindMatchChoiceBtn = document.getElementById('close-find-match-choice-btn');
+            const closeFindMatchListBtn = document.getElementById('close-find-match-list-btn');
             const submitFindMatchBtn = document.getElementById('submit-find-match-btn');
+            const findMatchChoice = document.getElementById('find-match-choice');
+            const findMatchForm = document.getElementById('find-match-form');
+            const findMatchListView = document.getElementById('find-match-list-view');
+            const joinPublicDualBtn = document.getElementById('join-public-dual-btn');
+            const createPublicDualBtn = document.getElementById('create-public-dual-btn');
+            const backFromDualListBtn = document.getElementById('back-from-dual-list-btn');
+            const publicDualList = document.getElementById('public-dual-list');
+            const publicDualListEmpty = document.getElementById('public-dual-list-empty');
             const fmBtnModeTime = document.getElementById('fm-btn-mode-time');
             const fmBtnModeWords = document.getElementById('fm-btn-mode-words');
             const fmAmountLabel = document.getElementById('fm-amount-label');
@@ -2161,6 +2240,9 @@ window.__spaPageInit = function() {
 
             function openFindMatchModal() {
                 resetFindMatchForm();
+                findMatchChoice?.classList.remove('hidden');
+                findMatchForm?.classList.add('hidden');
+                findMatchListView?.classList.add('hidden');
                 findMatchModal.classList.remove('opacity-0', 'pointer-events-none');
                 findMatchModal.removeAttribute('inert');
                 findMatchContent.classList.remove('scale-95');
@@ -2172,6 +2254,72 @@ window.__spaPageInit = function() {
                 markModalClosed(findMatchModal);
                 findMatchContent.classList.remove('scale-100');
                 findMatchContent.classList.add('scale-95');
+            }
+
+            function showFindMatchChoice() {
+                findMatchChoice?.classList.remove('hidden');
+                findMatchForm?.classList.add('hidden');
+                findMatchListView?.classList.add('hidden');
+            }
+
+            function decodeListingConfig(row) {
+                const raw = Array.isArray(row?.[2]) ? row[2] : [];
+                return {
+                    mode: raw[0] === 'words' ? 'words' : 'time',
+                    amount: Number(raw[1]) || 30,
+                    lang: raw[2] || 'english',
+                    punct: raw[3] === 1,
+                    nums: raw[4] === 1,
+                };
+            }
+
+            function renderPublicDualListings(rows) {
+                if (!publicDualList || !publicDualListEmpty) return;
+                publicDualList.innerHTML = '';
+                const listings = Array.isArray(rows) ? rows : [];
+                publicDualListEmpty.classList.toggle('hidden', listings.length > 0);
+                listings.forEach(row => {
+                    const config = decodeListingConfig(row);
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.035]';
+                    const info = document.createElement('div');
+                    info.className = 'min-w-0 flex-1';
+                    const name = document.createElement('div');
+                    name.className = 'text-sm text-white font-bold truncate';
+                    name.textContent = row[1] || 'Player';
+                    const details = document.createElement('div');
+                    details.className = 'text-xs text-slate-400 mt-1';
+                    details.textContent = window.usertypoMultiplayer?.describeConfig(config) || (config.amount + ' ' + config.mode);
+                    const joinButton = document.createElement('button');
+                    joinButton.type = 'button';
+                    joinButton.className = 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
+                    joinButton.textContent = 'Join';
+                    joinButton.addEventListener('click', async () => {
+                        joinButton.disabled = true;
+                        try {
+                            await window.usertypoMultiplayer.joinListing(row[0]);
+                            closeFindMatchModal();
+                        } catch (error) {
+                            joinButton.disabled = false;
+                            window.usertypoNotifications?.showToast(error.message || 'Could not join dual', 'error');
+                        }
+                    });
+                    info.append(name, details);
+                    item.append(info, joinButton);
+                    publicDualList.appendChild(item);
+                });
+            }
+
+            async function showPublicDualList() {
+                findMatchChoice?.classList.add('hidden');
+                findMatchForm?.classList.add('hidden');
+                findMatchListView?.classList.remove('hidden');
+                try {
+                    renderPublicDualListings(await window.usertypoMultiplayer.loadListings());
+                } catch (error) {
+                    renderPublicDualListings([]);
+                    window.usertypoNotifications?.showToast(error.message || 'Could not load available duals', 'error');
+                }
             }
 
             function collectFmConfig() {
@@ -2210,6 +2358,19 @@ window.__spaPageInit = function() {
                     openFindMatchModal();
                 });
             }
+            joinPublicDualBtn?.addEventListener('click', showPublicDualList);
+            createPublicDualBtn?.addEventListener('click', () => {
+                findMatchChoice?.classList.add('hidden');
+                findMatchListView?.classList.add('hidden');
+                findMatchForm?.classList.remove('hidden');
+                resetFindMatchForm();
+            });
+            backFromDualListBtn?.addEventListener('click', showFindMatchChoice);
+            window.addEventListener('usertypo:multiplayer:listings', (event) => {
+                if (!findMatchListView?.classList.contains('hidden')) {
+                    renderPublicDualListings(event.detail);
+                }
+            });
 
             if (fmBtnModeTime) fmBtnModeTime.addEventListener('click', () => setFmMode('time'));
             if (fmBtnModeWords) fmBtnModeWords.addEventListener('click', () => setFmMode('words'));
@@ -2231,26 +2392,39 @@ window.__spaPageInit = function() {
             if (fmBtnNum) fmBtnNum.addEventListener('click', () => toggleModalSetting(fmBtnNum));
 
             if (closeFindMatchBtn) closeFindMatchBtn.addEventListener('click', closeFindMatchModal);
+            if (closeFindMatchChoiceBtn) closeFindMatchChoiceBtn.addEventListener('click', closeFindMatchModal);
+            if (closeFindMatchListBtn) closeFindMatchListBtn.addEventListener('click', closeFindMatchModal);
             if (findMatchBackdrop) findMatchBackdrop.addEventListener('click', closeFindMatchModal);
 
             document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Enter' || !isModalVisible(findMatchModal)) return;
+                if (findMatchForm?.classList.contains('hidden')) return;
                 if (e.target && e.target.closest && e.target.closest('#close-find-match-btn')) return;
                 e.preventDefault();
                 submitFindMatchBtn?.click();
             });
 
             if (submitFindMatchBtn) {
-                submitFindMatchBtn.addEventListener('click', () => {
+                submitFindMatchBtn.addEventListener('click', async () => {
                     const config = collectFmConfig();
-                    closeFindMatchModal();
-                    startFindMatchFlow(config);
+                    submitFindMatchBtn.disabled = true;
+                    try {
+                        await startFindMatchFlow(config);
+                        closeFindMatchModal();
+                        window.usertypoNotifications?.showToast('Looking for a matching dual. A bot will join after 30 seconds.', 'search');
+                    } catch (error) {
+                        window.usertypoNotifications?.showToast(error.message || 'Could not create dual', 'error');
+                    } finally {
+                        submitFindMatchBtn.disabled = false;
+                    }
                 });
             }
 
             function startFindMatchFlow(cfg) {
-                if (!window.DualMatch || typeof window.DualMatch.sendMatchmaking !== 'function') return;
-                window.DualMatch.sendMatchmaking(cfg);
+                if (!window.DualMatch || typeof window.DualMatch.sendMatchmaking !== 'function') {
+                    return Promise.reject(new Error('Multiplayer is not ready.'));
+                }
+                return window.DualMatch.sendMatchmaking(cfg);
             }
 
             // --- CUSTOM SCROLLBAR LOGIC ---

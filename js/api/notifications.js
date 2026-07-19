@@ -105,11 +105,63 @@
         }
 
         var requestId = notification ? requestIdFromNotification(notification) : null;
-        var canAct = !!(notification && notification.type === 'friend_request' && requestId && !notification._resolved && window.usertypoFriends);
+        var customActions = notification && Array.isArray(notification._actions)
+            ? notification._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
+            : [];
+        var canAct = customActions.length > 0
+            || !!(notification && notification.type === 'friend_request' && requestId && !notification._resolved && window.usertypoFriends);
 
         if (actions) {
             if (canAct) {
                 actions.classList.remove('hidden');
+                if (customActions.length) {
+                    var firstAction = customActions[0];
+                    var secondAction = customActions[1];
+                    if (acceptBtn) {
+                        acceptBtn.textContent = firstAction.label || 'Open';
+                        acceptBtn.classList.toggle('hidden', !firstAction);
+                        acceptBtn.disabled = false;
+                        acceptBtn.onclick = async function () {
+                            acceptBtn.disabled = true;
+                            if (declineBtn) declineBtn.disabled = true;
+                            try {
+                                await firstAction.run(notification);
+                                if (firstAction.resolve !== false) notification._resolved = true;
+                                renderNotificationsPanel();
+                            } catch (err) {
+                                acceptBtn.disabled = false;
+                                if (declineBtn) declineBtn.disabled = false;
+                                showToast(err && err.message ? err.message : 'Action failed', 'error');
+                            }
+                        };
+                    }
+                    if (declineBtn) {
+                        declineBtn.textContent = secondAction ? (secondAction.label || 'Dismiss') : '';
+                        declineBtn.classList.toggle('hidden', !secondAction);
+                        declineBtn.disabled = false;
+                        declineBtn.onclick = secondAction ? async function () {
+                            declineBtn.disabled = true;
+                            if (acceptBtn) acceptBtn.disabled = true;
+                            try {
+                                await secondAction.run(notification);
+                                if (secondAction.resolve !== false) notification._resolved = true;
+                                renderNotificationsPanel();
+                            } catch (err) {
+                                declineBtn.disabled = false;
+                                if (acceptBtn) acceptBtn.disabled = false;
+                                showToast(err && err.message ? err.message : 'Action failed', 'error');
+                            }
+                        } : null;
+                    }
+                } else {
+                    if (acceptBtn) {
+                        acceptBtn.textContent = 'Accept';
+                        acceptBtn.classList.remove('hidden');
+                    }
+                    if (declineBtn) {
+                        declineBtn.textContent = 'Decline';
+                        declineBtn.classList.remove('hidden');
+                    }
                 if (acceptBtn) {
                     acceptBtn.onclick = async function () {
                         acceptBtn.disabled = true;
@@ -146,6 +198,7 @@
                 }
                 if (acceptBtn) acceptBtn.disabled = false;
                 if (declineBtn) declineBtn.disabled = false;
+                }
             } else {
                 actions.classList.add('hidden');
                 if (acceptBtn) acceptBtn.onclick = null;
@@ -186,7 +239,9 @@
         if (!friendsList) return;
 
         var friendNotes = cached.filter(function (n) {
-            return n.type === 'friend_request' || n.type === 'friend_accepted';
+            return n.type === 'friend_request'
+                || n.type === 'friend_accepted'
+                || String(n.type || '').indexOf('duel_') === 0;
         });
 
         friendsList.innerHTML = '';
@@ -199,23 +254,28 @@
         friendNotes.forEach(function (n) {
             var isUnread = !n.read_at;
             var requestId = requestIdFromNotification(n);
-            var canAct = isActionableFriendRequest(n) && !n._resolved;
+            var customActions = Array.isArray(n._actions)
+                ? n._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
+                : [];
+            var canAct = !n._resolved && (customActions.length > 0 || isActionableFriendRequest(n));
             var row = document.createElement('div');
             row.className = 'flex items-start gap-3 px-3 py-3 rounded-xl border transition-colors ' +
                 (isUnread ? 'bg-primary/10 border-primary/25' : 'bg-white/[0.03] border-white/5');
 
             var actionsHtml = '';
-            if (canAct && requestId) {
+            if (canAct) {
+                var firstLabel = customActions.length ? (customActions[0].label || 'Open') : 'Accept';
+                var secondLabel = customActions.length > 1 ? (customActions[1].label || 'Dismiss') : 'Decline';
                 actionsHtml =
                     '<div class="flex items-center gap-2 mt-3">' +
-                    '<button type="button" class="notif-accept-btn px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors">Accept</button>' +
-                    '<button type="button" class="notif-decline-btn px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold transition-colors">Decline</button>' +
+                    '<button type="button" class="notif-accept-btn px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors">' + escapeHtml(firstLabel) + '</button>' +
+                    (customActions.length === 1 ? '' : '<button type="button" class="notif-decline-btn px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold transition-colors">' + escapeHtml(secondLabel) + '</button>') +
                     '</div>';
             }
 
             row.innerHTML =
                 '<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">' +
-                (n.type === 'friend_accepted' ? 'check_circle' : 'person_add') +
+                (n.type === 'friend_accepted' || n.type === 'duel_ready' ? 'check_circle' : (String(n.type).indexOf('duel_') === 0 ? 'swords' : 'person_add')) +
                 '</span>' +
                 '<div class="min-w-0 flex-1">' +
                 '<div class="text-sm font-semibold text-slate-100">' + escapeHtml(n.title) + '</div>' +
@@ -225,7 +285,27 @@
                 '</div>' +
                 (isUnread ? '<span class="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-2"></span>' : '');
 
-            if (canAct && requestId && window.usertypoFriends) {
+            if (canAct && customActions.length) {
+                var customAcceptBtn = row.querySelector('.notif-accept-btn');
+                var customDeclineBtn = row.querySelector('.notif-decline-btn');
+                var bindCustom = function (button, action) {
+                    if (!button || !action) return;
+                    button.addEventListener('click', async function (e) {
+                        e.stopPropagation();
+                        button.disabled = true;
+                        try {
+                            await action.run(n);
+                            if (action.resolve !== false) n._resolved = true;
+                            renderNotificationsPanel();
+                        } catch (err) {
+                            button.disabled = false;
+                            showToast(err && err.message ? err.message : 'Action failed', 'error');
+                        }
+                    });
+                };
+                bindCustom(customAcceptBtn, customActions[0]);
+                bindCustom(customDeclineBtn, customActions[1]);
+            } else if (canAct && requestId && window.usertypoFriends) {
                 var acceptBtn = row.querySelector('.notif-accept-btn');
                 var declineBtn = row.querySelector('.notif-decline-btn');
                 if (acceptBtn) {
@@ -317,6 +397,7 @@
         opts = opts || {};
         await requireAuth();
         var rows = await fetchNotifications();
+        var ephemeralRows = cached.filter(function (n) { return n && n._ephemeral; });
         var resolvedMap = {};
         cached.forEach(function (n) {
             if (n && n.id && n._resolved) resolvedMap[n.id] = true;
@@ -336,9 +417,9 @@
             });
         }
 
-        cached = rows.map(function (n) {
+        cached = ephemeralRows.concat(rows.map(function (n) {
             return Object.assign({}, n, { _resolved: !!(n && n.id && resolvedMap[n.id]) });
-        });
+        }));
         knownIds = {};
         cached.forEach(function (n) { if (n && n.id) knownIds[n.id] = true; });
         unreadCount = cached.filter(function (n) { return !n.read_at; }).length;
@@ -346,6 +427,30 @@
         renderNotificationsPanel();
 
         return { notifications: cached, unreadCount: unreadCount };
+    }
+
+    function addEphemeral(notification, options) {
+        var input = notification && typeof notification === 'object' ? notification : {};
+        var row = Object.assign({}, input, {
+            id: input.id || ('ephemeral:' + Date.now() + ':' + Math.random().toString(36).slice(2)),
+            type: input.type || 'duel_notice',
+            title: input.title || 'Notification',
+            body: input.body || '',
+            data: input.data || {},
+            created_at: input.created_at || new Date().toISOString(),
+            read_at: null,
+            _ephemeral: true,
+            _resolved: false,
+        });
+        var existing = cached.findIndex(function (item) { return item && item.id === row.id; });
+        if (existing >= 0) cached.splice(existing, 1);
+        cached.unshift(row);
+        knownIds[row.id] = true;
+        unreadCount = cached.filter(function (n) { return !n.read_at; }).length;
+        updateBadges();
+        renderNotificationsPanel();
+        if (!options || options.toast !== false) showToast(row);
+        return row;
     }
 
     async function markAllRead() {
@@ -513,5 +618,6 @@
         getUnreadCount: function () { return unreadCount; },
         getCached: function () { return cached.slice(); },
         showToast: showToast,
+        addEphemeral: addEphemeral,
     };
 })();

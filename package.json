@@ -4,7 +4,18 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "test": "node --test \"test/*.test.js\"",
     "build:pages": "node scripts/build-page-fragments.js",
     "serve": "npx --yes serve . --single --listen 3000"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.11.7",
+    "@supabase/supabase-js": "^2.110.7",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   }
 }

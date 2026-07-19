@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: usertypo
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build:pages
+    startCommand: npm start
+    healthCheckPath: /health-check
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SELF_PING_ENABLED
+        value: "true"
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: SUPABASE_URL
+        value: https://skebosepedaxnvcaizka.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

@@ -1,266 +1,188 @@
-const http = require('http');
+'use strict';
+
 const fs = require('fs');
+const http = require('http');
 const path = require('path');
+const express = require('express');
+const { createKeepAwake } = require('./multiplayer/keep-awake');
+const { createMultiplayerServer } = require('./multiplayer/socket-server');
 
 const ROOT = path.resolve(__dirname);
-const PORT = Number(process.env.PORT) || 3000;
 
-/** Load `.env` into process.env without requiring a dependency. */
 function loadDotEnv() {
     const envPath = path.join(ROOT, '.env');
     if (!fs.existsSync(envPath)) return;
-    const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
-    for (const line of lines) {
+    for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith('#')) continue;
-        const eq = trimmed.indexOf('=');
-        if (eq <= 0) continue;
-        const key = trimmed.slice(0, eq).trim();
-        let value = trimmed.slice(eq + 1).trim();
+        const separator = trimmed.indexOf('=');
+        if (separator <= 0) continue;
+        const key = trimmed.slice(0, separator).trim();
+        let value = trimmed.slice(separator + 1).trim();
         if (
-            (value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))
+            (value.startsWith('"') && value.endsWith('"'))
+            || (value.startsWith("'") && value.endsWith("'"))
         ) {
             value = value.slice(1, -1);
         }
-        if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
-            process.env[key] = value;
-        }
+        if (!Object.prototype.hasOwnProperty.call(process.env, key)) process.env[key] = value;
     }
 }
 
 loadDotEnv();
 
-const MIME = {
-    '.html': 'text/html; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.mjs': 'application/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.svg': 'image/svg+xml',
-    '.webp': 'image/webp',
-    '.woff': 'font/woff',
-    '.woff2': 'font/woff2',
-    '.ico': 'image/x-icon',
-    '.mp3': 'audio/mpeg',
-    '.wav': 'audio/wav',
-    '.map': 'application/json; charset=utf-8',
-};
+const PORT = Number(process.env.PORT) || 3000;
+const app = express();
+const server = http.createServer(app);
+const keepAwake = createKeepAwake({
+    enabled: process.env.NODE_ENV === 'production' && process.env.SELF_PING_ENABLED !== 'false',
+    baseUrl: process.env.SELF_PING_URL || process.env.RENDER_EXTERNAL_URL || '',
+    logger: console,
+});
 
-const STATIC_ASSET = /\.(html|css|js|mjs|json|png|jpe?g|gif|svg|webp|woff2?|ico|mp3|wav|map)$/i;
+app.disable('x-powered-by');
+app.use(keepAwake.middleware);
+app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
 
-// Client routes that must always get the SPA shell (not a static file).
+app.get('/health-check', (_req, res) => {
+    res.status(200).type('text/plain').send('200 OK');
+});
+
+function maybeInjectPublicConfig(source) {
+    let output = source;
+    if (process.env.SUPABASE_PUBLISHABLE_KEY) {
+        const escaped = process.env.SUPABASE_PUBLISHABLE_KEY.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        output = output.replace(
+            /(supabase:\s*\{[\s\S]*?publishableKey:\s*)'[^']*'/,
+            "$1'" + escaped + "'",
+        );
+    }
+    const replacements = [
+        ['CLERK_PUBLISHABLE_KEY', /publishableKey:\s*'[^']*'/, 'publishableKey'],
+        ['CLERK_FRONTEND_API', /frontendApi:\s*'[^']*'/, 'frontendApi'],
+        ['SUPABASE_URL', /url:\s*'[^']*'/, 'url'],
+        ['SUPABASE_ANON_KEY', /anonKey:\s*'[^']*'/, 'anonKey'],
+        ['MULTIPLAYER_SERVER_URL', /multiplayer:\s*\{[^}]*url:\s*'[^']*'[^}]*\}/s, 'multiplayer'],
+    ];
+    for (const [envName, pattern, property] of replacements) {
+        const value = process.env[envName];
+        if (!value) continue;
+        const escaped = value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        if (property === 'multiplayer') {
+            output = output.replace(pattern, "multiplayer: { url: '" + escaped + "' }");
+        } else {
+            output = output.replace(pattern, property + ": '" + escaped + "'");
+        }
+    }
+    return output;
+}
+
+app.get('/js/config/public.js', (_req, res) => {
+    fs.readFile(path.join(ROOT, 'js', 'config', 'public.js'), 'utf8', (error, source) => {
+        if (error) {
+            res.status(404).type('text/plain').send('Config not found');
+            return;
+        }
+        res.setHeader('Cache-Control', 'no-store');
+        res.type('application/javascript').send(maybeInjectPublicConfig(source));
+    });
+});
+
+app.use((req, res, next) => {
+    const blocked = new Set([
+        '/server.js', '/package.json', '/package-lock.json', '/render.yaml',
+        '/.env', '/.env.example',
+    ]);
+    if (
+        blocked.has(req.path)
+        || req.path.startsWith('/multiplayer/')
+        || req.path.startsWith('/scripts/')
+        || req.path.startsWith('/test/')
+    ) {
+        res.status(404).type('text/plain').send('Not found');
+        return;
+    }
+    next();
+});
+
+app.use(express.static(ROOT, {
+    dotfiles: 'deny',
+    fallthrough: true,
+    index: false,
+    maxAge: '60s',
+    setHeaders(res, filePath) {
+        if (path.extname(filePath).toLowerCase() === '.html') {
+            res.setHeader('Cache-Control', 'no-cache');
+            if (filePath.includes(path.sep + 'pages' + path.sep)) {
+                res.setHeader('X-Usertypo-Fragment', '1');
+            }
+        }
+    },
+}));
+
 const SPA_ROUTES = new Set([
-    '/',
-    '/index.html',
-    '/settings',
-    '/signin',
-    '/sso-callback',
-    '/friends',
-    '/room',
-    '/dual',
-    '/leaderboards',
-    '/userstats',
+    '/', '/index.html', '/settings', '/signin', '/sso-callback', '/friends',
+    '/room', '/dual', '/leaderboards', '/userstats',
 ]);
 
-function isInsideRoot(filePath) {
-    const resolved = path.resolve(filePath);
-    const root = ROOT.toLowerCase();
-    const file = resolved.toLowerCase();
-    return file === root || file.startsWith(root + path.sep);
-}
-
-/**
- * For local/prod deploys: allow `.env` to override publishable config
- * when serving js/config/public.js (never injects secret keys).
- */
-function maybeInjectPublicConfig(filePath, data) {
-    const normalized = filePath.replace(/\\/g, '/');
-    if (!normalized.endsWith('/js/config/public.js')) return data;
-
-    let source = data.toString('utf8');
-    const clerkKey = process.env.CLERK_PUBLISHABLE_KEY;
-    const clerkHost = process.env.CLERK_FRONTEND_API;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnon = process.env.SUPABASE_ANON_KEY;
-
-    if (clerkKey) {
-        source = source.replace(
-            /publishableKey:\s*'[^']*'/,
-            "publishableKey: '" + clerkKey.replace(/'/g, "\\'") + "'"
-        );
-    }
-    if (clerkHost) {
-        source = source.replace(
-            /frontendApi:\s*'[^']*'/,
-            "frontendApi: '" + clerkHost.replace(/'/g, "\\'") + "'"
-        );
-    }
-    if (supabaseUrl) {
-        source = source.replace(
-            /url:\s*''/,
-            "url: '" + supabaseUrl.replace(/'/g, "\\'") + "'"
-        );
-    }
-    if (supabaseAnon) {
-        source = source.replace(
-            /anonKey:\s*''/,
-            "anonKey: '" + supabaseAnon.replace(/'/g, "\\'") + "'"
-        );
-    }
-    return Buffer.from(source, 'utf8');
-}
-
-function safePath(urlPath) {
-    const decoded = decodeURIComponent((urlPath || '/').split('?')[0]);
-    let normalized = path.normalize(decoded).replace(/^(\.\.[/\\])+/, '');
-    if (normalized.startsWith(path.sep) || /^[\\/]/.test(normalized)) {
-        normalized = normalized.replace(/^[\\/]+/, '');
-    }
-    // Reject absolute / drive-letter escapes
-    if (/^[a-zA-Z]:/.test(normalized)) return null;
-    const filePath = path.resolve(ROOT, normalized);
-    if (!isInsideRoot(filePath)) return null;
-    return filePath;
-}
-
-function sendSpaShell(res) {
-    const shellPath = path.join(ROOT, 'index.html');
-    fs.readFile(shellPath, (err, data) => {
-        if (err) {
-            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-            res.end('SPA shell missing');
-            return;
-        }
-        res.writeHead(200, {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Content-Disposition': 'inline',
-            'Cache-Control': 'no-cache',
-            'X-Usertypo-Response': 'spa-shell',
-        });
-        res.end(data);
-    });
-}
-
-function sendStaticFile(res, filePath) {
-    const ext = path.extname(filePath).toLowerCase();
-    const type = MIME[ext] || 'application/octet-stream';
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.writeHead(404, {
-                'Content-Type': 'text/plain; charset=utf-8',
-                'X-Usertypo-Response': 'not-found',
-            });
-            res.end('Not found');
-            return;
-        }
-        const body = maybeInjectPublicConfig(filePath, data);
-        const headers = {
-            'Content-Type': type,
-            'X-Usertypo-Response': 'static',
-            'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=60',
-        };
-        if (ext === '.html') {
-            headers['Content-Disposition'] = 'inline';
-            // Mark page fragments so the router can reject accidental shell responses
-            if (/[/\\]pages[/\\]/i.test(filePath)) {
-                headers['X-Usertypo-Fragment'] = '1';
-            }
-        }
-        res.writeHead(200, headers);
-        res.end(body);
-    });
-}
-
-function sendNotFound(res, message) {
-    res.writeHead(404, {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Usertypo-Response': 'not-found',
-    });
-    res.end(message || 'Not found');
-}
-
-const server = http.createServer((req, res) => {
+app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-        res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Method not allowed');
+        res.status(405).type('text/plain').send('Method not allowed');
         return;
     }
-
-    const urlPath = req.url || '/';
-    const pathOnly = decodeURIComponent(urlPath.split('?')[0]) || '/';
-    const normalizedPath = pathOnly.length > 1 && pathOnly.endsWith('/')
-        ? pathOnly.slice(0, -1)
-        : pathOnly;
-
-    // Explicit SPA client routes → always the shell
-    if (SPA_ROUTES.has(normalizedPath)) {
-        if (req.method === 'HEAD') {
-            res.writeHead(200, {
-                'Content-Type': 'text/html; charset=utf-8',
-                'Content-Disposition': 'inline',
-                'X-Usertypo-Response': 'spa-shell',
-            });
-            res.end();
-            return;
-        }
-        return sendSpaShell(res);
-    }
-
-    const filePath = safePath(urlPath);
-    if (!filePath) {
-        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Forbidden');
+    const pathname = (() => {
+        try { return new URL(req.originalUrl, 'http://localhost').pathname.replace(/\/+$/, '') || '/'; }
+        catch { return '/'; }
+    })();
+    const looksLikeAsset = path.extname(pathname)
+        || pathname.startsWith('/pages/')
+        || pathname.startsWith('/lang/')
+        || pathname.startsWith('/js/')
+        || pathname.startsWith('/css/')
+        || pathname.startsWith('/sounds/')
+        || pathname.startsWith('/logo-assets/');
+    if (looksLikeAsset) {
+        res.status(404).type('text/plain').send('Asset not found: ' + pathname);
         return;
     }
+    if (SPA_ROUTES.has(pathname) || req.accepts('html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('X-Usertypo-Response', 'spa-shell');
+        res.sendFile(path.join(ROOT, 'index.html'));
+        return;
+    }
+    next();
+});
 
-    // Page fragments and static assets must NEVER fall back to the SPA shell.
-    // Falling back to index.html here injects a second header/logo into the app
-    // (common when OneDrive hasn't hydrated a file yet after reboot).
-    const isFragmentOrAsset = STATIC_ASSET.test(normalizedPath)
-        || normalizedPath.startsWith('/pages/')
-        || normalizedPath.startsWith('/logo-assets/')
-        || normalizedPath.startsWith('/sounds/')
-        || normalizedPath.startsWith('/css/')
-        || normalizedPath.startsWith('/js/');
-
-    fs.stat(filePath, (err, stat) => {
-        if (!err && stat.isFile()) {
-            if (req.method === 'HEAD') {
-                const ext = path.extname(filePath).toLowerCase();
-                res.writeHead(200, {
-                    'Content-Type': MIME[ext] || 'application/octet-stream',
-                    'X-Usertypo-Response': 'static',
-                });
-                res.end();
-                return;
-            }
-            return sendStaticFile(res, filePath);
-        }
-
-        if (isFragmentOrAsset) {
-            return sendNotFound(res, 'Asset not found: ' + normalizedPath);
-        }
-
-        // Unknown non-asset path → SPA shell (client-side route / refresh support)
-        if (req.method === 'HEAD') {
-            res.writeHead(200, {
-                'Content-Type': 'text/html; charset=utf-8',
-                'Content-Disposition': 'inline',
-                'X-Usertypo-Response': 'spa-shell',
-            });
-            res.end();
-            return;
-        }
-        sendSpaShell(res);
-    });
+const multiplayer = createMultiplayerServer(server, {
+    root: ROOT,
+    env: process.env,
+    logger: console,
+    recordActivity: keepAwake.recordActivity,
 });
 
 server.listen(PORT, () => {
-    console.log(`usertypo_ SPA dev server: http://localhost:${PORT}`);
-    console.log(`Serving from: ${ROOT}`);
+    console.log('usertypo_ server: http://localhost:' + PORT);
+    console.log('Serving from: ' + ROOT);
+    if (!multiplayer.hasSupabaseServiceRole) {
+        console.warn('[multiplayer] SUPABASE_SERVICE_ROLE_KEY is not configured; production friend verification will reject challenges');
+    }
+    keepAwake.start();
 });
+
+function shutdown(signal) {
+    console.log('[server] received ' + signal + ', shutting down');
+    keepAwake.stop();
+    multiplayer.close();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
+
+module.exports = { app, server, multiplayer };
