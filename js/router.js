@@ -33,6 +33,8 @@
 
     function normalizePath(pathname) {
         let p = pathname || '/';
+        const joinMatch = p.match(/^\/join\/(\d{4})$/);
+        if (joinMatch) return '/room';
         if (p.endsWith('/index.html')) p = p.replace(/\/index\.html$/, '/') || '/';
         if (p.endsWith('.html')) {
             const file = p.split('/').pop();
@@ -43,6 +45,12 @@
     }
 
     function parseRouteFromLocation() {
+        const joinMatch = window.location.pathname.match(/^\/join\/(\d{4})$/);
+        if (joinMatch) {
+            const search = '?code=' + encodeURIComponent(joinMatch[1]);
+            history.replaceState({ spa: true, path: '/room', search: search }, '', '/room' + search);
+            return { path: '/room', route: routes['/room'] || null };
+        }
         const path = normalizePath(window.location.pathname);
         return { path, route: routes[path] || null };
     }

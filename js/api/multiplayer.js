@@ -29,6 +29,15 @@
         return null;
     }
 
+    function navigateToRoom(roomId, roomCode) {
+        if (!roomId) return;
+        var params = { room: roomId };
+        if (roomCode) params.code = String(roomCode);
+        var url = '/room?' + new URLSearchParams(params).toString();
+        if (typeof window.navigateTo === 'function') window.navigateTo(url);
+        else window.location.href = url;
+    }
+
     function navigateToMatch(roomId) {
         if (!roomId) return;
         var url = '/dual?' + new URLSearchParams({ room: roomId }).toString();
@@ -46,6 +55,12 @@
             already_searching: 'You cannot create a dual while already looking for a dual.',
             own_listing: 'You cannot join your own dual.',
             already_in_match: 'You are already in a match.',
+            room_not_found: 'That room is no longer available.',
+            room_full: 'This room is full.',
+            not_enough_ready: 'At least 3 players must be ready to start.',
+            players_not_ready: 'Some players are still not ready.',
+            already_in_room: 'That player is already in the room.',
+            forbidden: 'You do not have permission to do that.',
             server_capacity: 'The multiplayer server is currently full.',
             rate_limited: 'Too many multiplayer actions. Please wait a moment.',
         };
@@ -168,6 +183,53 @@
                 body: 'The request was not accepted while both players were online.',
             });
             dispatch('expired', payload);
+        });
+        activeSocket.on('room:invite', function (invite) {
+            if (!invite || !invite.roomId) return;
+            notify({
+                id: 'room-invite:' + invite.roomId + ':' + (invite.fromUserId || ''),
+                type: 'room_invite',
+                title: (invite.fromName || 'A friend') + ' invited you to a room',
+                body: (invite.roomName || 'Private Room') + ' · Room ' + (invite.roomCode || ''),
+                data: { roomId: invite.roomId, roomCode: invite.roomCode },
+                _actions: [{
+                    label: 'Join',
+                    resolve: false,
+                    run: function () {
+                        return joinRoomCode(invite.roomCode).then(function (response) {
+                            navigateToRoom(response.roomId, invite.roomCode);
+                        });
+                    },
+                }],
+            });
+            dispatch('room-invite', invite);
+        });
+        activeSocket.on('room:host-ready', function (payload) {
+            if (!payload || !payload.roomId) return;
+            notify({
+                id: 'room-host-ready:' + payload.roomId,
+                type: 'room_notice',
+                title: 'The host is ready',
+                body: 'Get ready — ' + (payload.hostName || 'The host') + ' is waiting to start the match.',
+            });
+            dispatch('room-host-ready', payload);
+        });
+        activeSocket.on('room:closed', function (payload) {
+            var roomId = Array.isArray(payload) ? payload[0] : '';
+            var reason = Array.isArray(payload) ? payload[1] : '';
+            if (activeRoomId && roomId && activeRoomId === String(roomId)) activeRoomId = '';
+            var titles = {
+                'host-left': 'The host left — room closed',
+                inactivity: 'Room closed due to inactivity',
+                closed: 'Room closed',
+            };
+            notify({
+                id: 'room-closed:' + roomId,
+                type: 'room_notice',
+                title: titles[reason] || titles.closed,
+                body: 'You were returned to the friends page.',
+            });
+            dispatch('room-closed', payload);
         });
         [
             'race:joined', 'race:countdown', 'race:start', 'race:progress',
@@ -306,8 +368,12 @@
         return emitAck('room:ready', roomId);
     }
 
-    function startRoom(roomId) {
-        return emitAck('room:start', roomId);
+    function startRoom(roomId, force) {
+        return emitAck('room:start', { roomId: roomId, force: !!force });
+    }
+
+    function inviteToRoom(roomId, toUserId) {
+        return emitAck('room:invite', { roomId: roomId, toUserId: toUserId });
     }
 
     if (window.usertypoAuth) {
@@ -346,6 +412,8 @@
         joinRoomCode: joinRoomCode,
         setRoomReady: setRoomReady,
         startRoom: startRoom,
+        inviteToRoom: inviteToRoom,
+        navigateToRoom: navigateToRoom,
         navigateToMatch: navigateToMatch,
         describeConfig: describeConfig,
         getListings: function () { return listings.slice(); },

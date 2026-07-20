@@ -1622,7 +1622,12 @@ window.__spaPageInit = function() {
                     const result = await window.usertypoMultiplayer.joinRoomCode(code);
                     navigateTo('/room?' + new URLSearchParams({join:'1',room:result.roomId,code}).toString());
                 } catch (error) {
-                    window.usertypoNotifications?.showToast(error.message || 'Room not found', 'error');
+                    const msg = String(error && error.message || '');
+                    if (/full/i.test(msg)) {
+                        window.usertypoNotifications?.showToast('This room is full.', 'groups');
+                    } else {
+                        window.usertypoNotifications?.showToast(msg || 'Room not found', 'error');
+                    }
                 } finally {
                     submitJoinRoomBtn.disabled = false;
                 }

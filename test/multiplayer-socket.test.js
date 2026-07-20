@@ -7,11 +7,14 @@ const http = require('node:http');
 const { io: createClient } = require('socket.io-client');
 const { createMultiplayerServer } = require('../multiplayer/socket-server');
 
+const TEST_KEYS = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+const TEST_PUBLIC_KEY = TEST_KEYS.publicKey.export({ type: 'spki', format: 'pem' });
+
 function base64url(value) {
     return Buffer.from(value).toString('base64url');
 }
 
-function signToken(privateKey, userId) {
+function signToken(userId) {
     const now = Math.floor(Date.now() / 1000);
     const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'test-key' }));
     const payload = base64url(JSON.stringify({
@@ -22,7 +25,7 @@ function signToken(privateKey, userId) {
         nbf: now - 5,
         exp: now + 300,
     }));
-    const signature = crypto.sign('RSA-SHA256', Buffer.from(header + '.' + payload), privateKey);
+    const signature = crypto.sign('RSA-SHA256', Buffer.from(header + '.' + payload), TEST_KEYS.privateKey);
     return header + '.' + payload + '.' + signature.toString('base64url');
 }
 
@@ -50,25 +53,37 @@ function emitAck(socket, event, payload) {
     });
 }
 
-async function connect(url, token) {
-    const socket = createClient(url, {
-        auth: { token },
-        transports: ['websocket'],
-        reconnection: false,
+function connect(url, token) {
+    return new Promise((resolve, reject) => {
+        const socket = createClient(url, {
+            auth: { token },
+            transports: ['websocket'],
+            reconnection: false,
+            autoConnect: false,
+        });
+        const timer = setTimeout(() => {
+            try { socket.close(); } catch (_) { /* ignore */ }
+            reject(new Error('Timed out waiting for multiplayer:ready'));
+        }, 8000);
+        socket.once('multiplayer:ready', () => {
+            clearTimeout(timer);
+            resolve(socket);
+        });
+        socket.once('connect_error', (error) => {
+            clearTimeout(timer);
+            reject(error);
+        });
+        socket.connect();
     });
-    await once(socket, 'multiplayer:ready');
-    return socket;
 }
 
 test('matches authenticated players and starts one server-owned race', { timeout: 15_000 }, async () => {
-    const keys = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
-    const publicKey = keys.publicKey.export({ type: 'spki', format: 'pem' });
     const server = http.createServer((_req, res) => res.end('ok'));
     const multiplayer = createMultiplayerServer(server, {
         root: require('node:path').resolve(__dirname, '..'),
         env: {
             NODE_ENV: 'test',
-            CLERK_JWT_KEY: publicKey,
+            CLERK_JWT_KEY: TEST_PUBLIC_KEY,
             CLERK_SECRET_KEY: 'sk_test_local',
             ALLOW_UNVERIFIED_FRIENDS: 'true',
             MAX_BURST_WPM: '500',
@@ -83,8 +98,8 @@ test('matches authenticated players and starts one server-owned race', { timeout
     let second;
 
     try {
-        first = await connect(url, signToken(keys.privateKey, 'user_one'));
-        second = await connect(url, signToken(keys.privateKey, 'user_two'));
+        first = await connect(url, signToken('user_one'));
+        second = await connect(url, signToken('user_two'));
         const challenge = await emitAck(first, 'duel:challenge', {
             toUserId: 'user_two',
             config: { mode: 'words', amount: 10, lang: 'english' },
@@ -133,7 +148,7 @@ test('matches authenticated players and starts one server-owned race', { timeout
         assert.equal(multiplayer.state.rooms.size, 1);
 
         first.close();
-        first = await connect(url, signToken(keys.privateKey, 'user_one'));
+        first = await connect(url, signToken('user_one'));
         const resumed = await emitAck(first, 'match:resume', firstMatch.roomId);
         assert.equal(resumed.room.roomId, firstMatch.roomId);
         assert.equal(resumed.room.state, 'racing');
@@ -149,5 +164,84 @@ test('matches authenticated players and starts one server-owned race', { timeout
         if (first) first.close();
         if (second) second.close();
         multiplayer.close();
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test('custom room lobby: min ready and host leave', { timeout: 20_000 }, async () => {
+    const server = http.createServer((_req, res) => res.end('ok'));
+    const multiplayer = createMultiplayerServer(server, {
+        root: require('node:path').resolve(__dirname, '..'),
+        env: {
+            NODE_ENV: 'test',
+            CLERK_JWT_KEY: TEST_PUBLIC_KEY,
+            CLERK_SECRET_KEY: 'sk_test_local',
+            ALLOW_UNVERIFIED_FRIENDS: 'true',
+            MAX_BURST_WPM: '500',
+            MAX_SUSTAINED_WPM: '400',
+        },
+        logger: { info() {}, warn() {} },
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const url = 'http://127.0.0.1:' + server.address().port;
+    let host;
+    let guest;
+    let guest2;
+
+    try {
+        host = await connect(url, signToken('room_host'));
+        guest = await connect(url, signToken('room_guest_a'));
+        guest2 = await connect(url, signToken('room_guest_b'));
+
+        const created = await emitAck(host, 'room:create', {
+            name: 'Test Room',
+            maxPlayers: 8,
+            config: { mode: 'words', amount: 25, lang: 'english' },
+        });
+        await emitAck(host, 'match:join', created.roomId);
+        await emitAck(guest, 'room:join-code', created.roomCode);
+        await emitAck(guest, 'match:join', created.roomId);
+        await emitAck(guest2, 'room:join-code', created.roomCode);
+        await emitAck(guest2, 'match:join', created.roomId);
+
+        await emitAck(host, 'room:ready', created.roomId);
+        await assert.rejects(
+            emitAck(host, 'room:start', { roomId: created.roomId }),
+            /not_enough_ready/,
+        );
+
+        await emitAck(guest, 'room:ready', created.roomId);
+        await assert.rejects(
+            emitAck(host, 'room:start', { roomId: created.roomId }),
+            /players_not_ready|not_enough_ready/,
+        );
+
+        await emitAck(guest2, 'room:ready', created.roomId);
+        const countdown = once(host, 'race:countdown');
+        await emitAck(host, 'room:start', { roomId: created.roomId });
+        const tick = await countdown;
+        assert.equal(tick[0], created.roomId);
+
+        await emitAck(host, 'race:leave', created.roomId);
+
+        const room2 = await emitAck(host, 'room:create', {
+            name: 'Close Me',
+            maxPlayers: 8,
+            config: { mode: 'time', amount: 30, lang: 'english' },
+        });
+        await emitAck(host, 'match:join', room2.roomId);
+        await emitAck(guest, 'room:join-code', room2.roomCode);
+        await emitAck(guest, 'match:join', room2.roomId);
+        const closed = once(guest, 'room:closed');
+        await emitAck(host, 'race:leave', room2.roomId);
+        const closedPayload = await closed;
+        assert.equal(closedPayload[0], room2.roomId);
+        assert.equal(closedPayload[1], 'host-left');
+    } finally {
+        if (host) host.close();
+        if (guest) guest.close();
+        if (guest2) guest2.close();
+        multiplayer.close();
+        await new Promise((resolve) => server.close(resolve));
     }
 });

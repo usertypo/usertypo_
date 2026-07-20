@@ -128,6 +128,32 @@
         .lobby-host-avatar {
             animation: hostBounce 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
+        #lobby-host.is-ready .lobby-host-avatar {
+            border-color: rgba(0, 208, 255, 0.85);
+            box-shadow: 0 0 12px rgba(0, 208, 255, 0.55), 0 0 28px rgba(0, 208, 255, 0.2);
+        }
+        #ready-btn.is-disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #lobby-chat-toggle-btn[data-coming-soon]:hover::after {
+            content: attr(data-coming-soon);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            right: 0;
+            white-space: nowrap;
+            background-color: rgba(26, 29, 35, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 4px 10px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
 
         /* ── Orbit: single ring, equal spacing, constant speed, radial pulse ── */
         @keyframes orbitSpin {
@@ -304,114 +330,7 @@
         <div class="flex-1 flex items-center justify-center relative min-h-0" id="lobby-orbit-arena">
             <div class="relative w-[min(72vw,21.25rem)] h-[min(72vw,21.25rem)]" id="lobby-orbit-system">
 
-                <div class="orbit-ring" id="lobby-orbit-ring">
-
-                <!-- Player 1: NeonRunner (ready) -->
-                <div class="orbit-arm" style="--arm-angle: 0deg; --pulse-delay: 0s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node is-ready" data-player-name="NeonRunner">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="NeonRunner"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiLKV4Me21A0jvLDx3YNjBn71ZXFHeHlzZQEDZp83iyihqnHhzzsc1t6Pkh_uZ84TPGhBfMJspeObKyhAk5gzogn3NUwUxhF62VYQ9W6rt2-4xdtDzapzC7xZdrbR4XhV8e6B29PD4Deg2KcbEDvNURYEnBsmH-08oKnBMZnR6lmEaTNaI6wo_qpH4-7roZDIkptiRWWYgq_JdiMLa6Nvvas-Zpa6tQibK18vSQ6LtuiJmq1QgG6D7qsKPqHqSTnJEoi9I1qFEGmpX">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 2: KeyboardKing -->
-                <div class="orbit-arm" style="--arm-angle: 51.43deg; --pulse-delay: -0.86s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node" data-player-name="KeyboardKing">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="KeyboardKing"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNELvRyVZsMcr8pVvQQ_08jmot7o9YwNE5LyKQ8uw7zN8iVVvvu0_lrVSKqBHuQpOe0dA1L0L2rbBPL8s7GRwh5G93afakh8sx1vnCVtg891nRiO6eECscPt3efEb05SuS6s4JEGzyjGT9WxGXYvu0qo5rBQr_fr8eRVVakSvFnSPctMC4gmNpSx9OEU7mNA0agic2bCsvpg1dVIuhyeDqgiA5sYbXxjNmu33EG09w0SgtzjIfyBB0g8cJ3kmVUzNhXoovDEqaoEw5">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 3: GhostTypist (ready) -->
-                <div class="orbit-arm" style="--arm-angle: 102.86deg; --pulse-delay: -1.71s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node is-ready" data-player-name="GhostTypist">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="GhostTypist"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbDPzarXUrYoIMNoK8wivde-nb2yo7IHgT_eS-w_ZkP4WQI8wGN3J8Bl-Ki7x_LGaiGRLZqlAKWwzj6fmTpGVocUdEWhfQ1emO-L4bKqkKGKjkmdqelPJRmsIyKqZ6X9YLzTvS9sLscRL5CTj23TCLeoJCxaK4R793SJG8lC3H4em31JiBqwI3kXDregUF60oydVdRghgac5YlMOaa9DRkUTaRUmELuKpneT3riBDUnbaWn2tnakIhtv15I8puH6QjKRRfYYvhCzNc">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 4: ShadowKeys -->
-                <div class="orbit-arm" style="--arm-angle: 154.29deg; --pulse-delay: -2.57s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node" data-player-name="ShadowKeys">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="ShadowKeys"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBz89sUZiIwXk5Zc3syOC0m-obiySXFriPmpx9tA3Qm6LlBjXugYkp4C2M_09_WL6fLJHbMLejOC8YbeBjHgQAS2ZkUZ2k6otEUWMSp5rq5-2qgwG_VpsdfuxiQf4eo4cA3QaxBFUongDywtIh1izg23qQ2BKXGLZmXXmvUdXPI8TBG94qf-s3WVMdrGkbCA_xe9beXNW2Zo1fNFktbwya9bJq0v_usWg6yQ8KaZO1DVrvI7cqvTvuInnZT-2C3z2_Boi2U5U_VbPDG">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 5: ZeroLatency (ready) -->
-                <div class="orbit-arm" style="--arm-angle: 205.71deg; --pulse-delay: -3.43s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node is-ready" data-player-name="ZeroLatency">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="ZeroLatency"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0838nC5jENw1uRz84hLYhPOgqRvIYt_Roi-xcjR5iQizfzNxCPt8ldCzRqQ7w99DR7tzYZ9ykaQ-ARHoGsNmJWN6aXOfIbp8y9wKb-JMBV__aPwWM8spFm_jr30rmIl0qe4aoIRorh2AlHQjzOC1jX5gojpRsqZjvdL_zr66EUm3srTWaBbosZVGMX62y7PZi-m-fS5YXYh7cmsP4BoOoQXGzYTPpyT8WNJ6wGv3cyIQkivbO8UFXybF10IqRwE1xzbXRDuM8q89k">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 6: FlashType -->
-                <div class="orbit-arm" style="--arm-angle: 257.14deg; --pulse-delay: -4.29s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node" data-player-name="FlashType">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="FlashType"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuApqRt1AqCYujfjEIOjw4HwCgCdNSFTI29RLYjqktHqLtW485iievaO05uuMLpP24A9cabJlmUMa8x17RKrmRnN73N4iIkhCHBJgDjJ2p-o0AQe3MMVCrFC0IlQ2rL5aXSte3-APWrydT1FVWyed3FBnJ84guEC6qtQfzZkDbKw0GAXQ_aFxi8DJAKrOWB4IMc8eC-BKAIZ0uDob5K4CVBjIOGTfTViJSFFzwDvAu1E7TToHLGE-BJ3Q7bqvYVoKQ54SU2zN2vCmlu9">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Player 7: ByteRunner (ready) -->
-                <div class="orbit-arm" style="--arm-angle: 308.57deg; --pulse-delay: -5.14s">
-                    <div class="orbit-counter">
-                        <div class="orbit-pulse">
-                            <div class="player-node is-ready" data-player-name="ByteRunner">
-                                <div class="player-avatar-ring">
-                                    <img class="player-node-img" alt="ByteRunner"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR">
-                                </div>
-                                <div class="player-ready-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                </div>
+                <div class="orbit-ring" id="lobby-orbit-ring"></div>
 
                 <!-- Host (center, clickable) -->
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" id="lobby-host">
@@ -429,8 +348,8 @@
         <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-5">
             <button
                 class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong flex items-center justify-center"
-                id="ready-btn" onclick="toggleReady()">
-                <span>Ready Up</span>
+                id="ready-btn" type="button">
+                <span id="ready-btn-label">Ready Up</span>
                 <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
             </button>
             <button onclick="navigateTo('/friends')"
@@ -466,31 +385,8 @@
                         </div>
                     </div>
                     <p class="text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-2">Friends</p>
-                    <div class="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-                            <div class="w-9 h-9 rounded-full bg-cover bg-center border border-white/10 shrink-0"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR');"></div>
-                            <span class="flex-1 text-sm font-semibold text-on-surface truncate">AlphaC0der</span>
-                            <button class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary transition-all">Invite</button>
-                        </div>
-                        <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-                            <div class="w-9 h-9 rounded-full bg-cover bg-center border border-white/10 shrink-0"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBz89sUZiIwXk5Zc3syOC0m-obiySXFriPmpx9tA3Qm6LlBjXugYkp4C2M_09_WL6fLJHbMLejOC8YbeBjHgQAS2ZkUZ2k6otEUWMSp5rq5-2qgwG_VpsdfuxiQf4eo4cA3QaxBFUongDywtIh1izg23qQ2BKXGLZmXXmvUdXPI8TBG94qf-s3WVMdrGkbCA_xe9beXNW2Zo1fNFktbwya9bJq0v_usWg6yQ8KaZO1DVrvI7cqvTvuInnZT-2C3z2_Boi2U5U_VbPDG');"></div>
-                            <span class="flex-1 text-sm font-semibold text-on-surface truncate">NeonTypist</span>
-                            <button class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary transition-all">Invite</button>
-                        </div>
-                        <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-                            <div class="w-9 h-9 rounded-full bg-cover bg-center border border-white/10 shrink-0"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA0838nC5jENw1uRz84hLYhPOgqRvIYt_Roi-xcjR5iQizfzNxCPt8ldCzRqQ7w99DR7tzYZ9ykaQ-ARHoGsNmJWN6aXOfIbp8y9wKb-JMBV__aPwWM8spFm_jr30rmIl0qe4aoIRorh2AlHQjzOC1jX5gojpRsqZjvdL_zr66EUm3srTWaBbosZVGMX62y7PZi-m-fS5YXYh7cmsP4BoOoQXGzYTPpyT8WNJ6wGv3cyIQkivbO8UFXybF10IqRwE1xzbXRDuM8q89k');"></div>
-                            <span class="flex-1 text-sm font-semibold text-on-surface truncate">ZeroLatency</span>
-                            <button class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary transition-all">Invite</button>
-                        </div>
-                        <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-                            <div class="w-9 h-9 rounded-full bg-cover bg-center border border-white/10 shrink-0"
-                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuApqRt1AqCYujfjEIOjw4HwCgCdNSFTI29RLYjqktHqLtW485iievaO05uuMLpP24A9cabJlmUMa8x17RKrmRnN73N4iIkhCHBJgDjJ2p-o0AQe3MMVCrFC0IlQ2rL5aXSte3-APWrydT1FVWyed3FBnJ84guEC6qtQfzZkDbKw0GAXQ_aFxi8DJAKrOWB4IMc8eC-BKAIZ0uDob5K4CVBjIOGTfTViJSFFzwDvAu1E7TToHLGE-BJ3Q7bqvYVoKQ54SU2zN2vCmlu9');"></div>
-                            <span class="flex-1 text-sm font-semibold text-on-surface truncate">SpeedyGonzalez</span>
-                            <button class="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary transition-all">Invite</button>
-                        </div>
+                    <div id="invite-friends-list" class="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                        <p class="text-xs text-slate-500 italic px-2 py-3">Loading friends...</p>
                     </div>
                 </div>
             </div>
@@ -565,8 +461,8 @@
                 </div>
             </div>
             <button id="lobby-chat-toggle-btn"
-                class="w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
-                title="Room Chat">
+                class="relative w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
+                title="Coming soon" data-coming-soon="Chat coming soon">
                 <span class="material-symbols-outlined text-primary text-2xl">chat_bubble</span>
             </button>
         </div>
@@ -587,96 +483,31 @@
                     <span class="material-symbols-outlined text-[20px]">close</span>
                 </button>
             </div>
-            <div class="flex flex-col gap-1.5 max-h-[22rem] overflow-y-auto custom-scrollbar pr-0.5">
-                <!-- Host row -->
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/5 border border-primary/10">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBd5QYkWEOQDXxyr6FSYGgWzXrwAJc0aZJNtLl08WWTTeuyLWRDgM2P7HUIZJOpXvyWYhl1ii2Uc9ah0BbFpDURantJBVxP01QUheo3Uoe-UGhDm6VWFAMJdz3gqVP5ts18h9tr57C4x9tk3y3cTzWuITnRqYhIVRgNGa2TBtgkHQYy1gv8mG1lmGmEBQyj44dlxXRL-aYAqXZEtROF1FL1NQ3VsmjsLy524jI57waV58inpM8NC_NexyhevbBemg2DkNRmcSRfqMve"
-                        class="w-9 h-9 rounded-full border-2 border-primary object-cover shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <span class="text-sm font-bold text-white">TypeMaster99</span>
-                        <span class="text-[9px] text-primary font-bold uppercase tracking-widest ml-2">Host</span>
-                    </div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full whitespace-nowrap">Ready</span>
-                </div>
-                <!-- Player rows -->
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiLKV4Me21A0jvLDx3YNjBn71ZXFHeHlzZQEDZp83iyihqnHhzzsc1t6Pkh_uZ84TPGhBfMJspeObKyhAk5gzogn3NUwUxhF62VYQ9W6rt2-4xdtDzapzC7xZdrbR4XhV8e6B29PD4Deg2KcbEDvNURYEnBsmH-08oKnBMZnR6lmEaTNaI6wo_qpH4-7roZDIkptiRWWYgq_JdiMLa6Nvvas-Zpa6tQibK18vSQ6LtuiJmq1QgG6D7qsKPqHqSTnJEoi9I1qFEGmpX"
-                        class="w-9 h-9 rounded-full border border-primary/50 object-cover shrink-0" style="box-shadow:0 0 8px rgba(var(--theme-primary-rgb), 0.35)">>
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">NeonRunner</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full">Ready</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNELvRyVZsMcr8pVvQQ_08jmot7o9YwNE5LyKQ8uw7zN8iVVvvu0_lrVSKqBHuQpOe0dA1L0L2rbBPL8s7GRwh5G93afakh8sx1vnCVtg891nRiO6eECscPt3efEb05SuS6s4JEGzyjGT9WxGXYvu0qo5rBQr_fr8eRVVakSvFnSPctMC4gmNpSx9OEU7mNA0agic2bCsvpg1dVIuhyeDqgiA5sYbXxjNmu33EG09w0SgtzjIfyBB0g8cJ3kmVUzNhXoovDEqaoEw5"
-                        class="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0">
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">KeyboardKing</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full">Waiting</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbDPzarXUrYoIMNoK8wivde-nb2yo7IHgT_eS-w_ZkP4WQI8wGN3J8Bl-Ki7x_LGaiGRLZqlAKWwzj6fmTpGVocUdEWhfQ1emO-L4bKqkKGKjkmdqelPJRmsIyKqZ6X9YLzTvS9sLscRL5CTj23TCLeoJCxaK4R793SJG8lC3H4em31JiBqwI3kXDregUF60oydVdRghgac5YlMOaa9DRkUTaRUmELuKpneT3riBDUnbaWn2tnakIhtv15I8puH6QjKRRfYYvhCzNc"
-                        class="w-9 h-9 rounded-full border border-primary/50 object-cover shrink-0" style="box-shadow:0 0 8px rgba(var(--theme-primary-rgb), 0.35)">>
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">GhostTypist</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full">Ready</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBz89sUZiIwXk5Zc3syOC0m-obiySXFriPmpx9tA3Qm6LlBjXugYkp4C2M_09_WL6fLJHbMLejOC8YbeBjHgQAS2ZkUZ2k6otEUWMSp5rq5-2qgwG_VpsdfuxiQf4eo4cA3QaxBFUongDywtIh1izg23qQ2BKXGLZmXXmvUdXPI8TBG94qf-s3WVMdrGkbCA_xe9beXNW2Zo1fNFktbwya9bJq0v_usWg6yQ8KaZO1DVrvI7cqvTvuInnZT-2C3z2_Boi2U5U_VbPDG"
-                        class="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0">
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">ShadowKeys</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full">Waiting</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0838nC5jENw1uRz84hLYhPOgqRvIYt_Roi-xcjR5iQizfzNxCPt8ldCzRqQ7w99DR7tzYZ9ykaQ-ARHoGsNmJWN6aXOfIbp8y9wKb-JMBV__aPwWM8spFm_jr30rmIl0qe4aoIRorh2AlHQjzOC1jX5gojpRsqZjvdL_zr66EUm3srTWaBbosZVGMX62y7PZi-m-fS5YXYh7cmsP4BoOoQXGzYTPpyT8WNJ6wGv3cyIQkivbO8UFXybF10IqRwE1xzbXRDuM8q89k"
-                        class="w-9 h-9 rounded-full border border-primary/50 object-cover shrink-0" style="box-shadow:0 0 8px rgba(var(--theme-primary-rgb), 0.35)">>
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">ZeroLatency</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full">Ready</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuApqRt1AqCYujfjEIOjw4HwCgCdNSFTI29RLYjqktHqLtW485iievaO05uuMLpP24A9cabJlmUMa8x17RKrmRnN73N4iIkhCHBJgDjJ2p-o0AQe3MMVCrFC0IlQ2rL5aXSte3-APWrydT1FVWyed3FBnJ84guEC6qtQfzZkDbKw0GAXQ_aFxi8DJAKrOWB4IMc8eC-BKAIZ0uDob5K4CVBjIOGTfTViJSFFzwDvAu1E7TToHLGE-BJ3Q7bqvYVoKQ54SU2zN2vCmlu9"
-                        class="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0">
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">FlashType</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full">Waiting</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8Ukn3WzJgWtIpxiB0vwp9reriQ-GVehILl3UzAirO9FYJVXE1E2ciOubnRU9OSWF6R2Ty-0moKfB__iK0kmgGPxpHMWxK-aDYfkqNy1rB73bPtHkva78d5lryCgrHIjo-LLRXkf4_EaqtpLz24xQdmXYS3cxqHkF9_7sIeGsIMcBfWVvu0mSsNlmMHZG5wdafB31bLSnfmqc1In-FSnlwTX5lnrv7ENBpNndNYu238iOCttpxYDpDweKZpww_VrEbpkprjmsJ6OR"
-                        class="w-9 h-9 rounded-full border border-primary/50 object-cover shrink-0" style="box-shadow:0 0 8px rgba(var(--theme-primary-rgb), 0.35)">>
-                    <div class="flex-1 min-w-0"><span class="text-sm font-semibold text-on-surface">ByteRunner</span></div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full">Ready</span>
-                    <button class="text-slate-600 group-hover:text-error transition-colors ml-1" title="Remove player">
-                        <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                    </button>
-                </div>
+            <div id="host-players-list" class="flex flex-col gap-1.5 max-h-[22rem] overflow-y-auto custom-scrollbar pr-0.5"></div>
+        </div>
+    </div>
+
+    <!-- Start confirmation when not all players are ready -->
+    <div id="start-confirm-modal"
+        class="fixed inset-0 z-[210] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="start-confirm-backdrop" class="absolute inset-0 cursor-pointer bg-black/50"></div>
+        <div id="start-confirm-content"
+            class="panel-surface w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300">
+            <h3 class="font-display font-bold text-white text-lg mb-2">Start anyway?</h3>
+            <p id="start-confirm-message" class="text-slate-400 text-sm mb-6">
+                Some players are still not ready. Would you like to start the match anyway?
+            </p>
+            <div class="flex items-center justify-end gap-3">
+                <button id="start-confirm-cancel" type="button"
+                    class="px-5 py-2.5 rounded-xl font-display font-bold text-sm uppercase tracking-widest text-on-surface panel-surface hover:bg-white/10 transition-all">
+                    Cancel
+                </button>
+                <button id="start-confirm-accept" type="button"
+                    class="px-5 py-2.5 rounded-xl font-display font-bold text-sm uppercase tracking-widest bg-primary text-on-primary neon-glow-primary-strong transition-all">
+                    Start Match
+                </button>
             </div>
         </div>
-
-        <footer class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 shrink-0 mt-auto">
-            <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
-                title="Mute sounds" aria-label="Mute sounds">
-                <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
-            </button>
-            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                <span class="material-symbols-outlined text-[14px]">palette</span>
-                <span>Themes and Languages</span>
-                <button type="button" data-footer-picker
-                    class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
-            </div>
-        </footer>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════ -->

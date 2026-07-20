@@ -13,6 +13,8 @@ const LIMITS = Object.freeze({
     joinTtlMs: 60_000,
     reconnectGraceMs: 5_000,
     finishedRoomTtlMs: 60_000,
+    roomInactivityMs: 600_000,
+    minReadyToStart: 3,
     countdownSeconds: 3,
     maxRetainedSnapshots: 32,
 });

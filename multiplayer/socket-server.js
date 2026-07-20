@@ -148,11 +148,15 @@ function createMultiplayerServer(httpServer, options) {
             raceTimer: null,
             botTimer: null,
             disposeTimer: null,
+            inactivityTimer: null,
+            lastActivityAt: Date.now(),
             opponentLeft: false,
         };
         rooms.set(id, room);
         allowedUserIds.forEach((userId) => userToRoom.set(userId, id));
-        if (type !== 'custom') {
+        if (type === 'custom') {
+            touchRoomActivity(room);
+        } else if (type !== 'custom') {
             room.joinTimer = setTimeout(() => {
                 if (room.state !== 'waiting') return;
                 room.allowedUserIds.forEach((userId) => emitToUser(userId, 'duel:expired', [room.id, 'room']));
@@ -515,6 +519,25 @@ function createMultiplayerServer(httpServer, options) {
         return Array.from(room.players.values()).every((player) => player.joined && player.status !== 'left');
     }
 
+    function touchRoomActivity(room) {
+        if (!room || room.type !== 'custom' || room.state === 'disposed') return;
+        room.lastActivityAt = Date.now();
+        cancelTimer(room, 'inactivityTimer');
+        room.inactivityTimer = setTimeout(() => {
+            if (room.state === 'disposed' || room.state !== 'waiting') return;
+            closeCustomRoom(room, 'inactivity');
+        }, LIMITS.roomInactivityMs);
+    }
+
+    function closeCustomRoom(room, reason) {
+        if (!room || room.type !== 'custom' || room.state === 'disposed') return;
+        const payload = [room.id, reason || 'closed', room.roomCode || ''];
+        room.allowedUserIds.forEach((uid) => {
+            emitToUser(uid, 'room:closed', payload);
+        });
+        disposeRoom(room.id);
+    }
+
     function disposeRoom(roomId) {
         const room = rooms.get(roomId);
         if (!room) return;
@@ -523,6 +546,7 @@ function createMultiplayerServer(httpServer, options) {
         cancelTimer(room, 'joinTimer');
         cancelTimer(room, 'raceTimer');
         cancelTimer(room, 'disposeTimer');
+        cancelTimer(room, 'inactivityTimer');
         if (room.botTimer) clearInterval(room.botTimer);
         room.botTimer = null;
         room.players.forEach((player) => {
@@ -550,6 +574,25 @@ function createMultiplayerServer(httpServer, options) {
         player.socketId = null;
         room.opponentLeft = room.opponentLeft || player.leftMidGame;
         userToRoom.delete(userId);
+        if (room.type === 'custom' && (room.state === 'waiting' || room.state === 'countdown')) {
+            if (userId === room.hostUserId) {
+                closeCustomRoom(room, 'host-left');
+                return;
+            }
+            if (room.state === 'countdown') {
+                cancelTimer(room, 'countdownTimer');
+                room.state = 'waiting';
+                room.countdownEndsAt = null;
+                room.startsAt = null;
+            }
+            room.players.delete(userId);
+            room.allowedUserIds.delete(userId);
+            Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
+            io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+            touchRoomActivity(room);
+            if (!room.players.size) disposeRoom(room.id);
+            return;
+        }
         io.to(roomChannel(room.id)).emit('race:player-left', [
             room.id,
             player.index,
@@ -793,6 +836,7 @@ function createMultiplayerServer(httpServer, options) {
             ]);
             if (room.type === 'custom') {
                 io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                touchRoomActivity(room);
             }
             if (room.type !== 'custom' && requiredPlayersJoined(room)) startCountdown(room);
         });
@@ -958,11 +1002,18 @@ function createMultiplayerServer(httpServer, options) {
         });
 
         socket.on('room:join-code', (code, ack) => {
-            if (userToRoom.has(userId)) {
+            const roomCodeValue = String(code || '').trim();
+            const existingRoomId = userToRoom.get(userId);
+            if (existingRoomId) {
+                const existing = rooms.get(existingRoomId);
+                if (existing && existing.type === 'custom' && existing.roomCode === roomCodeValue) {
+                    safeAck(ack, { ok: true, roomId: existing.id });
+                    return;
+                }
                 safeAck(ack, { ok: false, error: 'already_in_match' });
                 return;
             }
-            const room = Array.from(rooms.values()).find((item) => item.roomCode === String(code || ''));
+            const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
             if (!room || room.type !== 'custom' || room.state !== 'waiting') {
                 safeAck(ack, { ok: false, error: 'room_not_found' });
                 return;
@@ -977,7 +1028,39 @@ function createMultiplayerServer(httpServer, options) {
                 userToRoom.set(userId, room.id);
             }
             io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+            touchRoomActivity(room);
             safeAck(ack, { ok: true, roomId: room.id });
+        });
+
+        socket.on('room:invite', async (payload, ack) => {
+            try {
+                const roomId = String(payload && payload.roomId || '');
+                const toUserId = String(payload && payload.toUserId || '');
+                const room = rooms.get(roomId);
+                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                    throw new Error('room_not_found');
+                }
+                if (!room.players.has(userId)) throw new Error('forbidden');
+                if (!toUserId || toUserId === userId) throw new Error('invalid_target');
+                if (room.players.has(toUserId)) throw new Error('already_in_room');
+                if (!isOnline(toUserId)) throw new Error('friend_offline');
+                if (userToRoom.has(toUserId)) throw new Error('already_in_match');
+                if (room.players.size >= room.maxPlayers) throw new Error('room_full');
+                if (!(await auth.areFriends(userId, toUserId))) throw new Error('not_friends');
+                const from = profiles.get(userId) || { name: 'Player', avatarUrl: '' };
+                emitToUser(toUserId, 'room:invite', {
+                    roomId: room.id,
+                    roomCode: room.roomCode,
+                    roomName: room.roomName,
+                    fromUserId: userId,
+                    fromName: from.name,
+                    config: room.config,
+                });
+                touchRoomActivity(room);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'invite_failed' });
+            }
         });
 
         socket.on('room:ready', (roomId, ack) => {
@@ -988,25 +1071,50 @@ function createMultiplayerServer(httpServer, options) {
                 return;
             }
             player.ready = true;
+            touchRoomActivity(room);
             io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
             safeAck(ack, { ok: true });
-            const allReady = room.players.size >= 2
-                && Array.from(room.players.values()).every((item) => item.joined && item.ready);
-            if (allReady) startCountdown(room);
+            if (userId === room.hostUserId) {
+                room.players.forEach((item, uid) => {
+                    if (uid !== userId) {
+                        emitToUser(uid, 'room:host-ready', {
+                            roomId: room.id,
+                            roomName: room.roomName,
+                            hostName: player.name,
+                        });
+                    }
+                });
+            }
         });
 
-        socket.on('room:start', (roomId, ack) => {
-            const room = rooms.get(String(roomId || ''));
+        socket.on('room:start', (payload, ack) => {
+            const roomId = payload && typeof payload === 'object'
+                ? String(payload.roomId || '')
+                : String(payload || '');
+            const force = !!(payload && typeof payload === 'object' && payload.force);
+            const room = rooms.get(roomId);
             if (!room || room.type !== 'custom' || room.hostUserId !== userId) {
                 safeAck(ack, { ok: false, error: 'forbidden' });
                 return;
             }
-            const allReady = room.players.size >= 2
-                && Array.from(room.players.values()).every((player) => player.joined && player.ready);
-            if (!allReady) {
-                safeAck(ack, { ok: false, error: 'players_not_ready' });
+            const readyPlayers = Array.from(room.players.values()).filter(
+                (item) => item.ready && item.status !== 'left',
+            );
+            if (readyPlayers.length < LIMITS.minReadyToStart) {
+                safeAck(ack, { ok: false, error: 'not_enough_ready' });
                 return;
             }
+            if (!force) {
+                const allReady = room.players.size >= 2
+                    && Array.from(room.players.values()).every(
+                        (item) => item.status === 'left' || (item.joined && item.ready),
+                    );
+                if (!allReady) {
+                    safeAck(ack, { ok: false, error: 'players_not_ready' });
+                    return;
+                }
+            }
+            touchRoomActivity(room);
             startCountdown(room);
             safeAck(ack, { ok: true });
         });
