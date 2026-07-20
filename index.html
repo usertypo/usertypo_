@@ -1033,19 +1033,15 @@
     <script src="js/api/notifications.js?v=4"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/api/multiplayer.js?v=4"></script>
-    <script src="js/pages/dual-race.js?v=5"></script>
+    <script src="js/pages/dual-race.js?v=6"></script>
     <script src="js/pages/room-race.js?v=5"></script>
     <script src="dual.js?v=7"></script>
-    <script src="js/page-fragments.js?v=10"></script>
+    <script src="js/page-fragments.js?v=11"></script>
     <script src="js/router.js?v=3"></script>
     <script>
-    (function initShellBubbleMenu() {
-        if (typeof window.usertypoRevealLogos === 'function') {
-            window.usertypoRevealLogos(document);
-        }
-        const expandingBubble = document.getElementById('expanding-bubble');
-        const bubbleToggle = document.getElementById('bubble-toggle');
-        if (!expandingBubble || !bubbleToggle) return;
+    window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
+        if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;
+        expandingBubble.dataset.bubbleWired = '1';
 
         let bubbleOpen = false;
         let bubbleExpandedHeight = null;
@@ -1109,6 +1105,16 @@
             runBubbleAnimation(!bubbleOpen);
         });
         expandingBubble.addEventListener('mouseleave', function() { if (bubbleOpen) runBubbleAnimation(false); });
+    };
+
+    (function initShellBubbleMenu() {
+        if (typeof window.usertypoRevealLogos === 'function') {
+            window.usertypoRevealLogos(document);
+        }
+        window.usertypoInitExpandingBubble(
+            document.getElementById('expanding-bubble'),
+            document.getElementById('bubble-toggle')
+        );
 
         window.openNotifications = window.openNotifications || function() {
             var modal = document.getElementById('notifications-modal');

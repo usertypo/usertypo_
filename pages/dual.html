@@ -453,9 +453,9 @@ html {
             <header class="flex items-center justify-between p-4 bg-transparent shrink-0 relative z-20">
                 <div class="flex items-center gap-3 w-1/3">
             <!-- Expanding Bubble Menu -->
-            <div class="relative overflow-visible" id="expanding-menu-wrapper" style="width: 40px; height: 40px;">
-                <div id="expanding-bubble" class="expanding-bubble glass-panel bg-surface/85 !backdrop-blur-sm transition-all">
-                    <button type="button" id="bubble-toggle" aria-label="Open menu" aria-expanded="false">
+            <div class="relative overflow-visible" id="dual-stats-menu-wrapper" style="width: 40px; height: 40px;">
+                <div id="dual-stats-expanding-bubble" class="expanding-bubble glass-panel bg-surface/85 !backdrop-blur-sm transition-all">
+                    <button type="button" id="dual-stats-bubble-toggle" aria-label="Open menu" aria-expanded="false">
                         <span class="bubble-icon-stack" aria-hidden="true">
                             <svg class="bubble-toggle-icon bubble-toggle-icon-menu" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="4" y="6" width="16" height="2" rx="1"></rect>
@@ -486,7 +486,7 @@ html {
                                 <span class="material-symbols-outlined nav-icon text-[20px]">emoji_events</span>
                                 <span class="font-bold text-sm tracking-wide">Leaderboards</span>
                             </a>
-                            <a href="#"
+                            <a href="javascript:void(0)" data-dual-stats-notifications
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <div class="relative flex items-center justify-center">
                                     <span class="material-symbols-outlined nav-icon text-[20px]">notifications</span>
@@ -516,12 +516,12 @@ html {
                             <a href="/userstats" data-spa-link
                                 class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group/link">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
+                                    <div id="dual-stats-user-avatar" class="bubble-user-avatar w-8 h-8 rounded-lg flex items-center justify-center text-background-dark font-black text-sm">
                                         G
                                     </div>
                                     <div class="flex flex-col justify-center">
-                                        <span class="text-white font-bold text-xs leading-tight">GAMER_42</span>
-                                        <span class="bubble-user-tier text-[10px] font-bold tracking-wide">Pro Member</span>
+                                        <span id="dual-stats-user-name" class="text-white font-bold text-xs leading-tight">Player</span>
+                                        <span id="dual-stats-user-tier" class="bubble-user-tier text-[10px] font-bold tracking-wide">Signed in</span>
                                     </div>
                                 </div>
                                 <button class="text-slate-500 group-hover/link:text-white transition-colors mr-1">
@@ -731,10 +731,10 @@ html {
                             <span>Rematch</span>
                             <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
                         </button>
-                        <a href="/" data-spa-link
+                        <button id="leave-dual-btn" type="button"
                             class="px-7 py-2.5 panel-surface rounded-xl font-display font-bold text-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all">
-                            New Test
-                        </a>
+                            Leave
+                        </button>
                         <button id="screenshot-btn"
                             class="panel-surface flex items-center justify-center w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                             title="Share Screenshot">
