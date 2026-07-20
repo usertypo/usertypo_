@@ -890,14 +890,22 @@ function createMultiplayerServer(httpServer, options) {
                 const isFinal = room.config.mode === 'words' && completedWords === room.prompt.targetWordCount;
                 const finalPacket = payload[4] === 1;
                 const finalStatsPayload = Array.isArray(payload[5]) ? payload[5] : null;
+                const now = Date.now();
                 const isTimedFinal = room.config.mode === 'time' && finalPacket
-                    && Date.now() >= room.startsAt + (room.config.amount * 1000) - 500;
-                if (deltaWords !== 3
+                    && now >= room.startsAt + (room.config.amount * 1000) - 500;
+                const isCustomRoom = room.type === 'custom';
+                if (isCustomRoom) {
+                    // Rooms: allow frequent WPM snapshots (~300ms). Dual still requires 3-word deltas.
+                    if (!finalPacket && !isFinal && !isTimedFinal && (now - player.lastSnapshotAt) < 250) {
+                        safeAck(ack, { ok: true, throttled: true });
+                        return;
+                    }
+                    if (deltaWords < 0) throw new Error('invalid_progress');
+                } else if (deltaWords !== 3
                     && !(isFinal && deltaWords > 0 && deltaWords <= 3)
                     && !(isTimedFinal && deltaWords >= 0 && deltaWords <= 3)) {
                     throw new Error('three_word_packets_required');
                 }
-                const now = Date.now();
                 if (now < room.startsAt) throw new Error('early_progress');
                 const correctChars = cumulativeCorrectChars(room, completedWords);
                 if (totalKeystrokes < correctChars || totalKeystrokes > correctChars + 5000) {

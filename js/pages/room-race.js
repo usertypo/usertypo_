@@ -45,7 +45,10 @@
         var wordOffsets = [];
         var lineHeight = 0;
         var updateTimer = null;
+        var progressInterval = null;
+        var lastProgressSentAt = 0;
         var progressByIndex = {};
+        var ROOM_PROGRESS_INTERVAL_MS = 300;
         var finished = false;
         var isHost = false;
         var invitePanelOpen = false;
@@ -737,7 +740,12 @@
         }
 
         function sendProgress(finalPacket) {
-            if (!((completedWords > 0 && completedWords % 3 === 0) || finalPacket)) return;
+            if (state !== 'racing' && state !== 'waiting-result' && !finalPacket) return;
+            var now = Date.now();
+            if (!finalPacket && lastProgressSentAt && (now - lastProgressSentAt) < ROOM_PROGRESS_INTERVAL_MS - 20) {
+                return;
+            }
+            lastProgressSentAt = now;
             sequence += 1;
             window.usertypoMultiplayer
                 .sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket)
@@ -753,9 +761,11 @@
             lockedAt = null;
             errorHistory = [];
             var isFinal = config.mode === 'words' && completedWords >= config.amount;
-            sendProgress(isFinal);
             if (isFinal) {
                 state = 'waiting-result';
+                clearInterval(progressInterval);
+                progressInterval = null;
+                sendProgress(true);
                 window.usertypoNotifications?.showToast('Finished — waiting for the remaining players.', 'check_circle');
                 return;
             }
@@ -878,6 +888,8 @@
                 if (remaining === 0) {
                     state = 'waiting-result';
                     clearInterval(updateTimer);
+                    clearInterval(progressInterval);
+                    progressInterval = null;
                     sendProgress(true);
                 }
             } else {
@@ -936,9 +948,11 @@
             }
 
             leaderboard.innerHTML = rows.map(function (row, index) {
+                var avatar = String(row.avatarUrl || DEFAULT_AVATAR).replace(/"/g, '&quot;');
                 return '<div class="lb-pill player-pill' + (row.index === selfIndex ? ' me' : '') +
                     '" data-player-index="' + row.index + '">' +
                     '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
+                    '<img class="lb-avatar" src="' + avatar + '" alt="" width="28" height="28" loading="lazy" decoding="async">' +
                     '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) + '</span>' +
                     '<span class="lb-wpm text-sm font-mono text-primary shrink-0 ml-auto" data-lb-wpm>' +
                     Math.round(Number(row.wpm) || 0) + '</span>' +
@@ -979,6 +993,9 @@
             lockedAt = null;
             errorHistory = [];
             progressByIndex = {};
+            lastProgressSentAt = 0;
+            clearInterval(progressInterval);
+            progressInterval = null;
             switchToTest();
             renderText();
             renderLeaderboard();
@@ -1004,7 +1021,11 @@
                     updateCaret();
                 }, { signal: signal });
                 updateTimer = setInterval(updateLive, 200);
+                progressInterval = setInterval(function () {
+                    if (state === 'racing') sendProgress(false);
+                }, ROOM_PROGRESS_INTERVAL_MS);
                 updateLive();
+                sendProgress(false);
             }, Math.max(0, startedAt - Date.now()));
         }
 
@@ -1013,6 +1034,8 @@
             finished = true;
             state = 'finished';
             clearInterval(updateTimer);
+            clearInterval(progressInterval);
+            progressInterval = null;
             var results = payload[2] || [];
             var list = document.getElementById('stats-rankings-list');
             var podium = document.getElementById('stats-podium');
@@ -1181,6 +1204,8 @@
 
         function cleanup() {
             clearInterval(updateTimer);
+            clearInterval(progressInterval);
+            progressInterval = null;
             closeHostModal();
             closeStartConfirmModal();
             if (!finished && state !== 'waiting-result' && state !== 'closed' && roomId) {
