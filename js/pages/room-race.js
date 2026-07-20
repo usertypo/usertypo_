@@ -13,6 +13,10 @@
         var params = new URLSearchParams(window.location.search);
         var roomId = params.get('room') || '';
         var roomCode = params.get('code') || '';
+        if (!roomCode) {
+            var joinPath = String(window.location.pathname || '').match(/^\/join\/(\d{4})$/);
+            if (joinPath) roomCode = joinPath[1];
+        }
         var state = 'joining';
         var room = null;
         var config = null;
@@ -58,7 +62,7 @@
 
         function getJoinLink() {
             var origin = window.location.origin || '';
-            return origin + '/join/' + encodeURIComponent(roomCode || '');
+            return origin + '/room?code=' + encodeURIComponent(roomCode || '');
         }
 
         function countReadyPlayers() {
@@ -907,6 +911,16 @@
                 var message = String(error && error.message || '');
                 if (/full/i.test(message)) {
                     window.usertypoNotifications?.showToast('This room is full.', 'groups');
+                    throw error;
+                }
+                // If already stuck in another match, leave it and retry once.
+                if (/already in a match/i.test(message)) {
+                    try {
+                        await window.usertypoMultiplayer.leaveRace('');
+                    } catch (_) { /* ignore */ }
+                    var retry = await window.usertypoMultiplayer.joinRoomCode(roomCode);
+                    if (retry && retry.roomId) roomId = retry.roomId;
+                    return;
                 }
                 throw error;
             }
@@ -921,7 +935,9 @@
             bindLobbyUI();
             try {
                 var nav = performance.getEntriesByType('navigation');
-                if (initialDocumentPath === '/room' && nav.length && nav[0].type === 'reload') {
+                var pathNow = String(window.location.pathname || '');
+                var isRoomPath = pathNow === '/room' || /^\/join\/\d{4}$/.test(pathNow);
+                if (isRoomPath && nav.length && nav[0].type === 'reload') {
                     window.usertypoNotifications?.showToast('You left the room because the page was refreshed.', 'cancel');
                     window.navigateTo?.('/friends');
                     return;
@@ -935,12 +951,12 @@
                 if (!selfUserId) {
                     throw new Error('Sign in to join a room.');
                 }
-                // Join by code when opening a shared link, or when only a code is present.
-                if (roomCode && !roomId) {
+                // Always resolve membership by code when present (invite link / pin join).
+                if (roomCode) {
                     await ensureRoomMembership();
                 }
                 if (!roomId) {
-                    throw new Error('Room unavailable');
+                    throw new Error('Room not found. Check the Room ID and try again.');
                 }
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 room = response.room;
@@ -951,11 +967,13 @@
                 renderLobby(room);
                 hideLobbyMessage();
             } catch (error) {
-                var msg = String(error && error.message || 'Room unavailable');
+                var msg = String(error && error.message || 'Room not found');
                 if (/full/i.test(msg)) {
                     window.usertypoNotifications?.showToast('This room is full.', 'groups');
+                } else {
+                    window.usertypoNotifications?.showToast(msg, 'error');
                 }
-                showLobbyMessage('Room unavailable', msg);
+                showLobbyMessage('Could not join', msg);
                 setTimeout(function () { window.navigateTo?.('/friends'); }, 1800);
             }
         }

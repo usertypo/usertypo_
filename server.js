@@ -127,6 +127,16 @@ app.use(express.static(ROOT, {
     },
 }));
 
+// Invite links: /join/1234 → /room?code=1234 so relative assets resolve from /
+app.get('/join/:code', (req, res, next) => {
+    const code = String(req.params.code || '');
+    if (!/^\d{4}$/.test(code)) {
+        next();
+        return;
+    }
+    res.redirect(302, '/room?code=' + encodeURIComponent(code));
+});
+
 const SPA_ROUTES = new Set([
     '/', '/index.html', '/settings', '/signin', '/sso-callback', '/friends',
     '/room', '/dual', '/leaderboards', '/userstats',
