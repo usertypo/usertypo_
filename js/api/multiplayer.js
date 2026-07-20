@@ -277,13 +277,14 @@
         });
     }
 
-    function sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket) {
+    function sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket, finalStats) {
         return emitAck('race:progress', [
             roomId,
             sequence,
             completedWords,
             totalKeystrokes,
             finalPacket ? 1 : 0,
+            finalStats || null,
         ], 5000);
     }
 

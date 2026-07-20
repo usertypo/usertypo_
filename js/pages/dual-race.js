@@ -45,7 +45,6 @@
         var opponentOffset = 0;
         var opponentDisplayWpm = 0;
         var opponentTargetWpm = 0;
-        var opponentAnchorOffset = 0;
         var opponentHasReport = false;
         var opponentFrameAt = 0;
         var opponentAnimationFrame = null;
@@ -209,7 +208,7 @@
             for (var i = 0; i < words.length; i += 1) {
                 var start = wordOffset(i);
                 if (offset <= start + words[i].length) {
-                    return { wordIndex: i, charIndex: Math.max(0, Math.round(offset - start)) };
+                    return { wordIndex: i, charIndex: Math.max(0, Math.floor(offset - start)) };
                 }
             }
             var last = Math.max(0, words.length - 1);
@@ -324,13 +323,10 @@
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
                 var desiredWpm = opponentHasReport ? opponentTargetWpm : currentLocalWpm();
-                var blend = 1 - Math.exp(-elapsedSeconds * 4);
+                if (opponentHasReport && opponentTargetWpm <= 0) desiredWpm = currentLocalWpm();
+                var blend = 1 - Math.exp(-elapsedSeconds * 3);
                 opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
                 opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
-                if (opponentHasReport) {
-                    var drift = opponentAnchorOffset - opponentOffset;
-                    opponentOffset += drift * Math.min(1, elapsedSeconds * 2.5);
-                }
                 var last = Math.max(0, words.length - 1);
                 var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
                 opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
@@ -377,8 +373,8 @@
         function currentCorrectChars() {
             var total = 0;
             for (var i = 0; i < completedCorrectWords && i < words.length; i += 1) {
-                total += words[i].length;
-                if (i > 0) total += 1;
+                // Home-page stats count: each completed word includes its trailing space.
+                total += words[i].length + 1;
             }
             var activeWord = document.getElementById('word-' + currentWordIndex);
             if (activeWord) {
@@ -424,10 +420,8 @@
                     rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length;
                 }
             });
-            var elapsedSeconds = config && config.mode === 'time'
-                ? Number(config.amount) || 0
-                : Math.floor((endTime - startTime) / 1000);
-            var elapsedMinutes = Math.max(elapsedSeconds / 60, 2 / 60);
+            var elapsedSeconds = Math.floor((endTime - startTime) / 1000);
+            var elapsedMinutes = Math.max((endTime - startTime) / 60000, 2 / 60);
             var exactWpm = (validChars / 5) / elapsedMinutes;
             var exactRawWpm = (rawChars / 5) / elapsedMinutes;
             var accuracy = totalKeystrokes > 0
@@ -448,26 +442,24 @@
 
         function parseServerResult(row) {
             if (!Array.isArray(row) || !row.length) return null;
-            var correctChars = Number(row[8]) || 0;
-            var totalKeystrokes = Number(row[9]) || 0;
-            var displayTime = row[12] != null
-                ? Number(row[12]) || 0
-                : (config && config.mode === 'time' ? Number(config.amount) || 0 : 0);
+            var validChars = Number(row[8]) || 0;
+            var rawChars = Number(row[9]) || 0;
+            var displayTime = row[12] != null ? Number(row[12]) || 0 : 0;
+            var errorsMadeCount = row[13] != null ? Number(row[13]) || 0 : Math.max(0, rawChars - validChars);
+            var extraCount = row[14] != null ? Number(row[14]) || 0 : 0;
             var elapsedMinutes = Math.max(displayTime / 60, 2 / 60);
-            var exactWpm = row[3] != null ? Number(row[3]) : (correctChars / 5) / elapsedMinutes;
-            var exactRaw = row[10] != null ? Number(row[10]) : (totalKeystrokes / 5) / elapsedMinutes;
-            var accuracy = row[4] != null ? Number(row[4]) : (
-                totalKeystrokes > 0 ? (correctChars / totalKeystrokes) * 100 : 100
-            );
+            var exactWpm = row[3] != null ? Number(row[3]) : (validChars / 5) / elapsedMinutes;
+            var exactRaw = row[10] != null ? Number(row[10]) : (rawChars / 5) / elapsedMinutes;
+            var accuracy = row[4] != null ? Number(row[4]) : 100;
             return {
                 wpm: Math.max(0, Math.round(exactWpm)),
                 raw: Math.max(0, Math.round(exactRaw)),
                 accuracy: Math.round(accuracy * 10) / 10,
-                consistency: row[11] != null ? Number(row[11]) : 0,
-                correct: correctChars,
-                total: totalKeystrokes,
-                errors: Math.max(0, totalKeystrokes - correctChars),
-                extra: 0,
+                consistency: row[11] != null ? Number(row[11]) : 100,
+                correct: validChars,
+                total: rawChars,
+                errors: errorsMadeCount,
+                extra: extraCount,
                 time: displayTime,
             };
         }
@@ -574,10 +566,16 @@
             if (!shouldSend) return;
             var lastQueued = packetQueue.length ? packetQueue[packetQueue.length - 1] : null;
             if (!lastQueued || lastQueued.words !== completedCorrectWords || (forceFinal && !lastQueued.final)) {
+                var finalStats = null;
+                if (forceFinal === true) {
+                    var snapshot = computeFinalStats(localFinishTime || Date.now());
+                    finalStats = [snapshot.correct, snapshot.total, snapshot.errors, snapshot.extra, snapshot.time];
+                }
                 packetQueue.push({
                     words: completedCorrectWords,
                     keystrokes: totalKeystrokes,
                     final: forceFinal === true,
+                    finalStats: finalStats,
                     attempts: 0,
                 });
             }
@@ -590,7 +588,7 @@
             var nextSequence = packetSequence + 1;
             packetSending = true;
             window.usertypoMultiplayer
-                .sendProgress(roomId, nextSequence, packet.words, packet.keystrokes, packet.final)
+                .sendProgress(roomId, nextSequence, packet.words, packet.keystrokes, packet.final, packet.finalStats)
                 .then(function () {
                     packetSequence = nextSequence;
                     packetQueue.shift();
@@ -777,7 +775,6 @@
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
-            opponentAnchorOffset = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
             localFinishTime = 0;
@@ -827,13 +824,12 @@
 
         function applyOpponentProgress(payload) {
             if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
-            opponentTargetWpm = Math.max(0, Number(payload[1]) || 0);
-            opponentHasReport = true;
-            if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(opponentTargetWpm);
-            var completedWords = Math.max(0, Math.min(words.length, Number(payload[4]) || 0));
-            opponentAnchorOffset = completedWords >= words.length
-                ? wordOffset(words.length - 1) + words[words.length - 1].length
-                : wordOffset(completedWords);
+            var nextWpm = Math.max(0, Number(payload[1]) || 0);
+            if (nextWpm > 0) {
+                opponentTargetWpm = nextWpm;
+                opponentHasReport = true;
+                if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(nextWpm);
+            }
         }
 
         function fillCard(prefix, data) {
@@ -875,8 +871,7 @@
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
             var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
-            var local = computeFinalStats(localFinishTime || Date.now());
-            var meData = parseServerResult(myRow) || Object.assign({}, local);
+            var meData = parseServerResult(myRow) || computeFinalStats(localFinishTime || Date.now());
             meData.name = me.name;
             meData.avatarUrl = me.avatarUrl;
             var otherData = parseServerResult(otherRow) || {

@@ -106,6 +106,10 @@ function createMultiplayerServer(httpServer, options) {
             totalKeystrokes: 0,
             wpm: 0,
             accuracy: 100,
+            errorsMade: 0,
+            extraChars: 0,
+            rawChars: 0,
+            finalStats: null,
             lastSnapshotAt: 0,
             anomalyStrikes: 0,
             finishedAt: null,
@@ -269,8 +273,8 @@ function createMultiplayerServer(httpServer, options) {
     function cumulativeCorrectChars(room, completedWords) {
         let total = 0;
         for (let i = 0; i < completedWords && i < room.prompt.words.length; i += 1) {
-            total += room.prompt.words[i].length;
-            if (i > 0) total += 1;
+            // Home-page stats count: each completed word includes its trailing space.
+            total += room.prompt.words[i].length + 1;
         }
         return total;
     }
@@ -310,7 +314,9 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function raceDisplaySeconds(room, participant) {
-        if (room.config.mode === 'time') return room.config.amount;
+        if (participant && participant.finalStats && participant.finalStats.displaySeconds != null) {
+            return participant.finalStats.displaySeconds;
+        }
         if (participant && participant.finishedAt && room.startsAt) {
             return Math.floor((participant.finishedAt - room.startsAt) / 1000);
         }
@@ -321,24 +327,35 @@ function createMultiplayerServer(httpServer, options) {
         const progress = room.config.mode === 'words'
             ? Math.min(100, Math.round((player.completedWords / room.prompt.targetWordCount) * 100))
             : Math.min(100, Math.round(((Date.now() - room.startsAt) / (room.config.amount * 1000)) * 100));
+        const finalStats = player.finalStats || {};
+        const validChars = finalStats.validChars != null ? finalStats.validChars : (player.correctChars || 0);
+        const rawChars = finalStats.rawChars != null ? finalStats.rawChars : (player.totalKeystrokes || 0);
+        const errorsMade = finalStats.errorsMade != null ? finalStats.errorsMade : Math.max(0, (player.totalKeystrokes || 0) - validChars);
+        const extraChars = finalStats.extraChars != null ? finalStats.extraChars : 0;
         const displaySeconds = raceDisplaySeconds(room, player);
         const elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
-        const exactWpm = (player.correctChars / 5) / elapsedMinutes;
-        const exactRawWpm = (player.totalKeystrokes / 5) / elapsedMinutes;
+        const exactWpm = (validChars / 5) / elapsedMinutes;
+        const exactRawWpm = (rawChars / 5) / elapsedMinutes;
+        const totalKeystrokes = player.totalKeystrokes || 0;
+        const accuracy = totalKeystrokes > 0
+            ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100)
+            : 100;
         return [
             player.index,
             player.userId,
             player.name,
             Math.max(0, Math.round(exactWpm)),
-            Math.max(0, Math.min(100, Math.round(player.accuracy * 10) / 10)),
+            Math.max(0, Math.min(100, Math.round(accuracy * 10) / 10)),
             progress,
             player.status,
             player.finishedAt || 0,
-            player.correctChars || 0,
-            player.totalKeystrokes || 0,
+            validChars,
+            rawChars,
             Math.max(0, Math.round(exactRawWpm)),
             computeConsistencyFromSnapshots(player.snapshots),
-            raceDisplaySeconds(room, player),
+            displaySeconds,
+            errorsMade,
+            extraChars,
         ];
     }
 
@@ -358,20 +375,25 @@ function createMultiplayerServer(httpServer, options) {
                 : 100;
             const botDisplaySeconds = raceDisplaySeconds(room, room.bot);
             const botElapsedMinutes = Math.max(botDisplaySeconds / 60, 2 / 60);
+            const botValidChars = room.bot.correctChars || 0;
+            const botRawChars = room.bot.totalKeystrokes || 0;
+            const botErrors = Math.max(0, botRawChars - botValidChars);
             results.push([
                 room.bot.index,
                 'bot',
                 room.bot.name,
-                Math.max(0, Math.round((room.bot.correctChars / 5) / botElapsedMinutes)),
+                Math.max(0, Math.round((botValidChars / 5) / botElapsedMinutes)),
                 Math.max(0, Math.min(100, Math.round(room.bot.accuracy * 10) / 10)),
                 botProgress,
                 room.bot.status,
                 room.bot.finishedAt || 0,
-                room.bot.correctChars || 0,
-                room.bot.totalKeystrokes || 0,
-                Math.max(0, Math.round((room.bot.totalKeystrokes / 5) / botElapsedMinutes)),
+                botValidChars,
+                botRawChars,
+                Math.max(0, Math.round((botRawChars / 5) / botElapsedMinutes)),
                 computeConsistencyFromSnapshots(room.bot.snapshots),
                 botDisplaySeconds,
+                botErrors,
+                0,
             ]);
         }
         results.sort((a, b) => {
@@ -425,7 +447,7 @@ function createMultiplayerServer(httpServer, options) {
                 : Math.round(((Date.now() - room.startsAt) / (room.config.amount * 1000)) * 100);
             io.to(roomChannel(room.id)).emit('race:progress', [
                 room.bot.index,
-                Math.round(room.bot.wpm),
+                room.bot.wpm,
                 Math.min(100, progress),
                 1,
                 room.bot.completedWords,
@@ -822,6 +844,7 @@ function createMultiplayerServer(httpServer, options) {
                 const deltaWords = completedWords - player.completedWords;
                 const isFinal = room.config.mode === 'words' && completedWords === room.prompt.targetWordCount;
                 const finalPacket = payload[4] === 1;
+                const finalStatsPayload = Array.isArray(payload[5]) ? payload[5] : null;
                 const isTimedFinal = room.config.mode === 'time' && finalPacket
                     && Date.now() >= room.startsAt + (room.config.amount * 1000) - 500;
                 if (deltaWords !== 3
@@ -859,17 +882,45 @@ function createMultiplayerServer(httpServer, options) {
                 player.lastSnapshotAt = now;
                 player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
                 if (player.snapshots.length > LIMITS.maxRetainedSnapshots) player.snapshots.shift();
+                if (finalPacket && finalStatsPayload && finalStatsPayload.length >= 4) {
+                    const validChars = Number(finalStatsPayload[0]);
+                    const rawChars = Number(finalStatsPayload[1]);
+                    const errorsMade = Number(finalStatsPayload[2]);
+                    const extraChars = Number(finalStatsPayload[3]);
+                    const displaySeconds = Number(finalStatsPayload[4]);
+                    if (
+                        Number.isInteger(validChars)
+                        && Number.isInteger(rawChars)
+                        && Number.isInteger(errorsMade)
+                        && Number.isInteger(extraChars)
+                        && validChars >= 0
+                        && rawChars >= validChars
+                        && errorsMade >= 0
+                        && extraChars >= 0
+                        && totalKeystrokes >= errorsMade
+                    ) {
+                        player.finalStats = {
+                            validChars,
+                            rawChars,
+                            errorsMade,
+                            extraChars,
+                            displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
+                                ? Math.floor(displaySeconds)
+                                : Math.floor((now - room.startsAt) / 1000),
+                        };
+                    }
+                }
                 const progress = room.config.mode === 'words'
                     ? Math.round((completedWords / room.prompt.targetWordCount) * 100)
                     : Math.round(((now - room.startsAt) / (room.config.amount * 1000)) * 100);
                 io.to(roomChannel(room.id)).emit('race:progress', [
                     player.index,
-                    Math.round(player.wpm),
+                    player.wpm,
                     Math.min(100, progress),
                     1,
                     player.completedWords,
                 ]);
-                if (isFinal) {
+                if (isFinal || isTimedFinal) {
                     player.status = 'finished';
                     player.finishedAt = now;
                     maybeFinishRoom(room);

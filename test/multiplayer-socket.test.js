@@ -139,8 +139,9 @@ test('matches authenticated players and starts one server-owned race', { timeout
         assert.equal(resumed.room.state, 'racing');
 
         await new Promise((resolve) => setTimeout(resolve, raceForFirst.startsInMs + 750));
+        // Home-page stats count: each completed word includes its trailing space.
         const firstThreeChars = raceForFirst.words.slice(0, 3)
-            .reduce((total, word) => total + word.length, 0) + 2;
+            .reduce((total, word) => total + word.length, 0) + 3;
         await emitAck(first, 'race:progress', [firstMatch.roomId, 1, 3, firstThreeChars, 0]);
         const duplicate = await emitAck(first, 'race:progress', [firstMatch.roomId, 1, 3, firstThreeChars, 0]);
         assert.equal(duplicate.duplicate, true);
