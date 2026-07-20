@@ -529,10 +529,11 @@ function createMultiplayerServer(httpServer, options) {
         }, LIMITS.roomInactivityMs);
     }
 
-    function closeCustomRoom(room, reason) {
+    function closeCustomRoom(room, reason, excludeUserId) {
         if (!room || room.type !== 'custom' || room.state === 'disposed') return;
         const payload = [room.id, reason || 'closed', room.roomCode || ''];
         room.allowedUserIds.forEach((uid) => {
+            if (excludeUserId && uid === excludeUserId) return;
             emitToUser(uid, 'room:closed', payload);
         });
         disposeRoom(room.id);
@@ -576,7 +577,7 @@ function createMultiplayerServer(httpServer, options) {
         userToRoom.delete(userId);
         if (room.type === 'custom' && (room.state === 'waiting' || room.state === 'countdown')) {
             if (userId === room.hostUserId) {
-                closeCustomRoom(room, 'host-left');
+                closeCustomRoom(room, 'host-left', userId);
                 return;
             }
             if (room.state === 'countdown') {

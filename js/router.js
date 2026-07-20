@@ -4,6 +4,12 @@
 (function () {
     'use strict';
 
+    // Capture the real document entry URL before any SPA navigation.
+    // Used to detect full-page reloads on /room or /dual (not SPA navigations after a reload elsewhere).
+    if (!window.__usertypoBootPath) {
+        window.__usertypoBootPath = String(window.location.pathname || '/');
+    }
+
     const routes = {
         '/': { page: 'pages/home.html', title: 'Home - Typing Test | usertypo_', navId: 'nav-typing', hideShellFooter: true, compact: false, typingLayout: true },
         '/settings': { page: 'pages/settings.html', title: 'Settings - Configure Your Experience | usertypo_', navId: 'nav-settings', compact: false },

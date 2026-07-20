@@ -5,7 +5,17 @@
 (function () {
     'use strict';
 
-    var initialDocumentPath = window.location.pathname;
+    function wasFullPageReloadOnRoom() {
+        try {
+            var bootPath = String(window.__usertypoBootPath || '').split('?')[0];
+            var bootWasRoom = bootPath === '/room' || /^\/join\/\d{4}$/.test(bootPath);
+            if (!bootWasRoom) return false;
+            var entries = performance.getEntriesByType('navigation');
+            return !!(entries.length && entries[0].type === 'reload');
+        } catch (_) {
+            return false;
+        }
+    }
 
     function createController() {
         var abort = new AbortController();
@@ -934,10 +944,7 @@
             refreshDomRefs();
             bindLobbyUI();
             try {
-                var nav = performance.getEntriesByType('navigation');
-                var pathNow = String(window.location.pathname || '');
-                var isRoomPath = pathNow === '/room' || /^\/join\/\d{4}$/.test(pathNow);
-                if (isRoomPath && nav.length && nav[0].type === 'reload') {
+                if (wasFullPageReloadOnRoom()) {
                     window.usertypoNotifications?.showToast('You left the room because the page was refreshed.', 'cancel');
                     window.navigateTo?.('/friends');
                     return;
