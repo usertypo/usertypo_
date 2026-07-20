@@ -887,13 +887,7 @@
                 percentage = Math.min(100, (completedWords / config.amount) * 100);
             }
             if (progressBar) progressBar.style.width = percentage + '%';
-            progressByIndex[selfIndex] = {
-                index: selfIndex,
-                wpm: metrics.wpm,
-                progress: percentage,
-                completedWords: completedWords,
-            };
-            renderLeaderboard();
+            // Leaderboard WPMs stay packet-driven so every client shares the same order.
         }
 
         function renderLeaderboard() {
@@ -901,12 +895,13 @@
             var badge = document.getElementById('room-player-count-badge');
             if (badge) badge.textContent = room.players.length + ' players';
             var rows = room.players.map(function (player) {
-                return Object.assign({ index: player.index, wpm: 0, progress: 0 }, progressByIndex[player.index] || {}, {
+                return Object.assign({ index: player.index, wpm: 0 }, progressByIndex[player.index] || {}, {
                     name: player.name,
                     avatarUrl: player.avatarUrl,
                 });
             }).sort(function (a, b) {
-                return b.progress - a.progress || b.wpm - a.wpm || a.index - b.index;
+                // Highest broadcast WPM first — same inputs on every client.
+                return (Number(b.wpm) || 0) - (Number(a.wpm) || 0) || a.index - b.index;
             });
 
             var existing = {};
@@ -933,23 +928,21 @@
                     if (!pill) return;
                     var rank = pill.querySelector('[data-lb-rank]');
                     var wpm = pill.querySelector('[data-lb-wpm]');
-                    var bar = pill.querySelector('.lb-progress');
                     if (rank) rank.textContent = String(index + 1);
-                    if (wpm) wpm.textContent = String(Math.round(row.wpm));
-                    if (bar) bar.style.width = Math.min(100, row.progress) + '%';
+                    if (wpm) wpm.textContent = String(Math.round(Number(row.wpm) || 0));
+                    pill.classList.toggle('me', row.index === selfIndex);
                 });
                 return;
             }
 
             leaderboard.innerHTML = rows.map(function (row, index) {
-                return '<div class="lb-pill player-pill ' + (row.index === selfIndex ? 'me' : '') +
-                    ' p-3 rounded-xl border border-white/10 bg-white/[0.035]" data-player-index="' + row.index + '">' +
-                    '<div class="flex items-center gap-3">' +
-                    '<span class="text-xs font-bold text-slate-500 w-4" data-lb-rank>' + (index + 1) + '</span>' +
-                    '<div class="min-w-0 flex-1"><div class="text-sm font-bold text-white truncate">' + escapeHtml(row.name) + '</div>' +
-                    '<div class="h-1 bg-white/10 rounded-full mt-2 overflow-hidden"><div class="lb-progress progress-fill h-full bg-primary" style="width:' + Math.min(100, row.progress) + '%"></div></div></div>' +
-                    '<span class="text-sm font-mono text-primary" data-lb-wpm>' + Math.round(row.wpm) + '</span>' +
-                    '</div></div>';
+                return '<div class="lb-pill player-pill' + (row.index === selfIndex ? ' me' : '') +
+                    '" data-player-index="' + row.index + '">' +
+                    '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
+                    '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) + '</span>' +
+                    '<span class="lb-wpm text-sm font-mono text-primary shrink-0 ml-auto" data-lb-wpm>' +
+                    Math.round(Number(row.wpm) || 0) + '</span>' +
+                    '</div>';
             }).join('');
 
             if (!orderChanged || !Object.keys(firstRects).length) return;
@@ -1071,7 +1064,7 @@
                 if (!Array.isArray(payload)) return;
                 progressByIndex[payload[0]] = {
                     index: payload[0],
-                    wpm: payload[1],
+                    wpm: Number(payload[1]) || 0,
                     progress: payload[2],
                     completedWords: payload[4],
                 };
