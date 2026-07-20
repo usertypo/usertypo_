@@ -48,7 +48,7 @@
         var progressInterval = null;
         var lastProgressSentAt = 0;
         var progressByIndex = {};
-        var ROOM_PROGRESS_INTERVAL_MS = 300;
+        var ROOM_PROGRESS_INTERVAL_MS = 500;
         var finished = false;
         var isHost = false;
         var returnLobbyAgreed = 0;

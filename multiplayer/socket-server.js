@@ -1001,8 +1001,8 @@ function createMultiplayerServer(httpServer, options) {
                     && now >= room.startsAt + (room.config.amount * 1000) - 500;
                 const isCustomRoom = room.type === 'custom';
                 if (isCustomRoom) {
-                    // Rooms: allow frequent WPM snapshots (~300ms). Dual still requires 3-word deltas.
-                    if (!finalPacket && !isFinal && !isTimedFinal && (now - player.lastSnapshotAt) < 250) {
+                    // Rooms: allow frequent WPM snapshots (~500ms). Dual still requires 3-word deltas.
+                    if (!finalPacket && !isFinal && !isTimedFinal && (now - player.lastSnapshotAt) < 450) {
                         safeAck(ack, { ok: true, throttled: true });
                         return;
                     }
