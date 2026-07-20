@@ -42,6 +42,8 @@
         var errors = 0;
         var lockedAt = null;
         var errorHistory = [];
+        var wordOffsets = [];
+        var lineHeight = 0;
         var updateTimer = null;
         var progressByIndex = {};
         var finished = false;
@@ -540,63 +542,161 @@
             lobbyView.style.display = 'none';
             testView.classList.remove('hidden', 'opacity-0');
             testView.style.display = 'flex';
+            testView.classList.add('flex');
+        }
+
+        function getTapeMode() {
+            return document.body.getAttribute('data-tape-mode')
+                || window.usertypo_settings?.cursor?.tapeModeInRooms
+                || window.usertypo_settings?.cursor?.tapeModeInDual
+                || 'letter';
+        }
+
+        function appendWord(word, wordIndex) {
+            var wordElement = document.createElement('div');
+            wordElement.id = 'room-word-' + wordIndex;
+            wordElement.className = 'word';
+            word.split('').forEach(function (character, charIndex) {
+                var characterElement = document.createElement('span');
+                characterElement.id = 'room-char-' + wordIndex + '-' + charIndex;
+                characterElement.className = 'char text-slate-500 transition-colors duration-75';
+                characterElement.textContent = character;
+                wordElement.appendChild(characterElement);
+            });
+            textContainer.appendChild(wordElement);
         }
 
         function renderText() {
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
-            words.forEach(function (word, wordIndex) {
-                var wordElement = document.createElement('span');
-                wordElement.id = 'room-word-' + wordIndex;
-                wordElement.className = 'word inline-block mr-[0.65em] mb-[0.3em]';
-                word.split('').forEach(function (character, charIndex) {
-                    var characterElement = document.createElement('span');
-                    characterElement.id = 'room-char-' + wordIndex + '-' + charIndex;
-                    characterElement.className = 'char text-slate-500 transition-colors duration-75';
-                    characterElement.textContent = character;
-                    wordElement.appendChild(characterElement);
-                });
-                textContainer.appendChild(wordElement);
+            wordOffsets = [];
+            var runningOffset = 0;
+            words.forEach(function (word, index) {
+                wordOffsets[index] = runningOffset;
+                runningOffset += word.length + 1;
             });
-            requestAnimationFrame(updateCaret);
+            words.forEach(appendWord);
+            textContainer.offsetHeight;
+            requestAnimationFrame(function () {
+                updateLineLayout();
+                updateCaret();
+            });
+        }
+
+        function updateLineLayout() {
+            var wordElements = Array.from(textContainer.querySelectorAll('.word'));
+            if (!wordElements.length) return;
+            var tapeMode = getTapeMode();
+            if (tapeMode === 'word' || tapeMode === 'letter') {
+                wordElements.forEach(function (element) { element.dataset.line = '0'; });
+                lineHeight = wordElements[0].offsetHeight + parseFloat(getComputedStyle(textContainer).rowGap || 0);
+                if (!lineHeight || lineHeight <= wordElements[0].offsetHeight) {
+                    lineHeight = parseFloat(getComputedStyle(wordElements[0]).lineHeight) || 43;
+                }
+                typingArea.style.height = lineHeight + 'px';
+                handleScroll();
+                return;
+            }
+            var currentTop = -1;
+            var currentLine = -1;
+            wordElements.forEach(function (element) {
+                if (currentTop < 0 || Math.abs(element.offsetTop - currentTop) > 10) {
+                    currentTop = element.offsetTop;
+                    currentLine += 1;
+                }
+                element.dataset.line = String(currentLine);
+            });
+            var firstLine = textContainer.querySelector('.word[data-line="0"]');
+            var secondLine = textContainer.querySelector('.word[data-line="1"]');
+            lineHeight = firstLine && secondLine
+                ? secondLine.offsetTop - firstLine.offsetTop
+                : (parseFloat(getComputedStyle(wordElements[0]).lineHeight) || 43) * 1.3;
+            typingArea.style.height = (lineHeight * Math.min(3, currentLine + 1)) + 'px';
+            handleScroll();
+        }
+
+        function applyTapeScroll() {
+            var currentWord = document.getElementById('room-word-' + currentWordIndex);
+            if (!currentWord || !typingArea.clientWidth) return;
+            var center = typingArea.clientWidth / 2;
+            var containerRect = textContainer.getBoundingClientRect();
+            if (getTapeMode() === 'word') {
+                var wordRect = currentWord.getBoundingClientRect();
+                textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
+                return;
+            }
+            var target = document.getElementById('room-char-' + currentWordIndex + '-' + currentCharIndex);
+            var after = false;
+            if (!target) {
+                target = document.getElementById('room-char-' + currentWordIndex + '-' + (currentCharIndex - 1));
+                after = true;
+            }
+            if (!target) target = currentWord;
+            var targetRect = target.getBoundingClientRect();
+            var targetLeft = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
+        }
+
+        function handleScroll() {
+            var currentWord = document.getElementById('room-word-' + currentWordIndex);
+            if (!currentWord) return;
+            var tapeMode = getTapeMode();
+            if (tapeMode === 'word' || tapeMode === 'letter') {
+                applyTapeScroll();
+                return;
+            }
+            var line = Number.parseInt(currentWord.dataset.line || '0', 10);
+            var targetLine = Math.max(0, line - 1);
+            var targetWord = textContainer.querySelector('.word[data-line="' + targetLine + '"]');
+            var firstWord = textContainer.querySelector('.word[data-line="0"]');
+            var offset = targetWord && firstWord
+                ? targetWord.offsetTop - firstWord.offsetTop
+                : Math.max(0, line - 1) * lineHeight;
+            textContainer.style.transform = 'translateY(-' + offset + 'px)';
+        }
+
+        function positionCaretAt(element, wordIndex, charIndex) {
+            if (!element || !textContainer || !words[wordIndex]) return;
+            var wordElement = document.getElementById('room-word-' + wordIndex);
+            if (!wordElement) return;
+            var target = document.getElementById('room-char-' + wordIndex + '-' + charIndex);
+            var after = false;
+            if (!target) {
+                target = document.getElementById('room-char-' + wordIndex + '-' + (charIndex - 1));
+                after = true;
+            }
+            if (!target) target = wordElement;
+            var targetRect = target.getBoundingClientRect();
+            var containerRect = textContainer.getBoundingClientRect();
+            element.style.display = 'block';
+            var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var top = targetRect.top - containerRect.top;
+            element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
+            element.style.width = targetRect.width + 'px';
         }
 
         function updateCaret() {
-            var word = words[currentWordIndex];
-            if (!word) return;
-            var index = Math.min(currentCharIndex, word.length - 1);
-            var target = document.getElementById('room-char-' + currentWordIndex + '-' + index);
-            if (!target) return;
-            var targetRect = target.getBoundingClientRect();
-            var containerRect = textContainer.getBoundingClientRect();
-            caret.style.position = 'absolute';
-            caret.style.display = 'block';
-            caret.style.left = (targetRect.left - containerRect.left + (currentCharIndex >= word.length ? targetRect.width : 0)) + 'px';
-            caret.style.top = (targetRect.top - containerRect.top) + 'px';
-            caret.style.height = targetRect.height + 'px';
-            var wordElement = document.getElementById('room-word-' + currentWordIndex);
-            var areaRect = typingArea.getBoundingClientRect();
-            if (wordElement && wordElement.getBoundingClientRect().top - areaRect.top > areaRect.height * 0.55) {
-                var lineHeight = parseFloat(getComputedStyle(typingArea).lineHeight || '42');
-                textContainer.style.transform = 'translateY(-' + Math.max(0, wordElement.offsetTop - lineHeight) + 'px)';
-            }
+            handleScroll();
+            positionCaretAt(caret, currentWordIndex, currentCharIndex);
         }
 
         function paint(index, key, correct) {
             var word = words[currentWordIndex];
             var wordElement = document.getElementById('room-word-' + currentWordIndex);
+            if (!wordElement) return;
             var element = document.getElementById('room-char-' + currentWordIndex + '-' + index);
             if (!element) {
                 element = document.createElement('span');
                 element.id = 'room-char-' + currentWordIndex + '-' + index;
-                element.className = 'char extra';
+                element.className = 'char extra transition-colors duration-75';
                 wordElement.appendChild(element);
             }
             element.textContent = index < word.length ? word[index] : key;
-            element.className = 'char ' + (index >= word.length ? 'extra ' : '') + (
+            element.className = 'char transition-colors duration-75 ' + (index >= word.length ? 'extra ' : '') + (
                 correct
                     ? 'text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'
                     : 'text-error drop-shadow-[0_0_7px_rgba(255,80,80,0.75)]'
             );
+            if (index >= word.length) element.classList.add('extra');
         }
 
         function resetCharacter(index) {
@@ -613,8 +713,13 @@
         function correctChars() {
             var total = 0;
             for (var i = 0; i < completedWords && i < words.length; i += 1) {
-                total += words[i].length;
-                if (i > 0) total += 1;
+                total += words[i].length + 1;
+            }
+            var activeWord = document.getElementById('room-word-' + currentWordIndex);
+            if (activeWord) {
+                activeWord.querySelectorAll('.char.text-primary:not(.extra)').forEach(function () {
+                    total += 1;
+                });
             }
             return total;
         }
@@ -624,7 +729,9 @@
             var correct = correctChars();
             return {
                 wpm: Math.max(0, Math.round((correct / 5) / minutes)),
-                accuracy: totalKeystrokes ? Math.max(0, Math.min(100, Math.round((correct / totalKeystrokes) * 100))) : 100,
+                accuracy: totalKeystrokes
+                    ? Math.max(0, Math.min(100, Math.round(((totalKeystrokes - errors) / totalKeystrokes) * 100)))
+                    : 100,
                 correct: correct,
             };
         }
@@ -657,6 +764,10 @@
 
         function handleKey(event) {
             if (state !== 'racing' || event.ctrlKey || event.altKey || event.metaKey) return;
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                return;
+            }
             if (event.key === 'Backspace') {
                 event.preventDefault();
                 if (lockedAt != null && errorHistory.length) {
@@ -670,8 +781,10 @@
                         resetCharacter(currentCharIndex);
                     }
                     if (!errorHistory.length) lockedAt = null;
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
                     updateCaret();
                 } else if (currentCharIndex > 0) {
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
                     currentCharIndex -= 1;
                     resetCharacter(currentCharIndex);
                     updateCaret();
@@ -704,14 +817,18 @@
                     paint(currentCharIndex, key, false);
                     currentCharIndex += 1;
                 }
+                if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                 errors += 1;
                 updateCaret();
                 return;
             }
             totalKeystrokes += 1;
             if (key === ' ') {
-                if (currentCharIndex === word.length) finishWord();
-                else {
+                if (currentCharIndex === word.length) {
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                    finishWord();
+                } else {
+                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                     lockedAt = currentCharIndex;
                     errorHistory = [{
                         kind: 'char',
@@ -725,8 +842,11 @@
                 }
                 return;
             }
-            if (key === word[currentCharIndex]) paint(currentCharIndex, key, true);
-            else {
+            if (key === word[currentCharIndex]) {
+                paint(currentCharIndex, key, true);
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+            } else {
+                if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
                 lockedAt = currentCharIndex;
                 errorHistory = [{
                     kind: 'char',
@@ -753,7 +873,7 @@
             if (config.mode === 'time') {
                 var elapsed = Math.max(0, (Date.now() - startedAt) / 1000);
                 var remaining = Math.max(0, Math.ceil(config.amount - elapsed));
-                progressDisplay.textContent = remaining;
+                if (progressDisplay) progressDisplay.textContent = remaining;
                 percentage = Math.min(100, (elapsed / config.amount) * 100);
                 if (remaining === 0) {
                     state = 'waiting-result';
@@ -761,7 +881,9 @@
                     sendProgress(true);
                 }
             } else {
-                progressDisplay.innerHTML = completedWords + '<span class="text-slate-500">/</span>' + config.amount;
+                if (progressDisplay) {
+                    progressDisplay.innerHTML = completedWords + '<span class="text-slate-500">/</span>' + config.amount;
+                }
                 percentage = Math.min(100, (completedWords / config.amount) * 100);
             }
             if (progressBar) progressBar.style.width = percentage + '%';
@@ -776,23 +898,75 @@
 
         function renderLeaderboard() {
             if (!leaderboard || !room) return;
+            var badge = document.getElementById('room-player-count-badge');
+            if (badge) badge.textContent = room.players.length + ' players';
             var rows = room.players.map(function (player) {
                 return Object.assign({ index: player.index, wpm: 0, progress: 0 }, progressByIndex[player.index] || {}, {
                     name: player.name,
                     avatarUrl: player.avatarUrl,
                 });
             }).sort(function (a, b) {
-                return b.progress - a.progress || b.wpm - a.wpm;
+                return b.progress - a.progress || b.wpm - a.wpm || a.index - b.index;
             });
+
+            var existing = {};
+            Array.from(leaderboard.querySelectorAll('[data-player-index]')).forEach(function (element) {
+                existing[element.getAttribute('data-player-index')] = element;
+            });
+            var prevOrder = Object.keys(existing).length
+                ? Array.from(leaderboard.children).map(function (element) {
+                    return element.getAttribute('data-player-index');
+                })
+                : [];
+            var nextOrder = rows.map(function (row) { return String(row.index); });
+            var orderChanged = prevOrder.join(',') !== nextOrder.join(',');
+            var firstRects = {};
+            if (orderChanged) {
+                Object.keys(existing).forEach(function (key) {
+                    firstRects[key] = existing[key].getBoundingClientRect();
+                });
+            }
+
+            if (prevOrder.length && !orderChanged) {
+                rows.forEach(function (row, index) {
+                    var pill = existing[String(row.index)];
+                    if (!pill) return;
+                    var rank = pill.querySelector('[data-lb-rank]');
+                    var wpm = pill.querySelector('[data-lb-wpm]');
+                    var bar = pill.querySelector('.lb-progress');
+                    if (rank) rank.textContent = String(index + 1);
+                    if (wpm) wpm.textContent = String(Math.round(row.wpm));
+                    if (bar) bar.style.width = Math.min(100, row.progress) + '%';
+                });
+                return;
+            }
+
             leaderboard.innerHTML = rows.map(function (row, index) {
-                return '<div class="player-pill ' + (row.index === selfIndex ? 'me' : '') + ' p-3 rounded-xl border border-white/10 bg-white/[0.035]">' +
+                return '<div class="lb-pill player-pill ' + (row.index === selfIndex ? 'me' : '') +
+                    ' p-3 rounded-xl border border-white/10 bg-white/[0.035]" data-player-index="' + row.index + '">' +
                     '<div class="flex items-center gap-3">' +
-                    '<span class="text-xs font-bold text-slate-500 w-4">' + (index + 1) + '</span>' +
+                    '<span class="text-xs font-bold text-slate-500 w-4" data-lb-rank>' + (index + 1) + '</span>' +
                     '<div class="min-w-0 flex-1"><div class="text-sm font-bold text-white truncate">' + escapeHtml(row.name) + '</div>' +
-                    '<div class="h-1 bg-white/10 rounded-full mt-2 overflow-hidden"><div class="progress-fill h-full bg-primary" style="width:' + Math.min(100, row.progress) + '%"></div></div></div>' +
-                    '<span class="text-sm font-mono text-primary">' + Math.round(row.wpm) + '</span>' +
+                    '<div class="h-1 bg-white/10 rounded-full mt-2 overflow-hidden"><div class="lb-progress progress-fill h-full bg-primary" style="width:' + Math.min(100, row.progress) + '%"></div></div></div>' +
+                    '<span class="text-sm font-mono text-primary" data-lb-wpm>' + Math.round(row.wpm) + '</span>' +
                     '</div></div>';
             }).join('');
+
+            if (!orderChanged || !Object.keys(firstRects).length) return;
+            Array.from(leaderboard.querySelectorAll('[data-player-index]')).forEach(function (element) {
+                var key = element.getAttribute('data-player-index');
+                var first = firstRects[key];
+                if (!first) return;
+                var last = element.getBoundingClientRect();
+                var deltaY = first.top - last.top;
+                if (!deltaY) return;
+                element.style.transition = 'none';
+                element.style.transform = 'translateY(' + deltaY + 'px)';
+                requestAnimationFrame(function () {
+                    element.style.transition = '';
+                    element.style.transform = '';
+                });
+            });
         }
 
         function startRace(payload) {
@@ -803,12 +977,39 @@
             startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
             var self = room.players.find(function (player) { return player.userId === selfUserId; });
             selfIndex = self ? self.index : 0;
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+            completedWords = 0;
+            sequence = 0;
+            totalKeystrokes = 0;
+            errors = 0;
+            lockedAt = null;
+            errorHistory = [];
+            progressByIndex = {};
+            switchToTest();
             renderText();
             renderLeaderboard();
-            switchToTest();
             setTimeout(function () {
                 state = 'racing';
+                if (window.usertypo_settingsApi) {
+                    try {
+                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                    } catch (_) { /* retain defaults */ }
+                }
+                if (typeof window.applyRoomLiveFeedSettings === 'function') {
+                    window.applyRoomLiveFeedSettings();
+                }
+                updateLineLayout();
+                updateCaret();
+                document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                    element.classList.remove('opacity-0');
+                });
+                if (caret) caret.classList.remove('animate-breath');
                 document.addEventListener('keydown', handleKey, { signal: signal });
+                window.addEventListener('resize', function () {
+                    updateLineLayout();
+                    updateCaret();
+                }, { signal: signal });
                 updateTimer = setInterval(updateLive, 200);
                 updateLive();
             }, Math.max(0, startedAt - Date.now()));
@@ -997,10 +1198,51 @@
             abort.abort();
             window.toggleReady = null;
             window.showLobbyView = null;
+            window.applyRoomLiveFeedSettings = null;
         }
 
         window.toggleReady = readyUp;
         window.showLobbyView = function () { window.navigateTo?.('/friends'); };
+        window.applyRoomLiveFeedSettings = function () {
+            var settings = window.usertypo_settingsApi
+                ? window.usertypo_settingsApi.loadSettings()
+                : window.usertypo_settings;
+            var lf = settings && settings.lookFeel ? settings.lookFeel : {};
+            var showWpm = lf.liveWpm !== false;
+            var showAcc = lf.liveAcc !== false;
+            var wpmWrapper = document.getElementById('room-live-wpm-wrapper');
+            var accWrapper = document.getElementById('room-live-acc-wrapper');
+            var divider = document.getElementById('room-live-wpm-divider');
+            if (wpmWrapper) wpmWrapper.classList.toggle('hidden', !showWpm);
+            if (accWrapper) accWrapper.classList.toggle('hidden', !showAcc);
+            if (divider) divider.classList.toggle('hidden', !(showWpm && showAcc));
+
+            var timerStyle = lf.timerStyle || 'Number';
+            var timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+            var wrapper = document.getElementById('room-timer-progress-wrapper');
+            var progressText = document.getElementById('room-word-progress');
+            var barContainer = document.getElementById('room-word-progress-bar-container');
+            var liveStats = document.getElementById('room-live-stats');
+            var racing = state === 'racing' || state === 'waiting-result';
+            if (wrapper) {
+                if (timerStyle === 'Off') {
+                    wrapper.style.visibility = 'hidden';
+                } else {
+                    wrapper.style.visibility = 'visible';
+                    if (timerStyle === 'Bar') {
+                        progressText && progressText.classList.add('hidden');
+                        barContainer && barContainer.classList.remove('hidden');
+                    } else {
+                        progressText && progressText.classList.remove('hidden');
+                        barContainer && barContainer.classList.add('hidden');
+                    }
+                }
+                wrapper.style.opacity = racing ? String(timerOpacity) : '';
+            }
+            if (liveStats && racing) {
+                liveStats.style.opacity = String(timerOpacity);
+            }
+        };
         return { init: init, cleanup: cleanup, readyUp: readyUp };
     }
 

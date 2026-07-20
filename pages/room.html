@@ -1,9 +1,5 @@
 <style>
-/* Proportional desktop scaling for typing test (matches index page) */
-        #room-typing-area {
-            font-size: clamp(32px, 2.4vw, 43.2px) !important;
-            line-height: 1.5 !important;
-        }
+/* Proportional desktop scaling for typing test (matches dual / home) */
 </style>
 
 <style type="text/tailwindcss">
@@ -74,9 +70,18 @@
             background-color: #00d0ff;
             border-radius: 9999px;
         }
-        
-        /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
-        /* Header Logo CSS from index */
+
+        .test-box-outer {
+            width: 100%;
+            max-width: none !important;
+            /* Offset so the typing tape (not the in-flow box) sits at visual center */
+            transform: translateY(clamp(2rem, 6vh, 4.5rem));
+        }
+
+        #room-typing-area {
+            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            line-height: 1.5 !important;
+        }
 
         /* Text container */
         #room-text-container {
@@ -515,50 +520,52 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <div id="test-view" class="view-transition hidden flex-1 flex flex-col relative z-10 opacity-0"
         style="display:none;">
-        <main class="flex-1 flex items-start justify-center relative z-10">
-            <div class="w-[min(90vw,80rem)] flex gap-14 items-center min-w-0 max-w-full">
+        <main class="flex-1 flex items-center justify-center relative z-10 min-h-0 p-6">
+            <div class="w-[min(94vw,80rem)] flex gap-10 md:gap-14 items-center min-w-0 max-w-full">
 
-                <!-- LEADERBOARD SIDEBAR (exact copy from tournament.html) -->
-                <div class="w-[17.5rem] shrink-0 flex flex-col gap-3" style="margin-left: -1.5rem; padding-bottom: 1.5rem;">
+                <!-- LEADERBOARD SIDEBAR -->
+                <div class="w-[15rem] md:w-[17.5rem] shrink-0 flex flex-col gap-3 self-center">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[10px] font-bold tracking-[2px] uppercase text-slate-500">Leaderboard</span>
-                        <span
-                            class="text-[10px] text-slate-500 panel-surface rounded-full px-2 py-0.5">8
-                            players</span>
+                        <span id="room-player-count-badge"
+                            class="text-[10px] text-slate-500 panel-surface rounded-full px-2 py-0.5">0 players</span>
                     </div>
-                    <div id="live-leaderboard" class="flex flex-col gap-3 pr-1 relative">
-                    </div>
+                    <div id="live-leaderboard" class="flex flex-col gap-3 pr-1 relative"></div>
                 </div>
 
-                <!-- TYPING AREA -->
-                <div class="flex-1 flex flex-col justify-center min-w-0 overflow-hidden" style="margin-top: 0px;">
+                <!-- TYPING COLUMN (dual-style centered tape) -->
+                <div class="flex-1 min-w-0 relative flex items-center justify-center">
+                    <div id="room-test-box" class="relative w-full test-box-outer">
 
-                    <!-- Word progress / Timer -->
-                    <div id="room-timer-progress-wrapper" class="relative w-full max-w-none mx-auto h-[32px] mb-[16px] shrink-0">
-                        <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
-                            id="room-word-progress"></div>
-                        <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
-                            id="room-word-progress-bar-container">
-                            <div id="room-word-progress-bar"
-                                class="h-full bg-primary transition-all duration-300 ease-linear"
-                                style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);"></div>
-                        </div>
-                    </div>
-
-                    <!-- Main typing area -->
-                    <div class="w-full max-w-none mx-auto relative z-10 min-w-0">
-                        <div id="room-typing-area"
-                            class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
-                            <div id="room-text-container" class="relative w-full transition-all duration-300">
-                                <span id="caret"
-                                    class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
+                        <!-- ABOVE: timer / progress (absolute, does not shift centering) -->
+                        <div class="absolute left-0 right-0 bottom-full pb-[28px]">
+                            <div id="room-timer-progress-wrapper" class="relative w-full h-[32px]">
+                                <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
+                                    id="room-word-progress"></div>
+                                <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
+                                    id="room-word-progress-bar-container">
+                                    <div id="room-word-progress-bar"
+                                        class="h-full bg-primary transition-all duration-300 ease-linear"
+                                        style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Live Stats -->
-                        <div class="relative w-full max-w-none mx-auto h-[32px] mt-[16px]">
+                        <!-- TYPING AREA (vertically centered element) -->
+                        <div class="w-full relative z-10">
+                            <div id="room-typing-area"
+                                class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
+                                <div id="room-text-container" class="relative w-full transition-all duration-300">
+                                    <span id="caret"
+                                        class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BELOW: live stats (absolute) -->
+                        <div class="absolute left-0 right-0 top-full h-[48px]">
                             <div id="room-live-stats"
-                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-0 flex items-baseline gap-[16px] pointer-events-auto">
+                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[16px] flex items-baseline gap-[16px] pointer-events-auto">
                                 <div id="room-live-wpm-wrapper" class="flex items-baseline gap-[4px]">
                                     <span id="room-wpm-display"
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
@@ -570,27 +577,7 @@
                                         class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
                                     <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
-                                <div id="room-live-acc-divider" class="w-px h-[16px] bg-white/10 relative top-0.5 hidden"></div>
-                                <div id="room-live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
-                                    <span id="room-burst-display"
-                                        class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
-                                </div>
                             </div>
-                        </div>
-
-                        <!-- Visual Keymap -->
-                        <div class="mt-8 mb-2 hidden transition-opacity duration-300" id="room-keymap-container"
-                            style="height: 184px;">
-                            <div id="dynamic-keymap"
-                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
-                            </div>
-                        </div>
-
-                        <!-- Capslock Warning -->
-                        <div id="room-capslock-warning"
-                            class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                            <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
                         </div>
                     </div>
                 </div>
