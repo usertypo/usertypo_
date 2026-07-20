@@ -235,10 +235,17 @@
         [
             'race:joined', 'race:countdown', 'race:start', 'race:progress',
             'race:finished', 'race:player-left', 'race:invalid', 'room:state',
+            'room:return-lobby-state', 'room:returned-to-lobby',
         ].forEach(function (eventName) {
             activeSocket.on(eventName, function (payload) {
-                if (eventName === 'race:finished') activeRoomId = '';
-                dispatch(eventName.replace(':', '-'), payload);
+                if (eventName === 'race:finished') {
+                    var finishedType = Array.isArray(payload) ? payload[4] : '';
+                    if (finishedType !== 'custom') activeRoomId = '';
+                }
+                if (eventName === 'room:returned-to-lobby' && payload && payload.roomId) {
+                    activeRoomId = String(payload.roomId);
+                }
+                dispatch(eventName.replace(/:/g, '-'), payload);
             });
         });
     }
@@ -369,6 +376,10 @@
         return emitAck('room:ready', roomId);
     }
 
+    function returnToLobby(roomId) {
+        return emitAck('room:return-lobby', roomId);
+    }
+
     function startRoom(roomId, force) {
         return emitAck('room:start', { roomId: roomId, force: !!force });
     }
@@ -412,6 +423,7 @@
         createRoom: createRoom,
         joinRoomCode: joinRoomCode,
         setRoomReady: setRoomReady,
+        returnToLobby: returnToLobby,
         startRoom: startRoom,
         inviteToRoom: inviteToRoom,
         navigateToRoom: navigateToRoom,

@@ -51,6 +51,9 @@
         var ROOM_PROGRESS_INTERVAL_MS = 300;
         var finished = false;
         var isHost = false;
+        var returnLobbyAgreed = 0;
+        var returnLobbyNeeded = 0;
+        var selfReturnLobby = false;
         var invitePanelOpen = false;
         var invitedFriendIds = {};
         var orbitRing = null;
@@ -455,6 +458,27 @@
             if (startAccept) {
                 startAccept.addEventListener('click', function () {
                     startMatch(true);
+                }, { signal: signal });
+            }
+
+            var returnLobbyBtn = document.getElementById('stats-return-lobby-btn');
+            if (returnLobbyBtn) {
+                returnLobbyBtn.addEventListener('click', async function () {
+                    if (state !== 'finished' || selfReturnLobby || !roomId) return;
+                    try {
+                        await window.usertypoMultiplayer.returnToLobby(roomId);
+                        selfReturnLobby = true;
+                        updateReturnLobbyButton();
+                    } catch (error) {
+                        window.usertypoNotifications?.showToast(error.message, 'error');
+                    }
+                }, { signal: signal });
+            }
+            var statsLeaveBtn = document.getElementById('stats-leave-room-btn');
+            if (statsLeaveBtn) {
+                statsLeaveBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    leaveRoomAndGoFriends();
                 }, { signal: signal });
             }
         }
@@ -1029,38 +1053,225 @@
             }, Math.max(0, startedAt - Date.now()));
         }
 
+        function setRoomHeaderInteractive(enabled) {
+            var headerLeft = document.getElementById('header-left');
+            var headerRight = document.getElementById('header-right');
+            var headerLogo = document.getElementById('header-logo-link');
+            if (enabled) {
+                if (headerLeft) headerLeft.classList.remove('opacity-0', 'pointer-events-none');
+                if (headerRight) headerRight.classList.remove('opacity-0', 'pointer-events-none');
+                if (headerLogo) headerLogo.style.pointerEvents = '';
+            } else {
+                if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
+                if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
+                if (headerLogo) headerLogo.style.pointerEvents = 'none';
+            }
+        }
+
+        function initialsFromName(name) {
+            var parts = String(name || 'P').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return 'P';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        }
+
+        function buildPodiumCard(player, place) {
+            var themes = {
+                1: {
+                    delay: '0ms', border: 'rgba(var(--theme-primary-rgb), 0.15)', boxShadow: '0 0 25px rgba(var(--theme-primary-rgb), 0.1)',
+                    gradient: 'from-primary', avatarBg: 'bg-primary/20 border-primary/30 text-primary',
+                    avatarShadow: 'shadow-[0_0_12px_rgba(0,208,255,0.25)]',
+                    wpmClass: 'text-primary', wpmShadow: '0 0 30px rgba(var(--theme-primary-rgb), 0.4)', glow: true,
+                    badge: 'bg-primary/10 border-primary/25', badgeText: 'text-primary', label: '1st', trophy: true,
+                },
+                2: {
+                    delay: '200ms', border: 'rgba(192,192,192,0.15)', boxShadow: '',
+                    gradient: 'from-slate-400', avatarBg: 'bg-slate-400/15 border-slate-400/25 text-slate-300',
+                    avatarShadow: '', wpmClass: 'text-slate-200', wpmShadow: '0 0 12px rgba(255,255,255,0.15)', glow: false,
+                    badge: 'bg-slate-400/10 border-slate-400/20', badgeText: 'text-slate-400', label: '2nd', trophy: false,
+                },
+                3: {
+                    delay: '400ms', border: 'rgba(205,127,50,0.12)', boxShadow: '',
+                    gradient: 'from-amber-700', avatarBg: 'bg-amber-700/10 border-amber-700/20 text-amber-600',
+                    avatarShadow: '', wpmClass: 'text-amber-600', wpmShadow: '0 0 12px rgba(205,127,50,0.3)', glow: false,
+                    badge: 'bg-amber-700/10 border-amber-700/20', badgeText: 'text-amber-700', label: '3rd', trophy: false,
+                },
+            };
+            var theme = themes[place];
+            var cardBorderStyle = player.isMe
+                ? 'border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);'
+                : 'border:1px solid ' + theme.border + ';' + (theme.boxShadow ? ' box-shadow: ' + theme.boxShadow + ';' : '');
+            var meBarHtml = player.isMe ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' : '';
+            var nameHtml = escapeHtml(player.name)
+                + (player.isMe ? ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span>' : '');
+            var trophyHtml = theme.trophy
+                ? '<span class="material-symbols-outlined text-amber-400 text-[28px] mb-1 block" style="text-shadow: 0 0 12px rgba(251,191,36,0.5);">emoji_events</span>'
+                : '';
+            var glowHtml = theme.glow
+                ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full" data-screenshot-glow></div>'
+                : '';
+            var avatarHtml = player.avatarUrl
+                ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-12 h-12 rounded-full object-cover mx-auto mb-2 border ' + (player.isMe ? 'border-primary/40' : 'border-white/10') + '">'
+                : '<div class="w-12 h-12 rounded-full ' + (player.isMe ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_12px_rgba(0,208,255,0.25)]' : theme.avatarBg + ' border') + ' flex items-center justify-center font-black text-base mx-auto mb-2 ' + (player.isMe ? '' : theme.avatarShadow) + '">' + escapeHtml(player.initials) + '</div>';
+
+            return '<div class="flex flex-col items-center gap-3 w-[220px] anim-card" style="animation-delay: ' + theme.delay + ';">' +
+                '<div class="panel-surface rounded-xl p-5 w-full text-center relative overflow-hidden" style="' + cardBorderStyle + '">' +
+                '<div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b ' + theme.gradient + ' to-transparent opacity-' + (place === 1 ? '80' : '50') + '"></div>' +
+                meBarHtml + trophyHtml + avatarHtml +
+                '<p class="text-white font-bold text-sm mb-3">' + nameHtml + '</p>' +
+                '<div class="relative inline-block mb-1">' + glowHtml +
+                '<span class="text-5xl font-black ' + theme.wpmClass + ' relative z-10 leading-none tracking-tighter" style="text-shadow: ' + theme.wpmShadow + ';">' + player.wpm + '</span>' +
+                '</div><p class="text-xs font-bold text-slate-500 uppercase tracking-widest">WPM</p></div>' +
+                '<div class="panel-surface rounded-lg p-3 w-full"' + (place === 1 ? ' style="border:1px solid rgba(var(--theme-primary-rgb), 0.08);"' : '') + '>' +
+                '<div class="grid grid-cols-3 gap-2 text-center">' +
+                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Time</span><span class="text-sm font-black text-white">' + player.timeSec + '<span class="text-[10px] text-slate-500">s</span></span></div>' +
+                '<div class="border-x border-white/5"><span class="text-[9px] font-bold text-slate-500 uppercase block">Acc</span><span class="text-sm font-black text-white">' + player.acc + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
+                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Con</span><span class="text-sm font-black text-white">' + player.con + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
+                '</div></div>' +
+                '<div class="flex items-center gap-1.5 ' + theme.badge + ' border rounded-full px-3 py-1">' +
+                (theme.trophy ? '<span class="material-symbols-outlined text-amber-400 text-[14px]">emoji_events</span>' : '') +
+                '<span class="text-[10px] font-black ' + theme.badgeText + ' uppercase tracking-widest"' +
+                (place === 1 ? ' style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), 0.4);"' : '') + '>' + theme.label + '</span>' +
+                '</div></div>';
+        }
+
+        function buildStatsListRow(player, rank) {
+            if (player.isMe) {
+                return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center relative overflow-hidden anim-card" style="border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);">' +
+                    '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' +
+                    '<span class="text-primary font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
+                    (player.avatarUrl
+                        ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-8 h-8 rounded-full object-cover mr-3 border border-primary/30">'
+                        : '<div class="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs mr-3 shadow-[0_0_10px_rgba(0,208,255,0.2)]">' + escapeHtml(player.initials) + '</div>') +
+                    '<span class="text-white font-bold text-sm flex-1">' + escapeHtml(player.name) +
+                    ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span></span>' +
+                    '<span class="text-primary font-mono font-black text-lg" style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), 0.4);">' +
+                    player.wpm + ' <span class="text-xs text-slate-500 font-bold">WPM</span></span></div>';
+            }
+            return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center hover:bg-white/5 transition-colors anim-card">' +
+                '<span class="text-slate-500 font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
+                (player.avatarUrl
+                    ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-8 h-8 rounded-full object-cover mr-3 border border-white/10">'
+                    : '<div class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-xs mr-3">' + escapeHtml(player.initials) + '</div>') +
+                '<span class="text-slate-200 font-bold text-sm flex-1">' + escapeHtml(player.name) + '</span>' +
+                '<span class="text-slate-300 font-mono font-bold text-base">' + player.wpm +
+                ' <span class="text-xs text-slate-500">WPM</span></span></div>';
+        }
+
+        function mapResultRows(results) {
+            var profileByIndex = {};
+            (room.players || []).forEach(function (player) { profileByIndex[player.index] = player; });
+            return (results || []).map(function (row) {
+                var profile = profileByIndex[row[0]] || {};
+                var name = profile.name || row[2] || 'Player';
+                return {
+                    index: row[0],
+                    userId: row[1],
+                    name: name,
+                    initials: initialsFromName(name),
+                    avatarUrl: profile.avatarUrl || '',
+                    wpm: Math.round(Number(row[3]) || 0),
+                    acc: Math.round((Number(row[4]) || 0) * 10) / 10,
+                    con: Math.round(Number(row[11]) || 0),
+                    timeSec: Math.round(Number(row[12]) || 0),
+                    isMe: row[1] === selfUserId || Number(row[0]) === selfIndex,
+                };
+            });
+        }
+
+        function updateReturnLobbyButton() {
+            var count = document.getElementById('stats-return-lobby-count');
+            var button = document.getElementById('stats-return-lobby-btn');
+            if (count) count.textContent = returnLobbyAgreed + '/' + returnLobbyNeeded;
+            if (button) {
+                button.classList.toggle('opacity-60', selfReturnLobby);
+                button.classList.toggle('pointer-events-none', selfReturnLobby);
+            }
+        }
+
+        function showStatsView() {
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            window.scrollTo(0, 0);
+            setRoomHeaderInteractive(true);
+            var animCards = document.querySelectorAll('#stats-view .anim-card');
+            animCards.forEach(function (card) {
+                card.style.animation = 'none';
+                void card.offsetHeight;
+                card.style.animation = '';
+            });
+        }
+
+        function switchToLobbyFromStats(payload) {
+            finished = false;
+            selfReturnLobby = false;
+            returnLobbyAgreed = 0;
+            returnLobbyNeeded = 0;
+            state = 'lobby';
+            if (payload) {
+                room = payload;
+                config = room.config;
+                roomId = room.roomId || roomId;
+                roomCode = room.roomCode || roomCode;
+                isHost = room.hostUserId === selfUserId;
+            }
+            statsView.classList.add('hidden', 'opacity-0');
+            statsView.style.display = 'none';
+            statsView.classList.remove('flex');
+            testView.classList.add('hidden');
+            testView.style.display = 'none';
+            lobbyView.classList.remove('hidden', 'opacity-0');
+            lobbyView.style.display = '';
+            lobbyView.classList.add('flex');
+            setRoomHeaderInteractive(false);
+            if (typeof window.usertypo_lockTypingScroll === 'function') {
+                window.usertypo_lockTypingScroll();
+            }
+            renderLobby(room);
+            updateReturnLobbyButton();
+        }
+
         function renderResults(payload) {
             if (!Array.isArray(payload) || payload[0] !== roomId) return;
             finished = true;
             state = 'finished';
+            selfReturnLobby = false;
             clearInterval(updateTimer);
             clearInterval(progressInterval);
             progressInterval = null;
-            var results = payload[2] || [];
-            var list = document.getElementById('stats-rankings-list');
+            var players = mapResultRows(payload[2] || []);
+            var top3 = players.slice(0, 3);
+            var podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
             var podium = document.getElementById('stats-podium');
-            var profileByIndex = {};
-            room.players.forEach(function (player) { profileByIndex[player.index] = player; });
+            var list = document.getElementById('stats-rankings-list');
             if (podium) {
-                podium.innerHTML = results.slice(0, 3).map(function (row, index) {
-                    var profile = profileByIndex[row[0]] || { name: row[2] };
-                    return '<div class="panel-surface rounded-2xl p-5 text-center min-w-[10rem] ' + (index === 0 ? 'border-primary/40' : '') + '">' +
-                        '<div class="text-xs text-slate-500 font-bold">#' + (index + 1) + '</div>' +
-                        '<div class="text-white font-bold mt-2 truncate">' + escapeHtml(profile.name) + '</div>' +
-                        '<div class="text-3xl text-primary font-mono font-bold mt-2">' + row[3] + '</div>' +
-                        '<div class="text-[10px] text-slate-500 uppercase">wpm</div></div>';
+                var places = [2, 1, 3];
+                podium.innerHTML = podiumOrder.map(function (player, index) {
+                    return buildPodiumCard(player, places[index]);
                 }).join('');
             }
             if (list) {
-                list.innerHTML = results.map(function (row, index) {
-                    var profile = profileByIndex[row[0]] || { name: row[2] };
-                    return '<div class="panel-surface rounded-xl px-5 py-4 flex items-center gap-4">' +
-                        '<span class="text-slate-500 font-bold w-6">#' + (index + 1) + '</span>' +
-                        '<span class="text-white font-bold flex-1 truncate">' + escapeHtml(profile.name) + '</span>' +
-                        '<span class="text-primary font-mono font-bold">' + row[3] + ' WPM</span>' +
-                        '<span class="text-slate-400 font-mono text-sm">' + row[4] + '%</span></div>';
+                var me = players.find(function (player) { return player.isMe; });
+                var myInTop3 = top3.some(function (player) { return player.isMe; });
+                var rest = players.slice(3).filter(function (player) { return !player.isMe || myInTop3; });
+                var html = '';
+                if (!myInTop3 && me) {
+                    var myRank = players.findIndex(function (player) { return player.isMe; }) + 1;
+                    html += buildStatsListRow(me, myRank);
+                    if (rest.length) html += '<div class="h-px bg-white/5 my-1"></div>';
+                }
+                html += rest.map(function (player) {
+                    var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
+                    return buildStatsListRow(player, rank);
                 }).join('');
+                list.innerHTML = html;
             }
+            returnLobbyNeeded = Math.max(1, (room.players || []).filter(function (player) {
+                return player.status !== 'left';
+            }).length || players.length);
+            returnLobbyAgreed = 0;
+            updateReturnLobbyButton();
             if (payload[3]) {
                 window.usertypoNotifications?.showToast('One or more players left the room during the race.', 'person_remove');
             }
@@ -1069,8 +1280,7 @@
             statsView.classList.remove('hidden', 'opacity-0');
             statsView.style.display = 'flex';
             statsView.classList.add('flex');
-            var replay = document.querySelector('#stats-action-buttons button:first-child span:first-child');
-            if (replay) replay.textContent = 'Create New Room';
+            showStatsView();
         }
 
         function bindEvents() {
@@ -1097,6 +1307,20 @@
                 window.usertypoNotifications?.showToast('A player left the room.', 'person_remove');
             });
             listen('race-finished', function (event) { renderResults(event.detail); });
+            listen('room-return-lobby-state', function (event) {
+                var payload = event.detail;
+                if (!Array.isArray(payload) || payload[0] !== roomId) return;
+                returnLobbyAgreed = Number(payload[1]) || 0;
+                returnLobbyNeeded = Number(payload[2]) || 0;
+                var agreedIds = payload[3] || [];
+                selfReturnLobby = agreedIds.indexOf(selfUserId) !== -1;
+                updateReturnLobbyButton();
+            });
+            listen('room-returned-to-lobby', function (event) {
+                var payload = event.detail;
+                if (!payload || (payload.roomId && payload.roomId !== roomId)) return;
+                switchToLobbyFromStats(payload);
+            });
             listen('match-resumed', function () {
                 if (state === 'racing' || state === 'waiting-result') hideLobbyMessage();
             });
@@ -1208,7 +1432,8 @@
             progressInterval = null;
             closeHostModal();
             closeStartConfirmModal();
-            if (!finished && state !== 'waiting-result' && state !== 'closed' && roomId) {
+            setRoomHeaderInteractive(false);
+            if (roomId && state !== 'closed') {
                 try {
                     window.usertypoMultiplayer?.leaveRace(roomId);
                 } catch (_) { /* ignore */ }
@@ -1220,7 +1445,13 @@
         }
 
         window.toggleReady = readyUp;
-        window.showLobbyView = function () { window.navigateTo?.('/friends'); };
+        window.showLobbyView = function () {
+            if (state === 'finished') {
+                document.getElementById('stats-return-lobby-btn')?.click();
+                return;
+            }
+            window.navigateTo?.('/friends');
+        };
         window.applyRoomLiveFeedSettings = function () {
             var settings = window.usertypo_settingsApi
                 ? window.usertypo_settingsApi.loadSettings()

@@ -401,22 +401,107 @@ function createMultiplayerServer(httpServer, options) {
             ]);
         }
         results.sort((a, b) => {
-            const aFinished = a[6] === 'finished';
-            const bFinished = b[6] === 'finished';
-            if (aFinished !== bFinished) return aFinished ? -1 : 1;
-            if (aFinished) return a[7] - b[7];
-            return b[5] - a[5];
+            const aFinished = a[6] === 'finished' ? 1 : 0;
+            const bFinished = b[6] === 'finished' ? 1 : 0;
+            if (aFinished !== bFinished) return bFinished - aFinished;
+            if (b[3] !== a[3]) return b[3] - a[3]; // higher WPM first
+            if (b[4] !== a[4]) return b[4] - a[4]; // higher accuracy
+            return (a[7] || 0) - (b[7] || 0); // earlier finish as tie-break
         });
         io.to(roomChannel(room.id)).emit('race:finished', [
             room.id,
             reason || 'complete',
             results,
             room.opponentLeft ? 1 : 0,
+            room.type,
         ]);
+
+        if (room.type === 'custom') {
+            cancelTimer(room, 'disposeTimer');
+            room.returnLobbyVotes = new Set();
+            room.players.forEach((player) => {
+                if (player.status === 'left') return;
+                player.returnLobby = false;
+            });
+            touchRoomActivity(room);
+            emitReturnLobbyState(room);
+            return;
+        }
+
         room.players.forEach((player) => {
             if (userToRoom.get(player.userId) === room.id) userToRoom.delete(player.userId);
         });
         room.disposeTimer = setTimeout(() => disposeRoom(room.id), LIMITS.finishedRoomTtlMs);
+    }
+
+    function remainingCustomPlayers(room) {
+        return Array.from(room.players.values()).filter((player) => player.status !== 'left');
+    }
+
+    function emitReturnLobbyState(room) {
+        if (!room || room.type !== 'custom') return;
+        const remaining = remainingCustomPlayers(room);
+        const agreed = remaining.filter((player) => player.returnLobby);
+        io.to(roomChannel(room.id)).emit('room:return-lobby-state', [
+            room.id,
+            agreed.length,
+            remaining.length,
+            agreed.map((player) => player.userId),
+        ]);
+    }
+
+    function resetPlayerForLobby(player) {
+        player.ready = false;
+        player.returnLobby = false;
+        player.status = 'waiting';
+        player.sequence = 0;
+        player.completedWords = 0;
+        player.correctChars = 0;
+        player.totalKeystrokes = 0;
+        player.wpm = 0;
+        player.accuracy = 100;
+        player.errorsMade = 0;
+        player.extraChars = 0;
+        player.rawChars = 0;
+        player.finalStats = null;
+        player.lastSnapshotAt = 0;
+        player.anomalyStrikes = 0;
+        player.finishedAt = null;
+        player.leftMidGame = false;
+        player.snapshots.length = 0;
+    }
+
+    function resetCustomRoomToLobby(room) {
+        if (!room || room.type !== 'custom' || room.state === 'disposed') return;
+        cancelTimer(room, 'countdownTimer');
+        cancelTimer(room, 'raceTimer');
+        cancelTimer(room, 'disposeTimer');
+        if (room.botTimer) clearInterval(room.botTimer);
+        room.botTimer = null;
+        room.state = 'waiting';
+        room.prompt = createPrompt(root, room.config);
+        room.startsAt = null;
+        room.countdownEndsAt = null;
+        room.opponentLeft = false;
+        room.returnLobbyVotes = new Set();
+        room.bot = null;
+        remainingCustomPlayers(room).forEach(resetPlayerForLobby);
+        touchRoomActivity(room);
+        const payload = publicRoomPayload(room, 'custom');
+        io.to(roomChannel(room.id)).emit('room:returned-to-lobby', payload);
+        io.to(roomChannel(room.id)).emit('room:state', payload);
+    }
+
+    function maybeReturnCustomRoomToLobby(room) {
+        if (!room || room.type !== 'custom' || room.state !== 'finished') return;
+        const remaining = remainingCustomPlayers(room);
+        if (!remaining.length) {
+            disposeRoom(room.id);
+            return;
+        }
+        if (remaining.every((player) => player.returnLobby)) {
+            resetCustomRoomToLobby(room);
+        }
     }
 
     function maybeFinishRoom(room) {
@@ -524,8 +609,10 @@ function createMultiplayerServer(httpServer, options) {
         room.lastActivityAt = Date.now();
         cancelTimer(room, 'inactivityTimer');
         room.inactivityTimer = setTimeout(() => {
-            if (room.state === 'disposed' || room.state !== 'waiting') return;
-            closeCustomRoom(room, 'inactivity');
+            if (room.state === 'disposed') return;
+            if (room.state === 'waiting' || room.state === 'finished') {
+                closeCustomRoom(room, 'inactivity');
+            }
         }, LIMITS.roomInactivityMs);
     }
 
@@ -563,7 +650,26 @@ function createMultiplayerServer(httpServer, options) {
         if (!room) return;
         const player = room.players.get(userId);
         if (!player || player.status === 'left') return;
-        if (player.status === 'finished') {
+        if (player.status === 'finished' || room.state === 'finished') {
+            if (room.type === 'custom' && room.state === 'finished') {
+                player.status = 'left';
+                player.joined = false;
+                player.socketId = null;
+                player.returnLobby = false;
+                if (room.returnLobbyVotes) room.returnLobbyVotes.delete(userId);
+                userToRoom.delete(userId);
+                if (userId === room.hostUserId) {
+                    closeCustomRoom(room, 'host-left', userId);
+                    return;
+                }
+                room.players.delete(userId);
+                room.allowedUserIds.delete(userId);
+                Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
+                emitReturnLobbyState(room);
+                maybeReturnCustomRoomToLobby(room);
+                if (!room.players.size) disposeRoom(room.id);
+                return;
+            }
             player.joined = false;
             player.socketId = null;
             userToRoom.delete(userId);
@@ -846,7 +952,7 @@ function createMultiplayerServer(httpServer, options) {
             const room = rooms.get(String(roomId || ''));
             const player = room && room.players.get(userId);
             if (!room || !player || !room.allowedUserIds.has(userId)
-                || !['waiting', 'countdown', 'racing'].includes(room.state)
+                || !['waiting', 'countdown', 'racing', 'finished'].includes(room.state)
                 || player.status === 'left') {
                 safeAck(ack, { ok: false, error: 'room_unavailable' });
                 return;
@@ -1075,7 +1181,7 @@ function createMultiplayerServer(httpServer, options) {
         socket.on('room:ready', (roomId, ack) => {
             const room = rooms.get(String(roomId || ''));
             const player = room && room.players.get(userId);
-            if (!room || room.type !== 'custom' || !player) {
+            if (!room || room.type !== 'custom' || room.state !== 'waiting' || !player) {
                 safeAck(ack, { ok: false, error: 'room_not_found' });
                 return;
             }
@@ -1096,13 +1202,32 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
+        socket.on('room:return-lobby', (roomId, ack) => {
+            try {
+                const room = rooms.get(String(roomId || ''));
+                const player = room && room.players.get(userId);
+                if (!room || room.type !== 'custom' || room.state !== 'finished' || !player || player.status === 'left') {
+                    throw new Error('room_not_found');
+                }
+                player.returnLobby = true;
+                if (!room.returnLobbyVotes) room.returnLobbyVotes = new Set();
+                room.returnLobbyVotes.add(userId);
+                touchRoomActivity(room);
+                emitReturnLobbyState(room);
+                maybeReturnCustomRoomToLobby(room);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'return_lobby_failed' });
+            }
+        });
+
         socket.on('room:start', (payload, ack) => {
             const roomId = payload && typeof payload === 'object'
                 ? String(payload.roomId || '')
                 : String(payload || '');
             const force = !!(payload && typeof payload === 'object' && payload.force);
             const room = rooms.get(roomId);
-            if (!room || room.type !== 'custom' || room.hostUserId !== userId) {
+            if (!room || room.type !== 'custom' || room.hostUserId !== userId || room.state !== 'waiting') {
                 safeAck(ack, { ok: false, error: 'forbidden' });
                 return;
             }
