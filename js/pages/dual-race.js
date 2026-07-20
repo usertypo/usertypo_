@@ -6,6 +6,7 @@
     'use strict';
 
     var initialDocumentPath = window.location.pathname;
+    var refreshHandledKey = 'usertypo:dual-refresh-handled-room';
 
     function createController() {
         var abort = new AbortController();
@@ -141,13 +142,19 @@
         function isReloadNavigation() {
             try {
                 var entries = performance.getEntriesByType('navigation');
-                return initialDocumentPath === '/dual' && entries.length && entries[0].type === 'reload';
+                var handledRoom = '';
+                try { handledRoom = sessionStorage.getItem(refreshHandledKey) || ''; } catch (_) { /* ignore */ }
+                return initialDocumentPath === '/dual'
+                    && entries.length
+                    && entries[0].type === 'reload'
+                    && handledRoom !== roomId;
             } catch (_) {
                 return false;
             }
         }
 
         function redirectAfterRefresh() {
+            try { sessionStorage.setItem(refreshHandledKey, roomId); } catch (_) { /* ignore */ }
             if (window.usertypoNotifications) {
                 window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
             }
@@ -869,7 +876,9 @@
             var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
             var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
             var local = computeFinalStats(localFinishTime || Date.now());
-            var meData = Object.assign({ name: me.name, avatarUrl: me.avatarUrl }, local);
+            var meData = parseServerResult(myRow) || Object.assign({}, local);
+            meData.name = me.name;
+            meData.avatarUrl = me.avatarUrl;
             var otherData = parseServerResult(otherRow) || {
                 name: other.name,
                 avatarUrl: other.avatarUrl,

@@ -124,16 +124,7 @@
                 _actions: [
                     {
                         label: 'Accept',
-                        run: function () {
-                            return respondToChallenge(invite.inviteId, true).then(function () {
-                                notify({
-                                    id: 'duel-accepted-local:' + invite.inviteId,
-                                    type: 'duel_notice',
-                                    title: 'Dual request accepted',
-                                    body: 'Use the Join notification when you are ready.',
-                                });
-                            });
-                        },
+                        run: function () { return respondToChallenge(invite.inviteId, true); },
                     },
                     {
                         label: 'Reject',
