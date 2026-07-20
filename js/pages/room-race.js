@@ -76,7 +76,9 @@
         var leaderboard = document.getElementById('live-leaderboard');
         var readyButton = document.getElementById('ready-btn');
         var readyButtonLabel = document.getElementById('ready-btn-label');
-        var countdownOverlay = null;
+        var pendingRacePayload = null;
+        var countdownAnimToken = 0;
+        var introBusy = false;
 
         function getJoinLink() {
             var origin = window.location.origin || '';
@@ -390,12 +392,20 @@
                 readyButton.addEventListener('click', function () { readyUp(); }, { signal: signal });
             }
             document.addEventListener('keydown', function (event) {
-                if (event.key !== 'Enter' || state !== 'lobby') return;
+                if (event.key !== 'Enter') return;
                 if (startConfirmModal && startConfirmModal.classList.contains('opacity-100')) return;
                 var tag = (event.target && event.target.tagName || '').toLowerCase();
-                if (tag === 'input' || tag === 'textarea' || tag === 'button') return;
-                event.preventDefault();
-                readyUp();
+                // Focused buttons (e.g. Leave via Tab) use native Enter activation.
+                if (tag === 'input' || tag === 'textarea' || tag === 'button' || tag === 'a') return;
+                if (state === 'lobby') {
+                    event.preventDefault();
+                    readyUp();
+                    return;
+                }
+                if (state === 'finished' && !selfReturnLobby) {
+                    event.preventDefault();
+                    document.getElementById('stats-return-lobby-btn')?.click();
+                }
             }, { signal: signal });
 
             var hostBtn = document.getElementById('lobby-host-btn');
@@ -502,20 +512,191 @@
                 .replace(/"/g, '&quot;');
         }
 
-        function showLobbyMessage(message, detail) {
-            if (!countdownOverlay) {
-                countdownOverlay = document.createElement('div');
-                countdownOverlay.className = 'absolute inset-0 z-30 flex flex-col items-center justify-center rounded-full bg-background-dark/90 text-center';
-                document.getElementById('lobby-orbit-system')?.appendChild(countdownOverlay);
-            }
-            countdownOverlay.innerHTML =
-                '<div class="text-5xl font-display font-bold text-primary">' + escapeHtml(message) + '</div>' +
-                (detail ? '<div class="text-xs text-slate-400 mt-2">' + escapeHtml(detail) + '</div>' : '');
-            countdownOverlay.classList.remove('hidden');
+        function showLobbyMessage() { /* lobby overlays removed */ }
+
+        function hideLobbyMessage() { /* lobby overlays removed */ }
+
+        function delay(ms) {
+            return new Promise(function (resolve) { setTimeout(resolve, ms); });
         }
 
-        function hideLobbyMessage() {
-            countdownOverlay?.classList.add('hidden');
+        function positionCountdownCaret() {
+            if (!caret || !textContainer) return;
+            var word = document.getElementById('room-countdown-word');
+            if (!word) return;
+            var last = word.lastElementChild;
+            var containerRect = textContainer.getBoundingClientRect();
+            caret.style.display = 'block';
+            if (!last) {
+                caret.style.transform = 'translate3d(0px,0px,0)';
+                caret.style.width = '0.55em';
+                return;
+            }
+            var rect = last.getBoundingClientRect();
+            caret.style.transform = 'translate3d(' + (rect.right - containerRect.left) + 'px,' + (rect.top - containerRect.top) + 'px,0)';
+            caret.style.width = Math.max(2, rect.width) + 'px';
+        }
+
+        function centerCountdownTape() {
+            if (!typingArea || !textContainer) return;
+            var word = document.getElementById('room-countdown-word');
+            if (!word || !typingArea.clientWidth) return;
+            var center = typingArea.clientWidth / 2;
+            var containerRect = textContainer.getBoundingClientRect();
+            var target = word.lastElementChild || word;
+            var targetRect = target.getBoundingClientRect();
+            var targetLeft = targetRect.left - containerRect.left + (word.lastElementChild ? targetRect.width : 0);
+            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
+            positionCountdownCaret();
+        }
+
+        function prepareCountdownTestView() {
+            switchToTest();
+            setRoomHeaderInteractive(false);
+            if (window.usertypo_settingsApi) {
+                try {
+                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* defaults */ }
+            }
+            textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
+            var word = document.createElement('div');
+            word.id = 'room-countdown-word';
+            word.className = 'word';
+            textContainer.appendChild(word);
+            textContainer.style.transform = '';
+            if (typingArea) {
+                var line = parseFloat(getComputedStyle(typingArea).lineHeight) || 48;
+                typingArea.style.height = line + 'px';
+            }
+            document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                element.classList.add('opacity-0');
+            });
+            if (progressDisplay) progressDisplay.textContent = '';
+            if (progressBar) progressBar.style.width = '0%';
+            if (caret) {
+                caret.classList.add('animate-breath');
+                caret.style.display = 'block';
+            }
+            centerCountdownTape();
+            state = 'countdown';
+        }
+
+        async function caretBackspaceCountdown(token) {
+            var word = document.getElementById('room-countdown-word');
+            if (!word) return;
+            while (word.lastChild) {
+                if (token !== countdownAnimToken) return;
+                word.removeChild(word.lastChild);
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+                centerCountdownTape();
+                await delay(70);
+            }
+        }
+
+        async function caretTypeCountdown(text, token) {
+            var word = document.getElementById('room-countdown-word');
+            if (!word) return;
+            var chars = String(text || '').split('');
+            for (var i = 0; i < chars.length; i += 1) {
+                if (token !== countdownAnimToken) return;
+                var span = document.createElement('span');
+                span.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
+                span.textContent = chars[i];
+                word.appendChild(span);
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(chars[i]);
+                centerCountdownTape();
+                await delay(95);
+            }
+        }
+
+        async function playCountdownStep(value) {
+            var token = ++countdownAnimToken;
+            introBusy = true;
+            var label = value === 0 ? 'Go' : String(value);
+            await caretBackspaceCountdown(token);
+            if (token !== countdownAnimToken) return;
+            await caretTypeCountdown(label, token);
+            if (token !== countdownAnimToken) return;
+            introBusy = false;
+            if (value === 0) tryBeginRaceAfterIntro();
+        }
+
+        function tryBeginRaceAfterIntro() {
+            if (!pendingRacePayload || introBusy) return;
+            var payload = pendingRacePayload;
+            pendingRacePayload = null;
+            beginActualRace(payload);
+        }
+
+        function beginActualRace(payload) {
+            if (!payload || payload.roomId !== roomId) return;
+            config = payload.config;
+            words = payload.words || [];
+            room.players = payload.players || room.players;
+            startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            var self = room.players.find(function (player) { return player.userId === selfUserId; });
+            selfIndex = self ? self.index : 0;
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+            completedWords = 0;
+            sequence = 0;
+            totalKeystrokes = 0;
+            errors = 0;
+            lockedAt = null;
+            errorHistory = [];
+            progressByIndex = {};
+            lastProgressSentAt = 0;
+            clearInterval(progressInterval);
+            progressInterval = null;
+            countdownAnimToken += 1;
+            introBusy = false;
+            switchToTest();
+            renderText();
+            renderLeaderboard();
+            var wait = Math.max(0, startedAt - Date.now());
+            setTimeout(function () {
+                state = 'racing';
+                if (window.usertypo_settingsApi) {
+                    try {
+                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                    } catch (_) { /* retain defaults */ }
+                }
+                if (typeof window.applyRoomLiveFeedSettings === 'function') {
+                    window.applyRoomLiveFeedSettings();
+                }
+                updateLineLayout();
+                updateCaret();
+                document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                    element.classList.remove('opacity-0');
+                });
+                if (caret) caret.classList.remove('animate-breath');
+                document.addEventListener('keydown', handleKey, { signal: signal });
+                window.addEventListener('resize', function () {
+                    updateLineLayout();
+                    updateCaret();
+                }, { signal: signal });
+                updateTimer = setInterval(updateLive, 200);
+                progressInterval = setInterval(function () {
+                    if (state === 'racing') sendProgress(false);
+                }, ROOM_PROGRESS_INTERVAL_MS);
+                updateLive();
+                sendProgress(false);
+            }, wait);
+        }
+
+        function startRace(payload) {
+            if (!payload || payload.roomId !== roomId) return;
+            pendingRacePayload = payload;
+            if (state === 'lobby' || state === 'joining') {
+                prepareCountdownTestView();
+                playCountdownStep(0);
+                return;
+            }
+            if (state === 'countdown') {
+                if (!introBusy) tryBeginRaceAfterIntro();
+                return;
+            }
+            beginActualRace(payload);
         }
 
         function renderLobby(nextRoom) {
@@ -1000,59 +1181,6 @@
             });
         }
 
-        function startRace(payload) {
-            if (!payload || payload.roomId !== roomId) return;
-            config = payload.config;
-            words = payload.words || [];
-            room.players = payload.players || room.players;
-            startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
-            var self = room.players.find(function (player) { return player.userId === selfUserId; });
-            selfIndex = self ? self.index : 0;
-            currentWordIndex = 0;
-            currentCharIndex = 0;
-            completedWords = 0;
-            sequence = 0;
-            totalKeystrokes = 0;
-            errors = 0;
-            lockedAt = null;
-            errorHistory = [];
-            progressByIndex = {};
-            lastProgressSentAt = 0;
-            clearInterval(progressInterval);
-            progressInterval = null;
-            switchToTest();
-            renderText();
-            renderLeaderboard();
-            setTimeout(function () {
-                state = 'racing';
-                if (window.usertypo_settingsApi) {
-                    try {
-                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
-                    } catch (_) { /* retain defaults */ }
-                }
-                if (typeof window.applyRoomLiveFeedSettings === 'function') {
-                    window.applyRoomLiveFeedSettings();
-                }
-                updateLineLayout();
-                updateCaret();
-                document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
-                    element.classList.remove('opacity-0');
-                });
-                if (caret) caret.classList.remove('animate-breath');
-                document.addEventListener('keydown', handleKey, { signal: signal });
-                window.addEventListener('resize', function () {
-                    updateLineLayout();
-                    updateCaret();
-                }, { signal: signal });
-                updateTimer = setInterval(updateLive, 200);
-                progressInterval = setInterval(function () {
-                    if (state === 'racing') sendProgress(false);
-                }, ROOM_PROGRESS_INTERVAL_MS);
-                updateLive();
-                sendProgress(false);
-            }, Math.max(0, startedAt - Date.now()));
-        }
-
         function setRoomHeaderInteractive(enabled) {
             var headerLeft = document.getElementById('header-left');
             var headerRight = document.getElementById('header-right');
@@ -1180,12 +1308,16 @@
         }
 
         function updateReturnLobbyButton() {
-            var count = document.getElementById('stats-return-lobby-count');
+            var label = document.getElementById('stats-return-lobby-label');
             var button = document.getElementById('stats-return-lobby-btn');
-            if (count) count.textContent = returnLobbyAgreed + '/' + returnLobbyNeeded;
+            if (label) {
+                label.textContent = 'Back to Lobby (' + returnLobbyAgreed + '/' + returnLobbyNeeded + ')';
+            }
             if (button) {
-                button.classList.toggle('opacity-60', selfReturnLobby);
-                button.classList.toggle('pointer-events-none', selfReturnLobby);
+                button.classList.toggle('is-disabled', selfReturnLobby);
+                button.disabled = !!selfReturnLobby;
+                if (selfReturnLobby) button.setAttribute('aria-disabled', 'true');
+                else button.removeAttribute('aria-disabled');
             }
         }
 
@@ -1289,7 +1421,9 @@
             listen('race-countdown', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
-                showLobbyMessage(payload[1] > 0 ? payload[1] : 'GO', payload[1] > 0 ? 'Get ready' : '');
+                if (state === 'racing' || state === 'finished') return;
+                if (state !== 'countdown') prepareCountdownTestView();
+                playCountdownStep(Number(payload[1]) || 0);
             });
             listen('race-start', function (event) { startRace(event.detail); });
             listen('race-progress', function (event) {
@@ -1322,7 +1456,7 @@
                 switchToLobbyFromStats(payload);
             });
             listen('match-resumed', function () {
-                if (state === 'racing' || state === 'waiting-result') hideLobbyMessage();
+                /* countdown overlays removed */
             });
         }
 
@@ -1392,7 +1526,6 @@
                 }
             } catch (_) { /* ignore */ }
             bindEvents();
-            showLobbyMessage('Joining', 'Connecting to the room.');
             try {
                 await window.usertypoMultiplayer.connect();
                 selfUserId = window.usertypoMultiplayer.getReadyState()?.userId || '';
@@ -1413,7 +1546,6 @@
                 isHost = room.hostUserId === selfUserId;
                 state = 'lobby';
                 renderLobby(room);
-                hideLobbyMessage();
             } catch (error) {
                 var msg = String(error && error.message || 'Room not found');
                 if (/full/i.test(msg)) {
@@ -1421,12 +1553,14 @@
                 } else {
                     window.usertypoNotifications?.showToast(msg, 'error');
                 }
-                showLobbyMessage('Could not join', msg);
                 setTimeout(function () { window.navigateTo?.('/friends'); }, 1800);
             }
         }
 
         function cleanup() {
+            countdownAnimToken += 1;
+            introBusy = false;
+            pendingRacePayload = null;
             clearInterval(updateTimer);
             clearInterval(progressInterval);
             progressInterval = null;
