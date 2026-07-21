@@ -3063,6 +3063,19 @@ window.setTimeout = function(handler, timeout) {
 
             // Persist completed test for signed-in users, then refresh global rank
             if (window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
+                var diagnosticsSummary = null;
+                if (
+                    !failedReason &&
+                    window.usertypoDiagnostics &&
+                    typeof window.usertypoDiagnostics.buildSummary === 'function'
+                ) {
+                    diagnosticsSummary = window.usertypoDiagnostics.buildSummary({
+                        errorMarkers: errorMarkers,
+                        wordTimestamps: wordTimestamps,
+                        generatedWords: generatedWords,
+                    });
+                }
+
                 window.usertypoSessions.saveSession({
                     mode: testMode,
                     amount: testAmount,
@@ -3079,6 +3092,7 @@ window.setTimeout = function(handler, timeout) {
                     duration_seconds: elapsedSeconds,
                     failed: !!failedReason,
                     fail_reason: failedReason || null,
+                    diagnostics: diagnosticsSummary,
                 }).then(function () {
                     loadStatsGlobalRank();
                 }).catch(function (err) {

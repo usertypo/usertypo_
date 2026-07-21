@@ -92,6 +92,25 @@
             });
         }
 
+        if (
+            !payload.failed &&
+            input.diagnostics &&
+            window.usertypoDiagnostics &&
+            typeof window.usertypoDiagnostics.saveDiagnostics === 'function'
+        ) {
+            window.usertypoDiagnostics.saveDiagnostics(
+                inserted.data.id,
+                input.diagnostics,
+                inserted.data.created_at
+            ).then(function (saved) {
+                if (saved && !saved.skipped) {
+                    console.info('[usertypo diagnostics] saved', saved.sessionId);
+                }
+            }).catch(function (err) {
+                console.warn('[usertypo diagnostics] save failed', err);
+            });
+        }
+
         return { skipped: false, session: inserted.data };
     }
 

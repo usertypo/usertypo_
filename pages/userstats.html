@@ -557,50 +557,38 @@
                     </div>
                 </div>
             </div>
-            <!-- Error Diagnostics stays -->
-            <div class="col-span-12 glass-panel p-6 rounded-xl">
-                <h2 class="font-headline text-lg font-bold mb-6">Error Diagnostics &amp; Weakness Analysis</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Error Diagnostics -->
+            <div class="col-span-12 glass-panel p-6 rounded-xl" id="error-diagnostics-card">
+                <div class="flex items-baseline justify-between gap-4 mb-6">
+                    <h2 class="font-headline text-lg font-bold">Error Diagnostics &amp; Weakness Analysis</h2>
+                    <span id="diag-sample-meta" class="text-[10px] text-slate-500 font-headline uppercase tracking-widest"></span>
+                </div>
+                <div id="diag-empty" class="hidden text-sm text-slate-500 font-headline py-8 text-center">
+                    Complete a few tests to build your error diagnostics.
+                </div>
+                <div id="diag-content" class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="space-y-8">
                         <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">The
                             Blacklist
                         </h3>
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-1">Top 5 Missed Characters</span>
+                                <span class="text-[10px] text-slate-500 block mb-1">Top 5 Errored Characters</span>
                                 <div class="flex items-baseline gap-3">
-                                    <span class="font-headline text-3xl font-bold text-primary cyan-glow-text">P</span>
-                                    <span class="text-slate-500 text-sm font-headline">Q, Z, X, B</span>
+                                    <span id="diag-top-char" class="font-headline text-3xl font-bold text-primary cyan-glow-text">—</span>
+                                    <span id="diag-top-chars-rest" class="text-slate-500 text-sm font-headline"></span>
                                 </div>
                             </div>
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Slowest Bigrams</span>
-                                <div class="space-y-1">
-                                    <div class="flex justify-between text-xs font-headline">
-                                        <span class="text-slate-400">qu</span>
-                                        <span class="text-slate-500">42 WPM</span>
-                                    </div>
-                                    <div class="flex justify-between text-xs font-headline">
-                                        <span class="text-slate-400">ze</span>
-                                        <span class="text-slate-500">48 WPM</span>
-                                    </div>
-                                    <div class="flex justify-between text-xs font-headline">
-                                        <span class="text-slate-400">br</span>
-                                        <span class="text-slate-500">55 WPM</span>
-                                    </div>
+                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Errored Bigrams</span>
+                                <div id="diag-top-bigrams" class="space-y-1">
+                                    <div class="text-xs text-slate-500 font-headline">—</div>
                                 </div>
                             </div>
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Slowest Words</span>
-                                <div class="space-y-1">
-                                    <div class="flex justify-between text-xs font-headline">
-                                        <span class="text-slate-400">rhythm</span>
-                                        <span class="text-slate-500">62 WPM</span>
-                                    </div>
-                                    <div class="flex justify-between text-xs font-headline">
-                                        <span class="text-slate-400">queue</span>
-                                        <span class="text-slate-500">65 WPM</span>
-                                    </div>
+                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Errored Words</span>
+                                <div id="diag-top-words" class="space-y-1">
+                                    <div class="text-xs text-slate-500 font-headline">—</div>
                                 </div>
                             </div>
                         </div>
@@ -609,62 +597,24 @@
                         <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-6 self-start">
                             Error Anatomy</h3>
                         <div class="relative w-32 h-32 mb-6">
-                            <svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+                            <svg id="diag-anatomy-svg" class="w-full h-full -rotate-90" viewBox="0 0 36 36">
                                 <circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100"
                                     stroke-width="4"></circle>
-                                <circle cx="18" cy="18" fill="none" r="16" stroke="#23262c" stroke-dasharray="25 100"
-                                    stroke-dashoffset="0" stroke-width="4"></circle>
-                                <circle cx="18" cy="18" fill="none" r="16" stroke="var(--theme-primary-light, #6cdaff)" stroke-dasharray="65 100"
-                                    stroke-dashoffset="-25" stroke-width="4"></circle>
                             </svg>
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="text-[10px] font-headline text-slate-500">TOTAL</span>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                <span id="diag-anatomy-total" class="font-headline text-sm text-slate-100">0</span>
+                                <span class="text-[9px] font-headline text-slate-500">TOTAL</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 gap-2 w-full px-4">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-primary"></span>
-                                <span class="text-xs text-slate-400">Substitutions (65%)</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-outline-variant"></span>
-                                <span class="text-xs text-slate-400">Omissions (25%)</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-surface-light"></span>
-                                <span class="text-xs text-slate-400">Insertions (10%)</span>
-                            </div>
-                        </div>
+                        <div id="diag-anatomy-legend" class="grid grid-cols-1 gap-2 w-full px-4"></div>
                     </div>
-                    <div class="space-y-8">
+                    <div class="space-y-6">
                         <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">Mechanical
                             Friction</h3>
-                        <div class="space-y-6">
-                            <div>
-                                <span class="text-[10px] text-slate-500 block mb-2">Key Confusion</span>
-                                <div class="space-y-2">
-                                    <div class="bg-surface p-2 rounded text-[10px] font-headline border border-white/5">
-                                        <span class="text-slate-500">Expected</span> <span
-                                            class="text-slate-100 font-bold">S</span> <span
-                                            class="text-primary mx-2">Ã¢â€ â€™</span> <span class="text-slate-500">Typed</span>
-                                        <span class="text-error font-bold">A</span>
-                                    </div>
-                                    <div class="bg-surface p-2 rounded text-[10px] font-headline border border-white/5">
-                                        <span class="text-slate-500">Expected</span> <span
-                                            class="text-slate-100 font-bold">E</span> <span
-                                            class="text-primary mx-2">Ã¢â€ â€™</span> <span class="text-slate-500">Typed</span>
-                                        <span class="text-error font-bold">W</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-primary/5 border border-primary/20 p-4 rounded-lg text-center">
-                                <span
-                                    class="font-headline text-3xl font-bold text-primary cyan-glow-text block">242ms</span>
-                                <span
-                                    class="text-[10px] uppercase tracking-widest text-slate-500 font-headline block mt-1">Average
-                                    Recovery Time</span>
-                                <p class="text-[9px] text-slate-500 mt-2 leading-tight">Time taken to type the
-                                    next correct key after an error.</p>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-2">Key Confusion</span>
+                            <div id="diag-key-confusion" class="space-y-2">
+                                <div class="text-xs text-slate-500 font-headline">—</div>
                             </div>
                         </div>
                     </div>
@@ -1372,6 +1322,150 @@ if ('scrollRestoration' in history) {
                 }
             }
 
+            async function loadErrorDiagnostics() {
+                var emptyEl = document.getElementById('diag-empty');
+                var contentEl = document.getElementById('diag-content');
+                var metaEl = document.getElementById('diag-sample-meta');
+
+                if (!window.usertypoDiagnostics) {
+                    if (emptyEl) emptyEl.classList.remove('hidden');
+                    if (contentEl) contentEl.classList.add('hidden');
+                    return;
+                }
+
+                try {
+                    var listed = await window.usertypoDiagnostics.listMyDiagnostics({ limit: 100 });
+                    if (listed.error === 'guest') return;
+
+                    var rows = listed.rows || [];
+                    if (!rows.length) {
+                        if (emptyEl) emptyEl.classList.remove('hidden');
+                        if (contentEl) contentEl.classList.add('hidden');
+                        if (metaEl) metaEl.textContent = '';
+                        return;
+                    }
+
+                    if (emptyEl) emptyEl.classList.add('hidden');
+                    if (contentEl) contentEl.classList.remove('hidden');
+                    if (metaEl) {
+                        metaEl.textContent = 'Last ' + rows.length + ' test' + (rows.length === 1 ? '' : 's');
+                    }
+
+                    renderErrorDiagnostics(window.usertypoDiagnostics.aggregateDiagnostics(rows));
+                } catch (err) {
+                    console.error('[usertypo userstats] diagnostics load failed', err);
+                    if (emptyEl) emptyEl.classList.remove('hidden');
+                    if (contentEl) contentEl.classList.add('hidden');
+                }
+            }
+
+            function renderErrorDiagnostics(agg) {
+                if (!agg) return;
+
+                var topCharEl = document.getElementById('diag-top-char');
+                var topCharsRestEl = document.getElementById('diag-top-chars-rest');
+                var chars = agg.topCharacters || [];
+                if (topCharEl) {
+                    topCharEl.textContent = chars.length ? chars[0].key : '—';
+                }
+                if (topCharsRestEl) {
+                    topCharsRestEl.textContent = chars.length > 1
+                        ? chars.slice(1).map(function (c) { return c.key; }).join(', ')
+                        : '';
+                }
+
+                var bigramsEl = document.getElementById('diag-top-bigrams');
+                if (bigramsEl) {
+                    if (!(agg.topBigrams || []).length) {
+                        bigramsEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
+                    } else {
+                        bigramsEl.innerHTML = agg.topBigrams.map(function (entry) {
+                            return '<div class="flex justify-between text-xs font-headline">'
+                                + '<span class="text-slate-400">' + escapeHtml(entry.bigram) + '</span>'
+                                + '<span class="text-slate-500">' + entry.count + '×</span>'
+                                + '</div>';
+                        }).join('');
+                    }
+                }
+
+                var wordsEl = document.getElementById('diag-top-words');
+                if (wordsEl) {
+                    if (!(agg.topWords || []).length) {
+                        wordsEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
+                    } else {
+                        wordsEl.innerHTML = agg.topWords.map(function (entry) {
+                            return '<div class="flex justify-between text-xs font-headline">'
+                                + '<span class="text-slate-400">' + escapeHtml(entry.word) + '</span>'
+                                + '<span class="text-slate-500">' + entry.wpm + ' WPM</span>'
+                                + '</div>';
+                        }).join('');
+                    }
+                }
+
+                var totalEl = document.getElementById('diag-anatomy-total');
+                if (totalEl) totalEl.textContent = String(agg.totalErrors || 0);
+
+                var anatomyColors = [
+                    'var(--theme-primary-light, #6cdaff)',
+                    'var(--theme-primary, #00d0ff)',
+                    '#94a3b8',
+                    '#64748b',
+                    '#334155',
+                ];
+                var svg = document.getElementById('diag-anatomy-svg');
+                var legend = document.getElementById('diag-anatomy-legend');
+                if (svg) {
+                    var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+                    var offset = 0;
+                    (agg.anatomy || []).forEach(function (slice, index) {
+                        if (!slice.count) return;
+                        var pct = Math.max(0, Math.min(100, slice.percent));
+                        rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+                            + anatomyColors[index]
+                            + '" stroke-dasharray="' + pct + ' ' + (100 - pct)
+                            + '" stroke-dashoffset="' + (-offset)
+                            + '" stroke-width="4"></circle>';
+                        offset += pct;
+                    });
+                    svg.innerHTML = rings;
+                }
+                if (legend) {
+                    legend.innerHTML = (agg.anatomy || []).map(function (slice, index) {
+                        return '<div class="flex items-center gap-2">'
+                            + '<span class="w-2 h-2 rounded-full" style="background:' + anatomyColors[index] + '"></span>'
+                            + '<span class="text-xs text-slate-400">'
+                            + escapeHtml(slice.label) + ' (' + slice.percent + '%)</span>'
+                            + '</div>';
+                    }).join('');
+                }
+
+                var confusionEl = document.getElementById('diag-key-confusion');
+                if (confusionEl) {
+                    if (!(agg.topConfusions || []).length) {
+                        confusionEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
+                    } else {
+                        confusionEl.innerHTML = agg.topConfusions.map(function (pair) {
+                            return '<div class="bg-surface p-2 rounded text-[10px] font-headline border border-white/5 flex items-center justify-between gap-2">'
+                                + '<span><span class="text-slate-500">Expected</span> '
+                                + '<span class="text-slate-100 font-bold">' + escapeHtml(pair.expected) + '</span> '
+                                + '<span class="text-primary mx-2">→</span> '
+                                + '<span class="text-slate-500">Typed</span> '
+                                + '<span class="text-error font-bold">' + escapeHtml(pair.typed) + '</span></span>'
+                                + '<span class="text-slate-500">' + pair.count + '×</span>'
+                                + '</div>';
+                        }).join('');
+                    }
+                }
+            }
+
+            function escapeHtml(value) {
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
             async function loadUserStats() {
                 if (!window.usertypoSessions || typeof window.usertypoSessions.getMyStats !== 'function') {
                     return;
@@ -1399,6 +1493,8 @@ if ('scrollRestoration' in history) {
 
                     var exportBtn = document.getElementById('test-history-export');
                     if (exportBtn) exportBtn.disabled = allHistorySessions.length === 0;
+
+                    loadErrorDiagnostics();
                 } catch (err) {
                     console.error('[usertypo userstats] stats load failed', err);
                 }
