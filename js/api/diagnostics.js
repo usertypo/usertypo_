@@ -580,31 +580,55 @@
 
     /**
      * Paint red heat intensities onto a rendered settings-style keymap.
+     * Only the topN hottest physical keys are colored (default 15).
      */
-    function applyKeyHeatmap(keymapRoot, counts) {
+    function applyKeyHeatmap(keymapRoot, counts, options) {
         if (!keymapRoot) return;
-        var keys = keymapRoot.querySelectorAll('.keymap-key');
+        var topN = Math.max(1, Number(options && options.topN) || 15);
+        var keys = Array.prototype.slice.call(keymapRoot.querySelectorAll('.keymap-key'));
         var map = counts || {};
-        var max = 0;
-        Object.keys(map).forEach(function (key) {
-            var n = Number(map[key]) || 0;
-            if (n > max) max = n;
+
+        var scored = keys.map(function (el) {
+            return { el: el, count: keyErrorCount(el, map) };
+        }).filter(function (entry) {
+            return entry.count > 0;
+        }).sort(function (a, b) {
+            if (b.count !== a.count) return b.count - a.count;
+            return 0;
         });
+
+        var max = scored.length ? scored[0].count : 0;
+        var hotList = scored.slice(0, topN);
 
         keys.forEach(function (el) {
             el.style.removeProperty('background-color');
             el.style.removeProperty('border-color');
             el.style.removeProperty('color');
             el.style.removeProperty('box-shadow');
+            el.removeAttribute('data-hotspot-rank');
+            el.removeAttribute('aria-label');
+            el.classList.remove('hotspot-key-tip');
             el.querySelectorAll('.keymap-main-text, .keymap-shift-text').forEach(function (span) {
                 span.style.removeProperty('color');
             });
 
             var count = keyErrorCount(el, map);
-            if (!count || !max) return;
+            if (count > 0) {
+                var label = '';
+                if (el.getAttribute('data-special') === 'Space') {
+                    label = 'Space';
+                } else {
+                    var raw = (el.getAttribute('data-chars') || '').charAt(0);
+                    label = formatCharLabel(raw) || (el.querySelector('.keymap-main-text') || {}).textContent || 'Key';
+                }
+                el.setAttribute('aria-label', label + ': ' + count + (count === 1 ? ' error' : ' errors'));
+                el.classList.add('hotspot-key-tip');
+            }
+
+            var isHot = hotList.some(function (entry) { return entry.el === el; });
+            if (!isHot || !max) return;
 
             var t = Math.max(0, Math.min(1, count / max));
-            // Opaque-enough red fill so the key face itself reads as red, not just a glow.
             var bgAlpha = 0.35 + 0.55 * t;
             var borderAlpha = 0.55 + 0.4 * t;
             var textColor = t > 0.35 ? '#ffffff' : '#fecaca';

@@ -1671,8 +1671,11 @@ function getTestKeymapContainers() {
 }
 
 function isSettingsKeymapPreviewPage() {
-    return !!document.getElementById('dynamic-keymap-container')
-        && !document.getElementById('typing-area')
+    var container = document.getElementById('dynamic-keymap-container');
+    if (!container) return false;
+    // User Stats Hardware Hotspots reuses the keymap markup — do not treat it as settings.
+    if (container.closest('#hardware-hotspots-card')) return false;
+    return !document.getElementById('typing-area')
         && !document.getElementById('room-keymap-container');
 }
 

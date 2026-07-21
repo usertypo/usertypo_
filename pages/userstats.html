@@ -212,6 +212,60 @@
             transform: translateY(0);
         }
 
+        /* Hardware Hotspots — activity-style legend + key tooltips */
+        .hotspotsHeatLegend {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            font-family: "Roboto Mono", monospace;
+            font-size: 0.75rem;
+            color: var(--theme-text-muted, #94a3b8);
+            text-transform: lowercase;
+        }
+        .hotspotsHeatLegend span:first-child { margin-right: 3px; }
+        .hotspotsHeatLegend span:last-child { margin-left: 3px; }
+        .hotspotsHeatLegend div {
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 3px;
+        }
+        .hotspotsHeatLegend div[data-level="0"] { background: rgba(185, 28, 28, 0.12); }
+        .hotspotsHeatLegend div[data-level="1"] { background: rgba(185, 28, 28, 0.35); }
+        .hotspotsHeatLegend div[data-level="2"] { background: rgba(185, 28, 28, 0.55); }
+        .hotspotsHeatLegend div[data-level="3"] { background: rgba(185, 28, 28, 0.75); }
+        .hotspotsHeatLegend div[data-level="4"] { background: rgba(185, 28, 28, 0.92); }
+
+        #hardware-hotspots-card #dynamic-keymap {
+            transform: scale(1.14);
+            transform-origin: center center;
+            margin: 0.75rem 0 1.25rem;
+        }
+
+        #hardware-hotspots-card .hotspot-key-tip {
+            position: relative;
+        }
+        #hardware-hotspots-card .hotspot-key-tip[aria-label]:hover::after {
+            content: attr(aria-label);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+            background-image: none !important;
+            color: var(--theme-text, #f3f3f9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.7rem;
+            font-family: "Roboto Mono", monospace;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+        }
+
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         /* Header Logo */
 </style>
@@ -436,12 +490,8 @@
                 </div>
             </div>
             <div class="col-span-12 glass-panel p-6 rounded-xl" id="hand-biometrics-card">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center mb-6">
                     <h2 class="font-headline text-lg font-bold">Hand Biometrics &amp; Consistency <span class="text-slate-500 font-normal text-sm">(last 50 tests)</span></h2>
-                    <div id="hand-dominance-pill" class="bg-primary/10 border border-primary/30 px-3 py-1 rounded-full">
-                        <span id="hand-dominance-label" class="text-xs font-headline font-bold text-primary tracking-tight">Hand Dominance Skew:
-                            —</span>
-                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
                     <div class="flex justify-between border-r border-white/5 pr-6 md:pr-12">
@@ -587,7 +637,7 @@
                                 <span class="text-xs text-slate-400">Mistype (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-primary, #00d0ff)"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
                                 <span class="text-xs text-slate-400">Reversal (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
@@ -618,32 +668,32 @@
             </div>
             <!-- Hardware Hotspots -->
             <div class="col-span-12 glass-panel p-6 rounded-xl" id="hardware-hotspots-card">
-                <div class="w-full flex items-center mb-6">
+                <div class="w-full flex items-center justify-between gap-4 mb-6">
                     <h2 class="font-headline text-lg font-bold">Hardware Hotspots <span class="text-slate-500 font-normal text-sm">(last 50 tests)</span></h2>
+                    <div class="hotspotsHeatLegend" aria-label="Error intensity legend">
+                        <span>less</span>
+                        <div data-level="0"></div>
+                        <div data-level="1"></div>
+                        <div data-level="2"></div>
+                        <div data-level="3"></div>
+                        <div data-level="4"></div>
+                        <span>more</span>
+                    </div>
                 </div>
                 <div class="w-full flex flex-col lg:flex-row gap-8 items-center">
-                    <div class="lg:w-52 shrink-0 flex flex-col justify-center order-2 lg:order-1">
+                    <div class="lg:w-56 shrink-0 flex flex-col justify-center order-2 lg:order-1">
                         <span class="text-[10px] text-slate-500 block mb-3 uppercase tracking-widest font-headline">Top 5 Errored Characters</span>
-                        <div class="flex items-baseline gap-3 mb-4">
-                            <span id="hotspot-top-char" class="font-headline text-3xl font-bold text-red-400">—</span>
-                            <span id="hotspot-top-chars-rest" class="text-slate-500 text-sm font-headline"></span>
+                        <div id="hotspot-top-chars-row" class="flex items-baseline gap-3 mb-4 flex-wrap">
+                            <span class="font-headline font-bold text-red-400 text-3xl">—</span>
                         </div>
                         <div id="hotspot-top-chars-list" class="space-y-1">
                             <div class="text-xs text-slate-500 font-headline">—</div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col items-center overflow-x-auto order-1 lg:order-2">
+                    <div class="flex-1 min-w-0 flex flex-col items-center overflow-x-auto order-1 lg:order-2 py-2">
                         <div id="dynamic-keymap-container" class="w-full max-w-full flex flex-col items-center overflow-x-auto">
                             <div id="dynamic-keymap"
                                 class="flex flex-col gap-1.5 w-full min-w-max pb-2"></div>
-                        </div>
-                        <div class="mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500 font-headline">
-                            <span>Less</span>
-                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(185,28,28,0.35)"></span>
-                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(185,28,28,0.55)"></span>
-                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(185,28,28,0.75)"></span>
-                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(185,28,28,0.90)"></span>
-                            <span>More</span>
                         </div>
                     </div>
                 </div>
@@ -910,6 +960,20 @@ if ('scrollRestoration' in history) {
             fillProfileIdentity().then(function () {
                 loadUserStats();
                 loadUserRank();
+            });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                if (!document.getElementById('hardware-hotspots-card')) return;
+                var keymap = document.getElementById('dynamic-keymap');
+                if (!keymap || !window.__USERTYPO_HOTSPOT_COUNTS__) return;
+                if (window.usertypoDiagnostics && typeof window.usertypoDiagnostics.applyKeyHeatmap === 'function') {
+                    window.usertypoDiagnostics.applyKeyHeatmap(
+                        keymap,
+                        window.__USERTYPO_HOTSPOT_COUNTS__,
+                        { topN: 15 }
+                    );
+                }
             });
 
             var historyOffset = 0;
@@ -1274,22 +1338,26 @@ if ('scrollRestoration' in history) {
 
                 var counts = (agg && agg.characterCounts) || {};
                 var chars = (agg && agg.topCharacters) || [];
+                window.__USERTYPO_HOTSPOT_COUNTS__ = counts;
 
                 if (keymap && window.usertypoDiagnostics && typeof window.usertypoDiagnostics.applyKeyHeatmap === 'function') {
-                    window.usertypoDiagnostics.applyKeyHeatmap(keymap, counts);
+                    window.usertypoDiagnostics.applyKeyHeatmap(keymap, counts, { topN: 15 });
                 }
 
-                var topCharEl = document.getElementById('hotspot-top-char');
-                var topCharsRestEl = document.getElementById('hotspot-top-chars-rest');
+                var rowEl = document.getElementById('hotspot-top-chars-row');
                 var listEl = document.getElementById('hotspot-top-chars-list');
+                var sizeClasses = ['text-3xl', 'text-2xl', 'text-xl', 'text-lg', 'text-base'];
 
-                if (topCharEl) {
-                    topCharEl.textContent = chars.length ? formatDiagChar(chars[0].key) : '—';
-                }
-                if (topCharsRestEl) {
-                    topCharsRestEl.textContent = chars.length > 1
-                        ? chars.slice(1).map(function (c) { return formatDiagChar(c.key); }).join(', ')
-                        : '';
+                if (rowEl) {
+                    if (!chars.length) {
+                        rowEl.innerHTML = '<span class="font-headline font-bold text-red-400 text-3xl">—</span>';
+                    } else {
+                        rowEl.innerHTML = chars.map(function (entry, index) {
+                            return '<span class="font-headline font-bold text-red-400 '
+                                + sizeClasses[index]
+                                + '">' + escapeHtml(formatDiagChar(entry.key)) + '</span>';
+                        }).join('');
+                    }
                 }
                 if (listEl) {
                     if (!chars.length) {
@@ -1297,7 +1365,7 @@ if ('scrollRestoration' in history) {
                     } else {
                         listEl.innerHTML = chars.map(function (entry) {
                             return '<div class="flex justify-between text-xs font-headline">'
-                                + '<span class="text-slate-400">' + escapeHtml(formatDiagChar(entry.key)) + '</span>'
+                                + '<span class="text-red-400/80">' + escapeHtml(formatDiagChar(entry.key)) + '</span>'
                                 + '<span class="text-slate-500">' + entry.count + '×</span>'
                                 + '</div>';
                         }).join('');
@@ -1328,18 +1396,6 @@ if ('scrollRestoration' in history) {
                 var left = hands && hands.left;
                 var right = hands && hands.right;
                 var hasData = !!(left && right && (left.chars || right.chars || left.errors || right.errors));
-
-                var dominanceEl = document.getElementById('hand-dominance-label');
-                if (dominanceEl) {
-                    if (!hasData || !hands.dominance) {
-                        dominanceEl.textContent = 'Hand Dominance Skew: —';
-                    } else if (hands.dominance.side === 'Even') {
-                        dominanceEl.textContent = 'Hand Dominance Skew: Even';
-                    } else {
-                        dominanceEl.textContent = 'Hand Dominance Skew: '
-                            + hands.dominance.side + ' +' + hands.dominance.percent + '%';
-                    }
-                }
 
                 setText('hand-left-wpm', hasData && left.wpm != null ? String(left.wpm) : '—');
                 setText('hand-right-wpm', hasData && right.wpm != null ? String(right.wpm) : '—');
@@ -1389,7 +1445,7 @@ if ('scrollRestoration' in history) {
             function renderErrorDiagnostics(agg) {
                 var anatomyColors = [
                     'var(--theme-primary-light, #6cdaff)',
-                    'var(--theme-primary, #00d0ff)',
+                    '#f59e0b',
                     '#94a3b8',
                     '#64748b',
                     '#334155',
@@ -1446,13 +1502,15 @@ if ('scrollRestoration' in history) {
                 if (svg) {
                     var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
                     var offset = 0;
+                    var gap = 2.2;
                     if (!isBlank) {
                         (data.anatomy || []).forEach(function (slice, index) {
                             if (!slice.count) return;
                             var pct = Math.max(0, Math.min(100, slice.percent));
+                            var arc = Math.max(0.8, pct - gap);
                             rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
                                 + anatomyColors[index]
-                                + '" stroke-dasharray="' + pct + ' ' + (100 - pct)
+                                + '" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + (100 - arc)
                                 + '" stroke-dashoffset="' + (-offset)
                                 + '" stroke-width="4"></circle>';
                             offset += pct;
