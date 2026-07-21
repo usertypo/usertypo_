@@ -79,6 +79,7 @@
         var pendingRacePayload = null;
         var countdownAnimToken = 0;
         var introBusy = false;
+        var countdownSequenceStarted = false;
 
         function getJoinLink() {
             var origin = window.location.origin || '';
@@ -141,8 +142,8 @@
                         '<div class="player-node' + (player.ready ? ' is-ready' : '') + '" data-player-name="' + escapeHtml(player.name) + '">' +
                             '<div class="player-avatar-ring">' +
                                 (player.isBot
-                                    ? '<div class="player-node-img flex items-center justify-center bg-surface">' +
-                                        '<span class="material-symbols-outlined text-primary text-[28px]">smart_toy</span></div>'
+                                    ? '<div class="player-node-img bot-node-icon">' +
+                                        '<span class="material-symbols-outlined text-primary">smart_toy</span></div>'
                                     : '<img class="player-node-img" alt="' + escapeHtml(player.name) + '" src="' + escapeHtml(player.avatarUrl || DEFAULT_AVATAR) + '">') +
                             '</div>' +
                             '<div class="player-ready-dot"></div>' +
@@ -604,6 +605,8 @@
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* defaults */ }
             }
+            progressByIndex = {};
+            renderLeaderboard();
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             var word = document.createElement('div');
             word.id = 'room-word-0';
@@ -611,16 +614,12 @@
             word.dataset.line = '0';
             textContainer.appendChild(word);
             textContainer.style.transform = '';
-            words = [''];
+            // Non-empty placeholder so tape caret helpers treat this like a live word slot.
+            words = ['\u00a0'];
             wordOffsets = [0];
             if (typingArea) {
-                var tapeMode = getTapeMode();
                 var line = parseFloat(getComputedStyle(typingArea).lineHeight) || 48;
-                // Match live race single-line height for letter/word tape.
                 typingArea.style.height = line + 'px';
-                if (tapeMode !== 'word' && tapeMode !== 'letter') {
-                    typingArea.style.height = line + 'px';
-                }
             }
             document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
                 element.classList.add('opacity-0');
@@ -632,7 +631,6 @@
                 caret.style.display = 'block';
             }
             state = 'countdown';
-            // Wait a frame so tape CSS (nowrap / mask) and layout settle before centering.
             requestAnimationFrame(function () {
                 updateLineLayout();
                 syncCountdownCaret(0);
@@ -669,16 +667,33 @@
             }
         }
 
-        async function playCountdownStep(value) {
+        async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
-            var label = value === 0 ? 'Go' : String(value);
-            await caretBackspaceCountdown(token);
+            if (caret) caret.classList.add('animate-breath');
+            await delay(500);
             if (token !== countdownAnimToken) return;
-            await caretTypeCountdown(label, token);
-            if (token !== countdownAnimToken) return;
+            var digits = ['3', '2', '1'];
+            for (var i = 0; i < digits.length; i += 1) {
+                if (token !== countdownAnimToken) return;
+                if (caret) caret.classList.remove('animate-breath');
+                await caretTypeCountdown(digits[i], token);
+                if (token !== countdownAnimToken) return;
+                await delay(420);
+                if (token !== countdownAnimToken) return;
+                await caretBackspaceCountdown(token);
+                if (token !== countdownAnimToken) return;
+            }
+            if (caret) caret.classList.add('animate-breath');
             introBusy = false;
-            if (value === 0) tryBeginRaceAfterIntro();
+            tryBeginRaceAfterIntro();
+        }
+
+        function ensureCountdownSequence() {
+            if (countdownSequenceStarted) return;
+            countdownSequenceStarted = true;
+            prepareCountdownTestView();
+            runCountdownIntroSequence();
         }
 
         function tryBeginRaceAfterIntro() {
@@ -713,6 +728,7 @@
             progressInterval = null;
             countdownAnimToken += 1;
             introBusy = false;
+            countdownSequenceStarted = false;
             switchToTest();
             renderText();
             renderLeaderboard();
@@ -750,16 +766,8 @@
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             pendingRacePayload = payload;
-            if (state === 'lobby' || state === 'joining') {
-                prepareCountdownTestView();
-                playCountdownStep(0);
-                return;
-            }
-            if (state === 'countdown') {
-                if (!introBusy) tryBeginRaceAfterIntro();
-                return;
-            }
-            beginActualRace(payload);
+            ensureCountdownSequence();
+            if (!introBusy) tryBeginRaceAfterIntro();
         }
 
         function renderLobby(nextRoom) {
@@ -940,7 +948,7 @@
         }
 
         function positionCaretAt(element, wordIndex, charIndex) {
-            if (!element || !textContainer || !words[wordIndex]) return;
+            if (!element || !textContainer || words[wordIndex] == null) return;
             var wordElement = document.getElementById('room-word-' + wordIndex);
             if (!wordElement) return;
             var target = document.getElementById('room-char-' + wordIndex + '-' + charIndex);
@@ -955,8 +963,12 @@
             element.style.display = 'block';
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
+            var caretWidth = targetRect.width;
+            if (!caretWidth) {
+                caretWidth = Math.max(10, (parseFloat(getComputedStyle(textContainer).fontSize) || 24) * 0.55);
+            }
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            element.style.width = targetRect.width + 'px';
+            element.style.width = caretWidth + 'px';
         }
 
         function updateCaret() {
@@ -1444,6 +1456,10 @@
             selfReturnLobby = false;
             returnLobbyAgreed = 0;
             returnLobbyNeeded = 0;
+            countdownAnimToken += 1;
+            introBusy = false;
+            countdownSequenceStarted = false;
+            pendingRacePayload = null;
             state = 'lobby';
             if (payload) {
                 room = payload;
@@ -1526,8 +1542,8 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
-                if (state !== 'countdown') prepareCountdownTestView();
-                playCountdownStep(Number(payload[1]) || 0);
+                // Local 3→2→1 tape animation; ignore server tick values (no "Go").
+                ensureCountdownSequence();
             });
             listen('race-start', function (event) { startRace(event.detail); });
             listen('race-progress', function (event) {
@@ -1664,6 +1680,7 @@
         function cleanup() {
             countdownAnimToken += 1;
             introBusy = false;
+            countdownSequenceStarted = false;
             pendingRacePayload = null;
             clearInterval(updateTimer);
             clearInterval(progressInterval);
