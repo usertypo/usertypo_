@@ -59,6 +59,71 @@
         .drag-handle:active { cursor: grabbing; }
         .card-static .drag-handle { display: none !important; }
 
+        .pot-filter-btn {
+            background: var(--theme-surface, rgba(255, 255, 255, 0.04));
+            color: var(--theme-text-muted, #94a3b8);
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.7rem;
+            font-size: 0.7rem;
+            font-family: 'Roboto Mono', monospace;
+            line-height: 1.4;
+            transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+        .pot-filter-btn:hover {
+            color: var(--theme-primary-light, #6cdaff);
+        }
+        .pot-filter-btn.is-active {
+            background: color-mix(in srgb, var(--theme-primary-light, #6cdaff) 18%, transparent);
+            color: var(--theme-primary-light, #6cdaff);
+            border-color: color-mix(in srgb, var(--theme-primary-light, #6cdaff) 35%, transparent);
+        }
+        .pot-legend-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--theme-text-muted, #94a3b8);
+            font-size: 0.75rem;
+            transition: opacity 0.15s ease, color 0.15s ease;
+        }
+        .pot-legend-btn.is-off {
+            opacity: 0.4;
+        }
+        .pot-legend-swatch {
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 9999px;
+            flex-shrink: 0;
+        }
+        .pot-legend-swatch.is-line {
+            border-radius: 0;
+            height: 2px;
+            width: 0.85rem;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--theme-outline, #aaabb0) 0 4px,
+                transparent 4px 7px
+            );
+        }
+        .performance-chart-wrap {
+            position: relative;
+            height: 18rem;
+        }
+        .performance-chart-empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--theme-text-muted, #94a3b8);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+        .performance-chart-empty.hidden {
+            display: none;
+        }
+
         .score-distribution-layout {
             display: grid;
             grid-template-columns: 2.25rem minmax(0, 1fr);
@@ -444,49 +509,53 @@
         <section id="sortable-container"
             class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16 opacity-0 animate-fade-in-up [animation-delay:700ms]">
             <!-- Top Graph Area: Performance Graph Full Width -->
-            <div class="col-span-12 glass-panel p-6 rounded-xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-headline text-lg font-bold">Performance Over Time</h2>
-                    <div class="flex gap-2">
-                        <button
-                            class="bg-surface px-3 py-1 rounded text-xs text-slate-500 hover:text-primary transition-colors">1W</button>
-                        <button class="bg-primary/20 px-3 py-1 rounded text-xs text-primary">1M</button>
-                        <button
-                            class="bg-surface px-3 py-1 rounded text-xs text-slate-500 hover:text-primary transition-colors">6M</button>
-                        <button
-                            class="bg-surface px-3 py-1 rounded text-xs text-slate-500 hover:text-primary transition-colors">ALL</button>
-                    </div>
-                </div>
-                <div class="h-64 flex items-end gap-1 overflow-hidden">
-                    <svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 200">
-                        <defs>
-                            <lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                                <stop offset="0%" stop-color="var(--theme-primary-light, #6cdaff)" stop-opacity="0.3"></stop>
-                                <stop offset="100%" stop-color="var(--theme-primary-light, #6cdaff)" stop-opacity="0"></stop>
-                            </lineargradient>
-                        </defs>
-                        <path
-                            d="M0,180 Q50,150 100,160 T200,120 T300,140 T400,90 T500,110 T600,70 T700,85 T800,50 L800,200 L0,200 Z"
-                            fill="url(#chartGradient)"></path>
-                        <path d="M0,180 Q50,150 100,160 T200,120 T300,140 T400,90 T500,110 T600,70 T700,85 T800,50"
-                            fill="none" stroke="var(--theme-primary-light, #6cdaff)" stroke-width="3"></path>
-                        <path d="M0,100 Q100,95 200,98 T400,92 T600,95 T800,90" fill="none" stroke="#aaabb0"
-                            stroke-dasharray="4" stroke-width="2"></path>
-                    </svg>
-                </div>
-                <div class="flex justify-between mt-4">
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-primary"></span>
-                            <span class="text-xs text-slate-400">WPM</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-outline"></span>
-                            <span class="text-xs text-slate-400">Accuracy</span>
+            <div class="col-span-12 glass-panel p-6 rounded-xl" id="performance-over-time-card">
+                <div class="flex flex-col gap-4 mb-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h2 class="font-headline text-lg font-bold">Performance Over Time</h2>
+                        <div id="pot-range-filters" class="flex flex-wrap gap-1.5" role="group" aria-label="Time range">
+                            <button type="button" class="pot-filter-btn" data-pot-range="1w">1W</button>
+                            <button type="button" class="pot-filter-btn" data-pot-range="1m">1M</button>
+                            <button type="button" class="pot-filter-btn" data-pot-range="6m">6M</button>
+                            <button type="button" class="pot-filter-btn" data-pot-range="last10">Last 10</button>
+                            <button type="button" class="pot-filter-btn" data-pot-range="last50">Last 50</button>
+                            <button type="button" class="pot-filter-btn" data-pot-range="last100">Last 100</button>
+                            <button type="button" class="pot-filter-btn is-active" data-pot-range="all">All</button>
                         </div>
                     </div>
-                    <span class="text-[10px] text-slate-500 font-headline uppercase tracking-widest">Live Data Stream
-                        Active</span>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Test mode">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Mode</span>
+                            <button type="button" class="pot-filter-btn is-active" data-pot-mode="all">All</button>
+                            <button type="button" class="pot-filter-btn" data-pot-mode="time">Time</button>
+                            <button type="button" class="pot-filter-btn" data-pot-mode="words">Words</button>
+                        </div>
+                        <div id="pot-amount-filters" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Test amount">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Amount</span>
+                            <button type="button" class="pot-filter-btn is-active" data-pot-amount="all">All</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="performance-chart-wrap">
+                    <canvas id="performance-over-time-chart" aria-label="Performance over time chart"></canvas>
+                    <div id="pot-empty" class="performance-chart-empty hidden">No tests match these filters</div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button type="button" class="pot-legend-btn" data-pot-series="wpm" aria-pressed="true">
+                            <span class="pot-legend-swatch" style="background: var(--theme-primary-light, #6cdaff)"></span>
+                            WPM
+                        </button>
+                        <button type="button" class="pot-legend-btn" data-pot-series="acc" aria-pressed="true">
+                            <span class="pot-legend-swatch" style="background: var(--theme-text-muted, #94a3b8)"></span>
+                            Accuracy
+                        </button>
+                        <button type="button" class="pot-legend-btn" data-pot-series="avg10" aria-pressed="true">
+                            <span class="pot-legend-swatch is-line"></span>
+                            Avg of 10
+                        </button>
+                    </div>
+                    <span id="pot-count-label" class="text-[10px] text-slate-500 font-headline uppercase tracking-widest">0 tests</span>
                 </div>
             </div>
             <div class="col-span-12 glass-panel p-6 rounded-xl" id="hand-biometrics-card">
@@ -981,6 +1050,140 @@ if ('scrollRestoration' in history) {
             var historyTotal = 0;
             var historyLoading = false;
             var allHistorySessions = [];
+
+            var potState = {
+                sessions: [],
+                range: 'all',
+                mode: 'all',
+                amount: 'all',
+                showWpm: true,
+                showAcc: true,
+                showAvg10: true,
+            };
+
+            function potAmountOptions(mode) {
+                if (mode === 'time') {
+                    return (window.usertypoSessions && window.usertypoSessions.TIMED_AMOUNTS) || [15, 30, 60, 120];
+                }
+                if (mode === 'words') {
+                    return (window.usertypoSessions && window.usertypoSessions.WORD_AMOUNTS) || [10, 25, 50, 100];
+                }
+                return [];
+            }
+
+            function potAmountLabel(mode, amount) {
+                if (mode === 'time') return amount + 's';
+                return String(amount);
+            }
+
+            function rebuildPotAmountFilters() {
+                var wrap = document.getElementById('pot-amount-filters');
+                if (!wrap) return;
+                var amounts = potAmountOptions(potState.mode);
+                var html = '<span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Amount</span>'
+                    + '<button type="button" class="pot-filter-btn'
+                    + (potState.amount === 'all' ? ' is-active' : '')
+                    + '" data-pot-amount="all">All</button>';
+                amounts.forEach(function (amount) {
+                    var active = String(potState.amount) === String(amount);
+                    html += '<button type="button" class="pot-filter-btn'
+                        + (active ? ' is-active' : '')
+                        + '" data-pot-amount="' + amount + '">'
+                        + potAmountLabel(potState.mode, amount)
+                        + '</button>';
+                });
+                wrap.innerHTML = html;
+            }
+
+            function setPotActiveGroup(selector, attr, value) {
+                document.querySelectorAll(selector).forEach(function (btn) {
+                    btn.classList.toggle('is-active', String(btn.getAttribute(attr)) === String(value));
+                });
+            }
+
+            async function refreshPerformanceChart() {
+                if (!window.usertypoPerformanceChart) return;
+                var canvas = document.getElementById('performance-over-time-chart');
+                var emptyEl = document.getElementById('pot-empty');
+                var countEl = document.getElementById('pot-count-label');
+                if (!canvas) return;
+
+                try {
+                    var result = await window.usertypoPerformanceChart.render({
+                        canvas: canvas,
+                        emptyEl: emptyEl,
+                        sessions: potState.sessions,
+                        range: potState.range,
+                        mode: potState.mode,
+                        amount: potState.amount,
+                        showWpm: potState.showWpm,
+                        showAcc: potState.showAcc,
+                        showAvg10: potState.showAvg10,
+                    });
+                    if (countEl) {
+                        var n = result && result.count != null ? result.count : 0;
+                        countEl.textContent = n + (n === 1 ? ' test' : ' tests');
+                    }
+                } catch (err) {
+                    console.error('[usertypo userstats] performance chart failed', err);
+                    if (emptyEl) {
+                        emptyEl.classList.remove('hidden');
+                        emptyEl.textContent = 'Could not render chart';
+                    }
+                }
+            }
+
+            function bindPerformanceChartControls() {
+                var card = document.getElementById('performance-over-time-card');
+                if (!card || card.dataset.potBound === '1') return;
+                card.dataset.potBound = '1';
+
+                rebuildPotAmountFilters();
+
+                card.addEventListener('click', function (e) {
+                    var rangeBtn = e.target.closest('[data-pot-range]');
+                    if (rangeBtn) {
+                        potState.range = rangeBtn.getAttribute('data-pot-range');
+                        setPotActiveGroup('#pot-range-filters [data-pot-range]', 'data-pot-range', potState.range);
+                        refreshPerformanceChart();
+                        return;
+                    }
+
+                    var modeBtn = e.target.closest('[data-pot-mode]');
+                    if (modeBtn) {
+                        potState.mode = modeBtn.getAttribute('data-pot-mode');
+                        potState.amount = 'all';
+                        setPotActiveGroup('[data-pot-mode]', 'data-pot-mode', potState.mode);
+                        rebuildPotAmountFilters();
+                        refreshPerformanceChart();
+                        return;
+                    }
+
+                    var amountBtn = e.target.closest('[data-pot-amount]');
+                    if (amountBtn) {
+                        potState.amount = amountBtn.getAttribute('data-pot-amount');
+                        setPotActiveGroup('#pot-amount-filters [data-pot-amount]', 'data-pot-amount', potState.amount);
+                        refreshPerformanceChart();
+                        return;
+                    }
+
+                    var seriesBtn = e.target.closest('[data-pot-series]');
+                    if (seriesBtn) {
+                        var series = seriesBtn.getAttribute('data-pot-series');
+                        if (series === 'wpm') potState.showWpm = !potState.showWpm;
+                        if (series === 'acc') potState.showAcc = !potState.showAcc;
+                        if (series === 'avg10') potState.showAvg10 = !potState.showAvg10;
+                        var seriesOn = series === 'wpm'
+                            ? potState.showWpm
+                            : series === 'acc'
+                                ? potState.showAcc
+                                : potState.showAvg10;
+                        seriesBtn.classList.toggle('is-off', !seriesOn);
+                        seriesBtn.setAttribute('aria-pressed', String(seriesOn));
+                        refreshPerformanceChart();
+                    }
+                });
+            }
 
             function renderBestCards(bests) {
                 if (!bests || !window.usertypoSessions) return;
@@ -1577,6 +1780,9 @@ if ('scrollRestoration' in history) {
                     historyOffset = 0;
                     historyTotal = stats.totalSessions || 0;
                     allHistorySessions = stats.allSessions || [];
+                    potState.sessions = stats.allSessions || [];
+                    bindPerformanceChartControls();
+                    refreshPerformanceChart();
                     renderHistoryRows(stats.recentSessions || [], false);
                     historyOffset = (stats.recentSessions || []).length;
                     updateHistoryFooter();
@@ -1892,6 +2098,9 @@ window.__spaPageCleanup = function() {
     window.addEventListener = __origWinAEL;
     window.setInterval = __origSetInterval;
     window.setTimeout = __origSetTimeout;
+    if (window.usertypoPerformanceChart && typeof window.usertypoPerformanceChart.destroy === 'function') {
+        try { window.usertypoPerformanceChart.destroy(); } catch (e) {}
+    }
     if (typeof __prevSpaCleanup === 'function') {
         try { __prevSpaCleanup(); } catch (e) {}
     }
