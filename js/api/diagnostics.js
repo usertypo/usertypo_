@@ -329,7 +329,7 @@
                 if (b.count !== a.count) return b.count - a.count;
                 return (a.expected + a.typed).localeCompare(b.expected + b.typed);
             })
-            .slice(0, 8);
+            .slice(0, 6);
 
         return {
             testCount: (rows || []).length,
@@ -374,30 +374,36 @@
         });
 
         keys.forEach(function (el) {
-            el.style.backgroundColor = '';
-            el.style.borderColor = '';
-            el.style.color = '';
-            el.style.boxShadow = '';
+            el.style.removeProperty('background-color');
+            el.style.removeProperty('border-color');
+            el.style.removeProperty('color');
+            el.style.removeProperty('box-shadow');
             el.querySelectorAll('.keymap-main-text, .keymap-shift-text').forEach(function (span) {
-                span.style.color = '';
+                span.style.removeProperty('color');
             });
 
             var count = keyErrorCount(el, map);
             if (!count || !max) return;
 
             var t = Math.max(0, Math.min(1, count / max));
-            var bgAlpha = 0.16 + 0.72 * t;
-            var borderAlpha = 0.28 + 0.55 * t;
-            el.style.backgroundColor = 'rgba(220, 38, 38, ' + bgAlpha.toFixed(3) + ')';
-            el.style.borderColor = 'rgba(248, 113, 113, ' + borderAlpha.toFixed(3) + ')';
-            el.style.boxShadow = t > 0.55
-                ? '0 0 10px rgba(220, 38, 38, ' + (0.2 + 0.35 * t).toFixed(3) + ')'
-                : '';
+            // Opaque-enough red fill so the key face itself reads as red, not just a glow.
+            var bgAlpha = 0.35 + 0.55 * t;
+            var borderAlpha = 0.55 + 0.4 * t;
+            var textColor = t > 0.35 ? '#ffffff' : '#fecaca';
 
-            var textColor = t > 0.4 ? '#fff7f7' : '#fecaca';
-            el.style.color = textColor;
+            el.classList.remove(
+                'bg-primary/10',
+                'border-primary/20',
+                'text-primary',
+                'text-primary/60'
+            );
+            el.style.setProperty('background-color', 'rgba(185, 28, 28, ' + bgAlpha.toFixed(3) + ')', 'important');
+            el.style.setProperty('border-color', 'rgba(248, 113, 113, ' + borderAlpha.toFixed(3) + ')', 'important');
+            el.style.setProperty('color', textColor, 'important');
+            el.style.setProperty('box-shadow', 'none', 'important');
             el.querySelectorAll('.keymap-main-text, .keymap-shift-text').forEach(function (span) {
-                span.style.color = textColor;
+                span.classList.remove('text-primary', 'text-primary/60');
+                span.style.setProperty('color', textColor, 'important');
             });
         });
     }
