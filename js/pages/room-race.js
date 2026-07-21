@@ -520,34 +520,14 @@
             return new Promise(function (resolve) { setTimeout(resolve, ms); });
         }
 
-        function positionCountdownCaret() {
-            if (!caret || !textContainer) return;
-            var word = document.getElementById('room-countdown-word');
-            if (!word) return;
-            var last = word.lastElementChild;
-            var containerRect = textContainer.getBoundingClientRect();
-            caret.style.display = 'block';
-            if (!last) {
-                caret.style.transform = 'translate3d(0px,0px,0)';
-                caret.style.width = '0.55em';
-                return;
-            }
-            var rect = last.getBoundingClientRect();
-            caret.style.transform = 'translate3d(' + (rect.right - containerRect.left) + 'px,' + (rect.top - containerRect.top) + 'px,0)';
-            caret.style.width = Math.max(2, rect.width) + 'px';
-        }
-
-        function centerCountdownTape() {
-            if (!typingArea || !textContainer) return;
-            var word = document.getElementById('room-countdown-word');
-            if (!word || !typingArea.clientWidth) return;
-            var center = typingArea.clientWidth / 2;
-            var containerRect = textContainer.getBoundingClientRect();
-            var target = word.lastElementChild || word;
-            var targetRect = target.getBoundingClientRect();
-            var targetLeft = targetRect.left - containerRect.left + (word.lastElementChild ? targetRect.width : 0);
-            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
-            positionCountdownCaret();
+        function syncCountdownCaret(charIndex) {
+            currentWordIndex = 0;
+            currentCharIndex = Math.max(0, charIndex);
+            if (!document.getElementById('room-word-0')) return;
+            // Use the same tape / line scroll + caret placement as live typing.
+            handleScroll();
+            positionCaretAt(caret, 0, currentCharIndex);
+            if (caret) caret.style.display = 'block';
         }
 
         function prepareCountdownTestView() {
@@ -560,13 +540,21 @@
             }
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             var word = document.createElement('div');
-            word.id = 'room-countdown-word';
+            word.id = 'room-word-0';
             word.className = 'word';
+            word.dataset.line = '0';
             textContainer.appendChild(word);
             textContainer.style.transform = '';
+            words = [''];
+            wordOffsets = [0];
             if (typingArea) {
+                var tapeMode = getTapeMode();
                 var line = parseFloat(getComputedStyle(typingArea).lineHeight) || 48;
+                // Match live race single-line height for letter/word tape.
                 typingArea.style.height = line + 'px';
+                if (tapeMode !== 'word' && tapeMode !== 'letter') {
+                    typingArea.style.height = line + 'px';
+                }
             }
             document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
                 element.classList.add('opacity-0');
@@ -577,34 +565,40 @@
                 caret.classList.add('animate-breath');
                 caret.style.display = 'block';
             }
-            centerCountdownTape();
             state = 'countdown';
+            // Wait a frame so tape CSS (nowrap / mask) and layout settle before centering.
+            requestAnimationFrame(function () {
+                updateLineLayout();
+                syncCountdownCaret(0);
+            });
         }
 
         async function caretBackspaceCountdown(token) {
-            var word = document.getElementById('room-countdown-word');
+            var word = document.getElementById('room-word-0');
             if (!word) return;
             while (word.lastChild) {
                 if (token !== countdownAnimToken) return;
                 word.removeChild(word.lastChild);
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
-                centerCountdownTape();
+                syncCountdownCaret(word.childNodes.length);
                 await delay(70);
             }
+            syncCountdownCaret(0);
         }
 
         async function caretTypeCountdown(text, token) {
-            var word = document.getElementById('room-countdown-word');
+            var word = document.getElementById('room-word-0');
             if (!word) return;
             var chars = String(text || '').split('');
             for (var i = 0; i < chars.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 var span = document.createElement('span');
+                span.id = 'room-char-0-' + i;
                 span.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
                 span.textContent = chars[i];
                 word.appendChild(span);
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(chars[i]);
-                centerCountdownTape();
+                syncCountdownCaret(i + 1);
                 await delay(95);
             }
         }
