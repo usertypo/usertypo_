@@ -87,9 +87,24 @@
 
         function countReadyPlayers() {
             if (!room || !Array.isArray(room.players)) return 0;
-            return room.players.filter(function (player) {
+            var ready = room.players.filter(function (player) {
                 return player.status !== 'left' && player.ready;
             }).length;
+            if (room.bot) ready += 1;
+            return ready;
+        }
+
+        function countRoomParticipants() {
+            if (!room || !Array.isArray(room.players)) return room && room.bot ? 1 : 0;
+            return room.players.filter(function (player) {
+                return player.status !== 'left';
+            }).length + (room.bot ? 1 : 0);
+        }
+
+        function botAvatarHtml(sizeClass, iconSize) {
+            return '<div class="' + sizeClass + ' rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">' +
+                '<span class="material-symbols-outlined text-primary" style="font-size:' + (iconSize || 18) + 'px;">smart_toy</span>' +
+                '</div>';
         }
 
         function getSelfPlayer() {
@@ -125,7 +140,10 @@
                     '<div class="orbit-pulse">' +
                         '<div class="player-node' + (player.ready ? ' is-ready' : '') + '" data-player-name="' + escapeHtml(player.name) + '">' +
                             '<div class="player-avatar-ring">' +
-                                '<img class="player-node-img" alt="' + escapeHtml(player.name) + '" src="' + escapeHtml(player.avatarUrl || DEFAULT_AVATAR) + '">' +
+                                (player.isBot
+                                    ? '<div class="player-node-img flex items-center justify-center bg-surface">' +
+                                        '<span class="material-symbols-outlined text-primary text-[28px]">smart_toy</span></div>'
+                                    : '<img class="player-node-img" alt="' + escapeHtml(player.name) + '" src="' + escapeHtml(player.avatarUrl || DEFAULT_AVATAR) + '">') +
                             '</div>' +
                             '<div class="player-ready-dot"></div>' +
                         '</div>' +
@@ -162,18 +180,31 @@
                 if (b.userId === room.hostUserId) return 1;
                 return a.index - b.index;
             });
+            if (room.bot) {
+                rows = rows.concat([{
+                    userId: 'bot',
+                    name: room.bot.name,
+                    ready: true,
+                    isBot: true,
+                    index: room.bot.index,
+                }]);
+            }
             list.innerHTML = rows.map(function (player) {
                 var isRoomHost = player.userId === room.hostUserId;
-                var badge = player.ready
+                var badge = player.ready || player.isBot
                     ? '<span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full whitespace-nowrap">Ready</span>'
                     : '<span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full whitespace-nowrap">Waiting</span>';
                 var imgClass = 'w-9 h-9 rounded-full border object-cover shrink-0 ' + (isRoomHost ? 'border-2 border-primary' : 'border-white/10');
-                var imgStyle = player.ready ? ' style="box-shadow:0 0 8px rgba(0,208,255,0.35)"' : '';
+                var imgStyle = player.ready || player.isBot ? ' style="box-shadow:0 0 8px rgba(0,208,255,0.35)"' : '';
+                var avatar = player.isBot
+                    ? botAvatarHtml('w-9 h-9', 18)
+                    : '<img src="' + escapeHtml(player.avatarUrl || DEFAULT_AVATAR) + '" class="' + imgClass + '"' + imgStyle + '>';
                 return '<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl ' + (isRoomHost ? 'bg-primary/5 border border-primary/10' : 'hover:bg-white/5 transition-colors') + '">' +
-                    '<img src="' + escapeHtml(player.avatarUrl || DEFAULT_AVATAR) + '" class="' + imgClass + '"' + imgStyle + '>' +
+                    avatar +
                     '<div class="flex-1 min-w-0">' +
                         '<span class="text-sm font-semibold text-on-surface">' + escapeHtml(player.name) + '</span>' +
                         (isRoomHost ? '<span class="text-[9px] text-primary font-bold uppercase tracking-widest ml-2">Host</span>' : '') +
+                        (player.isBot ? '<span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest ml-2">Bot</span>' : '') +
                     '</div>' +
                     badge +
                 '</div>';
@@ -184,9 +215,7 @@
             refreshDomRefs();
             if (!readyButton || !readyButtonLabel || !room) return;
             var readyCount = countReadyPlayers();
-            var totalPlayers = room.players.filter(function (player) {
-                return player.status !== 'left';
-            }).length;
+            var totalPlayers = countRoomParticipants();
             var self = getSelfPlayer();
             isHost = !!(room.hostUserId && selfUserId && room.hostUserId === selfUserId);
             readyButton.classList.remove('is-disabled');
@@ -211,6 +240,32 @@
                 readyButtonLabel.textContent = 'Ready (' + readyCount + '/' + totalPlayers + ')';
             } else {
                 readyButtonLabel.textContent = 'Ready Up (' + readyCount + '/' + totalPlayers + ')';
+            }
+        }
+
+        function updateAddBotOption() {
+            var row = document.getElementById('invite-add-bot-row');
+            var button = document.getElementById('invite-add-bot-btn');
+            var label = document.getElementById('invite-add-bot-label');
+            if (!row || !button) return;
+            var show = !!(isHost && state === 'lobby');
+            row.classList.toggle('hidden', !show);
+            if (!show) return;
+            var hasBot = !!room && !!room.bot;
+            button.disabled = hasBot;
+            button.classList.toggle('opacity-45', hasBot);
+            button.classList.toggle('pointer-events-none', hasBot);
+            button.classList.toggle('cursor-not-allowed', hasBot);
+            if (label) label.textContent = hasBot ? 'Bot added' : 'Add a bot';
+        }
+
+        async function addBotToRoom() {
+            if (!isHost || !roomId || (room && room.bot)) return;
+            try {
+                await window.usertypoMultiplayer.addRoomBot(roomId);
+                window.usertypoNotifications?.showToast('Bot added to the room.', 'smart_toy');
+            } catch (error) {
+                window.usertypoNotifications?.showToast(error.message || 'Could not add bot', 'error');
             }
         }
 
@@ -302,7 +357,10 @@
             panel.classList.toggle('translate-y-4', !invitePanelOpen);
             if (icon) icon.textContent = invitePanelOpen ? 'close' : 'add';
             if (button) button.classList.toggle('scale-110', invitePanelOpen);
-            if (invitePanelOpen) renderInviteFriends();
+            if (invitePanelOpen) {
+                renderInviteFriends();
+                updateAddBotOption();
+            }
         }
 
         function openHostModal() {
@@ -420,6 +478,14 @@
                 inviteToggle.addEventListener('click', function (event) {
                     event.stopPropagation();
                     setInvitePanelOpen(!invitePanelOpen);
+                }, { signal: signal });
+            }
+            var addBotBtn = document.getElementById('invite-add-bot-btn');
+            if (addBotBtn) {
+                addBotBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    addBotToRoom();
                 }, { signal: signal });
             }
             document.addEventListener('click', function (event) {
@@ -627,6 +693,9 @@
             config = payload.config;
             words = payload.words || [];
             room.players = payload.players || room.players;
+            if (payload.bot) {
+                room.bot = Object.assign({}, room.bot || {}, payload.bot, { isBot: true });
+            }
             startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
             var self = room.players.find(function (player) { return player.userId === selfUserId; });
             selfIndex = self ? self.index : 0;
@@ -733,10 +802,24 @@
             var guests = room.players.filter(function (player) {
                 return player.userId !== room.hostUserId && player.status !== 'left';
             });
+            if (room.bot) {
+                guests = guests.concat([{
+                    name: room.bot.name,
+                    avatarUrl: '',
+                    ready: true,
+                    isBot: true,
+                    userId: 'bot',
+                    index: room.bot.index,
+                }]);
+            }
             layoutOrbitPlayers(guests);
             updateLobbyButtons();
+            updateAddBotOption();
             if (hostModal && !hostModal.classList.contains('opacity-0')) renderHostModalList();
-            if (invitePanelOpen) renderInviteFriends();
+            if (invitePanelOpen) {
+                renderInviteFriends();
+                updateAddBotOption();
+            }
         }
 
         function switchToTest() {
@@ -1104,14 +1187,21 @@
         function renderLeaderboard() {
             if (!leaderboard || !room) return;
             var badge = document.getElementById('room-player-count-badge');
-            if (badge) badge.textContent = room.players.length + ' players';
-            var rows = room.players.map(function (player) {
-                return Object.assign({ index: player.index, wpm: 0 }, progressByIndex[player.index] || {}, {
+            if (badge) badge.textContent = countRoomParticipants() + ' players';
+            var entries = room.players.map(function (player) {
+                return Object.assign({ index: player.index, wpm: 0, isBot: false }, progressByIndex[player.index] || {}, {
                     name: player.name,
                     avatarUrl: player.avatarUrl,
                 });
-            }).sort(function (a, b) {
-                // Highest broadcast WPM first — same inputs on every client.
+            });
+            if (room.bot) {
+                entries.push(Object.assign({ index: room.bot.index, wpm: 0 }, progressByIndex[room.bot.index] || {}, {
+                    name: room.bot.name,
+                    avatarUrl: '',
+                    isBot: true,
+                }));
+            }
+            var rows = entries.sort(function (a, b) {
                 return (Number(b.wpm) || 0) - (Number(a.wpm) || 0) || a.index - b.index;
             });
 
@@ -1147,12 +1237,17 @@
             }
 
             leaderboard.innerHTML = rows.map(function (row, index) {
-                var avatar = String(row.avatarUrl || DEFAULT_AVATAR).replace(/"/g, '&quot;');
+                var avatar = row.isBot
+                    ? botAvatarHtml('lb-avatar', 16)
+                    : '<img class="lb-avatar" src="' + String(row.avatarUrl || DEFAULT_AVATAR).replace(/"/g, '&quot;') +
+                        '" alt="" width="28" height="28" loading="lazy" decoding="async">';
                 return '<div class="lb-pill player-pill' + (row.index === selfIndex ? ' me' : '') +
                     '" data-player-index="' + row.index + '">' +
                     '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
-                    '<img class="lb-avatar" src="' + avatar + '" alt="" width="28" height="28" loading="lazy" decoding="async">' +
-                    '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) + '</span>' +
+                    avatar +
+                    '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) +
+                    (row.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '') +
+                    '</span>' +
                     '<span class="lb-wpm text-sm font-mono text-primary shrink-0 ml-auto" data-lb-wpm>' +
                     Math.round(Number(row.wpm) || 0) + '</span>' +
                     '</div>';
@@ -1232,7 +1327,9 @@
             var glowHtml = theme.glow
                 ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full" data-screenshot-glow></div>'
                 : '';
-            var avatarHtml = player.avatarUrl
+            var avatarHtml = player.isBot
+                ? botAvatarHtml('w-12 h-12 mx-auto mb-2', 24)
+                : player.avatarUrl
                 ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-12 h-12 rounded-full object-cover mx-auto mb-2 border ' + (player.isMe ? 'border-primary/40' : 'border-white/10') + '">'
                 : '<div class="w-12 h-12 rounded-full ' + (player.isMe ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_12px_rgba(0,208,255,0.25)]' : theme.avatarBg + ' border') + ' flex items-center justify-center font-black text-base mx-auto mb-2 ' + (player.isMe ? '' : theme.avatarShadow) + '">' + escapeHtml(player.initials) + '</div>';
 
@@ -1272,10 +1369,14 @@
             }
             return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center hover:bg-white/5 transition-colors anim-card">' +
                 '<span class="text-slate-500 font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
-                (player.avatarUrl
+                (player.isBot
+                    ? '<div class="mr-3">' + botAvatarHtml('w-8 h-8', 16) + '</div>'
+                    : player.avatarUrl
                     ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-8 h-8 rounded-full object-cover mr-3 border border-white/10">'
                     : '<div class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-xs mr-3">' + escapeHtml(player.initials) + '</div>') +
-                '<span class="text-slate-200 font-bold text-sm flex-1">' + escapeHtml(player.name) + '</span>' +
+                '<span class="text-slate-200 font-bold text-sm flex-1">' + escapeHtml(player.name) +
+                (player.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '') +
+                '</span>' +
                 '<span class="text-slate-300 font-mono font-bold text-base">' + player.wpm +
                 ' <span class="text-xs text-slate-500">WPM</span></span></div>';
         }
@@ -1283,20 +1384,29 @@
         function mapResultRows(results) {
             var profileByIndex = {};
             (room.players || []).forEach(function (player) { profileByIndex[player.index] = player; });
+            if (room.bot) {
+                profileByIndex[room.bot.index] = {
+                    name: room.bot.name,
+                    avatarUrl: '',
+                    isBot: true,
+                };
+            }
             return (results || []).map(function (row) {
                 var profile = profileByIndex[row[0]] || {};
                 var name = profile.name || row[2] || 'Player';
+                var isBot = !!(profile.isBot || row[1] === 'bot');
                 return {
                     index: row[0],
                     userId: row[1],
                     name: name,
                     initials: initialsFromName(name),
                     avatarUrl: profile.avatarUrl || '',
+                    isBot: isBot,
                     wpm: Math.round(Number(row[3]) || 0),
                     acc: Math.round((Number(row[4]) || 0) * 10) / 10,
                     con: Math.round(Number(row[11]) || 0),
                     timeSec: Math.round(Number(row[12]) || 0),
-                    isMe: row[1] === selfUserId || Number(row[0]) === selfIndex,
+                    isMe: !isBot && (row[1] === selfUserId || Number(row[0]) === selfIndex),
                 };
             });
         }

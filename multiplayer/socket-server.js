@@ -189,7 +189,46 @@ function createMultiplayerServer(httpServer, options) {
                 name: room.bot.name,
                 avatarUrl: '',
                 index: room.bot.index,
+                isBot: true,
+                ready: true,
+                status: room.bot.status || 'waiting',
             } : null,
+        };
+    }
+
+    const ROOM_BOT_NAMES = Object.freeze([
+        'TypeBot', 'KeyClaw', 'NeonType', 'SwiftKeys', 'PixelPace',
+        'GlyphRunner', 'DashType', 'OrbitKeys', 'FluxType', 'NovaTap',
+        'CipherKeys', 'EchoType', 'PulseKeys', 'AeroType', 'QuarkKeys',
+    ]);
+
+    function occupiedSlots(room) {
+        const humans = Array.from(room.players.values()).filter((player) => player.status !== 'left').length;
+        return humans + (room.bot ? 1 : 0);
+    }
+
+    function nextPlayerIndex(room) {
+        let max = -1;
+        room.players.forEach((player) => {
+            if (player.index > max) max = player.index;
+        });
+        if (room.bot && room.bot.index > max) max = room.bot.index;
+        return max + 1;
+    }
+
+    function createCustomRoomBot(room) {
+        return {
+            index: nextPlayerIndex(room),
+            name: ROOM_BOT_NAMES[crypto.randomInt(ROOM_BOT_NAMES.length)],
+            status: 'waiting',
+            completedWords: 0,
+            correctChars: 0,
+            totalKeystrokes: 0,
+            wpm: 0,
+            accuracy: 97 + crypto.randomInt(4),
+            targetWpm: 55 + crypto.randomInt(61),
+            finishedAt: null,
+            snapshots: [],
         };
     }
 
@@ -297,7 +336,7 @@ function createMultiplayerServer(httpServer, options) {
                 name: player.name,
                 avatarUrl: player.avatarUrl,
             })),
-            bot: room.bot ? { index: room.bot.index, name: room.bot.name } : null,
+            bot: room.bot ? { index: room.bot.index, name: room.bot.name, isBot: true } : null,
         };
     }
 
@@ -1134,12 +1173,12 @@ function createMultiplayerServer(httpServer, options) {
                 return;
             }
             if (!room.players.has(userId)) {
-                if (room.players.size >= room.maxPlayers) {
+                if (occupiedSlots(room) >= room.maxPlayers) {
                     safeAck(ack, { ok: false, error: 'room_full' });
                     return;
                 }
                 room.allowedUserIds.add(userId);
-                room.players.set(userId, createPlayer(userId, room.players.size, profiles.get(userId)));
+                room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profiles.get(userId)));
                 userToRoom.set(userId, room.id);
             }
             io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
@@ -1160,7 +1199,7 @@ function createMultiplayerServer(httpServer, options) {
                 if (room.players.has(toUserId)) throw new Error('already_in_room');
                 if (!isOnline(toUserId)) throw new Error('friend_offline');
                 if (userToRoom.has(toUserId)) throw new Error('already_in_match');
-                if (room.players.size >= room.maxPlayers) throw new Error('room_full');
+                if (occupiedSlots(room) >= room.maxPlayers) throw new Error('room_full');
                 if (!(await auth.areFriends(userId, toUserId))) throw new Error('not_friends');
                 const from = profiles.get(userId) || { name: 'Player', avatarUrl: '' };
                 emitToUser(toUserId, 'room:invite', {
@@ -1221,6 +1260,24 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
+        socket.on('room:add-bot', (roomId, ack) => {
+            try {
+                const room = rooms.get(String(roomId || ''));
+                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                    throw new Error('room_not_found');
+                }
+                if (room.hostUserId !== userId) throw new Error('forbidden');
+                if (room.bot) throw new Error('bot_already_added');
+                if (occupiedSlots(room) >= room.maxPlayers) throw new Error('room_full');
+                room.bot = createCustomRoomBot(room);
+                touchRoomActivity(room);
+                io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                safeAck(ack, { ok: true, bot: publicRoomPayload(room, 'custom').bot });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'add_bot_failed' });
+            }
+        });
+
         socket.on('room:start', (payload, ack) => {
             const roomId = payload && typeof payload === 'object'
                 ? String(payload.roomId || '')
@@ -1234,7 +1291,8 @@ function createMultiplayerServer(httpServer, options) {
             const readyPlayers = Array.from(room.players.values()).filter(
                 (item) => item.ready && item.status !== 'left',
             );
-            if (readyPlayers.length < LIMITS.minReadyToStart) {
+            const readyCount = readyPlayers.length + (room.bot ? 1 : 0);
+            if (readyCount < LIMITS.minReadyToStart) {
                 safeAck(ack, { ok: false, error: 'not_enough_ready' });
                 return;
             }

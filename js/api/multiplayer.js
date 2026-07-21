@@ -380,6 +380,10 @@
         return emitAck('room:return-lobby', roomId);
     }
 
+    function addRoomBot(roomId) {
+        return emitAck('room:add-bot', roomId);
+    }
+
     function startRoom(roomId, force) {
         return emitAck('room:start', { roomId: roomId, force: !!force });
     }
@@ -424,6 +428,7 @@
         joinRoomCode: joinRoomCode,
         setRoomReady: setRoomReady,
         returnToLobby: returnToLobby,
+        addRoomBot: addRoomBot,
         startRoom: startRoom,
         inviteToRoom: inviteToRoom,
         navigateToRoom: navigateToRoom,
