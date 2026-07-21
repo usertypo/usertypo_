@@ -27,7 +27,7 @@
     var PER_TEST_CAP = 20;
     var CHAR_CAP = 80;
     var CONFUSION_CAP = 20;
-    var HISTORY_LIMIT = 100;
+    var HISTORY_LIMIT = 50;
 
     // Finger index: 0 LP, 1 LR, 2 LM, 3 LI, 4 RI, 5 RM, 6 RR, 7 RP
     var FINGER_LABELS = [

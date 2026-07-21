@@ -1,5 +1,5 @@
--- Compact per-test diagnostics for Error Diagnostics & Weakness Analysis.
--- Keep at most 100 rows per user (oldest summaries deleted; typing_sessions rows stay).
+-- Compact per-test diagnostics for Error Diagnostics, Hotspots, and Hand Biometrics.
+-- Keep at most 50 rows per user (oldest summaries deleted; typing_sessions rows stay).
 
 create table if not exists public.typing_session_diagnostics (
   session_id uuid primary key references public.typing_sessions(id) on delete cascade,
@@ -45,7 +45,7 @@ begin
       from public.typing_session_diagnostics
       where user_id = new.user_id
       order by created_at desc
-      offset 100
+      offset 50
     );
   return new;
 end;
