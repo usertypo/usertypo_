@@ -1,5 +1,5 @@
 /**
- * Compact typing diagnostics for Error Diagnostics & Weakness Analysis.
+ * Compact typing diagnostics for Error Diagnostics, Hotspots, and Hand Biometrics.
  * Public API: window.usertypoDiagnostics
  *
  * Summary schema (v1):
@@ -9,7 +9,9 @@
  *   c: [[char, count], ...],
  *   b: [[bigram, count], ...],
  *   w: [[word, errorCount, durationMsSum, charCountSum], ...],
- *   k: [[expected, typed, count], ...]
+ *   k: [[expected, typed, count], ...],
+ *   h: [[lChars, lErrors, lMs], [rChars, rErrors, rMs]],
+ *   f: [[chars, ms], ...] // 8 fingers: LP LR LM LI RI RM RR RP
  * }
  */
 (function () {
@@ -27,6 +29,39 @@
     var CONFUSION_CAP = 20;
     var HISTORY_LIMIT = 100;
 
+    // Finger index: 0 LP, 1 LR, 2 LM, 3 LI, 4 RI, 5 RM, 6 RR, 7 RP
+    var FINGER_LABELS = [
+        'Left Pinky',
+        'Left Ring',
+        'Left Middle',
+        'Left Index',
+        'Right Index',
+        'Right Middle',
+        'Right Ring',
+        'Right Pinky',
+    ];
+
+    // QWERTY touch-typing map (character → finger index). Space excluded.
+    var CHAR_TO_FINGER = {};
+    (function buildFingerMap() {
+        var groups = [
+            '`~1!qaz',
+            '2@wsx',
+            '3#edc',
+            '4$5%rftgvb',
+            '6^7&yhnujm',
+            '8*ik,<',
+            '9(ol.>',
+            '0)-_=+[{]}\\;:\'"/?',
+        ];
+        groups.forEach(function (chars, fingerIndex) {
+            for (var i = 0; i < chars.length; i++) {
+                CHAR_TO_FINGER[chars[i].toLowerCase()] = fingerIndex;
+                CHAR_TO_FINGER[chars[i]] = fingerIndex;
+            }
+        });
+    })();
+
     function isRealError(marker) {
         return marker && marker.type && Object.prototype.hasOwnProperty.call(REAL_ERROR_TYPES, marker.type);
     }
@@ -42,6 +77,23 @@
     function formatCharLabel(value) {
         if (value === ' ' || value === 'Space') return 'Space';
         return String(value == null ? '' : value);
+    }
+
+    function fingerForChar(value) {
+        var ch = normalizeChar(value);
+        if (!ch || ch === ' ') return -1;
+        if (Object.prototype.hasOwnProperty.call(CHAR_TO_FINGER, ch)) {
+            return CHAR_TO_FINGER[ch];
+        }
+        if (Object.prototype.hasOwnProperty.call(CHAR_TO_FINGER, value)) {
+            return CHAR_TO_FINGER[value];
+        }
+        return -1;
+    }
+
+    function handForFinger(fingerIndex) {
+        if (fingerIndex < 0) return -1;
+        return fingerIndex <= 3 ? 0 : 1;
     }
 
     function bump(map, key, amount) {
@@ -66,6 +118,85 @@
                 }
                 return [entry.key, entry.count];
             });
+    }
+
+    function emptyFingerStats() {
+        return [
+            [0, 0], [0, 0], [0, 0], [0, 0],
+            [0, 0], [0, 0], [0, 0], [0, 0],
+        ];
+    }
+
+    function emptyHandStats() {
+        return [
+            [0, 0, 0],
+            [0, 0, 0],
+        ];
+    }
+
+    /**
+     * Build compact hand/finger timing from word charTimes + error markers.
+     */
+    function buildHandFingerStats(input) {
+        var markers = (input && input.errorMarkers) || [];
+        var wordTimestamps = (input && input.wordTimestamps) || [];
+        var generatedWords = (input && input.generatedWords) || [];
+
+        var fingers = emptyFingerStats();
+        var hands = emptyHandStats();
+
+        markers.forEach(function (marker) {
+            if (!isRealError(marker)) return;
+
+            var expected = normalizeChar(marker.expected);
+            var typed = normalizeChar(marker.typed);
+            var key = expected || typed;
+            var finger = fingerForChar(key);
+            var hand = handForFinger(finger);
+            if (hand >= 0) hands[hand][1] += 1;
+        });
+
+        wordTimestamps.forEach(function (wt) {
+            if (!wt) return;
+            var word = String(wt.word || generatedWords[wt.wordIndex] || '');
+            var charTimes = wt.charTimes || [];
+            if (!charTimes.length) return;
+
+            var prev = Number(wt.startTime);
+            if (!isFinite(prev)) prev = Number(charTimes[0]);
+
+            for (var i = 0; i < charTimes.length; i++) {
+                var t = Number(charTimes[i]);
+                if (!isFinite(t)) continue;
+                var duration = Math.max(0, t - prev);
+                prev = t;
+
+                var ch = i < word.length ? word[i] : '';
+                var finger = fingerForChar(ch);
+                if (finger < 0) continue;
+
+                fingers[finger][0] += 1;
+                fingers[finger][1] += duration;
+
+                var hand = handForFinger(finger);
+                hands[hand][0] += 1;
+                hands[hand][2] += duration;
+            }
+        });
+
+        return {
+            h: [
+                [hands[0][0], hands[0][1], Math.round(hands[0][2])],
+                [hands[1][0], hands[1][1], Math.round(hands[1][2])],
+            ],
+            f: fingers.map(function (pair) {
+                return [pair[0], Math.round(pair[1])];
+            }),
+        };
+    }
+
+    function hasHandActivity(h) {
+        return !!(h && ((h[0] && h[0][0]) || (h[1] && h[1][0])));
     }
 
     /**
@@ -106,7 +237,6 @@
             if (expected) {
                 bump(charErrors, expected);
             } else if (typed) {
-                // Extras have no expected char — attribute to the key that was pressed.
                 bump(charErrors, typed);
             }
 
@@ -157,6 +287,8 @@
             })
             .slice(0, PER_TEST_CAP);
 
+        var handFinger = buildHandFingerStats(input);
+
         var summary = {
             v: SCHEMA_VERSION,
             t: types,
@@ -164,10 +296,12 @@
             b: topEntries(bigramErrors, PER_TEST_CAP),
             w: words,
             k: topEntries(confusion, CONFUSION_CAP, '\0'),
+            h: handFinger.h,
+            f: handFinger.f,
         };
 
         var totalErrors = types.reduce(function (sum, n) { return sum + n; }, 0);
-        if (!totalErrors) return null;
+        if (!totalErrors && !hasHandActivity(summary.h)) return null;
         return summary;
     }
 
@@ -331,6 +465,83 @@
             })
             .slice(0, 6);
 
+        var handTotals = emptyHandStats();
+        var fingerTotals = emptyFingerStats();
+
+        (rows || []).forEach(function (row) {
+            var summary = row && row.summary;
+            if (!summary) return;
+
+            var h = summary.h;
+            if (h && h.length >= 2) {
+                for (var hi = 0; hi < 2; hi++) {
+                    var handRow = h[hi] || [];
+                    handTotals[hi][0] += Number(handRow[0]) || 0;
+                    handTotals[hi][1] += Number(handRow[1]) || 0;
+                    handTotals[hi][2] += Number(handRow[2]) || 0;
+                }
+            }
+
+            var f = summary.f;
+            if (f && f.length) {
+                for (var fi = 0; fi < 8; fi++) {
+                    var fingerRow = f[fi] || [];
+                    fingerTotals[fi][0] += Number(fingerRow[0]) || 0;
+                    fingerTotals[fi][1] += Number(fingerRow[1]) || 0;
+                }
+            }
+        });
+
+        function handMetrics(handIndex) {
+            var chars = handTotals[handIndex][0];
+            var errors = handTotals[handIndex][1];
+            var ms = handTotals[handIndex][2];
+            var minutes = Math.max(ms / 60000, 1 / 60000);
+            var wpm = chars ? Math.round((chars / 5) / minutes) : null;
+            var accuracy = (chars + errors) > 0
+                ? Math.round((chars / (chars + errors)) * 1000) / 10
+                : null;
+            return {
+                chars: chars,
+                errors: errors,
+                ms: ms,
+                wpm: wpm,
+                accuracy: accuracy,
+            };
+        }
+
+        function slowestFinger(handIndex) {
+            var start = handIndex === 0 ? 0 : 4;
+            var end = handIndex === 0 ? 4 : 8;
+            var slowest = null;
+            for (var i = start; i < end; i++) {
+                var chars = fingerTotals[i][0];
+                var ms = fingerTotals[i][1];
+                if (!chars || !ms) continue;
+                var minutes = Math.max(ms / 60000, 1 / 60000);
+                var wpm = (chars / 5) / minutes;
+                if (!slowest || wpm < slowest.wpm) {
+                    slowest = { index: i, label: FINGER_LABELS[i], wpm: wpm };
+                }
+            }
+            return slowest ? { label: slowest.label, wpm: Math.round(slowest.wpm) } : null;
+        }
+
+        var left = handMetrics(0);
+        var right = handMetrics(1);
+        var dominance = null;
+        if (left.wpm != null && right.wpm != null && (left.wpm + right.wpm) > 0) {
+            var avg = (left.wpm + right.wpm) / 2;
+            var skew = Math.round(((right.wpm - left.wpm) / avg) * 100);
+            if (skew > 0) {
+                dominance = { side: 'Right', percent: skew };
+            } else if (skew < 0) {
+                dominance = { side: 'Left', percent: Math.abs(skew) };
+            } else {
+                dominance = { side: 'Even', percent: 0 };
+            }
+        }
+
         return {
             testCount: (rows || []).length,
             totalErrors: totalErrors,
@@ -340,6 +551,13 @@
             topBigrams: topBigrams,
             topWords: topWords,
             topConfusions: topConfusions,
+            hands: {
+                left: left,
+                right: right,
+                leftSlowest: slowestFinger(0),
+                rightSlowest: slowestFinger(1),
+                dominance: dominance,
+            },
         };
     }
 
@@ -415,6 +633,7 @@
         aggregateDiagnostics: aggregateDiagnostics,
         applyKeyHeatmap: applyKeyHeatmap,
         formatCharLabel: formatCharLabel,
+        FINGER_LABELS: FINGER_LABELS,
         HISTORY_LIMIT: HISTORY_LIMIT,
     };
 })();

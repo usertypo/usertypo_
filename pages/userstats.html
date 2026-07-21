@@ -435,12 +435,12 @@
                         Active</span>
                 </div>
             </div>
-            <div class="col-span-12 glass-panel p-6 rounded-xl">
+            <div class="col-span-12 glass-panel p-6 rounded-xl" id="hand-biometrics-card">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="font-headline text-lg font-bold">Hand Biometrics &amp; Consistency</h2>
-                    <div class="bg-primary/10 border border-primary/30 px-3 py-1 rounded-full">
-                        <span class="text-xs font-headline font-bold text-primary tracking-tight">Hand Dominance Skew:
-                            Right +4%</span>
+                    <div id="hand-dominance-pill" class="bg-primary/10 border border-primary/30 px-3 py-1 rounded-full">
+                        <span id="hand-dominance-label" class="text-xs font-headline font-bold text-primary tracking-tight">Hand Dominance Skew:
+                            —</span>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
@@ -449,24 +449,24 @@
                             <div>
                                 <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Left
                                     Hand</span>
-                                <span class="font-headline text-3xl font-bold text-slate-100">108 <span
+                                <span class="font-headline text-3xl font-bold text-slate-100"><span id="hand-left-wpm">—</span> <span
                                         class="text-xs font-normal text-slate-500">WPM</span></span>
                             </div>
                             <div class="flex gap-8">
                                 <div>
                                     <span class="text-[10px] text-slate-500 block">Accuracy</span>
-                                    <span class="font-headline text-slate-100">98.2%</span>
+                                    <span id="hand-left-acc" class="font-headline text-slate-100">—</span>
                                 </div>
                                 <div>
                                     <span class="text-[10px] text-slate-500 block">Total Errors</span>
-                                    <span class="font-headline text-slate-100">12</span>
+                                    <span id="hand-left-errors" class="font-headline text-slate-100">—</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
                             <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Slowest
                                 Finger</span>
-                            <span class="font-headline text-sm font-medium text-error">Left Pinky</span>
+                            <span id="hand-left-slowest" class="font-headline text-sm font-medium text-error">—</span>
                         </div>
                     </div>
                     <div class="flex justify-between">
@@ -474,24 +474,24 @@
                             <div>
                                 <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Right
                                     Hand</span>
-                                <span class="font-headline text-3xl font-bold text-primary cyan-glow-text">116 <span
+                                <span class="font-headline text-3xl font-bold text-primary cyan-glow-text"><span id="hand-right-wpm">—</span> <span
                                         class="text-xs font-normal text-slate-500">WPM</span></span>
                             </div>
                             <div class="flex gap-8">
                                 <div>
                                     <span class="text-[10px] text-slate-500 block">Accuracy</span>
-                                    <span class="font-headline text-slate-100">98.6%</span>
+                                    <span id="hand-right-acc" class="font-headline text-slate-100">—</span>
                                 </div>
                                 <div>
                                     <span class="text-[10px] text-slate-500 block">Total Errors</span>
-                                    <span class="font-headline text-slate-100">8</span>
+                                    <span id="hand-right-errors" class="font-headline text-slate-100">—</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
                             <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Slowest
                                 Finger</span>
-                            <span class="font-headline text-sm font-medium text-error">Right Ring</span>
+                            <span id="hand-right-slowest" class="font-headline text-sm font-medium text-error">—</span>
                         </div>
                     </div>
                 </div>
@@ -500,44 +500,44 @@
                     <div class="space-y-6 relative z-10">
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div class="h-8 bg-[#475569] rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
-                                    style="width: 80%;">108 WPM</div>
+                                <div id="hand-bar-left-wpm" class="h-8 bg-[#475569] rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
                                 <span class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Avg
                                     Speed</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-primary rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
-                                    style="width: 86%;">116 WPM</div>
+                                <div id="hand-bar-right-wpm" class="h-8 bg-primary rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div class="h-8 bg-[#475569]/60 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
-                                    style="width: 98%;">98.2%</div>
+                                <div id="hand-bar-left-acc" class="h-8 bg-[#475569]/60 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
                                 <span
                                     class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Accuracy</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-primary/60 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
-                                    style="width: 99%;">98.6%</div>
+                                <div id="hand-bar-right-acc" class="h-8 bg-primary/60 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div class="h-8 bg-[#475569]/20 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
-                                    style="width: 60%;">12</div>
+                                <div id="hand-bar-left-errors" class="h-8 bg-[#475569]/20 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
                                 <span class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Error
                                     Vol.</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div class="h-8 bg-primary/20 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
-                                    style="width: 40%;">8</div>
+                                <div id="hand-bar-right-errors" class="h-8 bg-primary/20 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                    style="width: 0%;">—</div>
                             </div>
                         </div>
                     </div>
@@ -1227,6 +1227,7 @@ if ('scrollRestoration' in history) {
                 if (!window.usertypoDiagnostics) {
                     renderErrorDiagnostics(null);
                     renderHardwareHotspots(null);
+                    renderHandBiometrics(null);
                     return;
                 }
 
@@ -1235,6 +1236,7 @@ if ('scrollRestoration' in history) {
                     if (listed.error === 'guest') {
                         renderErrorDiagnostics(null);
                         renderHardwareHotspots(null);
+                        renderHandBiometrics(null);
                         return;
                     }
 
@@ -1243,6 +1245,7 @@ if ('scrollRestoration' in history) {
                         if (metaEl) metaEl.textContent = '';
                         renderErrorDiagnostics(null);
                         renderHardwareHotspots(null);
+                        renderHandBiometrics(null);
                         return;
                     }
 
@@ -1253,11 +1256,13 @@ if ('scrollRestoration' in history) {
                     var agg = window.usertypoDiagnostics.aggregateDiagnostics(rows);
                     renderErrorDiagnostics(agg);
                     renderHardwareHotspots(agg);
+                    renderHandBiometrics(agg);
                 } catch (err) {
                     console.error('[usertypo userstats] diagnostics load failed', err);
                     if (metaEl) metaEl.textContent = '';
                     renderErrorDiagnostics(null);
                     renderHardwareHotspots(null);
+                    renderHandBiometrics(null);
                 }
             }
 
@@ -1305,6 +1310,87 @@ if ('scrollRestoration' in history) {
                         }).join('');
                     }
                 }
+            }
+
+            function setText(id, value) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
+
+            function setBar(id, label, pct) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var width = Math.max(0, Math.min(100, pct || 0));
+                if (label === '—') {
+                    width = 0;
+                } else if (width < 10) {
+                    width = 10;
+                }
+                el.style.width = width + '%';
+                el.textContent = label;
+            }
+
+            function renderHandBiometrics(agg) {
+                var hands = agg && agg.hands;
+                var left = hands && hands.left;
+                var right = hands && hands.right;
+                var hasData = !!(left && right && (left.chars || right.chars || left.errors || right.errors));
+
+                var dominanceEl = document.getElementById('hand-dominance-label');
+                if (dominanceEl) {
+                    if (!hasData || !hands.dominance) {
+                        dominanceEl.textContent = 'Hand Dominance Skew: —';
+                    } else if (hands.dominance.side === 'Even') {
+                        dominanceEl.textContent = 'Hand Dominance Skew: Even';
+                    } else {
+                        dominanceEl.textContent = 'Hand Dominance Skew: '
+                            + hands.dominance.side + ' +' + hands.dominance.percent + '%';
+                    }
+                }
+
+                setText('hand-left-wpm', hasData && left.wpm != null ? String(left.wpm) : '—');
+                setText('hand-right-wpm', hasData && right.wpm != null ? String(right.wpm) : '—');
+                setText('hand-left-acc', hasData && left.accuracy != null ? (left.accuracy + '%') : '—');
+                setText('hand-right-acc', hasData && right.accuracy != null ? (right.accuracy + '%') : '—');
+                setText('hand-left-errors', hasData ? String(left.errors || 0) : '—');
+                setText('hand-right-errors', hasData ? String(right.errors || 0) : '—');
+                setText('hand-left-slowest', (hasData && hands.leftSlowest && hands.leftSlowest.label) || '—');
+                setText('hand-right-slowest', (hasData && hands.rightSlowest && hands.rightSlowest.label) || '—');
+
+                var maxWpm = Math.max(left && left.wpm || 0, right && right.wpm || 0, 1);
+                var maxAcc = 100;
+                var maxErr = Math.max(left && left.errors || 0, right && right.errors || 0, 1);
+
+                setBar(
+                    'hand-bar-left-wpm',
+                    hasData && left.wpm != null ? (left.wpm + ' WPM') : '—',
+                    hasData && left.wpm != null ? (left.wpm / maxWpm) * 100 : 0
+                );
+                setBar(
+                    'hand-bar-right-wpm',
+                    hasData && right.wpm != null ? (right.wpm + ' WPM') : '—',
+                    hasData && right.wpm != null ? (right.wpm / maxWpm) * 100 : 0
+                );
+                setBar(
+                    'hand-bar-left-acc',
+                    hasData && left.accuracy != null ? (left.accuracy + '%') : '—',
+                    hasData && left.accuracy != null ? (left.accuracy / maxAcc) * 100 : 0
+                );
+                setBar(
+                    'hand-bar-right-acc',
+                    hasData && right.accuracy != null ? (right.accuracy + '%') : '—',
+                    hasData && right.accuracy != null ? (right.accuracy / maxAcc) * 100 : 0
+                );
+                setBar(
+                    'hand-bar-left-errors',
+                    hasData ? String(left.errors || 0) : '—',
+                    hasData ? ((left.errors || 0) / maxErr) * 100 : 0
+                );
+                setBar(
+                    'hand-bar-right-errors',
+                    hasData ? String(right.errors || 0) : '—',
+                    hasData ? ((right.errors || 0) / maxErr) * 100 : 0
+                );
             }
 
             function renderErrorDiagnostics(agg) {
