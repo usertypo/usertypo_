@@ -23,6 +23,7 @@
         'wrong-shift': 0,
     };
     var PER_TEST_CAP = 20;
+    var CHAR_CAP = 80;
     var CONFUSION_CAP = 20;
     var HISTORY_LIMIT = 100;
 
@@ -33,8 +34,14 @@
     function normalizeChar(value) {
         if (value == null) return '';
         var text = String(value);
-        if (!text || text === 'Space') return '';
+        if (!text) return '';
+        if (text === 'Space' || text === ' ') return ' ';
         return text.length === 1 ? text.toLowerCase() : text.toLowerCase();
+    }
+
+    function formatCharLabel(value) {
+        if (value === ' ' || value === 'Space') return 'Space';
+        return String(value == null ? '' : value);
     }
 
     function bump(map, key, amount) {
@@ -96,7 +103,12 @@
             var word = String(marker.word || generatedWords[marker.wordIndex] || '').toLowerCase();
             var charIndex = Number(marker.charIndex);
 
-            if (expected) bump(charErrors, expected);
+            if (expected) {
+                bump(charErrors, expected);
+            } else if (typed) {
+                // Extras have no expected char — attribute to the key that was pressed.
+                bump(charErrors, typed);
+            }
 
             if (expected && typed && expected !== typed) {
                 bump(confusion, expected + '\0' + typed);
@@ -148,7 +160,7 @@
         var summary = {
             v: SCHEMA_VERSION,
             t: types,
-            c: topEntries(charErrors, PER_TEST_CAP),
+            c: topEntries(charErrors, CHAR_CAP),
             b: topEntries(bigramErrors, PER_TEST_CAP),
             w: words,
             k: topEntries(confusion, CONFUSION_CAP, '\0'),
@@ -323,6 +335,7 @@
             testCount: (rows || []).length,
             totalErrors: totalErrors,
             anatomy: anatomy,
+            characterCounts: characters,
             topCharacters: topCharacters,
             topBigrams: topBigrams,
             topWords: topWords,
@@ -330,11 +343,72 @@
         };
     }
 
+    function keyErrorCount(el, counts) {
+        if (!el || !counts) return 0;
+        var special = el.getAttribute('data-special');
+        if (special === 'Space') return Number(counts[' ']) || 0;
+
+        var chars = el.getAttribute('data-chars') || '';
+        var seen = {};
+        var total = 0;
+        for (var i = 0; i < chars.length; i++) {
+            var ch = normalizeChar(chars[i]);
+            if (!ch || seen[ch]) continue;
+            seen[ch] = true;
+            total += Number(counts[ch]) || 0;
+        }
+        return total;
+    }
+
+    /**
+     * Paint red heat intensities onto a rendered settings-style keymap.
+     */
+    function applyKeyHeatmap(keymapRoot, counts) {
+        if (!keymapRoot) return;
+        var keys = keymapRoot.querySelectorAll('.keymap-key');
+        var map = counts || {};
+        var max = 0;
+        Object.keys(map).forEach(function (key) {
+            var n = Number(map[key]) || 0;
+            if (n > max) max = n;
+        });
+
+        keys.forEach(function (el) {
+            el.style.backgroundColor = '';
+            el.style.borderColor = '';
+            el.style.color = '';
+            el.style.boxShadow = '';
+            el.querySelectorAll('.keymap-main-text, .keymap-shift-text').forEach(function (span) {
+                span.style.color = '';
+            });
+
+            var count = keyErrorCount(el, map);
+            if (!count || !max) return;
+
+            var t = Math.max(0, Math.min(1, count / max));
+            var bgAlpha = 0.16 + 0.72 * t;
+            var borderAlpha = 0.28 + 0.55 * t;
+            el.style.backgroundColor = 'rgba(220, 38, 38, ' + bgAlpha.toFixed(3) + ')';
+            el.style.borderColor = 'rgba(248, 113, 113, ' + borderAlpha.toFixed(3) + ')';
+            el.style.boxShadow = t > 0.55
+                ? '0 0 10px rgba(220, 38, 38, ' + (0.2 + 0.35 * t).toFixed(3) + ')'
+                : '';
+
+            var textColor = t > 0.4 ? '#fff7f7' : '#fecaca';
+            el.style.color = textColor;
+            el.querySelectorAll('.keymap-main-text, .keymap-shift-text').forEach(function (span) {
+                span.style.color = textColor;
+            });
+        });
+    }
+
     window.usertypoDiagnostics = {
         buildSummary: buildSummary,
         saveDiagnostics: saveDiagnostics,
         listMyDiagnostics: listMyDiagnostics,
         aggregateDiagnostics: aggregateDiagnostics,
+        applyKeyHeatmap: applyKeyHeatmap,
+        formatCharLabel: formatCharLabel,
         HISTORY_LIMIT: HISTORY_LIMIT,
     };
 })();

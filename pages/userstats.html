@@ -570,13 +570,6 @@
                         </h3>
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-1">Top 5 Errored Characters</span>
-                                <div class="flex items-baseline gap-3">
-                                    <span id="diag-top-char" class="font-headline text-3xl font-bold text-primary cyan-glow-text">—</span>
-                                    <span id="diag-top-chars-rest" class="text-slate-500 text-sm font-headline"></span>
-                                </div>
-                            </div>
-                            <div>
                                 <span class="text-[10px] text-slate-500 block mb-2">Top 5 Errored Bigrams</span>
                                 <div id="diag-top-bigrams" class="space-y-1">
                                     <div class="text-xs text-slate-500 font-headline">—</div>
@@ -645,11 +638,31 @@
                     <span class="text-xs text-slate-500 font-headline uppercase tracking-widest">Errors per
                         Key</span>
                 </div>
-                <div class="w-full flex flex-col items-center overflow-x-auto">
-                    <div class="mb-2 p-5 bg-slate-900/40 rounded-2xl border border-white/5 flex flex-col items-center overflow-x-auto shadow-inner w-full max-w-full"
-                        id="dynamic-keymap-container">
-                        <div id="dynamic-keymap"
-                            class="flex flex-col gap-1.5 w-full min-w-max pb-2"></div>
+                <div class="w-full flex flex-col lg:flex-row gap-8 items-stretch">
+                    <div class="flex-1 min-w-0 flex flex-col items-center overflow-x-auto">
+                        <div class="mb-2 p-5 bg-slate-900/40 rounded-2xl border border-white/5 flex flex-col items-center overflow-x-auto shadow-inner w-full max-w-full"
+                            id="dynamic-keymap-container">
+                            <div id="dynamic-keymap"
+                                class="flex flex-col gap-1.5 w-full min-w-max pb-2"></div>
+                        </div>
+                        <div class="mt-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500 font-headline">
+                            <span>Less</span>
+                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(220,38,38,0.18)"></span>
+                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(220,38,38,0.40)"></span>
+                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(220,38,38,0.62)"></span>
+                            <span class="inline-block w-4 h-3 rounded-sm" style="background:rgba(220,38,38,0.88)"></span>
+                            <span>More</span>
+                        </div>
+                    </div>
+                    <div class="lg:w-52 shrink-0 flex flex-col justify-center">
+                        <span class="text-[10px] text-slate-500 block mb-3 uppercase tracking-widest font-headline">Top 5 Errored Characters</span>
+                        <div class="flex items-baseline gap-3 mb-4">
+                            <span id="hotspot-top-char" class="font-headline text-3xl font-bold text-red-400">—</span>
+                            <span id="hotspot-top-chars-rest" class="text-slate-500 text-sm font-headline"></span>
+                        </div>
+                        <div id="hotspot-top-chars-list" class="space-y-1">
+                            <div class="text-xs text-slate-500 font-headline">—</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1230,6 +1243,7 @@ if ('scrollRestoration' in history) {
 
                 if (!window.usertypoDiagnostics) {
                     renderErrorDiagnostics(null);
+                    renderHardwareHotspots(null);
                     return;
                 }
 
@@ -1237,6 +1251,7 @@ if ('scrollRestoration' in history) {
                     var listed = await window.usertypoDiagnostics.listMyDiagnostics({ limit: 100 });
                     if (listed.error === 'guest') {
                         renderErrorDiagnostics(null);
+                        renderHardwareHotspots(null);
                         return;
                     }
 
@@ -1244,6 +1259,7 @@ if ('scrollRestoration' in history) {
                     if (!rows.length) {
                         if (metaEl) metaEl.textContent = '';
                         renderErrorDiagnostics(null);
+                        renderHardwareHotspots(null);
                         return;
                     }
 
@@ -1251,11 +1267,60 @@ if ('scrollRestoration' in history) {
                         metaEl.textContent = 'Last ' + rows.length + ' test' + (rows.length === 1 ? '' : 's');
                     }
 
-                    renderErrorDiagnostics(window.usertypoDiagnostics.aggregateDiagnostics(rows));
+                    var agg = window.usertypoDiagnostics.aggregateDiagnostics(rows);
+                    renderErrorDiagnostics(agg);
+                    renderHardwareHotspots(agg);
                 } catch (err) {
                     console.error('[usertypo userstats] diagnostics load failed', err);
                     if (metaEl) metaEl.textContent = '';
                     renderErrorDiagnostics(null);
+                    renderHardwareHotspots(null);
+                }
+            }
+
+            function formatDiagChar(value) {
+                if (window.usertypoDiagnostics && typeof window.usertypoDiagnostics.formatCharLabel === 'function') {
+                    return window.usertypoDiagnostics.formatCharLabel(value);
+                }
+                return value === ' ' ? 'Space' : String(value == null ? '' : value);
+            }
+
+            function renderHardwareHotspots(agg) {
+                var keymap = document.getElementById('dynamic-keymap');
+                if (typeof window.renderKeymap === 'function') {
+                    window.renderKeymap(true, true);
+                }
+
+                var counts = (agg && agg.characterCounts) || {};
+                var chars = (agg && agg.topCharacters) || [];
+
+                if (keymap && window.usertypoDiagnostics && typeof window.usertypoDiagnostics.applyKeyHeatmap === 'function') {
+                    window.usertypoDiagnostics.applyKeyHeatmap(keymap, counts);
+                }
+
+                var topCharEl = document.getElementById('hotspot-top-char');
+                var topCharsRestEl = document.getElementById('hotspot-top-chars-rest');
+                var listEl = document.getElementById('hotspot-top-chars-list');
+
+                if (topCharEl) {
+                    topCharEl.textContent = chars.length ? formatDiagChar(chars[0].key) : '—';
+                }
+                if (topCharsRestEl) {
+                    topCharsRestEl.textContent = chars.length > 1
+                        ? chars.slice(1).map(function (c) { return formatDiagChar(c.key); }).join(', ')
+                        : '';
+                }
+                if (listEl) {
+                    if (!chars.length) {
+                        listEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
+                    } else {
+                        listEl.innerHTML = chars.map(function (entry) {
+                            return '<div class="flex justify-between text-xs font-headline">'
+                                + '<span class="text-slate-400">' + escapeHtml(formatDiagChar(entry.key)) + '</span>'
+                                + '<span class="text-slate-500">' + entry.count + '×</span>'
+                                + '</div>';
+                        }).join('');
+                    }
                 }
             }
 
@@ -1277,24 +1342,11 @@ if ('scrollRestoration' in history) {
                 var data = agg || {
                     totalErrors: 0,
                     anatomy: blankAnatomy,
-                    topCharacters: [],
                     topBigrams: [],
                     topWords: [],
                     topConfusions: [],
                 };
                 var isBlank = !agg || !agg.totalErrors;
-
-                var topCharEl = document.getElementById('diag-top-char');
-                var topCharsRestEl = document.getElementById('diag-top-chars-rest');
-                var chars = data.topCharacters || [];
-                if (topCharEl) {
-                    topCharEl.textContent = chars.length ? chars[0].key : '—';
-                }
-                if (topCharsRestEl) {
-                    topCharsRestEl.textContent = chars.length > 1
-                        ? chars.slice(1).map(function (c) { return c.key; }).join(', ')
-                        : '';
-                }
 
                 var bigramsEl = document.getElementById('diag-top-bigrams');
                 if (bigramsEl) {
@@ -1365,10 +1417,10 @@ if ('scrollRestoration' in history) {
                         confusionEl.innerHTML = data.topConfusions.map(function (pair) {
                             return '<div class="bg-surface p-2 rounded text-[10px] font-headline border border-white/5 flex items-center justify-between gap-2">'
                                 + '<span><span class="text-slate-500">Expected</span> '
-                                + '<span class="text-slate-100 font-bold">' + escapeHtml(pair.expected) + '</span> '
+                                + '<span class="text-slate-100 font-bold">' + escapeHtml(formatDiagChar(pair.expected)) + '</span> '
                                 + '<span class="text-primary mx-2">→</span> '
                                 + '<span class="text-slate-500">Typed</span> '
-                                + '<span class="text-error font-bold">' + escapeHtml(pair.typed) + '</span></span>'
+                                + '<span class="text-error font-bold">' + escapeHtml(formatDiagChar(pair.typed)) + '</span></span>'
                                 + '<span class="text-slate-500">' + pair.count + '×</span>'
                                 + '</div>';
                         }).join('');
