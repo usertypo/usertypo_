@@ -361,14 +361,14 @@
         }
 
         /* --- MODIFIER COLLAPSE LOGIC --- */
-        .modifier-btn, .mode-btn, .amt-btn {
+        .modifier-btn, .mode-btn, .amt-btn, .adapt-btn {
             transition: all 0.3s ease-in-out;
             overflow: hidden;
             border: none !important;
             outline: none !important;
         }
 
-        #modifiers-divider, #mode-amt-divider {
+        #modifiers-divider, #adapt-divider, #mode-amt-divider {
             border: none !important;
             outline: none !important;
         }
@@ -382,7 +382,8 @@
         /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
         aside:not(:hover):not(.is-open) .modifier-btn,
         aside:not(:hover):not(.is-open) .mode-btn,
-        aside:not(:hover):not(.is-open) .amt-btn {
+        aside:not(:hover):not(.is-open) .amt-btn,
+        aside:not(:hover):not(.is-open) .adapt-btn {
             max-height: 0 !important;
             opacity: 0 !important;
             margin-bottom: 0 !important;
@@ -393,6 +394,7 @@
 
         /* Hide dividers when collapsed */
         aside:not(:hover):not(.is-open) #modifiers-divider,
+        aside:not(:hover):not(.is-open) #adapt-divider,
         aside:not(:hover):not(.is-open) #mode-amt-divider {
             margin: 0 !important;
             height: 0 !important;
@@ -406,7 +408,9 @@
         aside:hover .mode-btn,
         aside.is-open .mode-btn,
         aside:hover .amt-btn,
-        aside.is-open .amt-btn {
+        aside.is-open .amt-btn,
+        aside:hover .adapt-btn,
+        aside.is-open .adapt-btn {
             max-height: 32px !important;
             opacity: 1 !important;
         }
@@ -415,7 +419,9 @@
         aside:hover .mode-btn:not(:last-child),
         aside.is-open .mode-btn:not(:last-child),
         aside:hover .amt-btn:not(:last-child),
-        aside.is-open .amt-btn:not(:last-child) {
+        aside.is-open .amt-btn:not(:last-child),
+        aside:hover .adapt-btn:not(:last-child),
+        aside.is-open .adapt-btn:not(:last-child) {
             margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
         }
 
@@ -1029,6 +1035,7 @@
     <script src="js/api/profiles.js"></script>
     <script src="js/api/sessions.js?v=5"></script>
     <script src="js/api/diagnostics.js?v=6"></script>
+    <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/performance-chart.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
     <script src="js/api/leaderboards.js"></script>
@@ -1040,7 +1047,7 @@
     <script src="js/pages/dual-race.js?v=8"></script>
     <script src="js/pages/room-race.js?v=16"></script>
     <script src="dual.js?v=7"></script>
-    <script src="js/page-fragments.js?v=31"></script>
+    <script src="js/page-fragments.js?v=32"></script>
     <script src="js/router.js?v=6"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {

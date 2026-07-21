@@ -273,14 +273,14 @@
         }
 
         /* --- MODIFIER COLLAPSE LOGIC --- */
-        .modifier-btn, .mode-btn, .amt-btn {
+        .modifier-btn, .mode-btn, .amt-btn, .adapt-btn {
             transition: all 0.3s ease-in-out;
             overflow: hidden;
             border: none !important;
             outline: none !important;
         }
 
-        #modifiers-divider, #mode-amt-divider {
+        #modifiers-divider, #adapt-divider, #mode-amt-divider {
             border: none !important;
             outline: none !important;
         }
@@ -294,7 +294,8 @@
         /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
         aside:not(:hover):not(.is-open) .modifier-btn,
         aside:not(:hover):not(.is-open) .mode-btn,
-        aside:not(:hover):not(.is-open) .amt-btn {
+        aside:not(:hover):not(.is-open) .amt-btn,
+        aside:not(:hover):not(.is-open) .adapt-btn {
             max-height: 0 !important;
             opacity: 0 !important;
             margin-bottom: 0 !important;
@@ -305,6 +306,7 @@
 
         /* Hide dividers when collapsed */
         aside:not(:hover):not(.is-open) #modifiers-divider,
+        aside:not(:hover):not(.is-open) #adapt-divider,
         aside:not(:hover):not(.is-open) #mode-amt-divider {
             margin: 0 !important;
             height: 0 !important;
@@ -318,7 +320,9 @@
         aside:hover .mode-btn,
         aside.is-open .mode-btn,
         aside:hover .amt-btn,
-        aside.is-open .amt-btn {
+        aside.is-open .amt-btn,
+        aside:hover .adapt-btn,
+        aside.is-open .adapt-btn {
             max-height: 32px !important;
             opacity: 1 !important;
         }
@@ -327,7 +331,9 @@
         aside:hover .mode-btn:not(:last-child),
         aside.is-open .mode-btn:not(:last-child),
         aside:hover .amt-btn:not(:last-child),
-        aside.is-open .amt-btn:not(:last-child) {
+        aside.is-open .amt-btn:not(:last-child),
+        aside:hover .adapt-btn:not(:last-child),
+        aside.is-open .adapt-btn:not(:last-child) {
             margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
         }
 
@@ -554,6 +560,19 @@
                             <div id="modifiers-divider"
                                 class="w-full h-px bg-white/5 my-2 shrink-0 transition-all duration-500"></div>
 
+                            <div class="flex flex-col w-full transition-all duration-500 shrink-0" id="adapt-section">
+                                <div id="btn-adapt-refine"
+                                    class="adapt-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                                    onclick="toggleAdaptRefine()">
+                                    <span class="material-symbols-outlined text-[18px] shrink-0">tune</span>
+                                    <span
+                                        class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">adapt & refine</span>
+                                </div>
+                            </div>
+
+                            <div id="adapt-divider"
+                                class="w-full h-px bg-white/5 my-2 shrink-0 transition-all duration-500"></div>
+
                             <div class="flex flex-col w-full transition-all duration-500 shrink-0" id="mode-section">
                                 <div id="btn-time"
                                     class="mode-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
@@ -569,12 +588,6 @@
                                         class="material-symbols-outlined text-[18px] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] group-hover/btn:drop-shadow-none">text_fields</span>
                                     <span
                                         class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] group-hover/btn:drop-shadow-none duration-300 delay-75">words</span>
-                                </div>
-                                <div id="btn-adapt-refine"
-                                    class="mode-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0">
-                                    <span class="material-symbols-outlined text-[18px] shrink-0">tune</span>
-                                    <span
-                                        class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">adapt & refine</span>
                                 </div>
                             </div>
 
@@ -648,6 +661,16 @@
                                 <div class="flex items-center pl-3">
                                     <span
                                         class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">123</span>
+                                    <div class="w-px h-3 bg-white/10 ml-3"></div>
+                                </div>
+                            </div>
+
+                            <!-- Adapt & Refine -->
+                            <div id="aci-adapt"
+                                class="flex items-center overflow-hidden transition-all duration-500 max-w-0 opacity-0">
+                                <div class="flex items-center pl-3">
+                                    <span
+                                        class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">tune</span>
                                     <div class="w-px h-3 bg-white/10 ml-3"></div>
                                 </div>
                             </div>
@@ -1103,6 +1126,7 @@ window.setTimeout = function(handler, timeout) {
 
         let usePunctuation = false;
         let useNumbers = false;
+        let useAdaptRefine = false;
 
         let generatedWords = [];
         let currentWordIndex = 0;
@@ -1158,7 +1182,8 @@ window.setTimeout = function(handler, timeout) {
                 testAmount,
                 customAmount,
                 usePunctuation,
-                useNumbers
+                useNumbers,
+                useAdaptRefine
             }));
         }
 
@@ -1283,6 +1308,7 @@ window.setTimeout = function(handler, timeout) {
                     customAmount = config.customAmount || null;
                     usePunctuation = !!config.usePunctuation;
                     useNumbers = !!config.useNumbers;
+                    useAdaptRefine = !!config.useAdaptRefine;
                 } catch (e) {
                     console.error("Failed to load config", e);
                 }
@@ -1290,6 +1316,7 @@ window.setTimeout = function(handler, timeout) {
 
             // Apply loaded modifiers visually
             updateModifierUI();
+            updateAdaptRefineUI();
 
             configBar.classList.add('is-open');
             setTimeout(() => {
@@ -1298,6 +1325,18 @@ window.setTimeout = function(handler, timeout) {
 
             setTestMode(testMode);
             updateActiveConfigIconsDisplay();
+            if (useAdaptRefine) {
+                isSignedInForAdaptRefine().then(function (signedIn) {
+                    if (!signedIn) {
+                        useAdaptRefine = false;
+                        updateAdaptRefineUI();
+                        updateActiveConfigIconsDisplay();
+                        saveConfig();
+                        return;
+                    }
+                    refreshAdaptRefinePool({ restart: false, quiet: true });
+                });
+            }
 
             window.addEventListener('resize', () => {
                 updateLineLayout();
@@ -1417,6 +1456,80 @@ window.setTimeout = function(handler, timeout) {
         };
 
         // --- CONFIGURATION LOGIC ---
+        function notifyAdaptRefine(message, icon) {
+            if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                window.usertypoNotifications.showToast(message, icon || 'tune');
+                return;
+            }
+            const toast = document.getElementById('save-toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+            if (!toast || !toastMsg) return;
+            toastMsg.textContent = message;
+            if (toastIcon) toastIcon.textContent = icon || 'tune';
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3200);
+        }
+
+        async function isSignedInForAdaptRefine() {
+            if (!window.usertypoAuth || typeof window.usertypoAuth.ready !== 'function') return false;
+            await window.usertypoAuth.ready();
+            const state = window.usertypoAuth.getState();
+            return !!(state && state.isSignedIn && state.user);
+        }
+
+        async function refreshAdaptRefinePool(options) {
+            const opts = options || {};
+            if (!useAdaptRefine || !window.usertypoAdaptRefine) return false;
+            await window.usertypoAdaptRefine.refresh({ words: (typeof wordList !== 'undefined') ? wordList : [] });
+            const ready = window.usertypoAdaptRefine.hasWeaknessData();
+            if (!ready && !opts.quiet) {
+                notifyAdaptRefine('No weakness data yet — complete a few tests first.', 'info');
+            }
+            if (opts.restart !== false) restartTest();
+            return ready;
+        }
+
+        async function toggleAdaptRefine() {
+            if (!useAdaptRefine) {
+                const signedIn = await isSignedInForAdaptRefine();
+                if (!signedIn) {
+                    notifyAdaptRefine('Sign in to use this feature', 'lock');
+                    return;
+                }
+                useAdaptRefine = true;
+                updateAdaptRefineUI();
+                updateActiveConfigIconsDisplay();
+                saveConfig();
+                await refreshAdaptRefinePool({ restart: true });
+                return;
+            }
+
+            useAdaptRefine = false;
+            updateAdaptRefineUI();
+            updateActiveConfigIconsDisplay();
+            saveConfig();
+            restartTest();
+        }
+
+        function updateAdaptRefineUI() {
+            const btn = document.getElementById('btn-adapt-refine');
+            const divider = document.getElementById('adapt-divider');
+            if (!btn) return;
+
+            if (useAdaptRefine) {
+                btn.classList.add('is-active', 'text-primary', 'font-bold');
+                btn.classList.remove('text-slate-400');
+                btn.querySelectorAll('span').forEach(s => s.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'));
+                if (divider) divider.classList.add('keep-open');
+            } else {
+                btn.classList.remove('is-active', 'text-primary', 'font-bold');
+                btn.classList.add('text-slate-400');
+                btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'));
+                if (divider) divider.classList.remove('keep-open');
+            }
+        }
+
         function toggleModifier(type) {
             if (type === 'punct') usePunctuation = !usePunctuation;
             if (type === 'num') useNumbers = !useNumbers;
@@ -1430,6 +1543,7 @@ window.setTimeout = function(handler, timeout) {
         function updateActiveConfigIconsDisplay() {
             const elPunct = document.getElementById('aci-punct');
             const elNum = document.getElementById('aci-num');
+            const elAdapt = document.getElementById('aci-adapt');
             const elModeIcon = document.getElementById('aci-mode-icon');
             const elModeAmt = document.getElementById('aci-mode-amt');
 
@@ -1449,6 +1563,16 @@ window.setTimeout = function(handler, timeout) {
             } else {
                 elNum.classList.add('max-w-0', 'opacity-0');
                 elNum.classList.remove('max-w-[80px]', 'opacity-100');
+            }
+
+            if (elAdapt) {
+                if (useAdaptRefine) {
+                    elAdapt.classList.remove('max-w-0', 'opacity-0');
+                    elAdapt.classList.add('max-w-[80px]', 'opacity-100');
+                } else {
+                    elAdapt.classList.add('max-w-0', 'opacity-0');
+                    elAdapt.classList.remove('max-w-[80px]', 'opacity-100');
+                }
             }
 
             let modeIcon = '';
@@ -1623,9 +1747,20 @@ window.setTimeout = function(handler, timeout) {
         let lastGeneratedBaseWord = "";
         function generateRandomWord() {
             let baseWord;
-            do {
-                baseWord = wordList[Math.floor(Math.random() * wordList.length)];
-            } while (baseWord === lastGeneratedBaseWord && wordList.length > 1);
+            if (
+                useAdaptRefine &&
+                window.usertypoAdaptRefine &&
+                typeof window.usertypoAdaptRefine.pickBaseWord === 'function'
+            ) {
+                baseWord = window.usertypoAdaptRefine.pickBaseWord({
+                    words: wordList,
+                    avoid: lastGeneratedBaseWord,
+                }) || wordList[Math.floor(Math.random() * wordList.length)];
+            } else {
+                do {
+                    baseWord = wordList[Math.floor(Math.random() * wordList.length)];
+                } while (baseWord === lastGeneratedBaseWord && wordList.length > 1);
+            }
             lastGeneratedBaseWord = baseWord;
 
             let word = baseWord;
@@ -3095,6 +3230,9 @@ window.setTimeout = function(handler, timeout) {
                     diagnostics: diagnosticsSummary,
                 }).then(function () {
                     loadStatsGlobalRank();
+                    if (useAdaptRefine && window.usertypoAdaptRefine) {
+                        window.usertypoAdaptRefine.refresh({ words: wordList }).catch(function () {});
+                    }
                 }).catch(function (err) {
                     console.error('[usertypo sessions] save failed', err);
                     loadStatsGlobalRank();
@@ -4921,6 +5059,7 @@ window.setTimeout = function(handler, timeout) {
         window.restartTest = restartTest;
         window.setTestMode = setTestMode;
         window.toggleModifier = toggleModifier;
+        window.toggleAdaptRefine = toggleAdaptRefine;
         window.setTestAmountValue = setTestAmountValue;
         window.openCustomPrompt = openCustomPrompt;
         window.dismissFailAndRestart = dismissFailAndRestart;

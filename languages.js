@@ -430,6 +430,9 @@ async function loadLanguage(filename) {
     if (_langCache[filename]) {
         wordList = _langCache[filename];
         currentLanguageFile = filename;
+        if (window.usertypoAdaptRefine && typeof window.usertypoAdaptRefine.rebuildPool === 'function') {
+            window.usertypoAdaptRefine.rebuildPool(wordList);
+        }
         return wordList;
     }
 
@@ -450,6 +453,9 @@ async function loadLanguage(filename) {
             _langCache[filename] = wordsArray;
             wordList = wordsArray;
             currentLanguageFile = filename;
+            if (window.usertypoAdaptRefine && typeof window.usertypoAdaptRefine.rebuildPool === 'function') {
+                window.usertypoAdaptRefine.rebuildPool(wordList);
+            }
         }
     } catch (err) {
         console.warn('[languages] Failed to load "' + filename + '":', err);
