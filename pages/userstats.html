@@ -563,9 +563,6 @@
                     <h2 class="font-headline text-lg font-bold">Error Diagnostics &amp; Weakness Analysis</h2>
                     <span id="diag-sample-meta" class="text-[10px] text-slate-500 font-headline uppercase tracking-widest"></span>
                 </div>
-                <div id="diag-empty" class="hidden text-sm text-slate-500 font-headline py-8 text-center">
-                    Complete a few tests to build your error diagnostics.
-                </div>
                 <div id="diag-content" class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="space-y-8">
                         <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">The
@@ -602,11 +599,32 @@
                                     stroke-width="4"></circle>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center flex-col">
-                                <span id="diag-anatomy-total" class="font-headline text-sm text-slate-100">0</span>
+                                <span id="diag-anatomy-total" class="font-headline text-sm text-slate-100">—</span>
                                 <span class="text-[9px] font-headline text-slate-500">TOTAL</span>
                             </div>
                         </div>
-                        <div id="diag-anatomy-legend" class="grid grid-cols-1 gap-2 w-full px-4"></div>
+                        <div id="diag-anatomy-legend" class="grid grid-cols-1 gap-2 w-full px-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-primary-light, #6cdaff)"></span>
+                                <span class="text-xs text-slate-400">Mistype (—)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-primary, #00d0ff)"></span>
+                                <span class="text-xs text-slate-400">Reversal (—)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:#94a3b8"></span>
+                                <span class="text-xs text-slate-400">Overshoot (—)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:#64748b"></span>
+                                <span class="text-xs text-slate-400">Missed (—)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:#334155"></span>
+                                <span class="text-xs text-slate-400">Extra (—)</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="space-y-6">
                         <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">Mechanical
@@ -1323,30 +1341,27 @@ if ('scrollRestoration' in history) {
             }
 
             async function loadErrorDiagnostics() {
-                var emptyEl = document.getElementById('diag-empty');
-                var contentEl = document.getElementById('diag-content');
                 var metaEl = document.getElementById('diag-sample-meta');
 
                 if (!window.usertypoDiagnostics) {
-                    if (emptyEl) emptyEl.classList.remove('hidden');
-                    if (contentEl) contentEl.classList.add('hidden');
+                    renderErrorDiagnostics(null);
                     return;
                 }
 
                 try {
                     var listed = await window.usertypoDiagnostics.listMyDiagnostics({ limit: 100 });
-                    if (listed.error === 'guest') return;
-
-                    var rows = listed.rows || [];
-                    if (!rows.length) {
-                        if (emptyEl) emptyEl.classList.remove('hidden');
-                        if (contentEl) contentEl.classList.add('hidden');
-                        if (metaEl) metaEl.textContent = '';
+                    if (listed.error === 'guest') {
+                        renderErrorDiagnostics(null);
                         return;
                     }
 
-                    if (emptyEl) emptyEl.classList.add('hidden');
-                    if (contentEl) contentEl.classList.remove('hidden');
+                    var rows = listed.rows || [];
+                    if (!rows.length) {
+                        if (metaEl) metaEl.textContent = '';
+                        renderErrorDiagnostics(null);
+                        return;
+                    }
+
                     if (metaEl) {
                         metaEl.textContent = 'Last ' + rows.length + ' test' + (rows.length === 1 ? '' : 's');
                     }
@@ -1354,17 +1369,39 @@ if ('scrollRestoration' in history) {
                     renderErrorDiagnostics(window.usertypoDiagnostics.aggregateDiagnostics(rows));
                 } catch (err) {
                     console.error('[usertypo userstats] diagnostics load failed', err);
-                    if (emptyEl) emptyEl.classList.remove('hidden');
-                    if (contentEl) contentEl.classList.add('hidden');
+                    if (metaEl) metaEl.textContent = '';
+                    renderErrorDiagnostics(null);
                 }
             }
 
             function renderErrorDiagnostics(agg) {
-                if (!agg) return;
+                var anatomyColors = [
+                    'var(--theme-primary-light, #6cdaff)',
+                    'var(--theme-primary, #00d0ff)',
+                    '#94a3b8',
+                    '#64748b',
+                    '#334155',
+                ];
+                var blankAnatomy = [
+                    { label: 'Mistype', count: 0, percent: null },
+                    { label: 'Reversal', count: 0, percent: null },
+                    { label: 'Overshoot', count: 0, percent: null },
+                    { label: 'Missed', count: 0, percent: null },
+                    { label: 'Extra', count: 0, percent: null },
+                ];
+                var data = agg || {
+                    totalErrors: 0,
+                    anatomy: blankAnatomy,
+                    topCharacters: [],
+                    topBigrams: [],
+                    topWords: [],
+                    topConfusions: [],
+                };
+                var isBlank = !agg || !agg.totalErrors;
 
                 var topCharEl = document.getElementById('diag-top-char');
                 var topCharsRestEl = document.getElementById('diag-top-chars-rest');
-                var chars = agg.topCharacters || [];
+                var chars = data.topCharacters || [];
                 if (topCharEl) {
                     topCharEl.textContent = chars.length ? chars[0].key : '—';
                 }
@@ -1376,10 +1413,10 @@ if ('scrollRestoration' in history) {
 
                 var bigramsEl = document.getElementById('diag-top-bigrams');
                 if (bigramsEl) {
-                    if (!(agg.topBigrams || []).length) {
+                    if (!(data.topBigrams || []).length) {
                         bigramsEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
                     } else {
-                        bigramsEl.innerHTML = agg.topBigrams.map(function (entry) {
+                        bigramsEl.innerHTML = data.topBigrams.map(function (entry) {
                             return '<div class="flex justify-between text-xs font-headline">'
                                 + '<span class="text-slate-400">' + escapeHtml(entry.bigram) + '</span>'
                                 + '<span class="text-slate-500">' + entry.count + '×</span>'
@@ -1390,10 +1427,10 @@ if ('scrollRestoration' in history) {
 
                 var wordsEl = document.getElementById('diag-top-words');
                 if (wordsEl) {
-                    if (!(agg.topWords || []).length) {
+                    if (!(data.topWords || []).length) {
                         wordsEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
                     } else {
-                        wordsEl.innerHTML = agg.topWords.map(function (entry) {
+                        wordsEl.innerHTML = data.topWords.map(function (entry) {
                             return '<div class="flex justify-between text-xs font-headline">'
                                 + '<span class="text-slate-400">' + escapeHtml(entry.word) + '</span>'
                                 + '<span class="text-slate-500">' + entry.wpm + ' WPM</span>'
@@ -1403,48 +1440,44 @@ if ('scrollRestoration' in history) {
                 }
 
                 var totalEl = document.getElementById('diag-anatomy-total');
-                if (totalEl) totalEl.textContent = String(agg.totalErrors || 0);
+                if (totalEl) totalEl.textContent = isBlank ? '—' : String(data.totalErrors || 0);
 
-                var anatomyColors = [
-                    'var(--theme-primary-light, #6cdaff)',
-                    'var(--theme-primary, #00d0ff)',
-                    '#94a3b8',
-                    '#64748b',
-                    '#334155',
-                ];
                 var svg = document.getElementById('diag-anatomy-svg');
                 var legend = document.getElementById('diag-anatomy-legend');
                 if (svg) {
                     var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
                     var offset = 0;
-                    (agg.anatomy || []).forEach(function (slice, index) {
-                        if (!slice.count) return;
-                        var pct = Math.max(0, Math.min(100, slice.percent));
-                        rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
-                            + anatomyColors[index]
-                            + '" stroke-dasharray="' + pct + ' ' + (100 - pct)
-                            + '" stroke-dashoffset="' + (-offset)
-                            + '" stroke-width="4"></circle>';
-                        offset += pct;
-                    });
+                    if (!isBlank) {
+                        (data.anatomy || []).forEach(function (slice, index) {
+                            if (!slice.count) return;
+                            var pct = Math.max(0, Math.min(100, slice.percent));
+                            rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+                                + anatomyColors[index]
+                                + '" stroke-dasharray="' + pct + ' ' + (100 - pct)
+                                + '" stroke-dashoffset="' + (-offset)
+                                + '" stroke-width="4"></circle>';
+                            offset += pct;
+                        });
+                    }
                     svg.innerHTML = rings;
                 }
                 if (legend) {
-                    legend.innerHTML = (agg.anatomy || []).map(function (slice, index) {
+                    legend.innerHTML = (data.anatomy || blankAnatomy).map(function (slice, index) {
+                        var pctLabel = isBlank || slice.percent == null ? '—' : (slice.percent + '%');
                         return '<div class="flex items-center gap-2">'
                             + '<span class="w-2 h-2 rounded-full" style="background:' + anatomyColors[index] + '"></span>'
                             + '<span class="text-xs text-slate-400">'
-                            + escapeHtml(slice.label) + ' (' + slice.percent + '%)</span>'
+                            + escapeHtml(slice.label) + ' (' + pctLabel + ')</span>'
                             + '</div>';
                     }).join('');
                 }
 
                 var confusionEl = document.getElementById('diag-key-confusion');
                 if (confusionEl) {
-                    if (!(agg.topConfusions || []).length) {
+                    if (!(data.topConfusions || []).length) {
                         confusionEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
                     } else {
-                        confusionEl.innerHTML = agg.topConfusions.map(function (pair) {
+                        confusionEl.innerHTML = data.topConfusions.map(function (pair) {
                             return '<div class="bg-surface p-2 rounded text-[10px] font-headline border border-white/5 flex items-center justify-between gap-2">'
                                 + '<span><span class="text-slate-500">Expected</span> '
                                 + '<span class="text-slate-100 font-bold">' + escapeHtml(pair.expected) + '</span> '

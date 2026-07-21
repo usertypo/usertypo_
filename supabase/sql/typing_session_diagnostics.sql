@@ -56,3 +56,6 @@ create trigger typing_session_diagnostics_trim
   after insert on public.typing_session_diagnostics
   for each row
   execute function public.trim_typing_session_diagnostics();
+
+grant select, insert, delete on table public.typing_session_diagnostics to authenticated;
+grant select, insert, update, delete on table public.typing_session_diagnostics to service_role;
