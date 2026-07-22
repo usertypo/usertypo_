@@ -59,55 +59,78 @@
         .drag-handle:active { cursor: grabbing; }
         .card-static .drag-handle { display: none !important; }
 
-        .pot-filter-btn {
-            background: var(--theme-surface, rgba(255, 255, 255, 0.04));
-            color: var(--theme-text-muted, #94a3b8);
-            border: 1px solid transparent;
-            border-radius: 0.375rem;
-            padding: 0.25rem 0.7rem;
-            font-size: 0.7rem;
+        .pot-card .pot-btn {
+            background: transparent;
+            color: var(--theme-text-muted, #646669);
+            border: none;
+            border-radius: 0.35rem;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
-            line-height: 1.4;
-            transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+            line-height: 1.3;
+            transition: color 0.12s ease, background 0.12s ease;
         }
-        .pot-filter-btn:hover {
-            color: var(--theme-primary-light, #6cdaff);
+        .pot-card .pot-btn:hover {
+            color: var(--theme-text, #d1d0c5);
         }
-        .pot-filter-btn.is-active {
-            background: color-mix(in srgb, var(--theme-primary-light, #6cdaff) 18%, transparent);
-            color: var(--theme-primary-light, #6cdaff);
-            border-color: color-mix(in srgb, var(--theme-primary-light, #6cdaff) 35%, transparent);
+        .pot-card .pot-btn.is-active {
+            color: var(--theme-bg, #323437);
+            background: var(--theme-primary-light, #e2b714);
         }
-        .pot-legend-btn {
+        .pot-filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem 0.75rem;
+        }
+        .pot-filter-title {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            color: var(--theme-text-muted, #94a3b8);
-            font-size: 0.75rem;
-            transition: opacity 0.15s ease, color 0.15s ease;
+            gap: 0.35rem;
+            color: var(--theme-text-muted, #646669);
+            font-size: 0.7rem;
+            text-transform: lowercase;
+            letter-spacing: 0.02em;
+            font-family: 'Roboto Mono', monospace;
         }
-        .pot-legend-btn.is-off {
-            opacity: 0.4;
+        .pot-filter-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
         }
-        .pot-legend-swatch {
-            width: 0.65rem;
-            height: 0.65rem;
-            border-radius: 9999px;
-            flex-shrink: 0;
+        .pot-advanced {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem 1.25rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
-        .pot-legend-swatch.is-line {
-            border-radius: 0;
-            height: 2px;
-            width: 0.85rem;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--theme-outline, #aaabb0) 0 4px,
-                transparent 4px 7px
-            );
+        .pot-advanced-block .pot-filter-title {
+            margin-bottom: 0.4rem;
+        }
+        .pot-above {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem 0.9rem;
+            margin: 0.85rem 0 0.35rem;
+            color: var(--theme-text-muted, #646669);
+            font-size: 0.68rem;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .pot-above-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+        }
+        .pot-above-chip .material-symbols-outlined {
+            font-size: 14px;
+            opacity: 0.85;
         }
         .performance-chart-wrap {
             position: relative;
-            height: 18rem;
+            height: 20rem;
+            margin-top: 0.35rem;
         }
         .performance-chart-empty {
             position: absolute;
@@ -115,13 +138,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--theme-text-muted, #94a3b8);
+            color: var(--theme-text-muted, #646669);
             font-family: 'Roboto Mono', monospace;
             font-size: 0.75rem;
             pointer-events: none;
         }
-        .performance-chart-empty.hidden {
-            display: none;
+        .performance-chart-empty.hidden { display: none; }
+        .pot-below {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .pot-below-text {
+            color: var(--theme-text-muted, #646669);
+            font-size: 0.72rem;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .pot-below-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .pot-below-btns .pot-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .pot-below-btns .material-symbols-outlined {
+            font-size: 15px;
         }
 
         .score-distribution-layout {
@@ -509,53 +556,123 @@
         <section id="sortable-container"
             class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16 opacity-0 animate-fade-in-up [animation-delay:700ms]">
             <!-- Top Graph Area: Performance Graph Full Width -->
-            <div class="col-span-12 glass-panel p-6 rounded-xl" id="performance-over-time-card">
-                <div class="flex flex-col gap-4 mb-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="font-headline text-lg font-bold">Performance Over Time</h2>
-                        <div id="pot-range-filters" class="flex flex-wrap gap-1.5" role="group" aria-label="Time range">
-                            <button type="button" class="pot-filter-btn" data-pot-range="1w">1W</button>
-                            <button type="button" class="pot-filter-btn" data-pot-range="1m">1M</button>
-                            <button type="button" class="pot-filter-btn" data-pot-range="6m">6M</button>
-                            <button type="button" class="pot-filter-btn" data-pot-range="last10">Last 10</button>
-                            <button type="button" class="pot-filter-btn" data-pot-range="last50">Last 50</button>
-                            <button type="button" class="pot-filter-btn" data-pot-range="last100">Last 100</button>
-                            <button type="button" class="pot-filter-btn is-active" data-pot-range="all">All</button>
+            <div class="col-span-12 glass-panel p-6 rounded-xl pot-card" id="performance-over-time-card">
+                <h2 class="font-headline text-lg font-bold mb-4">Performance Over Time</h2>
+
+                <div data-pot-presets class="hidden mb-3"></div>
+
+                <div class="pot-filter-row mb-2">
+                    <div class="pot-filter-title">
+                        <span class="material-symbols-outlined text-[14px]">filter_alt</span>
+                        filters
+                    </div>
+                    <div class="pot-filter-btns">
+                        <button type="button" class="pot-btn allFilters">all</button>
+                        <button type="button" class="pot-btn currentConfigFilter">current settings</button>
+                        <button type="button" class="pot-btn toggleAdvancedFilters">advanced</button>
+                        <button type="button" class="pot-btn createFilterPresetBtn">save as preset</button>
+                    </div>
+                </div>
+
+                <div class="pot-filter-btns mb-1" data-pot-group-wrap="date">
+                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_day">last day</button>
+                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_week">last week</button>
+                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_month">last month</button>
+                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_3months">last 3 months</button>
+                    <button type="button" class="pot-btn is-active" data-pot-group="date" data-pot-filter="all">all time</button>
+                </div>
+
+                <div class="pot-advanced hidden" data-pot-advanced>
+                    <div class="pot-advanced-block" style="grid-column: 1 / -1">
+                        <div class="pot-filter-row">
+                            <div class="pot-filter-title">
+                                <span class="material-symbols-outlined text-[14px]">build</span>
+                                advanced filters
+                            </div>
+                            <div class="pot-filter-btns">
+                                <button type="button" class="pot-btn noFilters">clear filters</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Test mode">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Mode</span>
-                            <button type="button" class="pot-filter-btn is-active" data-pot-mode="all">All</button>
-                            <button type="button" class="pot-filter-btn" data-pot-mode="time">Time</button>
-                            <button type="button" class="pot-filter-btn" data-pot-mode="words">Words</button>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">workspace_premium</span> personal best</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="no">no</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="yes">yes</button>
                         </div>
-                        <div id="pot-amount-filters" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Test amount">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Amount</span>
-                            <button type="button" class="pot-filter-btn is-active" data-pot-amount="all">All</button>
+                    </div>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">view_list</span> mode</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="words">words</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="time">time</button>
+                        </div>
+                    </div>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">text_fields</span> words</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="10">10</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="25">25</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="50">50</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="100">100</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="custom">custom</button>
+                        </div>
+                    </div>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">schedule</span> time</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="15">15</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="30">30</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="60">60</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="120">120</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="custom">custom</button>
+                        </div>
+                    </div>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">alternate_email</span> punctuation</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="on">on</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="off">off</button>
+                        </div>
+                    </div>
+
+                    <div class="pot-advanced-block">
+                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">tag</span> numbers</div>
+                        <div class="pot-filter-btns">
+                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="on">on</button>
+                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="off">off</button>
                         </div>
                     </div>
                 </div>
+
+                <div class="pot-above" data-pot-above></div>
+
                 <div class="performance-chart-wrap">
                     <canvas id="performance-over-time-chart" aria-label="Performance over time chart"></canvas>
-                    <div id="pot-empty" class="performance-chart-empty hidden">No tests match these filters</div>
+                    <div data-pot-empty class="performance-chart-empty hidden">No data found. Check your filters.</div>
                 </div>
-                <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
-                    <div class="flex flex-wrap items-center gap-4">
-                        <button type="button" class="pot-legend-btn" data-pot-series="wpm" aria-pressed="true">
-                            <span class="pot-legend-swatch" style="background: var(--theme-primary-light, #6cdaff)"></span>
-                            WPM
+
+                <div class="pot-below">
+                    <div class="pot-below-text" data-pot-trend></div>
+                    <div class="pot-below-btns">
+                        <button type="button" class="pot-btn is-active" data-pot-chart-toggle="0">
+                            <span class="material-symbols-outlined">speed</span> Speed
                         </button>
-                        <button type="button" class="pot-legend-btn" data-pot-series="acc" aria-pressed="true">
-                            <span class="pot-legend-swatch" style="background: var(--theme-text-muted, #94a3b8)"></span>
-                            Accuracy
+                        <button type="button" class="pot-btn is-active" data-pot-chart-toggle="1">
+                            <span class="material-symbols-outlined">my_location</span> Accuracy
                         </button>
-                        <button type="button" class="pot-legend-btn" data-pot-series="avg10" aria-pressed="true">
-                            <span class="pot-legend-swatch is-line"></span>
-                            Avg of 10
+                        <button type="button" class="pot-btn is-active" data-pot-chart-toggle="2">
+                            <span class="material-symbols-outlined">show_chart</span> Avg of 10
+                        </button>
+                        <button type="button" class="pot-btn is-active" data-pot-chart-toggle="3">
+                            <span class="material-symbols-outlined">show_chart</span> Avg of 100
                         </button>
                     </div>
-                    <span id="pot-count-label" class="text-[10px] text-slate-500 font-headline uppercase tracking-widest">0 tests</span>
                 </div>
             </div>
             <div class="col-span-12 glass-panel p-6 rounded-xl" id="hand-biometrics-card">
@@ -1051,138 +1168,20 @@ if ('scrollRestoration' in history) {
             var historyLoading = false;
             var allHistorySessions = [];
 
-            var potState = {
-                sessions: [],
-                range: 'all',
-                mode: 'all',
-                amount: 'all',
-                showWpm: true,
-                showAcc: true,
-                showAvg10: true,
-            };
-
-            function potAmountOptions(mode) {
-                if (mode === 'time') {
-                    return (window.usertypoSessions && window.usertypoSessions.TIMED_AMOUNTS) || [15, 30, 60, 120];
-                }
-                if (mode === 'words') {
-                    return (window.usertypoSessions && window.usertypoSessions.WORD_AMOUNTS) || [10, 25, 50, 100];
-                }
-                return [];
-            }
-
-            function potAmountLabel(mode, amount) {
-                if (mode === 'time') return amount + 's';
-                return String(amount);
-            }
-
-            function rebuildPotAmountFilters() {
-                var wrap = document.getElementById('pot-amount-filters');
-                if (!wrap) return;
-                var amounts = potAmountOptions(potState.mode);
-                var html = '<span class="text-[10px] uppercase tracking-widest text-slate-500 mr-1">Amount</span>'
-                    + '<button type="button" class="pot-filter-btn'
-                    + (potState.amount === 'all' ? ' is-active' : '')
-                    + '" data-pot-amount="all">All</button>';
-                amounts.forEach(function (amount) {
-                    var active = String(potState.amount) === String(amount);
-                    html += '<button type="button" class="pot-filter-btn'
-                        + (active ? ' is-active' : '')
-                        + '" data-pot-amount="' + amount + '">'
-                        + potAmountLabel(potState.mode, amount)
-                        + '</button>';
-                });
-                wrap.innerHTML = html;
-            }
-
-            function setPotActiveGroup(selector, attr, value) {
-                document.querySelectorAll(selector).forEach(function (btn) {
-                    btn.classList.toggle('is-active', String(btn.getAttribute(attr)) === String(value));
-                });
-            }
-
-            async function refreshPerformanceChart() {
+            async function refreshPerformanceChart(sessionsList) {
                 if (!window.usertypoPerformanceChart) return;
-                var canvas = document.getElementById('performance-over-time-chart');
-                var emptyEl = document.getElementById('pot-empty');
-                var countEl = document.getElementById('pot-count-label');
-                if (!canvas) return;
-
+                var root = document.getElementById('performance-over-time-card');
+                if (!root) return;
                 try {
-                    var result = await window.usertypoPerformanceChart.render({
-                        canvas: canvas,
-                        emptyEl: emptyEl,
-                        sessions: potState.sessions,
-                        range: potState.range,
-                        mode: potState.mode,
-                        amount: potState.amount,
-                        showWpm: potState.showWpm,
-                        showAcc: potState.showAcc,
-                        showAvg10: potState.showAvg10,
-                    });
-                    if (countEl) {
-                        var n = result && result.count != null ? result.count : 0;
-                        countEl.textContent = n + (n === 1 ? ' test' : ' tests');
+                    if (typeof window.usertypoPerformanceChart.init === 'function') {
+                        await window.usertypoPerformanceChart.init({
+                            root: root,
+                            sessions: sessionsList || [],
+                        });
                     }
                 } catch (err) {
                     console.error('[usertypo userstats] performance chart failed', err);
-                    if (emptyEl) {
-                        emptyEl.classList.remove('hidden');
-                        emptyEl.textContent = 'Could not render chart';
-                    }
                 }
-            }
-
-            function bindPerformanceChartControls() {
-                var card = document.getElementById('performance-over-time-card');
-                if (!card || card.dataset.potBound === '1') return;
-                card.dataset.potBound = '1';
-
-                rebuildPotAmountFilters();
-
-                card.addEventListener('click', function (e) {
-                    var rangeBtn = e.target.closest('[data-pot-range]');
-                    if (rangeBtn) {
-                        potState.range = rangeBtn.getAttribute('data-pot-range');
-                        setPotActiveGroup('#pot-range-filters [data-pot-range]', 'data-pot-range', potState.range);
-                        refreshPerformanceChart();
-                        return;
-                    }
-
-                    var modeBtn = e.target.closest('[data-pot-mode]');
-                    if (modeBtn) {
-                        potState.mode = modeBtn.getAttribute('data-pot-mode');
-                        potState.amount = 'all';
-                        setPotActiveGroup('[data-pot-mode]', 'data-pot-mode', potState.mode);
-                        rebuildPotAmountFilters();
-                        refreshPerformanceChart();
-                        return;
-                    }
-
-                    var amountBtn = e.target.closest('[data-pot-amount]');
-                    if (amountBtn) {
-                        potState.amount = amountBtn.getAttribute('data-pot-amount');
-                        setPotActiveGroup('#pot-amount-filters [data-pot-amount]', 'data-pot-amount', potState.amount);
-                        refreshPerformanceChart();
-                        return;
-                    }
-
-                    var seriesBtn = e.target.closest('[data-pot-series]');
-                    if (seriesBtn) {
-                        var series = seriesBtn.getAttribute('data-pot-series');
-                        if (series === 'wpm') potState.showWpm = !potState.showWpm;
-                        if (series === 'acc') potState.showAcc = !potState.showAcc;
-                        if (series === 'avg10') potState.showAvg10 = !potState.showAvg10;
-                        var seriesOn = series === 'wpm'
-                            ? potState.showWpm
-                            : series === 'acc'
-                                ? potState.showAcc
-                                : potState.showAvg10;
-                        seriesBtn.classList.toggle('is-off', !seriesOn);
-                        seriesBtn.setAttribute('aria-pressed', String(seriesOn));
-                        refreshPerformanceChart();
-                    }
-                });
             }
 
             function renderBestCards(bests) {
@@ -1780,9 +1779,7 @@ if ('scrollRestoration' in history) {
                     historyOffset = 0;
                     historyTotal = stats.totalSessions || 0;
                     allHistorySessions = stats.allSessions || [];
-                    potState.sessions = stats.allSessions || [];
-                    bindPerformanceChartControls();
-                    refreshPerformanceChart();
+                    refreshPerformanceChart(stats.allSessions || []);
                     renderHistoryRows(stats.recentSessions || [], false);
                     historyOffset = (stats.recentSessions || []).length;
                     updateHistoryFooter();
