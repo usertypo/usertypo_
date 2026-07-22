@@ -528,6 +528,14 @@ function createMultiplayerServer(httpServer, options) {
         room.finishReason = null;
         room.returnLobbyVotes = new Set();
         room.bot = null;
+        // Drop anyone who left mid-match so they can be invited/join again cleanly.
+        Array.from(room.players.entries()).forEach(([uid, player]) => {
+            if (player.status === 'left') {
+                room.players.delete(uid);
+                room.allowedUserIds.delete(uid);
+            }
+        });
+        Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
         remainingCustomPlayers(room).forEach(resetPlayerForLobby);
         touchRoomActivity(room);
         const payload = publicRoomPayload(room, 'custom');
@@ -539,7 +547,8 @@ function createMultiplayerServer(httpServer, options) {
         if (!room || room.type !== 'custom' || room.state !== 'finished') return;
         const remaining = remainingCustomPlayers(room);
         if (!remaining.length) {
-            disposeRoom(room.id);
+            room.bot = null;
+            closeCustomRoom(room, 'empty');
             return;
         }
         if (remaining.every((player) => player.returnLobby)) {
@@ -759,7 +768,12 @@ function createMultiplayerServer(httpServer, options) {
         ]);
         const remaining = Array.from(room.players.values()).filter((item) => item.status !== 'left');
         if (!remaining.length) {
-            disposeRoom(room.id);
+            if (room.type === 'custom') {
+                room.bot = null;
+                closeCustomRoom(room, 'empty');
+            } else {
+                disposeRoom(room.id);
+            }
         } else if (room.state !== 'racing') {
             finishRoom(room, 'opponent-left');
         } else {
@@ -770,7 +784,11 @@ function createMultiplayerServer(httpServer, options) {
     function disposeCustomRoomIfNoHumans(room) {
         if (!room || room.type !== 'custom' || room.state === 'disposed') return;
         const humans = Array.from(room.players.values()).filter((player) => player.status !== 'left');
-        if (!humans.length) disposeRoom(room.id);
+        // Bots must not keep an empty room alive.
+        if (!humans.length) {
+            room.bot = null;
+            closeCustomRoom(room, 'empty');
+        }
     }
 
     function clearUserTransientState(userId) {
@@ -1257,6 +1275,21 @@ function createMultiplayerServer(httpServer, options) {
                 room.allowedUserIds.add(userId);
                 room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profiles.get(userId)));
                 userToRoom.set(userId, room.id);
+            } else {
+                const existingPlayer = room.players.get(userId);
+                if (!existingPlayer || existingPlayer.status === 'left') {
+                    if (occupiedSlots(room) >= room.maxPlayers) {
+                        safeAck(ack, { ok: false, error: 'room_full' });
+                        return;
+                    }
+                    room.allowedUserIds.add(userId);
+                    room.players.set(userId, createPlayer(
+                        userId,
+                        existingPlayer ? existingPlayer.index : nextPlayerIndex(room),
+                        profiles.get(userId),
+                    ));
+                    userToRoom.set(userId, room.id);
+                }
             }
             io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
             touchRoomActivity(room);
@@ -1273,9 +1306,10 @@ function createMultiplayerServer(httpServer, options) {
                 }
                 if (!room.players.has(userId)) throw new Error('forbidden');
                 if (!toUserId || toUserId === userId) throw new Error('invalid_target');
-                if (room.players.has(toUserId)) throw new Error('already_in_room');
-                if (!isOnline(toUserId)) throw new Error('friend_offline');
+                const existing = room.players.get(toUserId);
+                if (existing && existing.status !== 'left') throw new Error('already_in_room');
                 if (userToRoom.has(toUserId)) throw new Error('already_in_match');
+                if (!isOnline(toUserId)) throw new Error('friend_offline');
                 if (occupiedSlots(room) >= room.maxPlayers) throw new Error('room_full');
                 if (!(await auth.areFriends(userId, toUserId))) throw new Error('not_friends');
                 const from = profiles.get(userId) || { name: 'Player', avatarUrl: '' };
@@ -1291,6 +1325,41 @@ function createMultiplayerServer(httpServer, options) {
                 safeAck(ack, { ok: true });
             } catch (error) {
                 safeAck(ack, { ok: false, error: error.message || 'invite_failed' });
+            }
+        });
+
+        socket.on('room:remove-player', (payload, ack) => {
+            try {
+                const roomId = String(payload && payload.roomId || '');
+                const targetUserId = String(payload && payload.targetUserId || '');
+                const room = rooms.get(roomId);
+                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                    throw new Error('room_not_found');
+                }
+                if (room.hostUserId !== userId) throw new Error('forbidden');
+                if (!targetUserId || targetUserId === userId) throw new Error('invalid_target');
+
+                if (targetUserId === 'bot') {
+                    if (!room.bot) throw new Error('bot_not_found');
+                    room.bot = null;
+                    io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                    touchRoomActivity(room);
+                    disposeCustomRoomIfNoHumans(room);
+                    safeAck(ack, { ok: true });
+                    return;
+                }
+
+                const target = room.players.get(targetUserId);
+                if (!target || target.status === 'left') throw new Error('player_not_found');
+                emitToUser(targetUserId, 'room:kicked', {
+                    roomId: room.id,
+                    roomCode: room.roomCode || '',
+                    byUserId: userId,
+                });
+                leaveRace(targetUserId, true);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'remove_failed' });
             }
         });
 

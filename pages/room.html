@@ -246,13 +246,21 @@
             border: 2px solid rgba(255, 255, 255, 0.15);
             background: #1a1d23;
             box-sizing: border-box;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            /* Reserve transparent shadow so ready glow does not reflow. */
+            box-shadow: 0 0 0 0 transparent;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .player-node-img {
             display: block;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            background: #1a1d23;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .player-node-img.is-loaded {
+            opacity: 1;
         }
         /* Material Symbols sit high in the em-box — absolute grid + nudge centers optically. */
         .player-avatar-ring > .player-bot-icon {
@@ -287,10 +295,20 @@
             border-radius: 9999px;
             border: 2px solid #020016;
             background: #4b5563;
+            pointer-events: none;
+            z-index: 2;
         }
         .player-node.is-ready .player-ready-dot {
             background: #00d0ff;
             box-shadow: 0 0 6px rgba(0,208,255,0.8);
+        }
+        #invite-toggle-icon {
+            display: inline-flex;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: rotate(0deg);
+        }
+        #invite-toggle-icon.is-open {
+            transform: rotate(45deg);
         }
         /* Orbit tooltip — fixed portal, always upright above icon */
         #orbit-tooltip-portal {
@@ -380,8 +398,8 @@
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" id="lobby-host">
                     <button id="lobby-host-btn" class="relative focus:outline-none" title="View players">
                         <div class="lobby-host-avatar w-28 h-28 md:w-32 md:h-32 rounded-full border-[3px] border-primary p-1 bg-surface-container neon-glow-primary-strong hover:scale-105 transition-transform duration-200">
-                            <img alt="Host avatar" class="w-full h-full rounded-full object-cover"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBd5QYkWEOQDXxyr6FSYGgWzXrwAJc0aZJNtLl08WWTTeuyLWRDgM2P7HUIZJOpXvyWYhl1ii2Uc9ah0BbFpDURantJBVxP01QUheo3Uoe-UGhDm6VWFAMJdz3gqVP5ts18h9tr57C4x9tk3y3cTzWuITnRqYhIVRgNGa2TBtgkHQYy1gv8mG1lmGmEBQyj44dlxXRL-aYAqXZEtROF1FL1NQ3VsmjsLy524jI57waV58inpM8NC_NexyhevbBemg2DkNRmcSRfqMve">
+                            <img id="lobby-host-img" alt="Host avatar" class="w-full h-full rounded-full object-cover opacity-0 transition-opacity duration-200"
+                                src="" decoding="async">
                         </div>
                     </button>
                 </div>
@@ -404,8 +422,9 @@
             </button>
         </div>
 
-        <!-- Add Players Button (bottom-left) -->
-        <div class="fixed bottom-8 left-8 z-50 flex flex-col gap-2 items-start" id="invite-menu-container">
+        <!-- Add Players Button (bottom-left). Container is pointer-events-none so its
+             invisible panel width cannot steal clicks from the center Ready/Leave CTA. -->
+        <div class="fixed bottom-8 left-8 z-50 flex flex-col gap-2 items-start pointer-events-none" id="invite-menu-container">
             <div id="invite-options"
                 class="flex flex-col gap-2 opacity-0 pointer-events-none translate-y-4 transition-all duration-300 mb-2 w-[min(92vw,22rem)]">
                 <div class="panel-surface rounded-2xl p-4">
@@ -447,16 +466,16 @@
                     </div>
                 </div>
             </div>
-            <button id="invite-toggle-btn"
-                class="w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
+            <button id="invite-toggle-btn" type="button"
+                class="pointer-events-auto w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
                 title="Add Players">
-                <span class="material-symbols-outlined text-primary text-3xl transition-transform duration-300"
-                    id="invite-toggle-icon">add</span>
+                <span class="material-symbols-outlined text-primary text-3xl"
+                    id="invite-toggle-icon" aria-hidden="true">add</span>
             </button>
         </div>
 
-        <!-- Chat (bottom-right) -->
-        <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-2 items-end" id="lobby-chat-container">
+        <!-- Chat (bottom-right). Same hit-target fix as invite menu. -->
+        <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-2 items-end pointer-events-none" id="lobby-chat-container">
             <div id="lobby-chat-window"
                 class="flex flex-col opacity-0 pointer-events-none translate-y-4 transition-all duration-300 mb-2 w-[min(92vw,22rem)] panel-surface rounded-2xl overflow-hidden"
                 style="height: 28rem;">
@@ -517,9 +536,9 @@
                     </div>
                 </div>
             </div>
-            <button id="lobby-chat-toggle-btn"
-                class="relative w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
-                title="Coming soon" data-coming-soon="Chat coming soon">
+            <button id="lobby-chat-toggle-btn" type="button"
+                class="pointer-events-auto relative w-14 h-14 flex items-center justify-center rounded-full panel-surface transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
+                data-coming-soon="Chat coming soon" aria-label="Chat coming soon">
                 <span class="material-symbols-outlined text-primary text-2xl">chat_bubble</span>
             </button>
         </div>
