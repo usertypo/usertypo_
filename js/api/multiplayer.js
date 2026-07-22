@@ -123,11 +123,7 @@
                     if (response.race && response.state === 'racing') {
                         dispatch('race-start', response.race);
                     } else if (response.state === 'countdown' && response.countdown != null) {
-                        dispatch('race-countdown', [
-                            activeRoomId,
-                            response.countdown,
-                            response.countdownEndsAt || null,
-                        ]);
+                        dispatch('race-countdown', [activeRoomId, response.countdown]);
                     }
                 });
             }
