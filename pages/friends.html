@@ -35,6 +35,14 @@
             outline: none !important;
             filter: none !important;
         }
+
+        @keyframes dual-friend-pending-spin {
+            to { transform: rotate(360deg); }
+        }
+        .dual-friend-pending-spin {
+            display: inline-block;
+            animation: dual-friend-pending-spin 0.9s linear infinite;
+        }
         
         :root {
             --theme-primary: #00d0ff;
@@ -1138,13 +1146,24 @@ window.__spaPageInit = function() {
                     : '<span class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>';
 
                 var actions = '';
+                var pendingChallengeUserId = window.DualMatch && typeof window.DualMatch.getPendingChallengeUserId === 'function'
+                    ? window.DualMatch.getPendingChallengeUserId()
+                    : '';
+                var isChallengePending = !!(isOnline && pendingChallengeUserId && pendingChallengeUserId === friend.user_id);
                 if (isOnline) {
                     actions +=
                         '<button type="button" class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5" title="Chat"' +
                         ' data-friend-name="' + name.replace(/"/g, '&quot;') + '" data-friend-status="Online" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '">' +
-                        '<span class="material-symbols-outlined text-xl">chat_bubble</span></button>' +
-                        '<button type="button" class="dual-challenge-btn flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
-                        '<span class="material-symbols-outlined text-xl">swords</span></button>';
+                        '<span class="material-symbols-outlined text-xl">chat_bubble</span></button>';
+                    if (isChallengePending) {
+                        actions +=
+                            '<button type="button" class="dual-challenge-pending flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 cursor-default" title="Waiting for response" disabled aria-label="Dual request pending">' +
+                            '<span class="material-symbols-outlined text-xl dual-friend-pending-spin">progress_activity</span></button>';
+                    } else {
+                        actions +=
+                            '<button type="button" class="dual-challenge-btn flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
+                            '<span class="material-symbols-outlined text-xl">swords</span></button>';
+                    }
                 }
                 actions +=
                     '<button type="button" class="remove-friend-btn flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + friend.user_id + '">' +
@@ -1157,7 +1176,9 @@ window.__spaPageInit = function() {
                     '<div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' +
                     statusBadge + '</div>' +
                     '<div class="text-xs text-slate-500 font-mono">Friends since ' + relativeTime(friend.friends_since) + '</div></div>' +
-                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">' +
+                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 ' +
+                    (isChallengePending ? 'opacity-100' : 'opacity-100 sm:opacity-0 group-hover:opacity-100') +
+                    ' transition-opacity">' +
                     actions + '</div>';
 
                 var chatBtn = card.querySelector('.chat-btn');
@@ -1874,7 +1895,7 @@ window.__spaPageInit = function() {
                     const punctBtn = document.getElementById('btn-punct');
                     const numBtn = document.getElementById('btn-num');
                     const usePunct = punctBtn && punctBtn.classList.contains('text-primary') ? '1' : '0';
-                    const useNums = numBtn && numBtn.classList.contains('text-slate-400') ? '0' : '1';
+                    const useNums = numBtn && numBtn.classList.contains('text-primary') ? '1' : '0';
 
                     const roomNameInput = document.getElementById('create-room-name-input');
                     const roomName = roomNameInput && roomNameInput.value.trim()
@@ -2086,7 +2107,7 @@ window.__spaPageInit = function() {
                 });
 
                 const usePunct = dualBtnPunct && dualBtnPunct.classList.contains('text-primary') ? '1' : '0';
-                const useNums = dualBtnNum && dualBtnNum.classList.contains('text-slate-400') ? '0' : '1';
+                const useNums = dualBtnNum && dualBtnNum.classList.contains('text-primary') ? '1' : '0';
 
                 return {
                     mode: dualCurrentMode,
@@ -2151,6 +2172,7 @@ window.__spaPageInit = function() {
                     submitDualRequestBtn.disabled = true;
                     try {
                         await window.DualMatch.sendRequest(target, collectDualConfig());
+                        renderFriendsList();
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not send dual request', 'error');
                     } finally {
@@ -2159,6 +2181,10 @@ window.__spaPageInit = function() {
                     closeConfigureDualModal();
                 });
             }
+
+            window.addEventListener('usertypo:dual:challenge-pending', function () {
+                if (typeof renderFriendsList === 'function') renderFriendsList();
+            });
 
             // --- FIND MATCH (MULTIPLAYER → DUAL) MODAL LOGIC ---
             const findDualBtn = document.getElementById('find-dual-btn');

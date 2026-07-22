@@ -279,6 +279,28 @@ function createMultiplayerServer(httpServer, options) {
         notifyMatchReady(room, 'bot');
     }
 
+    function promptListingChoice(listing) {
+        if (!listings.has(listing.id) || listing.status !== 'waiting') return;
+        cancelTimer(listing, 'timeout');
+        listing.timeout = null;
+        listing.awaitingChoice = true;
+        emitToUser(listing.ownerUserId, 'duel:search-timeout', {
+            listingId: listing.id,
+            config: listing.config,
+        });
+    }
+
+    function extendListingSearch(listing) {
+        if (!listing || !listings.has(listing.id) || listing.status !== 'waiting') {
+            throw new Error('listing_unavailable');
+        }
+        cancelTimer(listing, 'timeout');
+        listing.awaitingChoice = false;
+        listing.timeout = setTimeout(() => promptListingChoice(listing), LIMITS.listingTtlMs);
+        broadcastListings();
+        return listing;
+    }
+
     function addListing(userId, config) {
         if (listings.size >= LIMITS.maxPublicListings) throw new Error('listing_capacity');
         for (const listing of listings.values()) {
@@ -306,8 +328,9 @@ function createMultiplayerServer(httpServer, options) {
             status: 'waiting',
             createdAt: Date.now(),
             timeout: null,
+            awaitingChoice: false,
         };
-        listing.timeout = setTimeout(() => createBotMatch(listing), LIMITS.listingTtlMs);
+        listing.timeout = setTimeout(() => promptListingChoice(listing), LIMITS.listingTtlMs);
         listings.set(listing.id, listing);
         broadcastListings();
         return { listing };
@@ -469,10 +492,87 @@ function createMultiplayerServer(httpServer, options) {
             return;
         }
 
-        room.players.forEach((player) => {
-            if (userToRoom.get(player.userId) === room.id) userToRoom.delete(player.userId);
-        });
+        // Keep dual membership until dispose so rematch votes can resolve in-place.
+        room.rematchVotes = new Set();
         room.disposeTimer = setTimeout(() => disposeRoom(room.id), LIMITS.finishedRoomTtlMs);
+    }
+
+    function remainingDualHumans(room) {
+        return Array.from(room.players.values()).filter((player) => player.status !== 'left');
+    }
+
+    function emitRematchState(room) {
+        if (!room || room.type === 'custom' || room.state !== 'finished') return;
+        const remaining = remainingDualHumans(room);
+        const votes = room.rematchVotes || new Set();
+        io.to(roomChannel(room.id)).emit('race:rematch-state', [
+            room.id,
+            votes.size,
+            Math.max(1, remaining.length),
+            Array.from(votes),
+        ]);
+    }
+
+    function createDualBot(room) {
+        return {
+            index: nextPlayerIndex(room),
+            name: 'TypeBot',
+            status: 'waiting',
+            completedWords: 0,
+            correctChars: 0,
+            totalKeystrokes: 0,
+            wpm: 0,
+            accuracy: 97 + crypto.randomInt(4),
+            targetWpm: 55 + crypto.randomInt(61),
+            finishedAt: null,
+            snapshots: [],
+        };
+    }
+
+    function startDualRematch(room) {
+        if (!room || room.type === 'custom' || room.state !== 'finished') return;
+        cancelTimer(room, 'disposeTimer');
+        cancelTimer(room, 'countdownTimer');
+        cancelTimer(room, 'raceTimer');
+        if (room.botTimer) clearInterval(room.botTimer);
+        room.botTimer = null;
+        const keepBot = room.type === 'bot';
+        room.state = 'waiting';
+        room.prompt = createPrompt(root, room.config);
+        room.startsAt = null;
+        room.countdownEndsAt = null;
+        room.opponentLeft = false;
+        room.lastResults = null;
+        room.finishReason = null;
+        room.rematchVotes = new Set();
+        room.bot = null;
+        if (keepBot) room.bot = createDualBot(room);
+        remainingDualHumans(room).forEach((player) => {
+            resetPlayerForLobby(player);
+            player.joined = true;
+            userToRoom.set(player.userId, room.id);
+        });
+        io.to(roomChannel(room.id)).emit('race:rematch-start', {
+            roomId: room.id,
+            reason: room.type,
+            config: room.config,
+        });
+        startCountdown(room);
+    }
+
+    function voteDualRematch(room, userId) {
+        if (!room || room.type === 'custom' || room.state !== 'finished') {
+            throw new Error('rematch_unavailable');
+        }
+        const player = room.players.get(userId);
+        if (!player || player.status === 'left') throw new Error('rematch_unavailable');
+        if (!room.rematchVotes) room.rematchVotes = new Set();
+        room.rematchVotes.add(userId);
+        cancelTimer(room, 'disposeTimer');
+        room.disposeTimer = setTimeout(() => disposeRoom(room.id), LIMITS.finishedRoomTtlMs);
+        emitRematchState(room);
+        const needed = Math.max(1, remainingDualHumans(room).length);
+        if (room.rematchVotes.size >= needed) startDualRematch(room);
     }
 
     function remainingCustomPlayers(room) {
@@ -731,9 +831,17 @@ function createMultiplayerServer(httpServer, options) {
                 disposeCustomRoomIfNoHumans(room);
                 return;
             }
+            player.status = 'left';
             player.joined = false;
             player.socketId = null;
             userToRoom.delete(userId);
+            if (room.rematchVotes) room.rematchVotes.delete(userId);
+            const humansLeft = remainingDualHumans(room);
+            if (!humansLeft.length) {
+                disposeRoom(room.id);
+                return;
+            }
+            emitRematchState(room);
             return;
         }
         player.status = 'left';
@@ -967,6 +1075,29 @@ function createMultiplayerServer(httpServer, options) {
                 });
             } catch (error) {
                 safeAck(ack, { ok: false, error: error.message || 'create_failed' });
+            }
+        });
+
+        socket.on('duel:extend-search', (listingId, ack) => {
+            try {
+                const listing = listings.get(String(listingId || ''));
+                if (!listing || listing.ownerUserId !== userId) throw new Error('listing_unavailable');
+                extendListingSearch(listing);
+                safeAck(ack, { ok: true, listingId: listing.id });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'extend_failed' });
+            }
+        });
+
+        socket.on('duel:play-bot', (listingId, ack) => {
+            try {
+                const listing = listings.get(String(listingId || ''));
+                if (!listing || listing.ownerUserId !== userId) throw new Error('listing_unavailable');
+                if (userToRoom.has(userId)) throw new Error('already_in_match');
+                createBotMatch(listing);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'bot_failed' });
             }
         });
 
@@ -1224,6 +1355,19 @@ function createMultiplayerServer(httpServer, options) {
                 userToRoom.delete(userId);
             }
             safeAck(ack, { ok: true });
+        });
+
+        socket.on('race:rematch', (roomId, ack) => {
+            try {
+                const room = rooms.get(String(roomId || ''));
+                if (!room || userToRoom.get(userId) !== room.id) {
+                    throw new Error('rematch_unavailable');
+                }
+                voteDualRematch(room, userId);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'rematch_failed' });
+            }
         });
 
         socket.on('room:create', (payload, ack) => {

@@ -27,6 +27,16 @@
         window.usertypoNotifications?.resolvePending(id || null);
     }
 
+    function dispatchChallengePending() {
+        try {
+            window.dispatchEvent(new CustomEvent('usertypo:dual:challenge-pending', {
+                detail: current && current.mode === 'challenge' && current.status === 'pending'
+                    ? { userId: current.targetUserId }
+                    : { userId: '' },
+            }));
+        } catch (_) { /* ignore */ }
+    }
+
     function restoreSearch(state) {
         var search = state && state.search;
         if (current) return;
@@ -41,7 +51,7 @@
             showPendingIndicator({
                 id: current.pendingId,
                 title: 'Looking for a match',
-                body: 'A bot will join after 30 seconds',
+                body: 'Searching for an online opponent…',
                 cancelLabel: 'Cancel search',
             });
             return;
@@ -65,6 +75,7 @@
             body: api().describeConfig(current.config) + ' · Waiting for a response',
             cancelLabel: 'Cancel request',
         });
+        dispatchChallengePending();
     }
 
     async function sendRequest(target, config) {
@@ -84,6 +95,7 @@
             targetName: targetName || 'your friend',
             config: config,
         };
+        dispatchChallengePending();
         try {
             var result = await api().sendChallenge(userId, config);
             current.inviteId = result.inviteId;
@@ -97,6 +109,7 @@
             return result;
         } catch (error) {
             current = null;
+            dispatchChallengePending();
             throw error;
         }
     }
@@ -118,7 +131,7 @@
                 showPendingIndicator({
                     id: current.pendingId,
                     title: 'Looking for a match',
-                    body: 'A bot will join after 30 seconds',
+                    body: 'Searching for an online opponent…',
                     cancelLabel: 'Cancel search',
                 });
             }
@@ -138,35 +151,109 @@
         }
         if (current === previous) current = null;
         clearPendingIndicator(previous && previous.pendingId);
+        dispatchChallengePending();
+    }
+
+    async function continueSearching() {
+        if (!current || current.mode !== 'matchmaking' || !current.listingId) {
+            throw new Error('No active dual search.');
+        }
+        await api().extendPublicDuelSearch(current.listingId);
+        current.status = 'searching';
+        showPendingIndicator({
+            id: current.pendingId || pendingId(current.listingId),
+            title: 'Looking for a match',
+            body: 'Searching for an online opponent…',
+            cancelLabel: 'Cancel search',
+        });
+    }
+
+    async function playAgainstBot() {
+        if (!current || current.mode !== 'matchmaking' || !current.listingId) {
+            throw new Error('No active dual search.');
+        }
+        var listingId = current.listingId;
+        clearPendingIndicator(current.pendingId);
+        await api().playBotFromListing(listingId);
+    }
+
+    function showNoPlayersFound(payload) {
+        var listingId = payload && payload.listingId;
+        if (!listingId) return;
+        if (!current || current.listingId !== listingId) {
+            current = {
+                mode: 'matchmaking',
+                status: 'awaiting-choice',
+                listingId: listingId,
+                config: payload.config,
+                pendingId: pendingId(listingId),
+            };
+        } else {
+            current.status = 'awaiting-choice';
+        }
+        clearPendingIndicator(current.pendingId);
+        if (!window.usertypoNotifications?.addEphemeral) return;
+        window.usertypoNotifications.addEphemeral({
+            id: 'duel-no-players:' + listingId,
+            type: 'duel_notice',
+            title: 'No players found',
+            body: 'Would you like to keep searching or play against a bot?',
+            data: { listingId: listingId },
+            _actions: [
+                {
+                    label: 'Continue searching',
+                    resolve: false,
+                    run: function () { return continueSearching(); },
+                },
+                {
+                    label: 'Play against a bot',
+                    resolve: false,
+                    run: function () { return playAgainstBot(); },
+                },
+            ],
+        }, { toast: true });
     }
 
     window.addEventListener('usertypo:multiplayer:match-ready', function (event) {
         var match = event.detail || {};
         clearPendingIndicator(current && current.pendingId);
         current = { mode: match.reason || 'match', status: 'ready', roomId: match.roomId, config: match.config };
+        dispatchChallengePending();
     });
     window.addEventListener('usertypo:multiplayer:rejected', function () {
         clearPendingIndicator(current && current.pendingId);
         current = null;
+        dispatchChallengePending();
     });
     window.addEventListener('usertypo:multiplayer:expired', function () {
         clearPendingIndicator(current && current.pendingId);
         current = null;
+        dispatchChallengePending();
+    });
+    window.addEventListener('usertypo:multiplayer:search-timeout', function (event) {
+        showNoPlayersFound(event.detail || {});
     });
     window.addEventListener('usertypo:multiplayer:ready', function (event) {
         restoreSearch(event.detail);
     });
-    restoreSearch(api().getReadyState());
+    try { restoreSearch(api().getReadyState()); } catch (_) { /* guest */ }
 
     window.DualMatch = {
         sendRequest: sendRequest,
         sendMatchmaking: sendMatchmaking,
         clearRequest: clearRequest,
+        continueSearching: continueSearching,
+        playAgainstBot: playAgainstBot,
         loadRequest: function () { return current; },
+        getPendingChallengeUserId: function () {
+            return current && current.mode === 'challenge' && current.status === 'pending'
+                ? current.targetUserId
+                : '';
+        },
         getPhase: function () { return current ? current.status : 'none'; },
         refresh: function () {},
         _stopTicker: function () {},
         _resetJoining: function () {},
-        version: 5,
+        version: 8,
     };
 })();
