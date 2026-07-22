@@ -354,49 +354,8 @@ html {
 
                 <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none">
 
-                    <!-- ABOVE: config icons + timer (absolute, does not shift centering) -->
+                    <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->
                     <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">
-                        <div id="active-config-icons"
-                            class="flex items-center h-[42px] px-2 rounded-full bg-surface/40 border border-white/5 backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] zen-element">
-
-                            <div class="flex items-center pl-3">
-                                <span class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">swords</span>
-                                <div class="w-px h-3 bg-white/10 ml-3"></div>
-                            </div>
-
-                            <!-- Punctuation -->
-                            <div id="aci-punct"
-                                class="flex items-center overflow-hidden transition-all duration-500 max-w-0 opacity-0">
-                                <div class="flex items-center pl-3">
-                                    <span class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">alternate_email</span>
-                                    <div class="w-px h-3 bg-white/10 ml-3"></div>
-                                </div>
-                            </div>
-
-                            <!-- Numbers -->
-                            <div id="aci-num"
-                                class="flex items-center overflow-hidden transition-all duration-500 max-w-0 opacity-0">
-                                <div class="flex items-center pl-3">
-                                    <span class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">123</span>
-                                    <div class="w-px h-3 bg-white/10 ml-3"></div>
-                                </div>
-                            </div>
-
-                            <!-- Mode -->
-                            <div id="aci-mode"
-                                class="flex items-center overflow-hidden transition-all duration-500 max-w-[150px] opacity-100">
-                                <div class="flex items-center px-3">
-                                    <span id="aci-mode-icon"
-                                        class="material-symbols-outlined text-[20px] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">schedule</span>
-                                    <div class="w-px h-3 bg-white/10 ml-3"></div>
-                                    <span id="aci-mode-amt"
-                                        class="text-[16px] font-bold text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] ml-3">30</span>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Timer / Progress (visible before typing starts) -->
                         <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[32px]" style="opacity:0.5;">
                             <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                                 id="word-progress"></div>
@@ -409,7 +368,7 @@ html {
                         </div>
                     </div>
 
-                    <!-- TYPING AREA (this is the vertically-centered element) -->
+                    <!-- TYPING AREA + live stats (aligned to progress width) -->
                     <div class="w-[80vw] max-w-none mx-auto relative z-10">
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
@@ -418,49 +377,48 @@ html {
                                 <span id="bot-caret"></span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- BELOW: live stats (only shown once the user starts typing) -->
-                    <div class="absolute left-0 right-0 top-full h-[48px]">
-                        <div id="live-stats-container"
-                            class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[16px] flex items-center gap-[16px] pointer-events-auto">
-                            <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
-                                <span id="wpm-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
-                            </div>
-                            <div id="live-wpm-divider" class="w-px h-[16px] bg-white/10"></div>
-                            <div id="live-acc-wrapper" class="flex items-baseline gap-[4px]">
-                                <span id="acc-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
-                                <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
-                            </div>
-                            <div id="live-acc-divider" class="w-px h-[16px] bg-white/10 hidden"></div>
-                            <div id="live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
-                                <span id="burst-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
-                            </div>
-                            <div id="dual-bot-divider" class="w-px h-[16px] bg-white/10"></div>
-                            <div id="dual-bot-stat" class="flex items-center gap-[6px]">
-                                <span id="bot-avatar"
-                                    class="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-cover bg-center border border-white/20 shrink-0 overflow-hidden text-slate-300"></span>
-                                <span class="flex items-baseline gap-[4px]">
-                                    <span id="bot-wpm-display" class="text-[24px] font-bold text-white">0</span>
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase">wpm</span>
-                                </span>
+                        <div class="relative w-[80vw] max-w-none mx-auto h-[32px] mt-[16px]">
+                            <div id="live-stats-container"
+                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-0 flex items-center gap-[16px] pointer-events-auto">
+                                <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
+                                    <span id="wpm-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
+                                </div>
+                                <div id="live-wpm-divider" class="w-px h-[16px] bg-white/10"></div>
+                                <div id="live-acc-wrapper" class="flex items-baseline gap-[4px]">
+                                    <span id="acc-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
+                                </div>
+                                <div id="live-acc-divider" class="w-px h-[16px] bg-white/10 hidden"></div>
+                                <div id="live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
+                                    <span id="burst-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
+                                </div>
+                                <div id="dual-bot-divider" class="w-px h-[16px] bg-white/10"></div>
+                                <div id="dual-bot-stat" class="flex items-center gap-[6px]">
+                                    <span id="bot-avatar"
+                                        class="inline-flex items-center justify-center w-[20px] h-[20px] rounded-full bg-cover bg-center border border-white/20 shrink-0 overflow-hidden text-slate-300"></span>
+                                    <span class="flex items-baseline gap-[4px]">
+                                        <span id="bot-wpm-display" class="text-[24px] font-bold text-white">0</span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase">wpm</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Visual Keymap -->
-                    <div class="absolute left-0 right-0 top-full mt-[72px]">
-                        <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
-                            style="height: 184px;">
-                            <div id="dynamic-keymap"
-                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                        <!-- Visual Keymap -->
+                        <div class="mt-8 mb-2">
+                            <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
+                                style="height: 184px;">
+                                <div id="dynamic-keymap"
+                                    class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                                </div>
                             </div>
-                        </div>
-                        <div id="capslock-warning"
-                            class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                            <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                            <div id="capslock-warning"
+                                class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                                <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                            </div>
                         </div>
                     </div>
 

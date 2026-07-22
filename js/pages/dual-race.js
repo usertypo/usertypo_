@@ -897,19 +897,7 @@
         }
 
         function updateConfigUi() {
-            var modeAmount = document.getElementById('aci-mode-amt');
-            var modeIcon = document.getElementById('aci-mode-icon');
-            if (modeAmount) modeAmount.textContent = config.amount;
-            if (modeIcon) modeIcon.textContent = config.mode === 'words' ? 'format_align_left' : 'schedule';
-            ['punct', 'num'].forEach(function (kind) {
-                var enabled = kind === 'punct' ? config.punct : config.nums;
-                var element = document.getElementById('aci-' + kind);
-                if (!element) return;
-                element.classList.toggle('max-w-0', !enabled);
-                element.classList.toggle('opacity-0', !enabled);
-                element.classList.toggle('max-w-[80px]', enabled);
-                element.classList.toggle('opacity-100', enabled);
-            });
+            /* Config pill removed from dual test view. */
         }
 
         function applyOpponentProgress(payload) {

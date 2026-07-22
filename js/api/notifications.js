@@ -122,7 +122,7 @@
 
     function actionsFor(notification) {
         var custom = notification && Array.isArray(notification._actions)
-            ? notification._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 2)
+            ? notification._actions.filter(function (action) { return action && typeof action.run === 'function'; }).slice(0, 3)
             : [];
         if (custom.length) return custom;
         var requestId = requestIdFromNotification(notification);
@@ -204,9 +204,13 @@
                 var button = document.createElement('button');
                 button.type = 'button';
                 button.textContent = action.label || (index ? 'Dismiss' : 'Open');
-                button.className = index
+                var tone = action.tone
+                    || (index === 0 ? 'primary' : (index === actions.length - 1 ? 'danger' : 'neutral'));
+                button.className = tone === 'danger'
                     ? 'px-2.5 py-1 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors'
-                    : 'px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors';
+                    : tone === 'neutral'
+                        ? 'px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-[11px] font-bold transition-colors'
+                        : 'px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors';
                 actionWrap.appendChild(button);
                 bindAction(button, action, notification, toast, null);
             });
@@ -215,6 +219,8 @@
 
         stack.insertBefore(toast, stack.firstChild);
         requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+        // Choice toasts stay until the user picks an action.
+        if (actions.length) return toast;
         var remaining = TOAST_MS;
         var startedAt = 0;
         var dismissTimer = null;
@@ -345,9 +351,13 @@
                 var button = document.createElement('button');
                 button.type = 'button';
                 button.textContent = action.label || (index ? 'Dismiss' : 'Open');
-                button.className = index
+                var tone = action.tone
+                    || (index === 0 ? 'primary' : (index === actions.length - 1 ? 'danger' : 'neutral'));
+                button.className = tone === 'danger'
                     ? 'px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold transition-colors'
-                    : 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
+                    : tone === 'neutral'
+                        ? 'px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-bold transition-colors'
+                        : 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
                 actionWrap.appendChild(button);
                 bindAction(button, action, n, null, row);
             });

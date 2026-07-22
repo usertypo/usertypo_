@@ -6,6 +6,7 @@
     'use strict';
 
     var current = null;
+    var autoJoinBotMatch = false;
 
     function api() {
         if (!window.usertypoMultiplayer) throw new Error('Multiplayer is not ready.');
@@ -144,7 +145,8 @@
 
     async function clearRequest() {
         var previous = current;
-        if (previous && previous.mode === 'matchmaking' && previous.status === 'searching') {
+        autoJoinBotMatch = false;
+        if (previous && previous.mode === 'matchmaking' && (previous.status === 'searching' || previous.status === 'awaiting-choice')) {
             await api().cancelPublicDuel();
         } else if (previous && previous.mode === 'challenge' && previous.status === 'pending' && previous.inviteId) {
             await api().cancelChallenge(previous.inviteId);
@@ -174,7 +176,13 @@
         }
         var listingId = current.listingId;
         clearPendingIndicator(current.pendingId);
-        await api().playBotFromListing(listingId);
+        autoJoinBotMatch = true;
+        try {
+            await api().playBotFromListing(listingId);
+        } catch (error) {
+            autoJoinBotMatch = false;
+            throw error;
+        }
     }
 
     function showNoPlayersFound(payload) {
@@ -202,13 +210,21 @@
             _actions: [
                 {
                     label: 'Continue searching',
+                    tone: 'primary',
                     resolve: false,
                     run: function () { return continueSearching(); },
                 },
                 {
                     label: 'Play against a bot',
+                    tone: 'neutral',
                     resolve: false,
                     run: function () { return playAgainstBot(); },
+                },
+                {
+                    label: 'Cancel',
+                    tone: 'danger',
+                    resolve: false,
+                    run: function () { return clearRequest(); },
                 },
             ],
         }, { toast: true });
@@ -244,6 +260,11 @@
         clearRequest: clearRequest,
         continueSearching: continueSearching,
         playAgainstBot: playAgainstBot,
+        consumeAutoJoinBotMatch: function () {
+            var value = autoJoinBotMatch;
+            autoJoinBotMatch = false;
+            return value;
+        },
         loadRequest: function () { return current; },
         getPendingChallengeUserId: function () {
             return current && current.mode === 'challenge' && current.status === 'pending'
@@ -254,6 +275,6 @@
         refresh: function () {},
         _stopTicker: function () {},
         _resetJoining: function () {},
-        version: 8,
+        version: 9,
     };
 })();
