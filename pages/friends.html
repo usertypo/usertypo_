@@ -1812,43 +1812,24 @@ window.__spaPageInit = function() {
             }
 
             document.addEventListener('keydown', (e) => {
-                if (!isModalVisible(roomsChoiceModal)) return;
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    roomsChoiceKeyboardTarget = 'create';
-                    roomsChoiceCreateBtn?.focus();
+                // Rooms choice must win over create/join Enter handlers: opening the
+                // next modal synchronously would otherwise submit on the same keypress.
+                if (isModalVisible(roomsChoiceModal)) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        roomsChoiceKeyboardTarget = 'create';
+                        roomsChoiceCreateBtn?.focus();
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        if (roomsChoiceKeyboardTarget === 'create') roomsChoiceCreateBtn?.click();
+                        else roomsChoiceJoinBtn?.click();
+                    }
                     return;
                 }
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (roomsChoiceKeyboardTarget === 'create') roomsChoiceCreateBtn?.click();
-                    else roomsChoiceJoinBtn?.click();
-                }
-            });
-
-            if (closeCreateModalBtn) closeCreateModalBtn.addEventListener('click', closeCreateModal);
-            if (createRoomBackdrop) createRoomBackdrop.addEventListener('click', closeCreateModal);
-
-            if (createRoomContent) {
-                createRoomContent.addEventListener('keydown', (e) => {
-                    if (e.key !== 'Enter' || !isModalVisible(createRoomModal)) return;
-                    if (createRoomConfirmation && !createRoomConfirmation.classList.contains('hidden')) return;
-                    if (e.target.closest('#close-create-modal-btn')) return;
-                    e.preventDefault();
-                    submitCreateRoomBtn?.click();
-                });
-            }
-
-            if (joinRoomContent) {
-                joinRoomContent.addEventListener('keydown', (e) => {
-                    if (e.key !== 'Enter' || !isModalVisible(joinRoomModal)) return;
-                    if (e.target.closest('#close-join-modal-btn')) return;
-                    e.preventDefault();
-                    navigateToJoinedRoom(joinRoomPinInput?.value || '');
-                });
-            }
-
-            document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Enter') return;
                 if (isModalVisible(configureDualModal)) {
                     e.preventDefault();
@@ -1856,15 +1837,21 @@ window.__spaPageInit = function() {
                     return;
                 }
                 if (isModalVisible(createRoomModal) && createRoomForm && !createRoomForm.classList.contains('hidden')) {
+                    if (createRoomConfirmation && !createRoomConfirmation.classList.contains('hidden')) return;
+                    if (e.target.closest && e.target.closest('#close-create-modal-btn')) return;
                     e.preventDefault();
                     submitCreateRoomBtn?.click();
                     return;
                 }
                 if (isModalVisible(joinRoomModal)) {
+                    if (e.target.closest && e.target.closest('#close-join-modal-btn')) return;
                     e.preventDefault();
                     navigateToJoinedRoom(joinRoomPinInput?.value || '');
                 }
             });
+
+            if (closeCreateModalBtn) closeCreateModalBtn.addEventListener('click', closeCreateModal);
+            if (createRoomBackdrop) createRoomBackdrop.addEventListener('click', closeCreateModal);
 
             // --- AMOUNT BUTTON SELECTION LOGIC ---
             const roomAmountContainer = document.getElementById('room-amount-container');
