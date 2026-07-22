@@ -269,7 +269,7 @@
         while (true) {
             var result = await auth.client
                 .from('typing_sessions')
-                .select('mode,amount,wpm,accuracy,raw_wpm,consistency,correct_chars,duration_seconds,failed,created_at')
+                .select('mode,amount,wpm,accuracy,raw_wpm,consistency,correct_chars,duration_seconds,failed,created_at,is_pb,punctuation,numbers')
                 .eq('user_id', auth.userId)
                 .order('created_at', { ascending: false })
                 .range(offset, offset + pageSize - 1);
