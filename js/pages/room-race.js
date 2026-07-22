@@ -740,6 +740,7 @@
 
         function ensureCountdownSequence() {
             if (countdownSequenceStarted) return;
+            if (state === 'finished' || state === 'racing' || state === 'closed') return;
             countdownSequenceStarted = true;
             prepareCountdownTestView();
             runCountdownIntroSequence();
@@ -754,7 +755,7 @@
 
         function beginActualRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
-            if (state === 'racing') return;
+            if (state === 'racing' || state === 'finished' || state === 'closed') return;
             config = payload.config;
             words = payload.words || [];
             room.players = payload.players || room.players;
@@ -822,6 +823,7 @@
 
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
+            if (state === 'finished' || state === 'closed') return;
             // Server race:start means the race is live — cut the cosmetic countdown immediately
             // so backgrounded tabs don't keep animating while others are already typing.
             abortCountdownIntro();
@@ -836,18 +838,20 @@
             config = room.config;
             roomCode = room.roomCode || roomCode;
             isHost = room.hostUserId === selfUserId;
+            if (response.state === 'finished') {
+                applyFinishedFromResume(response);
+                return true;
+            }
             if (response.state === 'racing' && response.race) {
+                if (state === 'finished' || state === 'closed') return true;
                 countdownSequenceStarted = true;
                 introBusy = false;
                 beginActualRace(response.race);
                 return true;
             }
             if (response.state === 'countdown') {
+                if (state === 'finished' || state === 'closed' || state === 'racing') return true;
                 ensureCountdownSequence();
-                return true;
-            }
-            if (response.state === 'finished') {
-                state = 'finished';
                 return true;
             }
             state = 'lobby';
@@ -915,12 +919,55 @@
             }
         }
 
+        function stopRaceTimers() {
+            clearInterval(updateTimer);
+            updateTimer = null;
+            clearInterval(progressInterval);
+            progressInterval = null;
+            abortCountdownIntro();
+        }
+
+        function hideStatsView() {
+            if (!statsView) return;
+            statsView.classList.add('hidden', 'opacity-0');
+            statsView.style.display = 'none';
+            statsView.classList.remove('flex');
+        }
+
         function switchToTest() {
+            hideStatsView();
             lobbyView.classList.add('hidden');
             lobbyView.style.display = 'none';
             testView.classList.remove('hidden', 'opacity-0');
             testView.style.display = 'flex';
             testView.classList.add('flex');
+        }
+
+        function applyFinishedFromResume(response) {
+            stopRaceTimers();
+            if (Array.isArray(response.results) && response.results.length) {
+                renderResults([
+                    roomId,
+                    response.finishReason || 'complete',
+                    response.results,
+                    response.opponentLeft ? 1 : 0,
+                    'custom',
+                ]);
+                return;
+            }
+            // No stored results — at least leave the racing UI and stop progress spam.
+            state = 'finished';
+            finished = true;
+            if (testView) {
+                testView.classList.add('hidden');
+                testView.style.display = 'none';
+            }
+            if (statsView) {
+                statsView.classList.remove('hidden', 'opacity-0');
+                statsView.style.display = 'flex';
+                statsView.classList.add('flex');
+                showStatsView();
+            }
         }
 
         function getTapeMode() {
@@ -1129,7 +1176,16 @@
             window.usertypoMultiplayer
                 .sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket)
                 .catch(function (error) {
-                    window.usertypoNotifications?.showToast(error.message, 'error');
+                    var message = String(error && error.message || '');
+                    // Race already ended on the server — stop polling silently (no toast flood).
+                    if (/race_not_active|no longer active|race_not_found|not in this race|player_not_active/i.test(message)) {
+                        stopRaceTimers();
+                        if (state === 'racing' || state === 'waiting-result') {
+                            state = 'waiting-result';
+                        }
+                        return;
+                    }
+                    window.usertypoNotifications?.showToast(message, 'error');
                 });
         }
 
@@ -1574,9 +1630,9 @@
             finished = true;
             state = 'finished';
             selfReturnLobby = false;
-            clearInterval(updateTimer);
-            clearInterval(progressInterval);
-            progressInterval = null;
+            stopRaceTimers();
+            abortCountdownIntro();
+            countdownSequenceStarted = false;
             var players = mapResultRows(payload[2] || []);
             var top3 = players.slice(0, 3);
             var podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
@@ -1612,8 +1668,14 @@
             if (payload[3]) {
                 window.usertypoNotifications?.showToast('One or more players left the room during the race.', 'person_remove');
             }
-            testView.classList.add('hidden');
-            testView.style.display = 'none';
+            if (testView) {
+                testView.classList.add('hidden');
+                testView.style.display = 'none';
+            }
+            if (lobbyView) {
+                lobbyView.classList.add('hidden');
+                lobbyView.style.display = 'none';
+            }
             statsView.classList.remove('hidden', 'opacity-0');
             statsView.style.display = 'flex';
             statsView.classList.add('flex');
@@ -1626,12 +1688,16 @@
             listen('race-countdown', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
-                if (state === 'racing' || state === 'finished') return;
+                if (state === 'racing' || state === 'finished' || state === 'closed') return;
                 // Local 3→2→1 tape animation; ignore server tick values (no "Go").
                 ensureCountdownSequence();
             });
-            listen('race-start', function (event) { startRace(event.detail); });
+            listen('race-start', function (event) {
+                if (state === 'finished' || state === 'closed') return;
+                startRace(event.detail);
+            });
             listen('race-progress', function (event) {
+                if (state === 'finished' || state === 'closed') return;
                 var payload = event.detail;
                 if (!Array.isArray(payload)) return;
                 progressByIndex[payload[0]] = {
@@ -1643,6 +1709,7 @@
                 renderLeaderboard();
             });
             listen('race-player-left', function () {
+                if (state === 'finished' || state === 'closed') return;
                 window.usertypoNotifications?.showToast('A player left the room.', 'person_remove');
             });
             listen('race-finished', function (event) { renderResults(event.detail); });
@@ -1664,7 +1731,12 @@
                 var response = event.detail;
                 if (!response || !response.room) return;
                 if (response.room.roomId && roomId && response.room.roomId !== roomId) return;
-                if (state === 'racing' || state === 'finished') return;
+                // Always sync a server-finished room — even if this tab still thinks it's racing.
+                if (response.state === 'finished') {
+                    applyFinishedFromResume(response);
+                    return;
+                }
+                if (state === 'racing' || state === 'finished' || state === 'countdown') return;
                 applyJoinOrResumeState(response);
             });
         }

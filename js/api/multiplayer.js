@@ -57,6 +57,10 @@
             already_in_match: 'You are already in a match.',
             room_not_found: 'Room not found. Check the Room ID and try again.',
             room_full: 'This room is full.',
+            race_not_active: 'This race is no longer active.',
+            race_not_found: 'Race not found.',
+            early_progress: 'Race has not started yet.',
+            player_not_active: 'You are not in this race.',
             room_unavailable: 'Room not found. Check the Room ID and try again.',
             not_enough_ready: 'At least 3 players must be ready to start.',
             players_not_ready: 'Some players are still not ready.',
@@ -114,9 +118,11 @@
                         return;
                     }
                     dispatch('match-resumed', response);
+                    // Only replay live race-start when the server says the race is still active.
+                    // Never invent a new race UI after the room has finished.
                     if (response.race && response.state === 'racing') {
                         dispatch('race-start', response.race);
-                    } else if (response.countdown != null) {
+                    } else if (response.state === 'countdown' && response.countdown != null) {
                         dispatch('race-countdown', [activeRoomId, response.countdown]);
                     }
                 });

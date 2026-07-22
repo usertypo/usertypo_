@@ -447,6 +447,8 @@ function createMultiplayerServer(httpServer, options) {
             if (b[4] !== a[4]) return b[4] - a[4]; // higher accuracy
             return (a[7] || 0) - (b[7] || 0); // earlier finish as tie-break
         });
+        room.lastResults = results;
+        room.finishReason = reason || 'complete';
         io.to(roomChannel(room.id)).emit('race:finished', [
             room.id,
             reason || 'complete',
@@ -522,6 +524,8 @@ function createMultiplayerServer(httpServer, options) {
         room.startsAt = null;
         room.countdownEndsAt = null;
         room.opponentLeft = false;
+        room.lastResults = null;
+        room.finishReason = null;
         room.returnLobbyVotes = new Set();
         room.bot = null;
         remainingCustomPlayers(room).forEach(resetPlayerForLobby);
@@ -990,6 +994,9 @@ function createMultiplayerServer(httpServer, options) {
                     race: (room.state === 'countdown' || room.state === 'racing')
                         ? raceStartPayload(room)
                         : null,
+                    results: room.state === 'finished' ? (room.lastResults || null) : null,
+                    finishReason: room.state === 'finished' ? (room.finishReason || 'complete') : null,
+                    opponentLeft: room.state === 'finished' ? (room.opponentLeft ? 1 : 0) : 0,
                 });
                 return;
             }
@@ -1046,6 +1053,9 @@ function createMultiplayerServer(httpServer, options) {
                 race: (room.state === 'countdown' || room.state === 'racing')
                     ? raceStartPayload(room)
                     : null,
+                results: room.state === 'finished' ? (room.lastResults || null) : null,
+                finishReason: room.state === 'finished' ? (room.finishReason || 'complete') : null,
+                opponentLeft: room.state === 'finished' ? (room.opponentLeft ? 1 : 0) : 0,
             });
         });
 
