@@ -55,6 +55,13 @@
         var selfRematchVoted = false;
         var raceKeysBound = false;
         var raceStartToken = 0;
+        var pendingRacePayload = null;
+        var countdownAnimToken = 0;
+        var introBusy = false;
+        var countdownSequenceStarted = false;
+        var countdownTapeLocked = false;
+        var countdownTapeTransform = '';
+        var countdownTapeBaseX = 0;
 
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
@@ -823,6 +830,9 @@
 
         function leaveStatsForRematch() {
             resetLocalRaceState();
+            abortCountdownIntro();
+            countdownSequenceStarted = false;
+            pendingRacePayload = null;
             state = 'joining';
             if (statsView) {
                 statsView.classList.add('hidden', 'opacity-0');
@@ -836,11 +846,206 @@
                 testView.style.display = '';
             }
             updateRematchButton();
-            showMessage('Rematch', 'Get ready for the next race.');
+            prepareWaitingTestView();
         }
 
-        function applyRaceStart(payload) {
+        function delay(ms) {
+            return new Promise(function (resolve) { setTimeout(resolve, ms); });
+        }
+
+        function waitForLayout() {
+            return new Promise(function (resolve) {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(resolve);
+                });
+            });
+        }
+
+        function parseTranslateX(transform) {
+            var value = String(transform || '');
+            var match = value.match(/translateX\(([-\d.]+)px\)/)
+                || value.match(/translate3d\(([-\d.]+)px/);
+            return match ? Number(match[1]) || 0 : 0;
+        }
+
+        function racePayloadStartsAt(payload) {
+            if (!payload) return Date.now();
+            if (payload.startsAt) return Number(payload.startsAt);
+            return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+        }
+
+        function syncCountdownLayout(digitVisible) {
+            if (!textContainer || !typingArea) return;
+            currentWordIndex = 0;
+            var tapeMode = getTapeMode();
+            var isTape = tapeMode === 'word' || tapeMode === 'letter';
+
+            if (isTape) {
+                if (!countdownTapeLocked) {
+                    currentCharIndex = 0;
+                    updateLineLayout();
+                    countdownTapeTransform = textContainer.style.transform || '';
+                    countdownTapeBaseX = parseTranslateX(countdownTapeTransform);
+                    textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
+                    countdownTapeLocked = true;
+                    positionCaretAt(caret, 0, 0);
+                } else {
+                    currentCharIndex = digitVisible ? 1 : 0;
+                    var digitEl = document.getElementById('char-0-0');
+                    var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
+                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                    positionCaretAt(caret, 0, currentCharIndex);
+                }
+            } else {
+                currentCharIndex = digitVisible ? 1 : 0;
+                updateLineLayout();
+                updateCaret();
+            }
+            if (caret) caret.style.display = 'block';
+        }
+
+        function prepareWaitingTestView() {
+            hideMessage();
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
+            words = ['0'];
+            wordOffsets = [0];
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+            if (opponentCaret) opponentCaret.style.display = 'none';
+            if (textContainer) {
+                textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
+                textContainer.style.transform = '';
+                textContainer.style.transition = '';
+                appendWord('0', 0);
+                var placeholder = document.getElementById('char-0-0');
+                if (placeholder) {
+                    placeholder.style.opacity = '0';
+                    placeholder.setAttribute('data-countdown-ph', '1');
+                }
+            }
+            if (caret) {
+                caret.classList.add('animate-breath');
+                caret.style.display = 'block';
+            }
+            if (window.usertypo_settingsApi) {
+                try {
+                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* defaults */ }
+            }
+            requestAnimationFrame(function () {
+                syncCountdownLayout(false);
+            });
+        }
+
+        function prepareCountdownTestView() {
+            prepareWaitingTestView();
+            state = 'countdown';
+        }
+
+        async function typeCountdownDigit(digit, token) {
+            var el = document.getElementById('char-0-0');
+            if (!el || token !== countdownAnimToken) return;
+            el.style.opacity = '1';
+            el.textContent = digit;
+            el.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
+            if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(digit);
+            syncCountdownLayout(true);
+        }
+
+        async function backspaceCountdownDigit(token) {
+            var el = document.getElementById('char-0-0');
+            if (!el || token !== countdownAnimToken) return;
+            if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+            el.style.opacity = '0';
+            el.textContent = '0';
+            el.className = 'char text-slate-500 transition-colors duration-75';
+            syncCountdownLayout(false);
+        }
+
+        function beginRaceIfAlreadyLive() {
+            if (!pendingRacePayload || state === 'finished' || state === 'racing') {
+                return false;
+            }
+            if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
+            var payload = pendingRacePayload;
+            pendingRacePayload = null;
+            abortCountdownIntro();
+            countdownSequenceStarted = true;
+            introBusy = false;
+            beginActualRace(payload);
+            return true;
+        }
+
+        async function runCountdownIntroSequence() {
+            var token = ++countdownAnimToken;
+            introBusy = true;
+            await waitForLayout();
+            if (token !== countdownAnimToken) return;
+            syncCountdownLayout(false);
+            if (caret) caret.classList.add('animate-breath');
+            await delay(650);
+            if (token !== countdownAnimToken) return;
+            if (beginRaceIfAlreadyLive()) return;
+
+            var digits = ['3', '2', '1'];
+            for (var i = 0; i < digits.length; i += 1) {
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+                if (caret) caret.classList.remove('animate-breath');
+                await typeCountdownDigit(digits[i], token);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+                await delay(1000);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+                await backspaceCountdownDigit(token);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+                if (caret) caret.classList.add('animate-breath');
+                await delay(280);
+            }
+            if (token !== countdownAnimToken) return;
+            introBusy = false;
+            tryBeginRaceAfterIntro();
+        }
+
+        function ensureCountdownSequence() {
+            if (countdownSequenceStarted) return;
+            if (state === 'finished' || state === 'racing') return;
+            countdownSequenceStarted = true;
+            prepareCountdownTestView();
+            runCountdownIntroSequence();
+        }
+
+        function abortCountdownIntro() {
+            countdownAnimToken += 1;
+            introBusy = false;
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
+        }
+
+        function tryBeginRaceAfterIntro() {
+            if (!pendingRacePayload || introBusy) return;
+            var payload = pendingRacePayload;
+            pendingRacePayload = null;
+            beginActualRace(payload);
+        }
+
+        function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
+            if (state === 'finished') return;
+            pendingRacePayload = payload;
+            if (beginRaceIfAlreadyLive()) return;
+            ensureCountdownSequence();
+            if (!introBusy) tryBeginRaceAfterIntro();
+        }
+
+        function beginActualRace(payload) {
+            if (!payload || payload.roomId !== roomId) return;
+            if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
             var token = raceStartToken;
             config = payload.config;
@@ -851,7 +1056,11 @@
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            startTime = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            if (payload.startsAt) {
+                startTime = Number(payload.startsAt);
+            } else {
+                startTime = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            }
             selfUserId = window.usertypoMultiplayer.getReadyState()
                 && window.usertypoMultiplayer.getReadyState().userId || '';
             var self = players.find(function (player) { return player.userId === selfUserId; });
@@ -861,14 +1070,35 @@
             if (opponentAvatar && opponent && opponent.avatarUrl) {
                 opponentAvatar.style.backgroundImage = "url('" + String(opponent.avatarUrl).replace(/'/g, '%27') + "')";
             }
-            renderPrompt();
-            updateConfigUi();
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+            completedCorrectWords = 0;
+            packetSequence = 0;
+            packetQueue = [];
+            packetSending = false;
+            totalKeystrokes = 0;
+            errorsMade = 0;
+            extraChars = 0;
+            keystrokeTimes = [];
+            correctKeystrokeTimes = [];
+            unresolvedError = null;
+            errorHistory = [];
+            localFinished = false;
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
             localFinishTime = 0;
+            countdownAnimToken += 1;
+            introBusy = false;
+            countdownSequenceStarted = false;
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
+            hideMessage();
+            if (textContainer) textContainer.style.transition = '';
+            renderPrompt();
             if (opponentCaret) opponentCaret.style.display = 'block';
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
@@ -1073,9 +1303,18 @@
             listen('race-countdown', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
-                showMessage(payload[1] > 0 ? String(payload[1]) : 'GO', payload[1] > 0 ? 'Get ready' : '');
+                if (state === 'racing' || state === 'finished') return;
+                // Local 3→2→1 typed countdown; ignore server tick values (no overlay "Go").
+                ensureCountdownSequence();
             });
-            listen('race-start', function (event) { applyRaceStart(event.detail); });
+            listen('race-start', function (event) {
+                if (state === 'finished') return;
+                startRace(event.detail);
+            });
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                beginRaceIfAlreadyLive();
+            }, { signal: signal });
             listen('race-progress', function (event) { applyOpponentProgress(event.detail); });
             listen('race-player-left', function (event) {
                 var payload = event.detail;
@@ -1113,7 +1352,9 @@
                 showMessage('Race invalid', 'The server rejected implausible progress.');
             });
             listen('disconnected', function () {
-                if (state === 'racing' || state === 'joining') showMessage('Connection lost', 'Trying to reconnect to the multiplayer server.');
+                if (state === 'racing' || state === 'joining' || state === 'countdown') {
+                    showMessage('Connection lost', 'Trying to reconnect to the multiplayer server.');
+                }
             });
         }
 
@@ -1126,11 +1367,16 @@
                 redirectAfterRefresh();
                 return;
             }
-            showMessage('Joining dual', 'Waiting for the other player.');
+            prepareWaitingTestView();
             bindEvents();
             bindResultActions();
             window.addEventListener('resize', function () {
                 if (!words.length) return;
+                if (state === 'countdown' || state === 'joining') {
+                    syncCountdownLayout(!!document.getElementById('char-0-0')
+                        && document.getElementById('char-0-0').style.opacity !== '0');
+                    return;
+                }
                 updateLineLayout();
                 updateCaret();
             }, { signal: signal });
@@ -1140,7 +1386,19 @@
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
                 matchReason = response.room && response.room.reason || '';
-                showMessage('Waiting for opponent', bot ? 'Bot is ready. The countdown will begin shortly.' : 'Both players must open the dual before it starts.');
+                selfUserId = window.usertypoMultiplayer.getReadyState()
+                    && window.usertypoMultiplayer.getReadyState().userId || '';
+                if (response.state === 'racing' && response.race) {
+                    countdownSequenceStarted = true;
+                    introBusy = false;
+                    beginActualRace(response.race);
+                    return;
+                }
+                if (response.state === 'countdown') {
+                    ensureCountdownSequence();
+                    return;
+                }
+                prepareWaitingTestView();
             } catch (error) {
                 showMessage('Could not join dual', error.message);
                 setTimeout(function () {
@@ -1150,6 +1408,9 @@
         }
 
         function cleanup() {
+            abortCountdownIntro();
+            pendingRacePayload = null;
+            countdownSequenceStarted = false;
             clearInterval(updateTimer);
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
