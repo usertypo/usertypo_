@@ -635,20 +635,30 @@
             }
         }
 
-        function syncCountdownLayout() {
+        function syncCountdownLayout(digitVisible) {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
-            // Keep caret on the digit slot (index 0). Moving to "after" causes tape scroll jitter.
-            currentCharIndex = 0;
-            if (!countdownTapeLocked) {
-                updateLineLayout();
-                countdownTapeTransform = textContainer.style.transform || '';
-                textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
-                countdownTapeLocked = true;
+            var tapeMode = getTapeMode();
+            var isTape = tapeMode === 'word' || tapeMode === 'letter';
+
+            if (isTape) {
+                // Tape mode only: keep caret on the digit and freeze scroll so it doesn't shake.
+                currentCharIndex = 0;
+                if (!countdownTapeLocked) {
+                    updateLineLayout();
+                    countdownTapeTransform = textContainer.style.transform || '';
+                    textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
+                    countdownTapeLocked = true;
+                } else {
+                    textContainer.style.transform = countdownTapeTransform;
+                }
+                positionCaretAt(caret, 0, 0);
             } else {
-                textContainer.style.transform = countdownTapeTransform;
+                // Normal (non-tape) mode: same caret behavior as live typing.
+                currentCharIndex = digitVisible ? 1 : 0;
+                updateLineLayout();
+                updateCaret();
             }
-            positionCaretAt(caret, 0, 0);
             if (caret) caret.style.display = 'block';
         }
 
@@ -666,8 +676,8 @@
             countdownTapeLocked = false;
             countdownTapeTransform = '';
 
-            // Same DOM path as a live 1-character tape word. Placeholder stays invisible so
-            // caret/tape math match the real test, but no prompt text is shown.
+            // Same DOM path as a live 1-character word. Placeholder stays invisible so
+            // caret math matches the real test, but no prompt text is shown.
             words = ['0'];
             wordOffsets = [0];
             currentWordIndex = 0;
@@ -675,6 +685,7 @@
             if (textContainer) {
                 textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
                 textContainer.style.transform = '';
+                textContainer.style.transition = '';
                 appendWord('0', 0);
                 var placeholder = document.getElementById('room-char-0-0');
                 if (placeholder) {
@@ -697,7 +708,7 @@
             el.textContent = digit;
             el.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(digit);
-            syncCountdownLayout();
+            syncCountdownLayout(true);
         }
 
         async function backspaceCountdownDigit(token) {
@@ -707,7 +718,7 @@
             el.style.opacity = '0';
             el.textContent = '0';
             el.className = 'char text-slate-500 transition-colors duration-75';
-            syncCountdownLayout();
+            syncCountdownLayout(false);
         }
 
         async function runCountdownIntroSequence() {
@@ -715,7 +726,7 @@
             introBusy = true;
             await waitForLayout();
             if (token !== countdownAnimToken) return;
-            syncCountdownLayout();
+            syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
             await delay(650);
             if (token !== countdownAnimToken) return;
@@ -735,7 +746,7 @@
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
-            // Wait for server race:start — do not begin from a stale countdown-era payload.
+            tryBeginRaceAfterIntro();
         }
 
         function ensureCountdownSequence() {
@@ -751,6 +762,13 @@
             introBusy = false;
             countdownTapeLocked = false;
             countdownTapeTransform = '';
+        }
+
+        function tryBeginRaceAfterIntro() {
+            if (!pendingRacePayload || introBusy) return;
+            var payload = pendingRacePayload;
+            pendingRacePayload = null;
+            beginActualRace(payload);
         }
 
         function beginActualRace(payload) {
@@ -824,12 +842,10 @@
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'finished' || state === 'closed') return;
-            // Server race:start means the race is live — cut the cosmetic countdown immediately
-            // so backgrounded tabs don't keep animating while others are already typing.
-            abortCountdownIntro();
-            countdownSequenceStarted = true;
-            pendingRacePayload = null;
-            beginActualRace(payload);
+            // Keep the full local 3→2→1 animation; start the race when it finishes.
+            pendingRacePayload = payload;
+            ensureCountdownSequence();
+            if (!introBusy) tryBeginRaceAfterIntro();
         }
 
         function applyJoinOrResumeState(response) {
