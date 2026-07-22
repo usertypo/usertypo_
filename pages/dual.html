@@ -84,10 +84,12 @@ html {
             height: 100%;
         }
 
-        /* Proportional desktop scaling for typing test (matches index page) */
+        /* Proportional desktop scaling for typing test (matches home page) */
         #typing-area {
             font-size: clamp(32px, 2.4vw, 43.2px) !important;
             line-height: 1.5 !important;
+            padding-left: 16px;
+            padding-right: 16px;
         }
 
         /* Header Logo (non-clickable) */
@@ -395,7 +397,7 @@ html {
                         </div>
 
                         <!-- Timer / Progress (visible before typing starts) -->
-                        <div id="timer-progress-wrapper" class="relative w-full h-[32px]" style="opacity:0.5;">
+                        <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[32px]" style="opacity:0.5;">
                             <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                                 id="word-progress"></div>
                             <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
@@ -408,7 +410,7 @@ html {
                     </div>
 
                     <!-- TYPING AREA (this is the vertically-centered element) -->
-                    <div class="w-full relative z-10">
+                    <div class="w-[80vw] max-w-none mx-auto relative z-10">
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
                             <div id="text-container" class="relative w-full transition-all duration-300">
@@ -762,12 +764,13 @@ html {
                         class="flex items-center justify-center gap-5 mt-2 opacity-0 stats-animate-card [animation-delay:400ms]">
                         <button id="rematch-btn"
                             class="px-10 py-3 rounded-xl font-display font-bold text-base uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong flex items-center justify-center">
-                            <span>Rematch</span>
+                            <span id="rematch-btn-label">Rematch</span>
                             <span class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
                         </button>
                         <button id="leave-dual-btn" type="button"
-                            class="px-7 py-2.5 panel-surface rounded-xl font-display font-bold text-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all">
-                            Leave
+                            class="px-7 py-2.5 panel-surface rounded-xl font-display font-bold text-sm uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all inline-flex items-center justify-center whitespace-nowrap flex-nowrap">
+                            <span class="whitespace-nowrap">Leave</span>
+                            <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500 shrink-0">Tab + Enter</span>
                         </button>
                         <button id="screenshot-btn"
                             class="panel-surface flex items-center justify-center w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"

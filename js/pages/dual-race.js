@@ -50,6 +50,11 @@
         var opponentAnimationFrame = null;
         var localFinishTime = 0;
         var statsHeaderReady = false;
+        var rematchVotes = 0;
+        var rematchNeeded = 2;
+        var selfRematchVoted = false;
+        var raceKeysBound = false;
+        var raceStartToken = 0;
 
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
@@ -740,6 +745,7 @@
         }
 
         function onKeyDown(event) {
+            if (state !== 'racing') return;
             if (event.ctrlKey || event.altKey || event.metaKey) return;
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -750,8 +756,93 @@
             else handlePrintable(event);
         }
 
+        function bindRaceKeys() {
+            if (raceKeysBound) return;
+            raceKeysBound = true;
+            document.addEventListener('keydown', onKeyDown, { signal: signal });
+            document.addEventListener('keyup', function (event) {
+                if (state !== 'racing') return;
+                updateKeymapHighlight(event.key, false);
+            }, { signal: signal });
+        }
+
+        function resetLocalRaceState() {
+            clearInterval(updateTimer);
+            updateTimer = null;
+            if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
+            opponentAnimationFrame = null;
+            currentWordIndex = 0;
+            currentCharIndex = 0;
+            completedCorrectWords = 0;
+            packetSequence = 0;
+            packetQueue = [];
+            packetSending = false;
+            totalKeystrokes = 0;
+            errorsMade = 0;
+            extraChars = 0;
+            keystrokeTimes = [];
+            correctKeystrokeTimes = [];
+            unresolvedError = null;
+            errorHistory = [];
+            opponentLeft = false;
+            localFinished = false;
+            latestResults = null;
+            opponentOffset = 0;
+            opponentDisplayWpm = 0;
+            opponentTargetWpm = 0;
+            opponentHasReport = false;
+            opponentFrameAt = 0;
+            localFinishTime = 0;
+            rematchVotes = 0;
+            rematchNeeded = 2;
+            selfRematchVoted = false;
+            if (wpmDisplay) wpmDisplay.textContent = '0';
+            if (accDisplay) accDisplay.textContent = '0%';
+            if (burstDisplay) burstDisplay.textContent = '0';
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = '0';
+            document.querySelectorAll('.typing-stat').forEach(function (element) {
+                element.classList.add('opacity-0');
+            });
+            if (caret) caret.classList.add('animate-breath');
+        }
+
+        function updateRematchButton() {
+            var button = document.getElementById('rematch-btn');
+            var label = document.getElementById('rematch-btn-label');
+            if (label) {
+                label.textContent = rematchVotes > 0
+                    ? ('Rematch (' + rematchVotes + '/' + rematchNeeded + ')')
+                    : 'Rematch';
+            }
+            if (button) {
+                button.disabled = !!selfRematchVoted;
+                if (selfRematchVoted) button.setAttribute('aria-disabled', 'true');
+                else button.removeAttribute('aria-disabled');
+            }
+        }
+
+        function leaveStatsForRematch() {
+            resetLocalRaceState();
+            state = 'joining';
+            if (statsView) {
+                statsView.classList.add('hidden', 'opacity-0');
+                statsView.classList.remove('flex');
+                statsView.style.display = 'none';
+                var notice = statsView.querySelector('[data-dual-opponent-left-notice]');
+                if (notice) notice.remove();
+            }
+            if (testView) {
+                testView.classList.remove('hidden');
+                testView.style.display = '';
+            }
+            updateRematchButton();
+            showMessage('Rematch', 'Get ready for the next race.');
+        }
+
         function applyRaceStart(payload) {
             if (!payload || payload.roomId !== roomId) return;
+            raceStartToken += 1;
+            var token = raceStartToken;
             config = payload.config;
             words = payload.words || [];
             window.usertypo_getKeymapRenderArgs = function () {
@@ -778,11 +869,12 @@
             opponentHasReport = false;
             opponentFrameAt = 0;
             localFinishTime = 0;
-            opponentCaret.style.display = 'block';
+            if (opponentCaret) opponentCaret.style.display = 'block';
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
             var wait = Math.max(0, startTime - Date.now());
             setTimeout(function () {
+                if (token !== raceStartToken) return;
                 state = 'racing';
                 hideMessage();
                 opponentDisplayWpm = currentLocalWpm();
@@ -796,11 +888,9 @@
                 document.querySelectorAll('.typing-stat').forEach(function (element) {
                     element.classList.remove('opacity-0');
                 });
-                caret.classList.remove('animate-breath');
-                document.addEventListener('keydown', onKeyDown, { signal: signal });
-                document.addEventListener('keyup', function (event) {
-                    updateKeymapHighlight(event.key, false);
-                }, { signal: signal });
+                if (caret) caret.classList.remove('animate-breath');
+                bindRaceKeys();
+                clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
             }, wait);
@@ -896,11 +986,18 @@
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3] || opponentLeft) {
                 var capture = document.getElementById('stats-capture-area') || statsView;
+                var existingNotice = capture.querySelector('[data-dual-opponent-left-notice]');
+                if (existingNotice) existingNotice.remove();
                 var notice = document.createElement('div');
+                notice.setAttribute('data-dual-opponent-left-notice', '1');
                 notice.className = 'mx-auto mb-4 px-4 py-2 rounded-full bg-error/10 border border-error/25 text-error text-sm font-semibold';
                 notice.textContent = 'Your opponent left the dual mid-game.';
                 capture.insertBefore(notice, capture.firstChild);
             }
+            rematchVotes = 0;
+            rematchNeeded = bot ? 1 : 2;
+            selfRematchVoted = false;
+            updateRematchButton();
             testView.classList.add('hidden');
             testView.style.display = 'none';
             statsView.classList.remove('hidden', 'opacity-0');
@@ -913,27 +1010,27 @@
             window.scrollTo(0, 0);
         }
 
-        function leaveDual() {
+        async function leaveDual() {
+            try {
+                if (roomId && window.usertypoMultiplayer) {
+                    await window.usertypoMultiplayer.leaveRace(roomId);
+                }
+            } catch (_) { /* ignore */ }
             if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
         }
 
         async function requestRematch() {
-            if (state !== 'finished' || !config) return;
+            if (state !== 'finished' || !config || selfRematchVoted) return;
             var button = document.getElementById('rematch-btn');
             if (button) button.disabled = true;
             try {
-                var opponent = players.find(function (player) { return player.userId !== selfUserId; });
-                if (matchReason === 'friend' && opponent) {
-                    await window.usertypoMultiplayer.sendChallenge(opponent.userId, config);
-                    window.usertypoNotifications?.showToast('Rematch request sent.', 'swords');
-                } else {
-                    await window.usertypoMultiplayer.createPublicDuel(config);
-                    window.usertypoNotifications?.showToast('Searching for your rematch.', 'swords');
-                }
-                window.navigateTo?.('/friends');
+                await window.usertypoMultiplayer.requestRematch(roomId);
+                selfRematchVoted = true;
+                if (rematchVotes < 1) rematchVotes = 1;
+                updateRematchButton();
             } catch (error) {
                 if (button) button.disabled = false;
-                window.usertypoNotifications?.showToast(error.message, 'error');
+                window.usertypoNotifications?.showToast(error.message || 'Could not rematch', 'error');
             }
         }
 
@@ -957,10 +1054,30 @@
                 }, { signal: signal });
             }
             document.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter' && state === 'finished') {
+                if (state !== 'finished') return;
+                var tag = (event.target && event.target.tagName || '').toLowerCase();
+                var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
+                if (inEditable) return;
+
+                if (event.key === ' ' || event.key === 'Spacebar') {
                     event.preventDefault();
-                    requestRematch();
+                    return;
                 }
+
+                var leaveBtn = document.getElementById('leave-dual-btn');
+                if (event.key === 'Tab') {
+                    event.preventDefault();
+                    leaveBtn?.focus();
+                    return;
+                }
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                var active = document.activeElement;
+                if (leaveBtn && (active === leaveBtn || leaveBtn.contains(active))) {
+                    leaveDual();
+                    return;
+                }
+                requestRematch();
             }, { signal: signal });
         }
 
@@ -981,6 +1098,22 @@
                 }
             });
             listen('race-finished', function (event) { showResults(event.detail); });
+            listen('race-rematch-state', function (event) {
+                var payload = event.detail;
+                if (!Array.isArray(payload) || payload[0] !== roomId) return;
+                rematchVotes = Number(payload[1]) || 0;
+                rematchNeeded = Math.max(1, Number(payload[2]) || 1);
+                var agreedIds = payload[3] || [];
+                if (selfUserId && agreedIds.indexOf(selfUserId) !== -1) selfRematchVoted = true;
+                updateRematchButton();
+            });
+            listen('race-rematch-start', function (event) {
+                var payload = event.detail || {};
+                if (!payload.roomId || payload.roomId !== roomId) return;
+                matchReason = payload.reason || matchReason;
+                if (payload.config) config = payload.config;
+                leaveStatsForRematch();
+            });
             listen('match-resumed', function () {
                 if (state === 'racing' || state === 'waiting-result') hideMessage();
             });

@@ -175,6 +175,9 @@
             });
             dispatch('match-ready', match);
         });
+        activeSocket.on('duel:search-timeout', function (payload) {
+            dispatch('search-timeout', payload || {});
+        });
         activeSocket.on('duel:rejected', function (payload) {
             notify({
                 id: 'duel-rejected:' + payload[0],
@@ -248,13 +251,20 @@
         });
         [
             'race:joined', 'race:countdown', 'race:start', 'race:progress',
-            'race:finished', 'race:player-left', 'race:invalid', 'room:state',
+            'race:finished', 'race:player-left', 'race:invalid', 'race:rematch-state',
+            'race:rematch-start', 'room:state',
             'room:return-lobby-state', 'room:returned-to-lobby',
         ].forEach(function (eventName) {
             activeSocket.on(eventName, function (payload) {
                 if (eventName === 'race:finished') {
                     var finishedType = Array.isArray(payload) ? payload[4] : '';
-                    if (finishedType !== 'custom') activeRoomId = '';
+                    // Keep dual room membership for rematch; rooms stay for return-to-lobby.
+                    if (finishedType !== 'custom'
+                        && finishedType !== 'friend'
+                        && finishedType !== 'public'
+                        && finishedType !== 'bot') {
+                        activeRoomId = '';
+                    }
                 }
                 if (eventName === 'room:returned-to-lobby' && payload && payload.roomId) {
                     activeRoomId = String(payload.roomId);
@@ -315,11 +325,14 @@
 
     function describeConfig(config) {
         config = config || {};
+        function flagOn(value) {
+            return value === true || value === 1 || value === '1';
+        }
         return [
             config.amount + ' ' + (config.mode === 'words' ? 'words' : 'seconds'),
             config.lang || 'english',
-            config.punct ? 'punctuation' : '',
-            config.nums ? 'numbers' : '',
+            flagOn(config.punct) ? 'punctuation' : '',
+            flagOn(config.nums) ? 'numbers' : '',
         ].filter(Boolean).join(' · ');
     }
 
@@ -341,6 +354,18 @@
 
     function cancelPublicDuel() {
         return emitAck('duel:cancel', null);
+    }
+
+    function extendPublicDuelSearch(listingId) {
+        return emitAck('duel:extend-search', String(listingId || ''));
+    }
+
+    function playBotFromListing(listingId) {
+        return emitAck('duel:play-bot', String(listingId || ''));
+    }
+
+    function requestRematch(roomId) {
+        return emitAck('race:rematch', String(roomId || ''));
     }
 
     function loadListings() {
@@ -446,6 +471,9 @@
         respondToChallenge: respondToChallenge,
         createPublicDuel: createPublicDuel,
         cancelPublicDuel: cancelPublicDuel,
+        extendPublicDuelSearch: extendPublicDuelSearch,
+        playBotFromListing: playBotFromListing,
+        requestRematch: requestRematch,
         loadListings: loadListings,
         joinListing: joinListing,
         joinMatch: joinMatch,
