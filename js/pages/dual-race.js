@@ -919,12 +919,76 @@
         }
 
         function showTestChrome() {
-            var progressWrapper = document.getElementById('timer-progress-wrapper');
-            if (progressWrapper) progressWrapper.style.opacity = '1';
             document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
                 element.classList.remove('opacity-0');
             });
             seedProgressChrome();
+            if (typeof window.applyDualLiveFeedSettings === 'function') {
+                window.applyDualLiveFeedSettings();
+            }
+        }
+
+        function applyDualLiveFeedSettings() {
+            var settings = window.usertypo_settingsApi
+                ? window.usertypo_settingsApi.loadSettings()
+                : window.usertypo_settings;
+            var lf = (settings && settings.liveFeed) || {};
+            var showWpm = lf.liveWpm !== false;
+            var showAcc = lf.liveAccuracy !== false;
+            var showBurst = lf.liveBurst === true;
+            var wpmWrapper = document.getElementById('live-wpm-wrapper');
+            var accWrapper = document.getElementById('live-acc-wrapper');
+            var burstWrapper = document.getElementById('live-burst-wrapper');
+            var wpmDivider = document.getElementById('live-wpm-divider');
+            var accDivider = document.getElementById('live-acc-divider');
+            if (wpmWrapper) wpmWrapper.classList.toggle('hidden', !showWpm);
+            if (accWrapper) accWrapper.classList.toggle('hidden', !showAcc);
+            if (burstWrapper) burstWrapper.classList.toggle('hidden', !showBurst);
+            if (wpmDivider) wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
+            if (accDivider) accDivider.classList.toggle('hidden', !(showAcc && showBurst));
+            if (showWpm && !showAcc && showBurst && wpmDivider) wpmDivider.classList.remove('hidden');
+
+            var timerStyle = lf.timerStyle || 'Number';
+            var timerOpacity = parseFloat(lf.timerOpacity || '0.5');
+            if (!Number.isFinite(timerOpacity)) timerOpacity = 0.5;
+            var wrapper = document.getElementById('timer-progress-wrapper');
+            var progressText = document.getElementById('word-progress');
+            var barContainer = document.getElementById('word-progress-bar-container');
+            var liveStats = document.getElementById('live-stats-container');
+            var showChrome = state === 'racing'
+                || state === 'waiting-result'
+                || state === 'countdown'
+                || state === 'joining';
+
+            if (wrapper) {
+                if (timerStyle === 'Off') {
+                    wrapper.style.visibility = 'hidden';
+                } else {
+                    wrapper.style.visibility = 'visible';
+                    if (timerStyle === 'Bar') {
+                        if (progressText) progressText.classList.add('hidden');
+                        if (barContainer) barContainer.classList.remove('hidden');
+                    } else {
+                        if (progressText) progressText.classList.remove('hidden');
+                        if (barContainer) barContainer.classList.add('hidden');
+                    }
+                }
+                wrapper.style.opacity = showChrome ? String(timerOpacity) : '';
+            }
+            if (liveStats) {
+                liveStats.classList.toggle('opacity-0', !showChrome);
+                if (showChrome) {
+                    liveStats.style.opacity = String(timerOpacity);
+                    liveStats.classList.remove('opacity-0');
+                } else {
+                    liveStats.style.opacity = '';
+                }
+            }
+            if (showChrome) {
+                document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                    element.classList.remove('opacity-0');
+                });
+            }
         }
 
         function prepareWaitingTestView() {
@@ -1449,13 +1513,20 @@
                 window.updateKeymapHighlight = null;
             }
             window.usertypo_getKeymapRenderArgs = null;
+            if (window.applyDualLiveFeedSettings === applyDualLiveFeedSettings) {
+                window.applyDualLiveFeedSettings = null;
+            }
             latestResults = null;
         }
+
+        window.applyDualLiveFeedSettings = applyDualLiveFeedSettings;
 
         return {
             init: init,
             cleanup: cleanup,
-            isActive: function () { return state === 'racing'; },
+            isActive: function () {
+                return state === 'racing' || state === 'countdown' || state === 'waiting-result';
+            },
             isTyping: function () { return state === 'racing'; },
         };
     }
