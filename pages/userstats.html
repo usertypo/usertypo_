@@ -1165,6 +1165,9 @@ if ('scrollRestoration' in history) {
                 if (window.usertypoProgression && typeof window.usertypoProgression.getMine === 'function') {
                     try {
                         progression = await window.usertypoProgression.getMine({ force: true });
+                        if (progression) {
+                            console.info('[usertypo userstats] progression', 'lvl ' + progression.level, progression.totalXp + ' xp');
+                        }
                     } catch (err) {
                         console.warn('[usertypo userstats] progression load failed', err);
                     }

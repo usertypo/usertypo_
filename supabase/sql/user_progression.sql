@@ -460,6 +460,48 @@ $$;
 
 grant execute on function public.get_session_xp_award(uuid) to authenticated, anon;
 
+create or replace function public.get_my_progression()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_me text := auth.jwt() ->> 'sub';
+  v_row public.user_progression%rowtype;
+  v_xp_to_next integer;
+begin
+  if v_me is null or trim(v_me) = '' then
+    return jsonb_build_object('skipped', true, 'reason', 'not_signed_in');
+  end if;
+
+  v_row := public.ensure_user_progression(v_me);
+  v_xp_to_next := public.xp_needed_for_level(v_row.level);
+
+  return jsonb_build_object(
+    'skipped', false,
+    'user_id', v_row.user_id,
+    'total_xp', v_row.total_xp,
+    'level', v_row.level,
+    'xp_into_level', v_row.xp_into_level,
+    'xp_to_next', v_xp_to_next,
+    'current_streak', v_row.current_streak,
+    'longest_streak', v_row.longest_streak,
+    'last_play_date', v_row.last_play_date,
+    'daily_xp', v_row.daily_xp,
+    'daily_xp_date', v_row.daily_xp_date,
+    'updated_at', v_row.updated_at,
+    'title', public.level_title(v_row.level),
+    'percent_to_next', case
+      when v_xp_to_next > 0 then round((v_row.xp_into_level::numeric / v_xp_to_next) * 1000) / 10
+      else 0
+    end
+  );
+end;
+$$;
+
+grant execute on function public.get_my_progression() to authenticated, anon;
+
 grant select on public.user_progression to authenticated;
 grant select on public.xp_events to authenticated;
 
