@@ -161,6 +161,15 @@
         activeSocket.on('duel:ready', function (match) {
             pendingMatches[match.roomId] = match;
             var isBot = match.reason === 'bot';
+            var autoJoinBot = isBot
+                && window.DualMatch
+                && typeof window.DualMatch.consumeAutoJoinBotMatch === 'function'
+                && window.DualMatch.consumeAutoJoinBotMatch();
+            dispatch('match-ready', match);
+            if (autoJoinBot) {
+                navigateToMatch(match.roomId);
+                return;
+            }
             notify({
                 id: 'duel-ready:' + match.roomId,
                 type: 'duel_ready',
@@ -173,7 +182,6 @@
                     run: function () { navigateToMatch(match.roomId); },
                 }],
             });
-            dispatch('match-ready', match);
         });
         activeSocket.on('duel:search-timeout', function (payload) {
             dispatch('search-timeout', payload || {});

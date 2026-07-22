@@ -36,12 +36,70 @@
             filter: none !important;
         }
 
-        @keyframes dual-friend-pending-spin {
+        @keyframes dualPendingSpin {
             to { transform: rotate(360deg); }
         }
-        .dual-friend-pending-spin {
+        .friend-card-actions {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 2.5rem;
+            min-width: 2.5rem;
+        }
+        .friend-card-actions.has-pending {
+            width: 2.5rem;
+            flex: 0 0 2.5rem;
+        }
+        .friend-card.group:hover .friend-card-actions.has-pending,
+        .friend-card.group:focus-within .friend-card-actions.has-pending {
+            width: auto;
+            flex: 0 0 auto;
+        }
+        .friend-card-action-btns {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: opacity 180ms ease, padding-left 280ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .friend-card-actions.has-pending .friend-card-action-btns {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            padding-left: 0;
+            white-space: nowrap;
+        }
+        .friend-card.group:hover .friend-card-actions.has-pending .friend-card-action-btns,
+        .friend-card.group:focus-within .friend-card-actions.has-pending .friend-card-action-btns {
+            opacity: 1;
+            pointer-events: auto;
+            position: relative;
+            padding-left: 2.5rem;
+        }
+        .friend-dual-pending-slot {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: right 280ms cubic-bezier(0.16, 1, 0.3, 1), left 280ms cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .friend-card.group:hover .friend-dual-pending-slot,
+        .friend-card.group:focus-within .friend-dual-pending-slot {
+            right: auto;
+            left: 0;
+        }
+        .friend-dual-pending-spin {
             display: inline-block;
-            animation: dual-friend-pending-spin 0.9s linear infinite;
+            animation: dualPendingSpin 900ms linear infinite;
         }
         
         :root {
@@ -1155,11 +1213,7 @@ window.__spaPageInit = function() {
                         '<button type="button" class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5" title="Chat"' +
                         ' data-friend-name="' + name.replace(/"/g, '&quot;') + '" data-friend-status="Online" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '">' +
                         '<span class="material-symbols-outlined text-xl">chat_bubble</span></button>';
-                    if (isChallengePending) {
-                        actions +=
-                            '<button type="button" class="dual-challenge-pending flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 cursor-default" title="Waiting for response" disabled aria-label="Dual request pending">' +
-                            '<span class="material-symbols-outlined text-xl dual-friend-pending-spin">progress_activity</span></button>';
-                    } else {
+                    if (!isChallengePending) {
                         actions +=
                             '<button type="button" class="dual-challenge-btn flex-1 sm:flex-none p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
                             '<span class="material-symbols-outlined text-xl">swords</span></button>';
@@ -1169,6 +1223,13 @@ window.__spaPageInit = function() {
                     '<button type="button" class="remove-friend-btn flex-1 sm:flex-none p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + friend.user_id + '">' +
                     '<span class="material-symbols-outlined text-xl">person_remove</span></button>';
 
+                var actionsWrapClass = 'friend-card-actions w-full sm:w-auto mt-2 sm:mt-0' +
+                    (isChallengePending ? ' has-pending' : ' opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity');
+                var pendingSlot = isChallengePending
+                    ? '<span class="friend-dual-pending-slot" title="Waiting for response" aria-label="Dual request pending">' +
+                      '<span class="material-symbols-outlined text-primary text-[20px] friend-dual-pending-spin">progress_activity</span></span>'
+                    : '';
+
                 card.innerHTML =
                     '<div class="relative">' + avatarBlock +
                     '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 ' + statusDot + ' border-2 border-background-dark rounded-full"></div></div>' +
@@ -1176,10 +1237,10 @@ window.__spaPageInit = function() {
                     '<div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' +
                     statusBadge + '</div>' +
                     '<div class="text-xs text-slate-500 font-mono">Friends since ' + relativeTime(friend.friends_since) + '</div></div>' +
-                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 ' +
-                    (isChallengePending ? 'opacity-100' : 'opacity-100 sm:opacity-0 group-hover:opacity-100') +
-                    ' transition-opacity">' +
-                    actions + '</div>';
+                    '<div class="' + actionsWrapClass + '">' +
+                    pendingSlot +
+                    '<div class="friend-card-action-btns w-full sm:w-auto">' +
+                    actions + '</div></div>';
 
                 var chatBtn = card.querySelector('.chat-btn');
                 if (chatBtn) {
