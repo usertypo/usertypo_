@@ -642,8 +642,9 @@
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
 
             if (isTape) {
-                // Tape mode only: keep caret on the digit and freeze scroll so it doesn't shake.
-                currentCharIndex = 0;
+                // Freeze tape scroll so it doesn't shake, but still place the caret
+                // after a typed digit (number to the left of the caret), like normal typing.
+                currentCharIndex = digitVisible ? 1 : 0;
                 if (!countdownTapeLocked) {
                     updateLineLayout();
                     countdownTapeTransform = textContainer.style.transform || '';
@@ -652,9 +653,9 @@
                 } else {
                     textContainer.style.transform = countdownTapeTransform;
                 }
-                positionCaretAt(caret, 0, 0);
+                positionCaretAt(caret, 0, currentCharIndex);
             } else {
-                // Normal (non-tape) mode: same caret behavior as live typing.
+                // Normal (non-tape) mode: unchanged.
                 currentCharIndex = digitVisible ? 1 : 0;
                 updateLineLayout();
                 updateCaret();
