@@ -629,16 +629,16 @@ function createMultiplayerServer(httpServer, options) {
         room.state = 'countdown';
         let seconds = LIMITS.countdownSeconds;
         room.countdownEndsAt = Date.now() + (seconds * 1000);
-        io.to(roomChannel(room.id)).emit('race:countdown', [room.id, seconds]);
+        io.to(roomChannel(room.id)).emit('race:countdown', [room.id, seconds, room.countdownEndsAt]);
         room.countdownTimer = setInterval(() => {
             seconds -= 1;
             if (seconds > 0) {
-                io.to(roomChannel(room.id)).emit('race:countdown', [room.id, seconds]);
+                io.to(roomChannel(room.id)).emit('race:countdown', [room.id, seconds, room.countdownEndsAt]);
                 return;
             }
             clearInterval(room.countdownTimer);
             room.countdownTimer = null;
-            io.to(roomChannel(room.id)).emit('race:countdown', [room.id, 0]);
+            io.to(roomChannel(room.id)).emit('race:countdown', [room.id, 0, room.countdownEndsAt]);
             beginRace(room);
         }, 1000);
     }
@@ -1006,6 +1006,7 @@ function createMultiplayerServer(httpServer, options) {
                     countdown: room.state === 'countdown'
                         ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
                         : null,
+                    countdownEndsAt: room.state === 'countdown' ? room.countdownEndsAt : null,
                     race: (room.state === 'countdown' || room.state === 'racing')
                         ? raceStartPayload(room)
                         : null,
@@ -1031,6 +1032,7 @@ function createMultiplayerServer(httpServer, options) {
                 room: publicRoomPayload(room, room.type),
                 state: 'waiting',
                 countdown: null,
+                countdownEndsAt: null,
                 race: null,
             });
             io.to(roomChannel(room.id)).emit('race:joined', [
@@ -1065,6 +1067,7 @@ function createMultiplayerServer(httpServer, options) {
                 countdown: room.state === 'countdown'
                     ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
                     : null,
+                countdownEndsAt: room.state === 'countdown' ? room.countdownEndsAt : null,
                 race: (room.state === 'countdown' || room.state === 'racing')
                     ? raceStartPayload(room)
                     : null,

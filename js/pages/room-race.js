@@ -81,8 +81,11 @@
         var introBusy = false;
         var countdownSequenceStarted = false;
         var countdownTapeLocked = false;
-        var countdownTapeTransform = '';
         var countdownTapeBaseX = 0;
+        var countdownEndsAt = 0;
+        var countdownCaretPinned = false;
+        var countdownPinnedCaretTransform = '';
+        var countdownPinnedCaretWidth = '';
         var intentionalLeave = false;
 
         function getJoinLink() {
@@ -649,6 +652,17 @@
             return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
         }
 
+        function noteCountdownEndsAt(endsAt, seconds) {
+            var parsed = Number(endsAt);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                countdownEndsAt = parsed;
+                return;
+            }
+            var secs = Math.max(0, Number(seconds) || 0);
+            if (secs > 0) countdownEndsAt = Date.now() + (secs * 1000);
+            else if (!countdownEndsAt) countdownEndsAt = Date.now();
+        }
+
         function beginRaceIfAlreadyLive() {
             if (!pendingRacePayload || state === 'finished' || state === 'closed' || state === 'racing') {
                 return false;
@@ -663,6 +677,71 @@
             return true;
         }
 
+        function delayUntil(deadlineMs, token) {
+            return new Promise(function (resolve) {
+                function tick() {
+                    if (token !== countdownAnimToken) {
+                        resolve(false);
+                        return;
+                    }
+                    if (beginRaceIfAlreadyLive()) {
+                        resolve(false);
+                        return;
+                    }
+                    var wait = deadlineMs - Date.now();
+                    if (wait <= 0) {
+                        resolve(true);
+                        return;
+                    }
+                    setTimeout(tick, Math.min(50, wait));
+                }
+                tick();
+            });
+        }
+
+        function unlockTapeCountdownCaret() {
+            if (!countdownCaretPinned || !caret || !textContainer) {
+                countdownCaretPinned = false;
+                return;
+            }
+            textContainer.insertBefore(caret, textContainer.firstChild);
+            caret.style.transition = '';
+            countdownCaretPinned = false;
+            countdownPinnedCaretTransform = '';
+            countdownPinnedCaretWidth = '';
+        }
+
+        function pinTapeCountdownCaret() {
+            if (!countdownCaretPinned || !caret) return;
+            caret.style.transition = 'none';
+            caret.style.transform = countdownPinnedCaretTransform;
+            caret.style.width = countdownPinnedCaretWidth;
+            caret.style.display = 'block';
+        }
+
+        function lockTapeCountdownCaret() {
+            if (!caret || !typingArea || !textContainer || countdownCaretPinned) return;
+            currentCharIndex = 0;
+            updateLineLayout();
+            positionCaretAt(caret, 0, 0);
+            var caretRect = caret.getBoundingClientRect();
+            var areaRect = typingArea.getBoundingClientRect();
+            var left = caretRect.left - areaRect.left;
+            var top = caretRect.top - areaRect.top;
+            var width = caretRect.width || Math.max(10, (parseFloat(getComputedStyle(textContainer).fontSize) || 24) * 0.55);
+            typingArea.appendChild(caret);
+            caret.style.transition = 'none';
+            caret.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
+            caret.style.width = width + 'px';
+            caret.style.display = 'block';
+            countdownPinnedCaretTransform = caret.style.transform;
+            countdownPinnedCaretWidth = caret.style.width;
+            countdownCaretPinned = true;
+            countdownTapeBaseX = parseTranslateX(textContainer.style.transform);
+            textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
+            countdownTapeLocked = true;
+        }
+
         function syncCountdownLayout(digitVisible) {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
@@ -670,30 +749,19 @@
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
 
             if (isTape) {
-                // Caret stays visually fixed. Digit sits to its left by shifting the tape
-                // left by the digit width when shown (no caret movement on screen).
-                if (!countdownTapeLocked) {
-                    currentCharIndex = 0;
-                    updateLineLayout();
-                    countdownTapeTransform = textContainer.style.transform || '';
-                    countdownTapeBaseX = parseTranslateX(countdownTapeTransform);
-                    textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
-                    countdownTapeLocked = true;
-                    positionCaretAt(caret, 0, 0);
-                } else {
-                    currentCharIndex = digitVisible ? 1 : 0;
-                    var digitEl = document.getElementById('room-char-0-0');
-                    var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
-                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
-                    positionCaretAt(caret, 0, currentCharIndex);
-                }
+                if (!countdownTapeLocked) lockTapeCountdownCaret();
+                // Only the tape/digits move. Caret is pinned outside the scrolling container.
+                var digitEl = document.getElementById('room-char-0-0');
+                var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
+                textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                pinTapeCountdownCaret();
             } else {
                 // Normal (non-tape) mode: unchanged.
                 currentCharIndex = digitVisible ? 1 : 0;
                 updateLineLayout();
                 updateCaret();
+                if (caret) caret.style.display = 'block';
             }
-            if (caret) caret.style.display = 'block';
         }
 
         function prepareCountdownTestView() {
@@ -707,12 +775,10 @@
             }
             progressByIndex = {};
             renderLeaderboard();
+            unlockTapeCountdownCaret();
             countdownTapeLocked = false;
-            countdownTapeTransform = '';
             countdownTapeBaseX = 0;
 
-            // Same DOM path as a live 1-character word. Placeholder stays invisible so
-            // caret math matches the real test, but no prompt text is shown.
             words = ['0'];
             wordOffsets = [0];
             currentWordIndex = 0;
@@ -756,37 +822,58 @@
             syncCountdownLayout(false);
         }
 
+        function currentCountdownDigit() {
+            var remaining = countdownEndsAt - Date.now();
+            if (remaining > 2000) return '3';
+            if (remaining > 1000) return '2';
+            if (remaining > 0) return '1';
+            return null;
+        }
+
+        function currentDigitWindowEnd() {
+            var digit = currentCountdownDigit();
+            if (digit === '3') return countdownEndsAt - 2000;
+            if (digit === '2') return countdownEndsAt - 1000;
+            if (digit === '1') return countdownEndsAt;
+            return countdownEndsAt;
+        }
+
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
+            if (!countdownEndsAt) countdownEndsAt = Date.now() + 3000;
             await waitForLayout();
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
-            await delay(650);
-            if (token !== countdownAnimToken) return;
+
+            // Idle only if we still have time before the shared "3" window.
+            var threeStartsAt = countdownEndsAt - 3000;
+            if (Date.now() < threeStartsAt) {
+                var idleOk = await delayUntil(threeStartsAt, token);
+                if (!idleOk || token !== countdownAnimToken) return;
+            }
             if (beginRaceIfAlreadyLive()) return;
 
-            var digits = ['3', '2', '1'];
-            for (var i = 0; i < digits.length; i += 1) {
-                if (token !== countdownAnimToken) return;
+            while (token === countdownAnimToken) {
                 if (beginRaceIfAlreadyLive()) return;
+                var digit = currentCountdownDigit();
+                if (!digit) {
+                    await backspaceCountdownDigit(token);
+                    introBusy = false;
+                    tryBeginRaceAfterIntro();
+                    return;
+                }
                 if (caret) caret.classList.remove('animate-breath');
-                await typeCountdownDigit(digits[i], token);
+                await typeCountdownDigit(digit, token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                await delay(1000);
-                if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
+                var windowOk = await delayUntil(currentDigitWindowEnd(), token);
+                if (!windowOk || token !== countdownAnimToken) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
-                await delay(280);
             }
-            if (token !== countdownAnimToken) return;
-            introBusy = false;
-            tryBeginRaceAfterIntro();
         }
 
         function ensureCountdownSequence() {
@@ -800,8 +887,8 @@
         function abortCountdownIntro() {
             countdownAnimToken += 1;
             introBusy = false;
+            unlockTapeCountdownCaret();
             countdownTapeLocked = false;
-            countdownTapeTransform = '';
             countdownTapeBaseX = 0;
         }
 
@@ -844,9 +931,10 @@
             countdownAnimToken += 1;
             introBusy = false;
             countdownSequenceStarted = false;
+            unlockTapeCountdownCaret();
             countdownTapeLocked = false;
-            countdownTapeTransform = '';
             countdownTapeBaseX = 0;
+            countdownEndsAt = 0;
             switchToTest();
             if (textContainer) textContainer.style.transition = '';
             renderText();
@@ -910,6 +998,7 @@
             }
             if (response.state === 'countdown') {
                 if (state === 'finished' || state === 'closed' || state === 'racing') return true;
+                noteCountdownEndsAt(response.countdownEndsAt, response.countdown);
                 ensureCountdownSequence();
                 return true;
             }
@@ -1660,6 +1749,8 @@
             introBusy = false;
             countdownSequenceStarted = false;
             pendingRacePayload = null;
+            countdownEndsAt = 0;
+            unlockTapeCountdownCaret();
             state = 'lobby';
             if (payload) {
                 room = payload;
@@ -1748,7 +1839,7 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished' || state === 'closed') return;
-                // Local 3→2→1 tape animation; ignore server tick values (no "Go").
+                noteCountdownEndsAt(payload[2], payload[1]);
                 ensureCountdownSequence();
             });
             listen('race-start', function (event) {
