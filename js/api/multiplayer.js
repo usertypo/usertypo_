@@ -114,7 +114,9 @@
                         return;
                     }
                     dispatch('match-resumed', response);
-                    if (response.countdown != null) {
+                    if (response.race && response.state === 'racing') {
+                        dispatch('race-start', response.race);
+                    } else if (response.countdown != null) {
                         dispatch('race-countdown', [activeRoomId, response.countdown]);
                     }
                 });

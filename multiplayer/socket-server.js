@@ -964,17 +964,53 @@ function createMultiplayerServer(httpServer, options) {
 
         socket.on('match:join', (roomId, ack) => {
             const room = rooms.get(String(roomId || ''));
-            if (!room || !room.allowedUserIds.has(userId) || room.state !== 'waiting') {
+            if (!room || !room.allowedUserIds.has(userId)) {
                 safeAck(ack, { ok: false, error: 'room_unavailable' });
                 return;
             }
             const player = room.players.get(userId);
+            if (!player || player.status === 'left') {
+                safeAck(ack, { ok: false, error: 'room_unavailable' });
+                return;
+            }
+
+            // Active match: re-attach socket without restarting countdown/race.
+            if (room.state === 'countdown' || room.state === 'racing' || room.state === 'finished') {
+                player.joined = true;
+                player.socketId = socket.id;
+                socket.join(roomChannel(room.id));
+                userToRoom.set(userId, room.id);
+                safeAck(ack, {
+                    ok: true,
+                    room: publicRoomPayload(room, room.type),
+                    state: room.state,
+                    countdown: room.state === 'countdown'
+                        ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
+                        : null,
+                    race: (room.state === 'countdown' || room.state === 'racing')
+                        ? raceStartPayload(room)
+                        : null,
+                });
+                return;
+            }
+
+            if (room.state !== 'waiting') {
+                safeAck(ack, { ok: false, error: 'room_unavailable' });
+                return;
+            }
+
             player.joined = true;
             player.socketId = socket.id;
             player.status = 'waiting';
             socket.join(roomChannel(room.id));
             userToRoom.set(userId, room.id);
-            safeAck(ack, { ok: true, room: publicRoomPayload(room, room.type) });
+            safeAck(ack, {
+                ok: true,
+                room: publicRoomPayload(room, room.type),
+                state: 'waiting',
+                countdown: null,
+                race: null,
+            });
             io.to(roomChannel(room.id)).emit('race:joined', [
                 room.id,
                 player.index,
@@ -1003,8 +1039,12 @@ function createMultiplayerServer(httpServer, options) {
             safeAck(ack, {
                 ok: true,
                 room: publicRoomPayload(room, room.type),
+                state: room.state,
                 countdown: room.state === 'countdown'
                     ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
+                    : null,
+                race: (room.state === 'countdown' || room.state === 'racing')
+                    ? raceStartPayload(room)
                     : null,
             });
         });
