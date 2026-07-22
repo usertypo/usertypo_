@@ -39,7 +39,10 @@
 
             window.addEventListener('error', function (event) {
                 const target = event.target;
-                if (!target || !['SCRIPT', 'LINK', 'IMG'].includes(target.tagName)) return;
+                // Only recover from failed scripts/styles — never from avatars or other images.
+                // Empty/broken <img src> (e.g. lobby host before profile loads) would otherwise
+                // trigger an endless reload loop with usertypoMarkAssetBootSuccessful.
+                if (!target || !['SCRIPT', 'LINK'].includes(target.tagName)) return;
                 const resource = target.src || target.href;
                 if (!resource) return;
                 let url;
@@ -1065,7 +1068,7 @@
     <script src="js/pages/dual-race.js?v=8"></script>
     <script src="js/pages/room-race.js?v=25"></script>
     <script src="dual.js?v=7"></script>
-    <script src="js/page-fragments.js?v=36"></script>
+    <script src="js/page-fragments.js?v=37"></script>
     <script src="js/router.js?v=6"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
