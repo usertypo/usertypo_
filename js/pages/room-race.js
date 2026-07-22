@@ -80,6 +80,9 @@
         var countdownAnimToken = 0;
         var introBusy = false;
         var countdownSequenceStarted = false;
+        var countdownTapeLocked = false;
+        var countdownTapeTransform = '';
+        var intentionalLeave = false;
 
         function getJoinLink() {
             var origin = window.location.origin || '';
@@ -434,6 +437,7 @@
         }
 
         async function leaveRoomAndGoFriends() {
+            intentionalLeave = true;
             state = 'closed';
             try {
                 if (roomId && window.usertypoMultiplayer) {
@@ -607,14 +611,45 @@
             });
         }
 
+        function seedProgressChrome() {
+            var cfg = config || (room && room.config);
+            if (!cfg) return;
+            if (wpmDisplay) wpmDisplay.textContent = '0';
+            if (accuracyDisplay) accuracyDisplay.textContent = '100%';
+            if (cfg.mode === 'time') {
+                if (progressDisplay) progressDisplay.textContent = String(cfg.amount);
+                if (progressBar) progressBar.style.width = '0%';
+            } else if (progressDisplay) {
+                progressDisplay.innerHTML = '0<span class="text-slate-500">/</span>' + cfg.amount;
+                if (progressBar) progressBar.style.width = '0%';
+            }
+        }
+
+        function showTestChrome() {
+            document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                element.classList.remove('opacity-0');
+            });
+            seedProgressChrome();
+            if (typeof window.applyRoomLiveFeedSettings === 'function') {
+                window.applyRoomLiveFeedSettings();
+            }
+        }
+
         function syncCountdownLayout() {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
-            updateLineLayout();
-            updateCaret();
-            if (caret) {
-                caret.style.display = 'block';
+            // Keep caret on the digit slot (index 0). Moving to "after" causes tape scroll jitter.
+            currentCharIndex = 0;
+            if (!countdownTapeLocked) {
+                updateLineLayout();
+                countdownTapeTransform = textContainer.style.transform || '';
+                textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
+                countdownTapeLocked = true;
+            } else {
+                textContainer.style.transform = countdownTapeTransform;
             }
+            positionCaretAt(caret, 0, 0);
+            if (caret) caret.style.display = 'block';
         }
 
         function prepareCountdownTestView() {
@@ -628,11 +663,8 @@
             }
             progressByIndex = {};
             renderLeaderboard();
-            document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
-                element.classList.add('opacity-0');
-            });
-            if (progressDisplay) progressDisplay.textContent = '';
-            if (progressBar) progressBar.style.width = '0%';
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
 
             // Same DOM path as a live 1-character tape word. Placeholder stays invisible so
             // caret/tape math match the real test, but no prompt text is shown.
@@ -655,18 +687,16 @@
                 caret.style.display = 'block';
             }
             state = 'countdown';
+            showTestChrome();
         }
 
         async function typeCountdownDigit(digit, token) {
             var el = document.getElementById('room-char-0-0');
             if (!el || token !== countdownAnimToken) return;
-            // Identical to painting a correct key on the current char.
             el.style.opacity = '1';
             el.textContent = digit;
             el.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(digit);
-            currentWordIndex = 0;
-            currentCharIndex = 1;
             syncCountdownLayout();
         }
 
@@ -677,8 +707,6 @@
             el.style.opacity = '0';
             el.textContent = '0';
             el.className = 'char text-slate-500 transition-colors duration-75';
-            currentWordIndex = 0;
-            currentCharIndex = 0;
             syncCountdownLayout();
         }
 
@@ -688,7 +716,6 @@
             await waitForLayout();
             if (token !== countdownAnimToken) return;
             syncCountdownLayout();
-            // Idle blinking caret on the empty tape before the first digit.
             if (caret) caret.classList.add('animate-breath');
             await delay(650);
             if (token !== countdownAnimToken) return;
@@ -699,18 +726,16 @@
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
-                // Hold each digit long enough to read (matches ~1s server ticks).
                 await delay(1000);
                 if (token !== countdownAnimToken) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (caret) caret.classList.add('animate-breath');
-                // Brief empty caret beat between digits.
                 await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
-            tryBeginRaceAfterIntro();
+            // Wait for server race:start — do not begin from a stale countdown-era payload.
         }
 
         function ensureCountdownSequence() {
@@ -720,22 +745,27 @@
             runCountdownIntroSequence();
         }
 
-        function tryBeginRaceAfterIntro() {
-            if (!pendingRacePayload || introBusy) return;
-            var payload = pendingRacePayload;
-            pendingRacePayload = null;
-            beginActualRace(payload);
+        function abortCountdownIntro() {
+            countdownAnimToken += 1;
+            introBusy = false;
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
         }
 
         function beginActualRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
+            if (state === 'racing') return;
             config = payload.config;
             words = payload.words || [];
             room.players = payload.players || room.players;
             if (payload.bot) {
                 room.bot = Object.assign({}, room.bot || {}, payload.bot, { isBot: true });
             }
-            startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            if (payload.startsAt) {
+                startedAt = Number(payload.startsAt);
+            } else {
+                startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            }
             var self = room.players.find(function (player) { return player.userId === selfUserId; });
             selfIndex = self ? self.index : 0;
             currentWordIndex = 0;
@@ -748,14 +778,19 @@
             errorHistory = [];
             progressByIndex = {};
             lastProgressSentAt = 0;
+            clearInterval(updateTimer);
             clearInterval(progressInterval);
             progressInterval = null;
             countdownAnimToken += 1;
             introBusy = false;
             countdownSequenceStarted = false;
+            countdownTapeLocked = false;
+            countdownTapeTransform = '';
             switchToTest();
+            if (textContainer) textContainer.style.transition = '';
             renderText();
             renderLeaderboard();
+            showTestChrome();
             var wait = Math.max(0, startedAt - Date.now());
             setTimeout(function () {
                 state = 'racing';
@@ -769,9 +804,7 @@
                 }
                 updateLineLayout();
                 updateCaret();
-                document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
-                    element.classList.remove('opacity-0');
-                });
+                showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 document.addEventListener('keydown', handleKey, { signal: signal });
                 window.addEventListener('resize', function () {
@@ -789,9 +822,37 @@
 
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
-            pendingRacePayload = payload;
-            ensureCountdownSequence();
-            if (!introBusy) tryBeginRaceAfterIntro();
+            // Server race:start means the race is live — cut the cosmetic countdown immediately
+            // so backgrounded tabs don't keep animating while others are already typing.
+            abortCountdownIntro();
+            countdownSequenceStarted = true;
+            pendingRacePayload = null;
+            beginActualRace(payload);
+        }
+
+        function applyJoinOrResumeState(response) {
+            if (!response || !response.room) return false;
+            room = response.room;
+            config = room.config;
+            roomCode = room.roomCode || roomCode;
+            isHost = room.hostUserId === selfUserId;
+            if (response.state === 'racing' && response.race) {
+                countdownSequenceStarted = true;
+                introBusy = false;
+                beginActualRace(response.race);
+                return true;
+            }
+            if (response.state === 'countdown') {
+                ensureCountdownSequence();
+                return true;
+            }
+            if (response.state === 'finished') {
+                state = 'finished';
+                return true;
+            }
+            state = 'lobby';
+            renderLobby(room);
+            return true;
         }
 
         function renderLobby(nextRoom) {
@@ -1599,8 +1660,12 @@
                 if (!payload || (payload.roomId && payload.roomId !== roomId)) return;
                 switchToLobbyFromStats(payload);
             });
-            listen('match-resumed', function () {
-                /* countdown overlays removed */
+            listen('match-resumed', function (event) {
+                var response = event.detail;
+                if (!response || !response.room) return;
+                if (response.room.roomId && roomId && response.room.roomId !== roomId) return;
+                if (state === 'racing' || state === 'finished') return;
+                applyJoinOrResumeState(response);
             });
         }
 
@@ -1664,6 +1729,10 @@
             bindLobbyUI();
             try {
                 if (wasFullPageReloadOnRoom()) {
+                    intentionalLeave = true;
+                    try {
+                        if (roomId) window.usertypoMultiplayer?.leaveRace(roomId);
+                    } catch (_) { /* ignore */ }
                     window.usertypoNotifications?.showToast('You left the room because the page was refreshed.', 'cancel');
                     window.navigateTo?.('/friends');
                     return;
@@ -1684,12 +1753,10 @@
                     throw new Error('Room not found. Check the Room ID and try again.');
                 }
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
-                room = response.room;
-                config = room.config;
-                roomCode = room.roomCode || roomCode;
-                isHost = room.hostUserId === selfUserId;
-                state = 'lobby';
-                renderLobby(room);
+                if (!response || response.ok === false) {
+                    throw new Error((response && response.error) || 'Room not found. Check the Room ID and try again.');
+                }
+                applyJoinOrResumeState(response);
             } catch (error) {
                 var msg = String(error && error.message || 'Room not found');
                 if (/full/i.test(msg)) {
@@ -1712,11 +1779,9 @@
             closeHostModal();
             closeStartConfirmModal();
             setRoomHeaderInteractive(false);
-            if (roomId && state !== 'closed') {
-                try {
-                    window.usertypoMultiplayer?.leaveRace(roomId);
-                } catch (_) { /* ignore */ }
-            }
+            // Soft SPA navigation must not leave the match — otherwise other windows miss
+            // countdown/race until they remount and incorrectly replay the intro. Explicit
+            // Leave (leaveRoomAndGoFriends) already called leaveRace.
             abort.abort();
             window.toggleReady = null;
             window.showLobbyView = null;
@@ -1752,6 +1817,7 @@
             var barContainer = document.getElementById('room-word-progress-bar-container');
             var liveStats = document.getElementById('room-live-stats');
             var racing = state === 'racing' || state === 'waiting-result';
+            var showChrome = racing || state === 'countdown';
             if (wrapper) {
                 if (timerStyle === 'Off') {
                     wrapper.style.visibility = 'hidden';
@@ -1765,10 +1831,12 @@
                         barContainer && barContainer.classList.add('hidden');
                     }
                 }
-                wrapper.style.opacity = racing ? String(timerOpacity) : '';
+                wrapper.style.opacity = showChrome ? String(timerOpacity) : '';
             }
-            if (liveStats && racing) {
-                liveStats.style.opacity = String(timerOpacity);
+            if (liveStats) {
+                liveStats.classList.toggle('opacity-0', !showChrome);
+                if (showChrome) liveStats.style.opacity = String(timerOpacity);
+                else liveStats.style.opacity = '';
             }
         };
         return { init: init, cleanup: cleanup, readyUp: readyUp };
