@@ -369,11 +369,20 @@
     function leaveRace(roomId) {
         activeRoomId = '';
         if (!socket || !socket.connected) return Promise.resolve({ ok: true });
-        return emitAck('race:leave', roomId, 2000);
+        return emitAck('race:leave', roomId || '', 2000).catch(function () {
+            return { ok: true };
+        });
     }
 
     function createRoom(options) {
-        return emitAck('room:create', options);
+        return emitAck('room:create', options).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/already in a match/i.test(message)) throw error;
+            // Recover from stale membership (e.g. browser back without leave).
+            return leaveRace('').then(function () {
+                return emitAck('room:create', options);
+            });
+        });
     }
 
     function joinRoomCode(code) {
