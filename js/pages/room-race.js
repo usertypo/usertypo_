@@ -82,6 +82,7 @@
         var countdownSequenceStarted = false;
         var countdownTapeLocked = false;
         var countdownTapeTransform = '';
+        var countdownTapeBaseX = 0;
         var intentionalLeave = false;
 
         function getJoinLink() {
@@ -635,6 +636,33 @@
             }
         }
 
+        function parseTranslateX(transform) {
+            var value = String(transform || '');
+            var match = value.match(/translateX\(([-\d.]+)px\)/)
+                || value.match(/translate3d\(([-\d.]+)px/);
+            return match ? Number(match[1]) || 0 : 0;
+        }
+
+        function racePayloadStartsAt(payload) {
+            if (!payload) return Date.now();
+            if (payload.startsAt) return Number(payload.startsAt);
+            return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+        }
+
+        function beginRaceIfAlreadyLive() {
+            if (!pendingRacePayload || state === 'finished' || state === 'closed' || state === 'racing') {
+                return false;
+            }
+            if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
+            var payload = pendingRacePayload;
+            pendingRacePayload = null;
+            abortCountdownIntro();
+            countdownSequenceStarted = true;
+            introBusy = false;
+            beginActualRace(payload);
+            return true;
+        }
+
         function syncCountdownLayout(digitVisible) {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
@@ -642,18 +670,23 @@
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
 
             if (isTape) {
-                // Freeze tape scroll so it doesn't shake, but still place the caret
-                // after a typed digit (number to the left of the caret), like normal typing.
-                currentCharIndex = digitVisible ? 1 : 0;
+                // Caret stays visually fixed. Digit sits to its left by shifting the tape
+                // left by the digit width when shown (no caret movement on screen).
                 if (!countdownTapeLocked) {
+                    currentCharIndex = 0;
                     updateLineLayout();
                     countdownTapeTransform = textContainer.style.transform || '';
+                    countdownTapeBaseX = parseTranslateX(countdownTapeTransform);
                     textContainer.style.transition = 'filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform 0s';
                     countdownTapeLocked = true;
+                    positionCaretAt(caret, 0, 0);
                 } else {
-                    textContainer.style.transform = countdownTapeTransform;
+                    currentCharIndex = digitVisible ? 1 : 0;
+                    var digitEl = document.getElementById('room-char-0-0');
+                    var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
+                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                    positionCaretAt(caret, 0, currentCharIndex);
                 }
-                positionCaretAt(caret, 0, currentCharIndex);
             } else {
                 // Normal (non-tape) mode: unchanged.
                 currentCharIndex = digitVisible ? 1 : 0;
@@ -676,6 +709,7 @@
             renderLeaderboard();
             countdownTapeLocked = false;
             countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
 
             // Same DOM path as a live 1-character word. Placeholder stays invisible so
             // caret math matches the real test, but no prompt text is shown.
@@ -731,17 +765,22 @@
             if (caret) caret.classList.add('animate-breath');
             await delay(650);
             if (token !== countdownAnimToken) return;
+            if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
                 await delay(1000);
                 if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
                 await delay(280);
             }
@@ -763,6 +802,7 @@
             introBusy = false;
             countdownTapeLocked = false;
             countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
         }
 
         function tryBeginRaceAfterIntro() {
@@ -806,6 +846,7 @@
             countdownSequenceStarted = false;
             countdownTapeLocked = false;
             countdownTapeTransform = '';
+            countdownTapeBaseX = 0;
             switchToTest();
             if (textContainer) textContainer.style.transition = '';
             renderText();
@@ -843,8 +884,9 @@
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'finished' || state === 'closed') return;
-            // Keep the full local 3→2→1 animation; start the race when it finishes.
             pendingRacePayload = payload;
+            // Backgrounded / late tabs: if the server race is already live, skip the intro.
+            if (beginRaceIfAlreadyLive()) return;
             ensureCountdownSequence();
             if (!introBusy) tryBeginRaceAfterIntro();
         }
@@ -1713,6 +1755,10 @@
                 if (state === 'finished' || state === 'closed') return;
                 startRace(event.detail);
             });
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                beginRaceIfAlreadyLive();
+            }, { signal: signal });
             listen('race-progress', function (event) {
                 if (state === 'finished' || state === 'closed') return;
                 var payload = event.detail;
