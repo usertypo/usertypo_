@@ -230,6 +230,7 @@
             var titles = {
                 'host-left': 'The host left — room closed',
                 inactivity: 'Room closed due to inactivity',
+                empty: 'Room closed',
                 closed: 'Room closed',
             };
             notify({
@@ -239,6 +240,11 @@
                 body: 'You were returned to the friends page.',
             });
             dispatch('room-closed', payload);
+        });
+        activeSocket.on('room:kicked', function (payload) {
+            var kickedRoomId = payload && payload.roomId ? String(payload.roomId) : '';
+            if (activeRoomId && kickedRoomId && activeRoomId === kickedRoomId) activeRoomId = '';
+            dispatch('room-kicked', payload || {});
         });
         [
             'race:joined', 'race:countdown', 'race:start', 'race:progress',
@@ -409,6 +415,10 @@
         return emitAck('room:invite', { roomId: roomId, toUserId: toUserId });
     }
 
+    function removeRoomPlayer(roomId, targetUserId) {
+        return emitAck('room:remove-player', { roomId: roomId, targetUserId: targetUserId });
+    }
+
     if (window.usertypoAuth) {
         window.usertypoAuth.onChange(function (state) {
             if (state && state.isSignedIn && state.user) {
@@ -448,6 +458,7 @@
         addRoomBot: addRoomBot,
         startRoom: startRoom,
         inviteToRoom: inviteToRoom,
+        removeRoomPlayer: removeRoomPlayer,
         navigateToRoom: navigateToRoom,
         navigateToMatch: navigateToMatch,
         describeConfig: describeConfig,
