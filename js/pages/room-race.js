@@ -5,18 +5,6 @@
 (function () {
     'use strict';
 
-    function wasFullPageReloadOnRoom() {
-        try {
-            var bootPath = String(window.__usertypoBootPath || '').split('?')[0];
-            var bootWasRoom = bootPath === '/room' || /^\/join\/\d{4}$/.test(bootPath);
-            if (!bootWasRoom) return false;
-            var entries = performance.getEntriesByType('navigation');
-            return !!(entries.length && entries[0].type === 'reload');
-        } catch (_) {
-            return false;
-        }
-    }
-
     function createController() {
         var abort = new AbortController();
         var signal = abort.signal;
@@ -2069,17 +2057,6 @@
             }
             refreshDomRefs();
             bindLobbyUI();
-            try {
-                if (wasFullPageReloadOnRoom()) {
-                    intentionalLeave = true;
-                    try {
-                        if (roomId) window.usertypoMultiplayer?.leaveRace(roomId);
-                    } catch (_) { /* ignore */ }
-                    window.usertypoNotifications?.showToast('You left the room because the page was refreshed.', 'cancel');
-                    window.navigateTo?.('/friends');
-                    return;
-                }
-            } catch (_) { /* ignore */ }
             bindEvents();
             try {
                 await window.usertypoMultiplayer.connect();
