@@ -3,6 +3,8 @@
 const { verifyToken } = require('@clerk/backend');
 const { createClient } = require('@supabase/supabase-js');
 
+const GUEST_ID_RE = /^guest_[a-z0-9-]{8,80}$/i;
+
 function createAuthServices(env, logger) {
     const authorizedParties = String(env.CLERK_AUTHORIZED_PARTIES || env.RENDER_EXTERNAL_URL || '')
         .split(',')
@@ -22,12 +24,23 @@ function createAuthServices(env, logger) {
 
     async function authenticateSocket(socket, next) {
         try {
-            const token = socket.handshake.auth && socket.handshake.auth.token;
-            if (!token || typeof token !== 'string') throw new Error('missing_token');
-            const verified = await verifyToken(token, verifyOptions);
-            if (!verified || !verified.sub) throw new Error('invalid_token');
-            socket.data.userId = verified.sub;
-            socket.data.sessionId = verified.sid || null;
+            const handshakeAuth = (socket.handshake && socket.handshake.auth) || {};
+            const token = handshakeAuth.token;
+            if (token && typeof token === 'string') {
+                const verified = await verifyToken(token, verifyOptions);
+                if (!verified || !verified.sub) throw new Error('invalid_token');
+                socket.data.userId = verified.sub;
+                socket.data.sessionId = verified.sid || null;
+                socket.data.isGuest = false;
+                next();
+                return;
+            }
+
+            const guestId = String(handshakeAuth.guestId || '').trim();
+            if (!GUEST_ID_RE.test(guestId)) throw new Error('missing_token');
+            socket.data.userId = guestId.slice(0, 80);
+            socket.data.sessionId = null;
+            socket.data.isGuest = true;
             next();
         } catch (error) {
             logger.warn('[multiplayer] rejected socket authentication:', error && error.message);
@@ -38,6 +51,9 @@ function createAuthServices(env, logger) {
     }
 
     async function getProfile(userId) {
+        if (String(userId || '').startsWith('guest_')) {
+            return { userId, name: 'Guest', avatarUrl: '' };
+        }
         if (!supabase) {
             return { userId, name: 'Player', avatarUrl: '' };
         }
@@ -56,6 +72,9 @@ function createAuthServices(env, logger) {
     }
 
     async function areFriends(userId, friendId) {
+        if (String(userId || '').startsWith('guest_') || String(friendId || '').startsWith('guest_')) {
+            return false;
+        }
         if (!supabase) {
             return env.NODE_ENV !== 'production' || env.ALLOW_UNVERIFIED_FRIENDS === 'true';
         }

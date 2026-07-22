@@ -102,7 +102,7 @@ test('matches authenticated players and starts one server-owned race', { timeout
         second = await connect(url, signToken('user_two'));
         const challenge = await emitAck(first, 'duel:challenge', {
             toUserId: 'user_two',
-            config: { mode: 'words', amount: 10, lang: 'english' },
+            config: { mode: 'time', amount: 15, lang: 'english' },
         });
         await emitAck(first, 'duel:cancel-invite', challenge.inviteId);
         await assert.rejects(
@@ -113,13 +113,13 @@ test('matches authenticated players and starts one server-owned race', { timeout
         const secondReady = once(second, 'duel:ready');
 
         const firstSearch = await emitAck(first, 'duel:create', {
-            mode: 'words',
-            amount: 10,
+            mode: 'time',
+            amount: 15,
             lang: 'english',
         });
         assert.ok(firstSearch.listingId);
         await assert.rejects(
-            emitAck(first, 'duel:create', { mode: 'words', amount: 10, lang: 'english' }),
+            emitAck(first, 'duel:create', { mode: 'time', amount: 15, lang: 'english' }),
             /already_searching/
         );
         await assert.rejects(
@@ -127,8 +127,8 @@ test('matches authenticated players and starts one server-owned race', { timeout
             /own_listing/
         );
         const secondSearch = await emitAck(second, 'duel:create', {
-            mode: 'words',
-            amount: 10,
+            mode: 'time',
+            amount: 15,
             lang: 'english',
         });
         assert.ok(secondSearch.roomId);
@@ -196,7 +196,7 @@ test('custom room lobby: min ready and host leave', { timeout: 20_000 }, async (
         const created = await emitAck(host, 'room:create', {
             name: 'Test Room',
             maxPlayers: 8,
-            config: { mode: 'words', amount: 25, lang: 'english' },
+            config: { mode: 'time', amount: 30, lang: 'english' },
         });
         await emitAck(host, 'match:join', created.roomId);
         await emitAck(guest, 'room:join-code', created.roomCode);

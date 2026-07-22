@@ -1194,9 +1194,8 @@
 
         function getTapeMode() {
             return document.body.getAttribute('data-tape-mode')
-                || window.usertypo_settings?.cursor?.tapeModeInRooms
-                || window.usertypo_settings?.cursor?.tapeModeInDual
-                || 'letter';
+                || window.usertypo_settings?.cursor?.tapeMode
+                || 'off';
         }
 
         function appendWord(word, wordIndex) {
@@ -2062,7 +2061,7 @@
                 await window.usertypoMultiplayer.connect();
                 selfUserId = window.usertypoMultiplayer.getReadyState()?.userId || '';
                 if (!selfUserId) {
-                    throw new Error('Sign in to join a room.');
+                    throw new Error('Could not connect to multiplayer. Refresh and try again.');
                 }
                 // Always resolve membership by code when present (invite link / pin join).
                 if (roomCode) {
