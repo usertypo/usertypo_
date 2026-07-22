@@ -910,7 +910,15 @@
             </a>
         </div>
 
-        <div id="header-right" class="flex items-center justify-end w-1/3 gap-8 zen-element">
+        <div id="header-right" class="flex items-center justify-end w-1/3 gap-3 sm:gap-6 zen-element">
+            <a href="/userstats" data-spa-link id="header-level-chip"
+                class="hidden items-center gap-2 rounded-full bg-surface/40 border border-white/10 px-2.5 py-1.5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-primary/40 transition-all backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)]"
+                title="Your level" aria-label="Your level progress">
+                <span class="text-[10px] font-black tracking-widest text-primary uppercase">Lvl</span>
+                <span id="header-level-value" class="text-sm font-black text-white leading-none">1</span>
+                <span class="w-px h-3 bg-white/15"></span>
+                <span id="header-level-xp" class="text-[10px] font-bold text-slate-400 whitespace-nowrap">0 XP</span>
+            </a>
             <a href="/signin" data-spa-link id="header-account-btn"
                 class="flex items-center justify-center rounded-full bg-surface/40 border border-white/5 w-10 h-10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all font-bold backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] group"
                 title="Sign in" aria-label="Sign in">
@@ -1033,7 +1041,8 @@
     <script src="js/auth/header.js"></script>
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js"></script>
-    <script src="js/api/sessions.js?v=6"></script>
+    <script src="js/api/sessions.js?v=7"></script>
+    <script src="js/api/progression.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=6"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/performance-chart.js?v=2"></script>

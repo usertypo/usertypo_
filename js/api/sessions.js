@@ -111,7 +111,28 @@
             });
         }
 
-        return { skipped: false, session: inserted.data };
+        var xpAward = null;
+        if (
+            !payload.failed &&
+            window.usertypoProgression &&
+            typeof window.usertypoProgression.getAwardForSession === 'function'
+        ) {
+            try {
+                xpAward = await window.usertypoProgression.getAwardForSession(inserted.data.id);
+                if (xpAward && !xpAward.skipped) {
+                    console.info(
+                        '[usertypo progression] +' + xpAward.xpGained + ' XP',
+                        'lvl ' + xpAward.newLevel,
+                        xpAward.leveledUp ? '(level up!)' : '',
+                        'streak ' + xpAward.streak
+                    );
+                }
+            } catch (err) {
+                console.warn('[usertypo progression] award fetch failed', err);
+            }
+        }
+
+        return { skipped: false, session: inserted.data, xpAward: xpAward };
     }
 
     var TIMED_AMOUNTS = [15, 30, 60, 120];
