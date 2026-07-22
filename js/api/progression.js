@@ -46,24 +46,31 @@
     }
 
     function normalizeProgression(row) {
-        if (!row) return null;
+        if (!row || row.skipped) return null;
         var level = Math.max(1, Math.floor(Number(row.level) || 1));
-        var xpInto = Math.max(0, Math.floor(Number(row.xp_into_level) || 0));
-        var xpToNext = xpNeededForLevel(level);
+        var xpInto = Math.max(0, Math.floor(Number(row.xp_into_level != null ? row.xp_into_level : row.xpIntoLevel) || 0));
+        var xpToNext = row.xp_to_next != null
+            ? Math.max(1, Math.floor(Number(row.xp_to_next)))
+            : (row.xpToNext != null
+                ? Math.max(1, Math.floor(Number(row.xpToNext)))
+                : xpNeededForLevel(level));
+        var pct = row.percent_to_next != null
+            ? Number(row.percent_to_next)
+            : (row.percentToNext != null ? Number(row.percentToNext) : percentToNext(xpInto, xpToNext));
         return {
-            userId: row.user_id,
-            totalXp: Math.max(0, Math.floor(Number(row.total_xp) || 0)),
+            userId: row.user_id || row.userId || null,
+            totalXp: Math.max(0, Math.floor(Number(row.total_xp != null ? row.total_xp : row.totalXp) || 0)),
             level: level,
             xpIntoLevel: xpInto,
             xpToNext: xpToNext,
-            percentToNext: percentToNext(xpInto, xpToNext),
-            currentStreak: Math.max(0, Math.floor(Number(row.current_streak) || 0)),
-            longestStreak: Math.max(0, Math.floor(Number(row.longest_streak) || 0)),
-            lastPlayDate: row.last_play_date || null,
-            dailyXp: Math.max(0, Math.floor(Number(row.daily_xp) || 0)),
-            dailyXpDate: row.daily_xp_date || null,
-            title: levelTitle(level),
-            updatedAt: row.updated_at || null,
+            percentToNext: pct,
+            currentStreak: Math.max(0, Math.floor(Number(row.current_streak != null ? row.current_streak : row.currentStreak) || 0)),
+            longestStreak: Math.max(0, Math.floor(Number(row.longest_streak != null ? row.longest_streak : row.longestStreak) || 0)),
+            lastPlayDate: row.last_play_date || row.lastPlayDate || null,
+            dailyXp: Math.max(0, Math.floor(Number(row.daily_xp != null ? row.daily_xp : row.dailyXp) || 0)),
+            dailyXpDate: row.daily_xp_date || row.dailyXpDate || null,
+            title: row.title || levelTitle(level),
+            updatedAt: row.updated_at || row.updatedAt || null,
         };
     }
 
@@ -143,20 +150,42 @@
         var auth = await requireAuthClient();
         if (auth.skipped) return null;
 
-        // Ensure row exists
-        try {
-            await auth.client.rpc('ensure_user_progression', { p_user_id: auth.userId });
-        } catch (e) { /* row may already exist; select below */ }
+        var rpc = await auth.client.rpc('get_my_progression');
+        if (rpc.error) {
+            // Fallback: direct table read (older deploys / local)
+            console.warn('[usertypo progression] get_my_progression RPC failed, falling back', rpc.error);
+            try {
+                await auth.client.rpc('ensure_user_progression', { p_user_id: auth.userId });
+            } catch (e) { /* ignore */ }
+            var result = await auth.client
+                .from('user_progression')
+                .select('*')
+                .eq('user_id', auth.userId)
+                .maybeSingle();
+            if (result.error) throw result.error;
+            var fallback = normalizeProgression(result.data);
+            if (!fallback) {
+                fallback = {
+                    userId: auth.userId,
+                    totalXp: 0,
+                    level: 1,
+                    xpIntoLevel: 0,
+                    xpToNext: xpNeededForLevel(1),
+                    percentToNext: 0,
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    lastPlayDate: null,
+                    dailyXp: 0,
+                    dailyXpDate: null,
+                    title: levelTitle(1),
+                    updatedAt: null,
+                };
+            }
+            notifyProgression(fallback, null);
+            return fallback;
+        }
 
-        var result = await auth.client
-            .from('user_progression')
-            .select('*')
-            .eq('user_id', auth.userId)
-            .maybeSingle();
-
-        if (result.error) throw result.error;
-
-        var progression = normalizeProgression(result.data);
+        var progression = normalizeProgression(rpc.data);
         if (!progression) {
             progression = {
                 userId: auth.userId,
