@@ -689,10 +689,19 @@ function createMultiplayerServer(httpServer, options) {
 
     function leaveRace(userId, explicit) {
         const roomId = userToRoom.get(userId);
-        const room = roomId && rooms.get(roomId);
-        if (!room) return;
+        if (!roomId) return;
+        const room = rooms.get(roomId);
+        if (!room) {
+            // Stale mapping after dispose — always clear so create/join can proceed.
+            userToRoom.delete(userId);
+            return;
+        }
         const player = room.players.get(userId);
-        if (!player || player.status === 'left') return;
+        if (!player || player.status === 'left') {
+            userToRoom.delete(userId);
+            disposeCustomRoomIfNoHumans(room);
+            return;
+        }
         if (player.status === 'finished' || room.state === 'finished') {
             if (room.type === 'custom' && room.state === 'finished') {
                 player.status = 'left';
@@ -710,7 +719,7 @@ function createMultiplayerServer(httpServer, options) {
                 Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
                 emitReturnLobbyState(room);
                 maybeReturnCustomRoomToLobby(room);
-                if (!room.players.size) disposeRoom(room.id);
+                disposeCustomRoomIfNoHumans(room);
                 return;
             }
             player.joined = false;
@@ -740,7 +749,7 @@ function createMultiplayerServer(httpServer, options) {
             Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
             io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
             touchRoomActivity(room);
-            if (!room.players.size) disposeRoom(room.id);
+            disposeCustomRoomIfNoHumans(room);
             return;
         }
         io.to(roomChannel(room.id)).emit('race:player-left', [
@@ -756,6 +765,12 @@ function createMultiplayerServer(httpServer, options) {
         } else {
             maybeFinishRoom(room);
         }
+    }
+
+    function disposeCustomRoomIfNoHumans(room) {
+        if (!room || room.type !== 'custom' || room.state === 'disposed') return;
+        const humans = Array.from(room.players.values()).filter((player) => player.status !== 'left');
+        if (!humans.length) disposeRoom(room.id);
     }
 
     function clearUserTransientState(userId) {
@@ -1181,13 +1196,25 @@ function createMultiplayerServer(httpServer, options) {
 
         socket.on('race:leave', (roomId, ack) => {
             const current = userToRoom.get(userId);
-            if (current && (!roomId || current === roomId)) leaveRace(userId, true);
+            if (!current) {
+                safeAck(ack, { ok: true });
+                return;
+            }
+            if (!roomId || current === String(roomId || '')) {
+                leaveRace(userId, true);
+            } else if (!rooms.get(current)) {
+                userToRoom.delete(userId);
+            }
             safeAck(ack, { ok: true });
         });
 
         socket.on('room:create', (payload, ack) => {
             try {
-                if (userToRoom.has(userId)) throw new Error('already_in_match');
+                // Abandon any stuck/previous membership so browser-back leftovers
+                // cannot permanently block creating a new room.
+                if (userToRoom.has(userId)) {
+                    leaveRace(userId, true);
+                }
                 const config = normalizeConfig(payload && payload.config);
                 const maxPlayers = clampInteger(payload && payload.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
                 let roomCode;
@@ -1214,8 +1241,8 @@ function createMultiplayerServer(httpServer, options) {
                     safeAck(ack, { ok: true, roomId: existing.id });
                     return;
                 }
-                safeAck(ack, { ok: false, error: 'already_in_match' });
-                return;
+                // Leave stale/other membership so join isn't permanently blocked.
+                leaveRace(userId, true);
             }
             const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
             if (!room || room.type !== 'custom' || room.state !== 'waiting') {

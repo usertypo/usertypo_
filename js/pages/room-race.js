@@ -1851,9 +1851,13 @@
             closeHostModal();
             closeStartConfirmModal();
             setRoomHeaderInteractive(false);
-            // Soft SPA navigation must not leave the match — otherwise other windows miss
-            // countdown/race until they remount and incorrectly replay the intro. Explicit
-            // Leave (leaveRoomAndGoFriends) already called leaveRace.
+            // Browser back / SPA navigation away from the room page should leave the
+            // match. Explicit Leave already called leaveRace and set intentionalLeave.
+            if (!intentionalLeave && roomId && state !== 'closed') {
+                try {
+                    window.usertypoMultiplayer?.leaveRace(roomId);
+                } catch (_) { /* ignore */ }
+            }
             abort.abort();
             window.toggleReady = null;
             window.showLobbyView = null;
