@@ -41,6 +41,9 @@
         lastFingerprint = null;
         lastSyncedUserId = null;
         window.__USERTYPO_PROFILE__ = null;
+        if (window.usertypoProgression && typeof window.usertypoProgression.clearCache === 'function') {
+            window.usertypoProgression.clearCache();
+        }
     }
 
     function readStoredProfiles() {
@@ -283,6 +286,11 @@
                         profile && profile.username ? profile.username : '(no username)',
                         profile && profile.user_id ? '(' + profile.user_id + ')' : ''
                     );
+                    if (window.usertypoProgression && typeof window.usertypoProgression.getMine === 'function') {
+                        return window.usertypoProgression.getMine({ force: true }).catch(function (err) {
+                            console.warn('[usertypo progression] load failed', err);
+                        });
+                    }
                 })
                 .catch(function (err) {
                     var details = err;

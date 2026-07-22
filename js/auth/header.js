@@ -27,12 +27,43 @@
     function updateHeader(state) {
         var isSignedIn = !!(state && state.isSignedIn && state.user);
         var profile = window.__USERTYPO_PROFILE__ || null;
+        var progression = (window.usertypoProgression && window.usertypoProgression.getCached)
+            ? window.usertypoProgression.getCached()
+            : (window.__USERTYPO_PROGRESSION__ || null);
         var name = isSignedIn ? displayName(state.user, profile) : 'Guest';
-        var tier = isSignedIn ? 'Signed in' : 'Not signed in';
+        var tier = 'Not signed in';
+        if (isSignedIn) {
+            if (progression && progression.level) {
+                var title = progression.title || '';
+                tier = 'LVL ' + progression.level + (title ? ' · ' + title : '');
+            } else {
+                tier = 'Signed in';
+            }
+        }
 
         setText('shell-user-name', name);
         setText('shell-user-tier', tier);
         setText('shell-user-avatar', initialFor(name));
+
+        var levelChip = document.getElementById('header-level-chip');
+        var levelChipValue = document.getElementById('header-level-value');
+        var levelChipXp = document.getElementById('header-level-xp');
+        if (levelChip) {
+            if (isSignedIn && progression) {
+                levelChip.classList.remove('hidden');
+                levelChip.classList.add('flex');
+                if (levelChipValue) levelChipValue.textContent = String(progression.level);
+                if (levelChipXp) {
+                    var left = window.usertypoProgression && typeof window.usertypoProgression.xpRemaining === 'function'
+                        ? window.usertypoProgression.xpRemaining(progression)
+                        : Math.max(0, (progression.xpToNext || 0) - (progression.xpIntoLevel || 0));
+                    levelChipXp.textContent = left + ' to next';
+                }
+            } else {
+                levelChip.classList.add('hidden');
+                levelChip.classList.remove('flex');
+            }
+        }
 
         var authAction = document.getElementById('shell-auth-action');
         var authIcon = document.getElementById('shell-auth-action-icon');
@@ -52,6 +83,9 @@
                     if (!window.usertypoAuth) return;
                     window.usertypoAuth.signOut().then(function () {
                         window.__USERTYPO_PROFILE__ = null;
+                        if (window.usertypoProgression && typeof window.usertypoProgression.clearCache === 'function') {
+                            window.usertypoProgression.clearCache();
+                        }
                         if (window.navigateTo) window.navigateTo('/signin');
                         else window.location.href = '/signin';
                     }).catch(function (err) {
@@ -98,6 +132,10 @@
         // profiles.js will dispatch an event after it syncs/updates the row.
         // Re-render header using the cached profile, without making extra DB calls.
         window.addEventListener('usertypo:profile-synced', function () {
+            try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
+        });
+
+        window.addEventListener('usertypo:progression-updated', function () {
             try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
         });
 

@@ -928,6 +928,50 @@
                         </div>
                     </div>
 
+                    <!-- XP / Level progress (results) -->
+                    <div id="stats-xp-card"
+                        class="glass-panel rounded-xl px-5 py-4 opacity-0 stats-animate-card [animation-delay:350ms] hidden"
+                        style="border: 1px solid rgba(var(--theme-primary-rgb), 0.12);">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+                                    <span id="stats-xp-gained" class="font-headline text-xl font-black text-primary">+0 XP</span>
+                                </div>
+                                <span id="stats-xp-level-label" class="text-xs font-bold text-slate-400 uppercase tracking-widest truncate">LVL 1 · Novice</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div id="stats-xp-streak" class="flex items-center gap-1 text-amber-400 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[16px]">local_fire_department</span>
+                                    <span id="stats-xp-streak-value">0</span>
+                                    <span class="text-slate-500 font-semibold uppercase tracking-wider">streak</span>
+                                </div>
+                                <span id="stats-xp-to-next" class="text-[11px] font-bold text-slate-500">0 XP to next</span>
+                            </div>
+                        </div>
+                        <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+                            <div id="stats-xp-bar"
+                                class="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-[width] duration-700 ease-out"
+                                style="width: 0%;"></div>
+                        </div>
+                        <p id="stats-xp-guest-hint" class="hidden mt-2 text-[11px] text-slate-500">
+                            <a href="/signin" data-spa-link class="text-primary hover:underline font-bold">Sign in</a>
+                            to keep this XP and climb levels.
+                        </p>
+                    </div>
+
+                    <!-- Level-up celebration -->
+                    <div id="level-up-overlay"
+                        class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none opacity-0 transition-opacity duration-300"
+                        aria-hidden="true">
+                        <div class="text-center px-6">
+                            <p class="text-[10px] font-black uppercase tracking-[0.35em] text-primary mb-3">Level up</p>
+                            <p id="level-up-number" class="font-headline text-7xl font-black text-white leading-none mb-2"
+                                style="text-shadow: 0 0 40px rgba(var(--theme-primary-rgb), 0.55);">2</p>
+                            <p id="level-up-title" class="text-lg font-bold text-slate-300">Novice</p>
+                        </div>
+                    </div>
+
                     <div class="glass-panel rounded-xl px-5 pb-3 pt-3 h-[21.25rem] flex flex-col w-full opacity-0 stats-animate-card [animation-delay:400ms] relative"
                         id="stats-graph-card">
                         <div class="flex justify-between items-center mb-3">
@@ -3196,6 +3240,82 @@ window.setTimeout = function(handler, timeout) {
                 });
             }
 
+            function showLevelUpOverlay(level, title) {
+                var overlay = document.getElementById('level-up-overlay');
+                var numEl = document.getElementById('level-up-number');
+                var titleEl = document.getElementById('level-up-title');
+                if (!overlay) return;
+                if (numEl) numEl.textContent = String(level);
+                if (titleEl) titleEl.textContent = title || '';
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                overlay.setAttribute('aria-hidden', 'false');
+                requestAnimationFrame(function () {
+                    overlay.style.opacity = '1';
+                });
+                setTimeout(function () {
+                    overlay.style.opacity = '0';
+                    setTimeout(function () {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                        overlay.setAttribute('aria-hidden', 'true');
+                    }, 350);
+                }, 2200);
+            }
+
+            function renderResultsXp(award, guestEstimate) {
+                var card = document.getElementById('stats-xp-card');
+                if (!card) return;
+
+                var gainedEl = document.getElementById('stats-xp-gained');
+                var levelLabel = document.getElementById('stats-xp-level-label');
+                var streakEl = document.getElementById('stats-xp-streak');
+                var streakVal = document.getElementById('stats-xp-streak-value');
+                var toNextEl = document.getElementById('stats-xp-to-next');
+                var barEl = document.getElementById('stats-xp-bar');
+                var guestHint = document.getElementById('stats-xp-guest-hint');
+
+                card.classList.remove('hidden');
+
+                if (award && !award.skipped) {
+                    if (gainedEl) gainedEl.textContent = '+' + award.xpGained + ' XP';
+                    if (levelLabel) {
+                        levelLabel.textContent = 'LVL ' + award.newLevel + ' · ' + (award.title || '');
+                    }
+                    if (streakEl) streakEl.classList.remove('hidden');
+                    if (streakVal) streakVal.textContent = String(award.streak || 0);
+                    if (toNextEl) {
+                        var left = Math.max(0, (award.xpToNext || 0) - (award.xpIntoLevel || 0));
+                        toNextEl.textContent = left + ' XP to next';
+                    }
+                    if (barEl) {
+                        barEl.style.width = '0%';
+                        requestAnimationFrame(function () {
+                            barEl.style.width = Math.min(100, Math.max(0, award.percentToNext || 0)) + '%';
+                        });
+                    }
+                    if (guestHint) guestHint.classList.add('hidden');
+                    if (award.leveledUp) {
+                        showLevelUpOverlay(award.newLevel, award.title);
+                    }
+                    return;
+                }
+
+                // Guest teaser or failed/skipped award
+                var estimate = Math.max(0, Math.floor(Number(guestEstimate) || 0));
+                if (gainedEl) gainedEl.textContent = estimate > 0 ? ('+' + estimate + ' XP') : '+0 XP';
+                if (levelLabel) levelLabel.textContent = 'Sign in to level up';
+                if (streakEl) streakEl.classList.add('hidden');
+                if (toNextEl) toNextEl.textContent = '';
+                if (barEl) barEl.style.width = estimate > 0 ? '18%' : '0%';
+                if (guestHint) guestHint.classList.remove('hidden');
+            }
+
+            function hideResultsXp() {
+                var card = document.getElementById('stats-xp-card');
+                if (card) card.classList.add('hidden');
+            }
+
             // Persist completed test for signed-in users, then refresh global rank
             if (window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
                 var diagnosticsSummary = null;
@@ -3209,6 +3329,21 @@ window.setTimeout = function(handler, timeout) {
                         wordTimestamps: wordTimestamps,
                         generatedWords: generatedWords,
                     });
+                }
+
+                var guestXpEstimate = 0;
+                if (!failedReason && window.usertypoProgression && typeof window.usertypoProgression.estimateGuestXp === 'function') {
+                    guestXpEstimate = window.usertypoProgression.estimateGuestXp({
+                        duration_seconds: elapsedSeconds,
+                        accuracy: acc,
+                        wpm: exactWpm,
+                        punctuation: usePunctuation,
+                        numbers: useNumbers,
+                    });
+                }
+
+                if (failedReason) {
+                    hideResultsXp();
                 }
 
                 window.usertypoSessions.saveSession({
@@ -3228,17 +3363,37 @@ window.setTimeout = function(handler, timeout) {
                     failed: !!failedReason,
                     fail_reason: failedReason || null,
                     diagnostics: diagnosticsSummary,
-                }).then(function () {
+                }).then(function (saveResult) {
                     loadStatsGlobalRank();
                     if (useAdaptRefine && window.usertypoAdaptRefine) {
                         window.usertypoAdaptRefine.refresh({ words: wordList }).catch(function () {});
                     }
+                    if (failedReason) return;
+                    if (saveResult && saveResult.skipped && saveResult.reason === 'guest') {
+                        renderResultsXp(null, guestXpEstimate);
+                    } else if (saveResult && saveResult.xpAward) {
+                        renderResultsXp(saveResult.xpAward, guestXpEstimate);
+                    } else if (!saveResult || saveResult.skipped) {
+                        renderResultsXp(null, guestXpEstimate);
+                    }
                 }).catch(function (err) {
                     console.error('[usertypo sessions] save failed', err);
                     loadStatsGlobalRank();
+                    if (!failedReason) renderResultsXp(null, guestXpEstimate);
                 });
             } else {
                 loadStatsGlobalRank();
+                if (!failedReason && window.usertypoProgression) {
+                    renderResultsXp(null, window.usertypoProgression.estimateGuestXp({
+                        duration_seconds: elapsedSeconds,
+                        accuracy: acc,
+                        wpm: exactWpm,
+                        punctuation: usePunctuation,
+                        numbers: useNumbers,
+                    }));
+                } else {
+                    hideResultsXp();
+                }
             }
 
             // SPA Transition â€” INSTANT, no delay
