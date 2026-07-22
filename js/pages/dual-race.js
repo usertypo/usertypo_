@@ -904,6 +904,29 @@
             if (caret) caret.style.display = 'block';
         }
 
+        function seedProgressChrome() {
+            if (!config) return;
+            if (wpmDisplay) wpmDisplay.textContent = '0';
+            if (accDisplay) accDisplay.textContent = '100%';
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = '0';
+            if (config.mode === 'time') {
+                if (progressDisplay) progressDisplay.textContent = String(config.amount);
+                if (progressBar) progressBar.style.width = '0%';
+            } else if (progressDisplay) {
+                progressDisplay.innerHTML = '0<span class="text-slate-500">/</span>' + config.amount;
+                if (progressBar) progressBar.style.width = '0%';
+            }
+        }
+
+        function showTestChrome() {
+            var progressWrapper = document.getElementById('timer-progress-wrapper');
+            if (progressWrapper) progressWrapper.style.opacity = '1';
+            document.querySelectorAll('#test-view .typing-stat').forEach(function (element) {
+                element.classList.remove('opacity-0');
+            });
+            seedProgressChrome();
+        }
+
         function prepareWaitingTestView() {
             hideMessage();
             countdownTapeLocked = false;
@@ -934,6 +957,7 @@
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* defaults */ }
             }
+            showTestChrome();
             requestAnimationFrame(function () {
                 syncCountdownLayout(false);
             });
@@ -942,6 +966,7 @@
         function prepareCountdownTestView() {
             prepareWaitingTestView();
             state = 'countdown';
+            showTestChrome();
         }
 
         async function typeCountdownDigit(digit, token) {
@@ -965,16 +990,19 @@
         }
 
         function beginRaceIfAlreadyLive() {
+            // Only used after the typed intro finishes (or on tab focus) — never cut the
+            // on-screen 3→2→1 short just because the server clock already reached go.
             if (!pendingRacePayload || state === 'finished' || state === 'racing') {
                 return false;
             }
+            if (introBusy || state === 'countdown') return false;
             if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
             var payload = pendingRacePayload;
             pendingRacePayload = null;
             abortCountdownIntro();
             countdownSequenceStarted = true;
             introBusy = false;
-            beginActualRace(payload);
+            beginActualRace(payload, true);
             return true;
         }
 
@@ -987,22 +1015,17 @@
             if (caret) caret.classList.add('animate-breath');
             await delay(650);
             if (token !== countdownAnimToken) return;
-            if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
                 await delay(1000);
                 if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
                 await delay(280);
             }
@@ -1028,22 +1051,23 @@
         }
 
         function tryBeginRaceAfterIntro() {
-            if (!pendingRacePayload || introBusy) return;
+            if (introBusy) return;
+            if (!pendingRacePayload) return;
             var payload = pendingRacePayload;
             pendingRacePayload = null;
-            beginActualRace(payload);
+            // Typed countdown is the go signal — start immediately, don't wait on server startsAt.
+            beginActualRace(payload, true);
         }
 
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'finished') return;
             pendingRacePayload = payload;
-            if (beginRaceIfAlreadyLive()) return;
             ensureCountdownSequence();
             if (!introBusy) tryBeginRaceAfterIntro();
         }
 
-        function beginActualRace(payload) {
+        function beginActualRace(payload, immediate) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
@@ -1056,7 +1080,9 @@
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            if (payload.startsAt) {
+            if (immediate) {
+                startTime = Date.now();
+            } else if (payload.startsAt) {
                 startTime = Number(payload.startsAt);
             } else {
                 startTime = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
@@ -1099,13 +1125,15 @@
             hideMessage();
             if (textContainer) textContainer.style.transition = '';
             renderPrompt();
+            showTestChrome();
             if (opponentCaret) opponentCaret.style.display = 'block';
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
-            var wait = Math.max(0, startTime - Date.now());
+            var wait = immediate ? 0 : Math.max(0, startTime - Date.now());
             setTimeout(function () {
                 if (token !== raceStartToken) return;
                 state = 'racing';
+                if (immediate) startTime = Date.now();
                 hideMessage();
                 opponentDisplayWpm = currentLocalWpm();
                 if (window.usertypo_settingsApi) {
@@ -1115,9 +1143,7 @@
                 }
                 updateLineLayout();
                 updateCaret();
-                document.querySelectorAll('.typing-stat').forEach(function (element) {
-                    element.classList.remove('opacity-0');
-                });
+                showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 bindRaceKeys();
                 clearInterval(updateTimer);
