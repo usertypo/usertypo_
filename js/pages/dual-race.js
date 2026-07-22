@@ -205,8 +205,8 @@
 
         function getTapeMode() {
             return document.body.getAttribute('data-tape-mode')
-                || window.usertypo_settings?.cursor?.tapeModeInDual
-                || 'letter';
+                || window.usertypo_settings?.cursor?.tapeMode
+                || 'off';
         }
 
         function wordOffset(wordIndex) {

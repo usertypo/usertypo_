@@ -977,6 +977,7 @@ function createMultiplayerServer(httpServer, options) {
 
         socket.on('duel:challenge', async (payload, ack) => {
             try {
+                if (String(userId || '').startsWith('guest_')) throw new Error('unauthorized');
                 const toUserId = String(payload && payload.toUserId || '');
                 if (!toUserId || toUserId === userId) throw new Error('invalid_target');
                 if (!isOnline(toUserId)) throw new Error('friend_offline');

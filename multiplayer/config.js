@@ -27,18 +27,21 @@ function clampInteger(value, min, max, fallback) {
 
 function normalizeConfig(input) {
     const raw = input && typeof input === 'object' ? input : {};
-    const mode = raw.mode === 'words' ? 'words' : 'time';
-    const defaultAmount = mode === 'words' ? 50 : 30;
-    const amount = mode === 'words'
-        ? clampInteger(raw.amount, 10, 500, defaultAmount)
-        : clampInteger(raw.amount, 10, 300, defaultAmount);
+    const allowedAmounts = [15, 30, 60, 120];
+    const parsed = Number.parseInt(raw.amount, 10);
+    let amount = 30;
+    if (Number.isFinite(parsed)) {
+        amount = allowedAmounts.reduce((best, value) => (
+            Math.abs(value - parsed) < Math.abs(best - parsed) ? value : best
+        ), allowedAmounts[0]);
+    }
     const language = String(raw.lang || raw.language || 'english')
         .toLowerCase()
         .replace(/[^a-z0-9_-]/g, '')
         .slice(0, 64) || 'english';
 
     return Object.freeze({
-        mode,
+        mode: 'time',
         amount,
         lang: language,
         punct: raw.punct === true || raw.punct === 1 || raw.punct === '1',

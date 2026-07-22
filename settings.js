@@ -29,9 +29,7 @@ const DEFAULTS = {
         paceCaretCustomSpeed: 100,
         repeatedPace: true,          // auto pace caret on replay at previous test speed
         smoothLineScroll: true,
-        tapeMode: 'off',       // off | letter | word
-        tapeModeInDual: 'letter', // off | letter | word — dual test view only
-        tapeModeInRooms: 'letter', // off | letter | word — room test view only
+        tapeMode: 'off',       // off | letter | word — shared across home, dual, and rooms
     },
     soundscape: {
         clickSounds: false,
@@ -106,12 +104,18 @@ function loadSettings() {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
     }
 
-    if (settings.cursor && settings.cursor.tapeModeInDual === undefined) {
-        settings.cursor.tapeModeInDual = 'letter';
-    }
-
-    if (settings.cursor && settings.cursor.tapeModeInRooms === undefined) {
-        settings.cursor.tapeModeInRooms = 'letter';
+    if (settings.cursor) {
+        // Collapse legacy dual/rooms tape settings into the shared tapeMode.
+        if (
+            (settings.cursor.tapeMode === undefined || settings.cursor.tapeMode === null)
+            && (settings.cursor.tapeModeInDual || settings.cursor.tapeModeInRooms)
+        ) {
+            settings.cursor.tapeMode = settings.cursor.tapeModeInDual
+                || settings.cursor.tapeModeInRooms
+                || 'off';
+        }
+        delete settings.cursor.tapeModeInDual;
+        delete settings.cursor.tapeModeInRooms;
     }
 
     // Migrate quickRestart from testRules to keyboardLayout
@@ -1469,12 +1473,6 @@ function isDualPage() {
 
 function getEffectiveTapeMode(settings) {
     const cursor = settings?.cursor || {};
-    if (isRoomPage()) {
-        return String(cursor.tapeModeInRooms || 'letter').toLowerCase();
-    }
-    if (isDualPage()) {
-        return String(cursor.tapeModeInDual || 'letter').toLowerCase();
-    }
     return String(cursor.tapeMode || 'off').toLowerCase();
 }
 

@@ -47,7 +47,7 @@
 
     function friendlyError(code) {
         var messages = {
-            unauthorized: 'Sign in to use multiplayer.',
+            unauthorized: 'Sign in to challenge friends.',
             friend_offline: 'That friend is no longer online.',
             not_friends: 'You can only challenge friends.',
             invite_not_found: 'That dual request has expired.',
@@ -282,6 +282,19 @@
         });
     }
 
+    function getOrCreateGuestId() {
+        var key = 'usertypo:guest-id';
+        try {
+            var existing = localStorage.getItem(key);
+            if (existing && /^guest_[a-z0-9-]{8,80}$/i.test(existing)) return existing;
+        } catch (_) { /* ignore */ }
+        var id = 'guest_' + (window.crypto && typeof window.crypto.randomUUID === 'function'
+            ? window.crypto.randomUUID()
+            : (Date.now().toString(16) + Math.random().toString(16).slice(2, 10)));
+        try { localStorage.setItem(key, id); } catch (_) { /* ignore */ }
+        return id;
+    }
+
     async function ensureConnected() {
         if (socket && socket.connected && readyState) return socket;
         if (connectPromise) return connectPromise;
@@ -289,10 +302,6 @@
             if (!window.io) throw new Error('Socket.IO client is not loaded.');
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
-            var state = window.usertypoAuth.getState();
-            if (!state.isSignedIn || !window.Clerk || !window.Clerk.session) {
-                throw new Error('Sign in to use multiplayer.');
-            }
             if (!socket) {
                 var url = window.USERTYPO_CONFIG
                     && window.USERTYPO_CONFIG.multiplayer
@@ -305,9 +314,14 @@
                     reconnectionDelay: 500,
                     reconnectionDelayMax: 4000,
                     auth: function (callback) {
-                        window.Clerk.session.getToken()
-                            .then(function (token) { callback({ token: token }); })
-                            .catch(function () { callback({ token: '' }); });
+                        var state = window.usertypoAuth.getState();
+                        if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
+                            window.Clerk.session.getToken()
+                                .then(function (token) { callback({ token: token }); })
+                                .catch(function () { callback({ guestId: getOrCreateGuestId() }); });
+                            return;
+                        }
+                        callback({ guestId: getOrCreateGuestId() });
                     },
                 });
                 bindSocketEvents(socket);
@@ -337,7 +351,7 @@
             return value === true || value === 1 || value === '1';
         }
         return [
-            config.amount + ' ' + (config.mode === 'words' ? 'words' : 'seconds'),
+            config.amount + ' seconds',
             config.lang || 'english',
             flagOn(config.punct) ? 'punctuation' : '',
             flagOn(config.nums) ? 'numbers' : '',
@@ -453,23 +467,21 @@
     }
 
     if (window.usertypoAuth) {
-        window.usertypoAuth.onChange(function (state) {
-            if (state && state.isSignedIn && state.user) {
-                ensureConnected().catch(function (error) {
-                    console.warn('[multiplayer] connect failed:', error && error.message);
-                });
-            } else if (socket) {
+        window.usertypoAuth.onChange(function () {
+            if (socket) {
                 socket.disconnect();
                 socket = null;
                 readyState = null;
                 pendingMatches = {};
                 activeRoomId = '';
             }
+            ensureConnected().catch(function (error) {
+                console.warn('[multiplayer] connect failed:', error && error.message);
+            });
         });
         window.usertypoAuth.ready().then(function () {
-            var state = window.usertypoAuth.getState();
-            if (state && state.isSignedIn) return ensureConnected();
-        }).catch(function () { /* guest or unavailable */ });
+            return ensureConnected();
+        }).catch(function () { /* auth unavailable */ });
     }
 
     window.usertypoMultiplayer = {

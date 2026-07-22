@@ -163,7 +163,7 @@
             <div
                 class="flex justify-between items-center relative opacity-0 animate-fade-in-up [animation-delay:200ms] px-1 py-2">
                 <div>
-                    <h1 class="text-3xl font-bold text-slate-100 mb-1">Friends</h1>
+                    <h1 class="text-3xl font-bold text-slate-100 mb-1">Friends and multiplayer</h1>
                     <p class="text-slate-400 text-sm">Manage your network, find opponents, and track stats.</p>
                 </div>
                 <button id="add-friends-btn"
@@ -345,17 +345,11 @@
                     class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">swords</span>
                 Dual
             </button>
-            <button id="create-room-btn"
+            <button id="rooms-menu-btn"
                 class="panel-surface flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
                 <span
-                    class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">add_circle</span>
-                Create a Room
-            </button>
-            <button id="join-room-btn"
-                class="panel-surface flex items-center gap-3 px-4 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-all hover:shadow-[0_0_15px_rgba(0,208,255,0.3)] hover:border-primary/50 text-sm font-bold whitespace-nowrap group">
-                <span
-                    class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">login</span>
-                Join a Room
+                    class="material-symbols-outlined text-primary group-hover:drop-shadow-[0_0_8px_rgba(0,208,255,0.8)] transition-all">meeting_room</span>
+                Rooms
             </button>
         </div>
         <!-- Main Button -->
@@ -365,6 +359,39 @@
             <span class="material-symbols-outlined text-primary text-3xl transition-transform duration-300"
                 id="room-toggle-icon">groups</span>
         </button>
+    </div>
+
+    <!-- Rooms choice modal (Multiplayer → Rooms) -->
+    <div id="rooms-choice-modal"
+        class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="rooms-choice-backdrop" class="absolute inset-0 cursor-pointer"></div>
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-md rounded-2xl p-6 relative z-10 transform scale-95 transition-transform duration-300 border border-white/10"
+            id="rooms-choice-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white tracking-tight">Rooms</h2>
+                <button id="close-rooms-choice-btn" type="button"
+                    class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-slate-400 mb-5">Join a private room with a code or create one for your friends.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="rooms-choice-join-btn" type="button"
+                    class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
+                    <span class="material-symbols-outlined text-primary text-2xl">login</span>
+                    <span class="block text-white font-bold mt-2">Join a Room</span>
+                    <span class="block text-xs text-slate-400 mt-1">Enter a 4-digit room ID</span>
+                    <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500">Enter</span>
+                </button>
+                <button id="rooms-choice-create-btn" type="button"
+                    class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
+                    <span class="material-symbols-outlined text-primary text-2xl">add_circle</span>
+                    <span class="block text-white font-bold mt-2">Create a Room</span>
+                    <span class="block text-xs text-slate-400 mt-1">Choose match settings</span>
+                    <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500">Tab + Enter</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Add Friends Modal -->
@@ -521,47 +548,20 @@
                             class="material-symbols-outlined absolute right-4 bottom-2.5 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
 
-                    <!-- Mode Selection -->
-                    <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test
-                            Mode</label>
-                        <div class="flex items-center w-full gap-2">
-                            <div id="btn-mode-time" data-mode="time"
-                                class="flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">schedule</span>
-                                <span class="text-sm font-semibold">Time</span>
-                            </div>
-                            <div id="btn-mode-words" data-mode="words"
-                                class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">format_align_left</span>
-                                <span
-                                    class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Words</span>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Amount Selection -->
                     <div>
                         <label id="room-amount-label"
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
                             (Seconds)</label>
                         <div class="flex flex-wrap gap-2" id="room-amount-container">
-                            <button
+                            <button type="button"
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">15</button>
-                            <button
+                            <button type="button"
                                 class="flex-1 bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]">30</button>
-                            <button
+                            <button type="button"
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">60</button>
-                            <button
+                            <button type="button"
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">120</button>
-                            <button
-                                class="flex-1 bg-white/5 hover:bg-white/10 text-slate-400 py-2 rounded-lg text-sm transition-colors border border-white/10 border-dashed">Custom</button>
-                        </div>
-                        <div id="room-custom-input-container" class="hidden mt-2 relative">
-                            <span
-                                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">edit</span>
-                            <input type="number" id="room-custom-input" placeholder="Enter custom amount..."
-                                class="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 focus:outline-none focus:border-primary/50 focus:bg-white/5 text-sm transition-all font-semibold font-mono">
                         </div>
                     </div>
 
@@ -663,24 +663,6 @@
                     </div>
 
                     <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test
-                            Mode</label>
-                        <div class="flex items-center w-full gap-2">
-                            <div id="dual-btn-mode-time" data-mode="time"
-                                class="flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">schedule</span>
-                                <span class="text-sm font-semibold">Time</span>
-                            </div>
-                            <div id="dual-btn-mode-words" data-mode="words"
-                                class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">format_align_left</span>
-                                <span
-                                    class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Words</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
                         <label id="dual-amount-label"
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
                             (Seconds)</label>
@@ -693,14 +675,6 @@
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">60</button>
                             <button type="button"
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">120</button>
-                            <button type="button"
-                                class="flex-1 bg-white/5 hover:bg-white/10 text-slate-400 py-2 rounded-lg text-sm transition-colors border border-white/10 border-dashed">Custom</button>
-                        </div>
-                        <div id="dual-custom-input-container" class="hidden mt-2 relative">
-                            <span
-                                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">edit</span>
-                            <input type="number" id="dual-custom-input" placeholder="Enter custom amount..."
-                                class="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 focus:outline-none focus:border-primary/50 focus:bg-white/5 text-sm transition-all font-semibold font-mono">
                         </div>
                     </div>
 
@@ -815,24 +789,6 @@
                     </div>
 
                     <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test
-                            Mode</label>
-                        <div class="flex items-center w-full gap-2">
-                            <div id="fm-btn-mode-time" data-mode="time"
-                                class="flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">schedule</span>
-                                <span class="text-sm font-semibold">Time</span>
-                            </div>
-                            <div id="fm-btn-mode-words" data-mode="words"
-                                class="flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group">
-                                <span class="material-symbols-outlined text-[18px]">format_align_left</span>
-                                <span
-                                    class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Words</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
                         <label id="fm-amount-label"
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
                             (Seconds)</label>
@@ -843,6 +799,8 @@
                                 class="flex-1 bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]">30</button>
                             <button type="button"
                                 class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">60</button>
+                            <button type="button"
+                                class="flex-1 bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent">120</button>
                         </div>
                     </div>
 
@@ -916,6 +874,7 @@ window.__spaPageInit = function() {
             const FRIENDS_MODAL_IDS = [
                 'add-friends-modal',
                 'remove-friend-modal',
+                'rooms-choice-modal',
                 'join-room-modal',
                 'create-room-modal',
                 'configure-dual-modal',
@@ -1686,8 +1645,46 @@ window.__spaPageInit = function() {
                 }
             });
 
+            // --- ROOMS CHOICE MODAL LOGIC ---
+            const roomsMenuBtn = document.getElementById('rooms-menu-btn');
+            const roomsChoiceModal = document.getElementById('rooms-choice-modal');
+            const roomsChoiceBackdrop = document.getElementById('rooms-choice-backdrop');
+            const roomsChoiceContent = document.getElementById('rooms-choice-content');
+            const closeRoomsChoiceBtn = document.getElementById('close-rooms-choice-btn');
+            const roomsChoiceJoinBtn = document.getElementById('rooms-choice-join-btn');
+            const roomsChoiceCreateBtn = document.getElementById('rooms-choice-create-btn');
+            let roomsChoiceKeyboardTarget = 'join';
+
+            function closeRoomsChoiceModal() {
+                markModalClosed(roomsChoiceModal);
+                if (roomsChoiceContent) {
+                    roomsChoiceContent.classList.remove('scale-100');
+                    roomsChoiceContent.classList.add('scale-95');
+                }
+            }
+
+            function openRoomsChoiceModal() {
+                if (roomOptions) {
+                    roomOptions.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                    roomOptions.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                    if (roomToggleBtn) roomToggleBtn.classList.remove('scale-110', 'shadow-[0_0_20px_rgba(0,208,255,0.4)]', 'border-primary/50');
+                }
+                roomsChoiceKeyboardTarget = 'join';
+                if (document.activeElement === roomsChoiceCreateBtn || document.activeElement === roomsChoiceJoinBtn) {
+                    document.activeElement.blur();
+                }
+                roomsChoiceModal.classList.remove('opacity-0', 'pointer-events-none');
+                roomsChoiceModal.removeAttribute('inert');
+                roomsChoiceContent.classList.remove('scale-95');
+                roomsChoiceContent.classList.add('scale-100');
+                setPageBackgroundInert(true);
+            }
+
+            if (roomsMenuBtn) roomsMenuBtn.addEventListener('click', openRoomsChoiceModal);
+            if (closeRoomsChoiceBtn) closeRoomsChoiceBtn.addEventListener('click', closeRoomsChoiceModal);
+            if (roomsChoiceBackdrop) roomsChoiceBackdrop.addEventListener('click', closeRoomsChoiceModal);
+
             // --- JOIN ROOM MODAL LOGIC ---
-            const joinRoomBtn = document.getElementById('join-room-btn');
             const joinRoomModal = document.getElementById('join-room-modal');
             const closeJoinModalBtn = document.getElementById('close-join-modal-btn');
             const joinRoomBackdrop = document.getElementById('join-room-backdrop');
@@ -1748,7 +1745,6 @@ window.__spaPageInit = function() {
                 if (joinRoomPinInput) joinRoomPinInput.value = '';
             }
 
-            if (joinRoomBtn) joinRoomBtn.addEventListener('click', openJoinModal);
             if (closeJoinModalBtn) closeJoinModalBtn.addEventListener('click', closeJoinModal);
             if (joinRoomBackdrop) joinRoomBackdrop.addEventListener('click', closeJoinModal);
             if (joinRoomPinInput) {
@@ -1765,7 +1761,6 @@ window.__spaPageInit = function() {
             }
 
             // --- CREATE ROOM MODAL LOGIC ---
-            const createRoomBtn = document.getElementById('create-room-btn');
             const createRoomModal = document.getElementById('create-room-modal');
             const closeCreateModalBtn = document.getElementById('close-create-modal-btn');
             const createRoomBackdrop = document.getElementById('create-room-backdrop');
@@ -1803,7 +1798,34 @@ window.__spaPageInit = function() {
                 createRoomConfirmation.classList.remove('flex');
             }
 
-            if (createRoomBtn) createRoomBtn.addEventListener('click', openCreateModal);
+            if (roomsChoiceJoinBtn) {
+                roomsChoiceJoinBtn.addEventListener('click', () => {
+                    closeRoomsChoiceModal();
+                    openJoinModal();
+                });
+            }
+            if (roomsChoiceCreateBtn) {
+                roomsChoiceCreateBtn.addEventListener('click', () => {
+                    closeRoomsChoiceModal();
+                    openCreateModal();
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (!isModalVisible(roomsChoiceModal)) return;
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    roomsChoiceKeyboardTarget = 'create';
+                    roomsChoiceCreateBtn?.focus();
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (roomsChoiceKeyboardTarget === 'create') roomsChoiceCreateBtn?.click();
+                    else roomsChoiceJoinBtn?.click();
+                }
+            });
+
             if (closeCreateModalBtn) closeCreateModalBtn.addEventListener('click', closeCreateModal);
             if (createRoomBackdrop) createRoomBackdrop.addEventListener('click', closeCreateModal);
 
@@ -1844,106 +1866,32 @@ window.__spaPageInit = function() {
                 }
             });
 
-            // --- MODE SELECTION LOGIC ---
-            let currentMode = 'time';
-            const btnModeTime = document.getElementById('btn-mode-time');
-            const btnModeWords = document.getElementById('btn-mode-words');
-            const roomAmountLabel = document.getElementById('room-amount-label');
-            const roomAmountContainer = document.getElementById('room-amount-container');
-
-            function setRoomMode(mode) {
-                currentMode = mode;
-
-                // Update mode buttons styling
-                if (mode === 'time') {
-                    btnModeTime.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    btnModeTime.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    btnModeWords.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    btnModeWords.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    roomAmountLabel.innerText = 'Test Timer (Seconds)';
-
-                    if (roomAmountContainer) {
-                        const btns = roomAmountContainer.querySelectorAll('button');
-                        if (btns.length >= 4) {
-                            btns[0].innerText = '15';
-                            btns[1].innerText = '30';
-                            btns[2].innerText = '60';
-                            btns[3].innerText = '120';
-                        }
-                    }
-                } else {
-                    btnModeWords.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    btnModeWords.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    btnModeTime.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    btnModeTime.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    roomAmountLabel.innerText = 'Test Length (Words)';
-
-                    if (roomAmountContainer) {
-                        const btns = roomAmountContainer.querySelectorAll('button');
-                        if (btns.length >= 4) {
-                            btns[0].innerText = '10';
-                            btns[1].innerText = '25';
-                            btns[2].innerText = '50';
-                            btns[3].innerText = '100';
-                        }
-                    }
-                }
-            }
-
-            if (btnModeTime) btnModeTime.addEventListener('click', () => setRoomMode('time'));
-            if (btnModeWords) btnModeWords.addEventListener('click', () => setRoomMode('words'));
-
             // --- AMOUNT BUTTON SELECTION LOGIC ---
-            const customInputContainer = document.getElementById('room-custom-input-container');
-            const customInput = document.getElementById('room-custom-input');
+            const roomAmountContainer = document.getElementById('room-amount-container');
 
             if (roomAmountContainer) {
                 const timerBtns = roomAmountContainer.querySelectorAll('button');
                 timerBtns.forEach(btn => {
                     btn.addEventListener('click', () => {
-                        // Reset all timer buttons
                         timerBtns.forEach(b => {
                             b.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-                            if (b.textContent.trim() === 'Custom') {
-                                b.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
-                            } else {
-                                b.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
-                                b.classList.remove('border-dashed');
-                            }
+                            b.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
                         });
-                        // Activate clicked button
-                        btn.classList.remove('bg-white/10', 'bg-white/5', 'text-slate-200', 'text-slate-400', 'border-transparent', 'border-white/10', 'border-dashed');
+                        btn.classList.remove('bg-white/10', 'text-slate-200', 'border-transparent');
                         btn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-
-                        if (btn.textContent.trim() === 'Custom') {
-                            customInputContainer.classList.remove('hidden');
-                            customInput.focus();
-                        } else {
-                            customInputContainer.classList.add('hidden');
-                        }
                     });
                 });
             }
 
             if (submitCreateRoomBtn) {
                 submitCreateRoomBtn.addEventListener('click', async () => {
-                    // Collect room configuration from the form
-                    let selectedAmount = currentMode === 'time' ? 30 : 50;
+                    let selectedAmount = 30;
 
                     if (roomAmountContainer) {
                         roomAmountContainer.querySelectorAll('button').forEach(btn => {
                             if (btn.classList.contains('bg-primary')) {
-                                if (btn.textContent.trim() === 'Custom') {
-                                    const val = parseInt(customInput.value);
-                                    if (!isNaN(val) && val > 0) selectedAmount = val;
-                                } else {
-                                    const val = parseInt(btn.textContent);
-                                    if (!isNaN(val)) selectedAmount = val;
-                                }
+                                const val = parseInt(btn.textContent);
+                                if (!isNaN(val)) selectedAmount = val;
                             }
                         });
                     }
@@ -1969,7 +1917,7 @@ window.__spaPageInit = function() {
                             name: roomName,
                             maxPlayers: 8,
                             config: {
-                                mode: currentMode,
+                                mode: 'time',
                                 amount: selectedAmount,
                                 lang: selectedLang,
                                 punct: usePunct,
@@ -2014,18 +1962,11 @@ window.__spaPageInit = function() {
                 const roomNameInput = document.getElementById('create-room-name-input');
                 if (roomNameInput) roomNameInput.value = '';
 
-                setRoomMode('time');
-
                 if (roomAmountContainer) {
                     const btns = roomAmountContainer.querySelectorAll('button');
                     btns.forEach(btn => {
                         btn.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-                        if (btn.textContent.trim() === 'Custom') {
-                            btn.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
-                        } else {
-                            btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
-                            btn.classList.remove('border-dashed');
-                        }
+                        btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
                     });
                     const thirtyBtn = Array.from(btns).find(b => b.textContent.trim() === '30');
                     if (thirtyBtn) {
@@ -2033,9 +1974,6 @@ window.__spaPageInit = function() {
                         thirtyBtn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
                     }
                 }
-
-                if (customInputContainer) customInputContainer.classList.add('hidden');
-                if (customInput) customInput.value = '';
 
                 [toggleBtnPunct, toggleBtnNum].forEach(btn => {
                     if (btn && btn.classList.contains('text-primary')) {
@@ -2050,79 +1988,25 @@ window.__spaPageInit = function() {
             const configureDualContent = document.getElementById('configure-dual-content');
             const closeConfigureDualBtn = document.getElementById('close-configure-dual-btn');
             const submitDualRequestBtn = document.getElementById('submit-dual-request-btn');
-            const dualBtnModeTime = document.getElementById('dual-btn-mode-time');
-            const dualBtnModeWords = document.getElementById('dual-btn-mode-words');
-            const dualAmountLabel = document.getElementById('dual-amount-label');
             const dualAmountContainer = document.getElementById('dual-amount-container');
-            const dualCustomInputContainer = document.getElementById('dual-custom-input-container');
-            const dualCustomInput = document.getElementById('dual-custom-input');
             const dualBtnPunct = document.getElementById('dual-btn-punct');
             const dualBtnNum = document.getElementById('dual-btn-num');
             const dualLangSelect = document.getElementById('dual-language-select');
-            let dualCurrentMode = 'time';
             let dualTargetFriend = null;
             let dualTargetAvatar = '';
 
-            function setDualMode(mode) {
-                dualCurrentMode = mode;
-
-                if (mode === 'time') {
-                    dualBtnModeTime.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    dualBtnModeTime.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    dualBtnModeWords.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    dualBtnModeWords.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    dualAmountLabel.innerText = 'Test Timer (Seconds)';
-
-                    const btns = dualAmountContainer.querySelectorAll('button');
-                    if (btns.length >= 4) {
-                        btns[0].innerText = '15';
-                        btns[1].innerText = '30';
-                        btns[2].innerText = '60';
-                        btns[3].innerText = '120';
-                    }
-                } else {
-                    dualBtnModeWords.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    dualBtnModeWords.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    dualBtnModeTime.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    dualBtnModeTime.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    dualAmountLabel.innerText = 'Test Length (Words)';
-
-                    const btns = dualAmountContainer.querySelectorAll('button');
-                    if (btns.length >= 4) {
-                        btns[0].innerText = '10';
-                        btns[1].innerText = '25';
-                        btns[2].innerText = '50';
-                        btns[3].innerText = '100';
-                    }
-                }
-            }
-
             function resetConfigureDualForm() {
-                setDualMode('time');
-
                 dualAmountContainer.querySelectorAll('button').forEach(btn => {
                     btn.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-                    if (btn.textContent.trim() === 'Custom') {
-                        btn.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
-                    } else {
-                        btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
-                        btn.classList.remove('border-dashed');
-                    }
+                    btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
                 });
 
                 const defaultBtn = Array.from(dualAmountContainer.querySelectorAll('button'))
-                    .find(b => b.textContent.trim() === (dualCurrentMode === 'time' ? '30' : '50'));
+                    .find(b => b.textContent.trim() === '30');
                 if (defaultBtn) {
                     defaultBtn.classList.remove('bg-white/10', 'text-slate-200', 'border-transparent');
                     defaultBtn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
                 }
-
-                dualCustomInputContainer.classList.add('hidden');
-                dualCustomInput.value = '';
 
                 [dualBtnPunct, dualBtnNum].forEach(btn => {
                     if (btn && btn.classList.contains('text-primary')) {
@@ -2153,17 +2037,12 @@ window.__spaPageInit = function() {
             }
 
             function collectDualConfig() {
-                let selectedAmount = dualCurrentMode === 'time' ? 30 : 50;
+                let selectedAmount = 30;
 
                 dualAmountContainer.querySelectorAll('button').forEach(btn => {
                     if (btn.classList.contains('bg-primary')) {
-                        if (btn.textContent.trim() === 'Custom') {
-                            const val = parseInt(dualCustomInput.value, 10);
-                            if (!isNaN(val) && val > 0) selectedAmount = val;
-                        } else {
-                            const val = parseInt(btn.textContent, 10);
-                            if (!isNaN(val)) selectedAmount = val;
-                        }
+                        const val = parseInt(btn.textContent, 10);
+                        if (!isNaN(val)) selectedAmount = val;
                     }
                 });
 
@@ -2171,7 +2050,7 @@ window.__spaPageInit = function() {
                 const useNums = dualBtnNum && dualBtnNum.classList.contains('text-primary') ? '1' : '0';
 
                 return {
-                    mode: dualCurrentMode,
+                    mode: 'time',
                     amount: selectedAmount,
                     lang: dualLangSelect ? dualLangSelect.value : 'english',
                     punct: usePunct,
@@ -2182,31 +2061,16 @@ window.__spaPageInit = function() {
 
             // Challenge buttons are bound when friend cards are rendered.
 
-            if (dualBtnModeTime) dualBtnModeTime.addEventListener('click', () => setDualMode('time'));
-            if (dualBtnModeWords) dualBtnModeWords.addEventListener('click', () => setDualMode('words'));
-
             if (dualAmountContainer) {
                 dualAmountContainer.querySelectorAll('button').forEach(btn => {
                     btn.addEventListener('click', () => {
                         dualAmountContainer.querySelectorAll('button').forEach(b => {
                             b.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-                            if (b.textContent.trim() === 'Custom') {
-                                b.classList.add('bg-white/5', 'text-slate-400', 'border-white/10', 'border-dashed');
-                            } else {
-                                b.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
-                                b.classList.remove('border-dashed');
-                            }
+                            b.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
                         });
 
-                        btn.classList.remove('bg-white/10', 'bg-white/5', 'text-slate-200', 'text-slate-400', 'border-transparent', 'border-white/10', 'border-dashed');
+                        btn.classList.remove('bg-white/10', 'text-slate-200', 'border-transparent');
                         btn.classList.add('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
-
-                        if (btn.textContent.trim() === 'Custom') {
-                            dualCustomInputContainer.classList.remove('hidden');
-                            dualCustomInput.focus();
-                        } else {
-                            dualCustomInputContainer.classList.add('hidden');
-                        }
                     });
                 });
             }
@@ -2264,55 +2128,13 @@ window.__spaPageInit = function() {
             const backFromDualListBtn = document.getElementById('back-from-dual-list-btn');
             const publicDualList = document.getElementById('public-dual-list');
             const publicDualListEmpty = document.getElementById('public-dual-list-empty');
-            const fmBtnModeTime = document.getElementById('fm-btn-mode-time');
-            const fmBtnModeWords = document.getElementById('fm-btn-mode-words');
-            const fmAmountLabel = document.getElementById('fm-amount-label');
             const fmAmountContainer = document.getElementById('fm-amount-container');
             const fmBtnPunct = document.getElementById('fm-btn-punct');
             const fmBtnNum = document.getElementById('fm-btn-num');
             const fmLangSelect = document.getElementById('fm-language-select');
-            let fmCurrentMode = 'time';
             let dualChoiceKeyboardTarget = 'join';
 
-            function setFmMode(mode) {
-                fmCurrentMode = mode;
-
-                if (mode === 'time') {
-                    fmBtnModeTime.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    fmBtnModeTime.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    fmBtnModeWords.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    fmBtnModeWords.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    fmAmountLabel.innerText = 'Test Timer (Seconds)';
-
-                    const btns = fmAmountContainer.querySelectorAll('button');
-                    if (btns.length >= 3) {
-                        btns[0].innerText = '15';
-                        btns[1].innerText = '30';
-                        btns[2].innerText = '60';
-                    }
-                } else {
-                    fmBtnModeWords.className = 'flex items-center justify-center gap-2 text-primary border border-primary/20 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all shadow-[0_0_10px_rgba(0,208,255,0.2)] hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    fmBtnModeWords.querySelector('span:nth-child(2)').classList.remove('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    fmBtnModeTime.className = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
-                    fmBtnModeTime.querySelector('span:nth-child(2)').classList.add('text-slate-300', 'group-hover:text-white', 'transition-colors');
-
-                    fmAmountLabel.innerText = 'Test Length (Words)';
-
-                    const btns = fmAmountContainer.querySelectorAll('button');
-                    if (btns.length >= 3) {
-                        btns[0].innerText = '10';
-                        btns[1].innerText = '25';
-                        btns[2].innerText = '50';
-                    }
-                }
-            }
-
             function resetFindMatchForm() {
-                setFmMode('time');
-
                 fmAmountContainer.querySelectorAll('button').forEach(btn => {
                     btn.classList.remove('bg-primary', 'text-background-dark', 'font-bold', 'shadow-[0_0_10px_rgba(0,208,255,0.3)]');
                     btn.classList.add('bg-white/10', 'text-slate-200', 'border-transparent');
@@ -2422,7 +2244,7 @@ window.__spaPageInit = function() {
             }
 
             function collectFmConfig() {
-                let selectedAmount = fmCurrentMode === 'time' ? 30 : 25;
+                let selectedAmount = 30;
 
                 fmAmountContainer.querySelectorAll('button').forEach(btn => {
                     if (btn.classList.contains('bg-primary')) {
@@ -2435,7 +2257,7 @@ window.__spaPageInit = function() {
                 const useNums = fmBtnNum && fmBtnNum.classList.contains('text-primary') ? '1' : '0';
 
                 return {
-                    mode: fmCurrentMode,
+                    mode: 'time',
                     amount: selectedAmount,
                     lang: fmLangSelect ? fmLangSelect.value : 'english',
                     punct: usePunct,
@@ -2478,9 +2300,6 @@ window.__spaPageInit = function() {
                     renderPublicDualListings(event.detail);
                 }
             });
-
-            if (fmBtnModeTime) fmBtnModeTime.addEventListener('click', () => setFmMode('time'));
-            if (fmBtnModeWords) fmBtnModeWords.addEventListener('click', () => setFmMode('words'));
 
             if (fmAmountContainer) {
                 fmAmountContainer.querySelectorAll('button').forEach(btn => {
