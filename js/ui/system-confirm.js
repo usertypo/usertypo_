@@ -62,21 +62,26 @@
         var message = $('system-confirm-message');
         var icon = $('system-confirm-icon');
         var ok = $('system-confirm-ok');
-        var box = $('system-confirm-box');
 
         setStatus('');
         setBusy(false);
+
+        if (ok) {
+            ok.classList.remove('system-confirm-ok-danger');
+            ok.classList.add(
+                'bg-primary/15',
+                'hover:bg-primary/25',
+                'text-primary',
+                'border',
+                'border-primary/25'
+            );
+        }
 
         if (mode === MODE.EXPORT) {
             if (title) title.textContent = 'Export Data';
             if (message) message.textContent = 'Would you like to download your usertypo_ data?';
             if (icon) icon.textContent = 'download';
-            if (ok) {
-                ok.textContent = 'Download';
-                ok.classList.remove('bg-error', 'text-white');
-                ok.classList.add('bg-primary', 'text-background-dark');
-            }
-            if (box) box.classList.remove('border-error/30');
+            if (ok) ok.textContent = 'Download';
             return;
         }
 
@@ -86,10 +91,8 @@
             if (icon) icon.textContent = 'refresh';
             if (ok) {
                 ok.textContent = 'Reset';
-                ok.classList.remove('bg-primary', 'text-background-dark');
-                ok.classList.add('bg-error', 'text-white');
+                ok.classList.add('system-confirm-ok-danger');
             }
-            if (box) box.classList.add('border-error/30');
             return;
         }
 
@@ -99,10 +102,8 @@
             if (icon) icon.textContent = 'restart_alt';
             if (ok) {
                 ok.textContent = 'Reset';
-                ok.classList.remove('bg-primary', 'text-background-dark');
-                ok.classList.add('bg-error', 'text-white');
+                ok.classList.add('system-confirm-ok-danger');
             }
-            if (box) box.classList.add('border-error/30');
             return;
         }
 
@@ -112,10 +113,8 @@
             if (icon) icon.textContent = 'person_remove';
             if (ok) {
                 ok.textContent = 'Delete';
-                ok.classList.remove('bg-primary', 'text-background-dark');
-                ok.classList.add('bg-error', 'text-white');
+                ok.classList.add('system-confirm-ok-danger');
             }
-            if (box) box.classList.add('border-error/30');
         }
     }
 
@@ -124,17 +123,17 @@
         var box = $('system-confirm-box');
         if (!modal || !box) return;
         if (isOpen) {
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            modal.classList.add('opacity-100', 'pointer-events-auto');
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            modal.classList.add('pointer-events-auto', 'opacity-100');
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'false');
-            box.classList.remove('scale-95');
-            box.classList.add('scale-100');
         } else {
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('pointer-events-none', 'opacity-0');
+            modal.classList.remove('pointer-events-auto', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            box.classList.remove('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'true');
-            box.classList.add('scale-95');
-            box.classList.remove('scale-100');
             currentMode = null;
             setBusy(false);
             setStatus('');
@@ -240,11 +239,17 @@
         if (!modal) return;
         var cancel = $('system-confirm-cancel');
         var ok = $('system-confirm-ok');
+        var box = $('system-confirm-box');
         if (cancel) cancel.addEventListener('click', closeModal);
         if (ok) ok.addEventListener('click', onConfirm);
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) closeModal();
-        });
+        document.addEventListener('click', function (event) {
+            if (!currentMode || busy) return;
+            if (!modal || modal.classList.contains('pointer-events-none')) return;
+            if (box && box.contains(event.target)) return;
+            if (modal.contains(event.target) || event.target === modal) {
+                closeModal();
+            }
+        }, true);
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && currentMode) closeModal();
         });
