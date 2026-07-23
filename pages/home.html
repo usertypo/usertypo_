@@ -3291,6 +3291,11 @@ window.setTimeout = function(handler, timeout) {
             const testView = document.getElementById('test-view');
             const statsView = document.getElementById('stats-view');
 
+            // Randomize theme after each completed test (if enabled)
+            try {
+                window.usertypo_settingsApi?.maybeRandomizeTheme?.();
+            } catch (_) { /* ignore */ }
+
             // Hide test view immediately
             testView.classList.add('hidden', 'opacity-0', 'pointer-events-none');
             testView.classList.remove('flex-1', 'flex');

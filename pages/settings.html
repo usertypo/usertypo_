@@ -717,6 +717,209 @@
             box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8), 0 0 15px rgba(var(--theme-primary-rgb), 0.6);
             transform: translateY(6px);
         }
+
+        /* ── Custom Theme editor ── */
+        .theme-color-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+        .theme-color-control {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+        .theme-color-swatch {
+            position: relative;
+            width: 2.35rem;
+            height: 2.35rem;
+            border-radius: 0.7rem;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.12),
+                        0 4px 14px rgba(0, 0, 0, 0.35);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .theme-color-swatch:hover {
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.25);
+            transform: scale(1.04);
+        }
+        .theme-color-input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+        }
+        .theme-color-swatch-face {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--theme-primary);
+            pointer-events: none;
+        }
+        .theme-color-hex {
+            flex: 1;
+            min-width: 0;
+            height: 2.35rem;
+            padding: 0 0.85rem;
+            border-radius: 9999px;
+            background: rgba(26, 29, 35, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            font-size: 0.75rem;
+            font-family: 'Roboto Mono', monospace;
+            letter-spacing: 0.04em;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .theme-color-hex:focus {
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.2),
+                        0 0 12px rgba(var(--theme-primary-rgb), 0.12);
+            background: rgba(26, 29, 35, 0.75);
+        }
+        .custom-theme-preview {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr;
+            gap: 0.35rem;
+            height: 2.5rem;
+            border-radius: 0.85rem;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .custom-theme-preview span { display: block; height: 100%; }
+        .custom-theme-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            height: 2.15rem;
+            padding: 0 0.95rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(var(--theme-primary-rgb), 0.35);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            color: var(--theme-primary);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.12);
+        }
+        .custom-theme-action-btn:hover:not(:disabled) {
+            background: rgba(var(--theme-primary-rgb), 0.22);
+            box-shadow: 0 0 14px rgba(var(--theme-primary-rgb), 0.25);
+        }
+        .custom-theme-action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .custom-theme-action-btn.is-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            box-shadow: none;
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 600;
+        }
+        .custom-theme-action-btn.is-ghost:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e2e8f0;
+        }
+        .custom-theme-action-btn.is-danger {
+            background: rgba(255, 68, 68, 0.08);
+            border-color: rgba(255, 68, 68, 0.28);
+            color: #f87171;
+            box-shadow: none;
+        }
+        .custom-theme-action-btn.is-danger:hover:not(:disabled) {
+            background: rgba(255, 68, 68, 0.16);
+            color: #fca5a5;
+        }
+        .custom-preset-card {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.55rem 0.7rem;
+            border-radius: 0.9rem;
+            background: rgba(26, 29, 35, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .custom-preset-card.is-active {
+            border-color: rgba(var(--theme-primary-rgb), 0.4);
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.12);
+        }
+        .custom-preset-swatches {
+            display: flex;
+            width: 2.5rem;
+            height: 1.65rem;
+            border-radius: 0.45rem;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-preset-swatches i { flex: 1; display: block; }
+        .custom-preset-meta { flex: 1; min-width: 0; }
+        .custom-preset-meta .name {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .custom-preset-meta .sub {
+            font-size: 0.62rem;
+            color: #64748b;
+            margin-top: 0.1rem;
+        }
+        .custom-preset-actions {
+            display: flex;
+            gap: 0.35rem;
+            flex-shrink: 0;
+        }
+        .custom-preset-icon-btn {
+            width: 1.75rem;
+            height: 1.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .custom-preset-icon-btn:hover {
+            color: var(--theme-primary);
+            border-color: rgba(var(--theme-primary-rgb), 0.35);
+            background: rgba(var(--theme-primary-rgb), 0.1);
+        }
+        .custom-preset-icon-btn.is-danger:hover {
+            color: #f87171;
+            border-color: rgba(255, 68, 68, 0.35);
+            background: rgba(255, 68, 68, 0.1);
+        }
+        .custom-preset-icon-btn .material-symbols-outlined { font-size: 0.95rem; }
+        .custom-preset-empty {
+            font-size: 0.7rem;
+            color: #64748b;
+            padding: 0.35rem 0.15rem;
+        }
+
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         /* Header Logo */
 </style>
@@ -811,7 +1014,7 @@
 
                 <!-- Card 3: Look & Feel -->
                 <div class="setting-card" data-category="look-feel"
-                    data-keywords="theme font color colorblind high contrast animations accessibility typography">
+                    data-keywords="theme font color custom randomize typography palette">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1502,8 +1705,9 @@
                                                                             class="material-symbols-outlined text-[14px]">info</span>
                                                                         How it works
                                                                     </div>
-                                                                    Lets you override individual colors in your selected
-                                                                    theme with custom hex values.
+                                                                    Build your own theme with light or dark mode, a main
+                                                                    accent color, and a secondary surface color. Save up
+                                                                    to 3 presets for quick switching.
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1511,68 +1715,106 @@
                                                             class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
                                                     </button>
                                                     <div class="sub-setting-content hidden">
-                                                        <!-- Empty for now -->
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Flip Test
-                                                                Colors</p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Inverts the text and background colors of the typing
-                                                                    area for a different visual feel.
+                                                        <div class="flex flex-col gap-4" id="custom-theme-editor">
+                                                            <div class="flex flex-col gap-2 relative">
+                                                                <div class="flex items-center gap-2">
+                                                                    <label
+                                                                        class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Mode</label>
+                                                                </div>
+                                                                <div class="flex gap-2 flex-wrap"
+                                                                    data-setting="lookFeel.customTheme.mode"
+                                                                    id="custom-theme-mode">
+                                                                    <button type="button" class="opt-btn"
+                                                                        onclick="selectOpt(this)">Light</button>
+                                                                    <button type="button" class="opt-btn active"
+                                                                        onclick="selectOpt(this)">Dark</button>
+                                                                </div>
+                                                            </div>
+                                                            <div class="theme-color-field">
+                                                                <div class="flex items-center gap-2">
+                                                                    <label
+                                                                        class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Main
+                                                                        Color</label>
+                                                                </div>
+                                                                <div class="theme-color-control">
+                                                                    <label class="theme-color-swatch"
+                                                                        title="Pick main color">
+                                                                        <input type="color" class="theme-color-input"
+                                                                            data-custom-color="mainColor"
+                                                                            value="#00d0ff" />
+                                                                        <span class="theme-color-swatch-face"
+                                                                            data-swatch-face="mainColor"
+                                                                            style="background:#00d0ff"></span>
+                                                                    </label>
+                                                                    <input type="text" class="theme-color-hex"
+                                                                        data-custom-hex="mainColor" value="#00d0ff"
+                                                                        maxlength="7" spellcheck="false"
+                                                                        aria-label="Main color hex" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="theme-color-field">
+                                                                <div class="flex items-center gap-2">
+                                                                    <label
+                                                                        class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Secondary
+                                                                        Color</label>
+                                                                </div>
+                                                                <div class="theme-color-control">
+                                                                    <label class="theme-color-swatch"
+                                                                        title="Pick secondary color">
+                                                                        <input type="color" class="theme-color-input"
+                                                                            data-custom-color="secondaryColor"
+                                                                            value="#1a1d23" />
+                                                                        <span class="theme-color-swatch-face"
+                                                                            data-swatch-face="secondaryColor"
+                                                                            style="background:#1a1d23"></span>
+                                                                    </label>
+                                                                    <input type="text" class="theme-color-hex"
+                                                                        data-custom-hex="secondaryColor"
+                                                                        value="#1a1d23" maxlength="7" spellcheck="false"
+                                                                        aria-label="Secondary color hex" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex flex-col gap-2">
+                                                                <label
+                                                                    class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Preview</label>
+                                                                <div class="custom-theme-preview"
+                                                                    id="custom-theme-preview" aria-hidden="true">
+                                                                    <span data-preview="bg"></span>
+                                                                    <span data-preview="main"></span>
+                                                                    <span data-preview="secondary"></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex flex-wrap gap-2">
+                                                                <button type="button" class="custom-theme-action-btn"
+                                                                    id="apply-custom-theme-btn">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[15px]">check</span>
+                                                                    Apply Theme
+                                                                </button>
+                                                                <button type="button"
+                                                                    class="custom-theme-action-btn is-ghost"
+                                                                    id="save-custom-theme-preset-btn">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[15px]">bookmark_add</span>
+                                                                    Save Preset
+                                                                </button>
+                                                            </div>
+                                                            <div class="flex flex-col gap-2">
+                                                                <div class="flex items-center justify-between gap-2">
+                                                                    <label
+                                                                        class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Saved
+                                                                        Presets</label>
+                                                                    <span
+                                                                        class="text-[10px] font-mono text-slate-500"><span
+                                                                            id="custom-preset-count">0</span>/3</span>
+                                                                </div>
+                                                                <div id="custom-theme-preset-list"
+                                                                    class="flex flex-col gap-2">
+                                                                    <p class="custom-preset-empty">No saved presets yet.
+                                                                        Build a theme above, then save it here.</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <p class="text-xs text-slate-500">Swap text and background
-                                                            colors</p>
-                                                    </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Colorful
-                                                                Mode</p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Assigns different colors to correctly typed
-                                                                    characters, creating a rainbow-like effect as you
-                                                                    type.
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p class="text-xs text-slate-500">Use multiple colors for typed
-                                                            text</p>
-                                                    </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">
@@ -1592,17 +1834,16 @@
                                                                         class="material-symbols-outlined text-[14px]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Automatically picks a random theme after each test. You
-                                                                can limit it to favorites, light themes, dark themes, or
-                                                                all available themes.
+                                                                Automatically picks a random theme after each test. Limit
+                                                                the pool to light themes, dark themes, or all available
+                                                                themes (including your custom presets).
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap">
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="lookFeel.randomizeTheme">
                                                         <button class="opt-btn active"
                                                             onclick="selectOpt(this)">Off</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Favorites</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Light</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Dark</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">All</button>
@@ -1627,9 +1868,8 @@
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
-                                                <div class="flex flex-col gap-2 relative sub-setting-card"
-                                                    data-sub-title="Font Family" data-sub-icon="font_download"
-                                                    data-searchable="true" data-setting="lookFeel.fontFamily">
+                                                <div class="flex flex-col gap-2 relative" data-searchable="true"
+                                                    data-sub-title="Font Family" data-sub-icon="font_download">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
@@ -1646,191 +1886,38 @@
                                                                         class="material-symbols-outlined text-[14px]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Changes the typeface used in the typing test area.
-                                                                Monospace fonts are recommended for accurate character
-                                                                alignment.
+                                                                Changes the typeface used across the site. Monospace
+                                                                fonts are recommended for accurate character alignment
+                                                                in the typing area.
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        class="setting-select flex items-center justify-between cursor-pointer w-full text-left"
-                                                        style="background-image: none; padding-right: 0.7rem;"
-                                                        onclick="openSubSetting(this)">
-                                                        <span class="truncate">Roboto Mono</span>
-                                                        <span
-                                                            class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
-                                                    </button>
-                                                    <div class="sub-setting-content hidden">
-                                                        <div class="flex flex-col gap-4">
-                                                            <div class="grid grid-cols-5 gap-2"
-                                                                data-setting="lookFeel.fontFamily">
-                                                                <button class="opt-btn"
-                                                                    onclick="selectOpt(this)">Cutive</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Cutive
-                                                                    Mono</button>
-                                                                <button class="opt-btn"
-                                                                    onclick="selectOpt(this)">JetBrains Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Kode
-                                                                    Mono</button>
-                                                                <button class="opt-btn"
-                                                                    onclick="selectOpt(this)">Roboto</button>
-                                                                <button class="opt-btn active"
-                                                                    onclick="selectOpt(this)">Roboto Mono</button>
-                                                                <button class="opt-btn"
-                                                                    onclick="selectOpt(this)">SUSE</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">SUSE
-                                                                    Mono</button>
-                                                                <button class="opt-btn"
-                                                                    onclick="selectOpt(this)">Ubuntu</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Ubuntu
-                                                                    Sans Mono</button>
-                                                                <button class="opt-btn" onclick="selectOpt(this)">Xanh
-                                                                    Mono</button>
-                                                            </div>
-                                                        </div>
+                                                    <div class="grid grid-cols-5 gap-2"
+                                                        data-setting="lookFeel.fontFamily">
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Cutive</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Cutive
+                                                            Mono</button>
+                                                        <button class="opt-btn active"
+                                                            onclick="selectOpt(this)">JetBrains Mono</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Kode
+                                                            Mono</button>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Roboto</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Roboto
+                                                            Mono</button>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">SUSE</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">SUSE
+                                                            Mono</button>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Ubuntu</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Ubuntu
+                                                            Sans Mono</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Xanh
+                                                            Mono</button>
                                                     </div>
                                                 </div>
-                                                <div class="flex flex-col gap-2 relative">
-                                                    <div class="flex items-center gap-2">
-                                                        <label
-                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
-                                                            Size</label>
-                                                        <div
-                                                            class="info-icon-wrapper group relative flex items-center justify-center">
-                                                            <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                            <div
-                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                    <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
-                                                                    How it works
-                                                                </div>
-                                                                Scales the text size in the typing area. Larger sizes
-                                                                are easier to read but show fewer words per line.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center gap-3 mt-1">
-                                                        <span class="text-xs font-mono text-slate-500">1x</span>
-                                                        <input type="range" min="1" max="4" step="0.25" value="1.25"
-                                                            class="w-1/2 appearance-none cursor-pointer custom-slider" />
-                                                        <span class="text-xs font-mono text-slate-500">4x</span>
-                                                    </div>
-                                                </div>
-                                                <div class="flex flex-col gap-2 relative">
-                                                    <div class="flex items-center gap-2">
-                                                        <label
-                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
-                                                            Weight</label>
-                                                        <div
-                                                            class="info-icon-wrapper group relative flex items-center justify-center">
-                                                            <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                            <div
-                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                    <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
-                                                                    How it works
-                                                                </div>
-                                                                Controls the thickness of the test text. Lower values
-                                                                are thinner, higher values are bolder and more
-                                                                prominent.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center gap-3 mt-1">
-                                                        <span class="text-xs font-mono text-slate-500">300</span>
-                                                        <input type="range" min="300" max="900" step="100" value="400"
-                                                            class="w-1/2 appearance-none cursor-pointer custom-slider" />
-                                                        <span class="text-xs font-mono text-slate-500">900</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Sub: Accessibility -->
-                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
-                                        data-sub-title="Accessibility" data-sub-icon="accessibility_new">
-                                        <button
-                                            class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
-                                            onclick="openSubSetting(this)">
-                                            <div class="flex items-center gap-2.5">
-                                                <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">accessibility_new</span>
-                                                <span class="text-xs font-semibold text-slate-200">Accessibility</span>
-                                            </div>
-                                            <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
-                                        </button>
-                                        <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-4">
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Colorblind
-                                                                Mode</p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Replaces red and green indicators with blue and
-                                                                    orange, making error and success states
-                                                                    distinguishable for colorblind users.
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p class="text-xs text-slate-500">Replace red/green with
-                                                            accessible colors</p>
-                                                    </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">High
-                                                                Contrast</p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Boosts the color contrast between text and
-                                                                    background for improved readability in bright
-                                                                    environments.
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p class="text-xs text-slate-500">Increase contrast for
-                                                            readability</p>
-                                                    </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
-                                                    </div>
-                                                </div>
-
                                             </div>
                                         </div>
                                     </div>
