@@ -214,18 +214,21 @@
         /* --- PACE CARET (ghost caret — styled via settings.js) --- */
         #pace-caret {
             position: absolute;
+            display: block;
+            box-sizing: border-box;
             pointer-events: none;
             left: 0;
             top: 0;
             z-index: 9;
             height: 1.2em;
             opacity: 0;
-            will-change: transform, width, opacity;
+            will-change: transform, width, height, opacity;
         }
 
         #pace-caret.hidden {
             opacity: 0 !important;
-            visibility: hidden;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
 
         /* --- TEXT CONTAINER WITH SLOW OPACITY FADE AND NEW SCROLL TRANSITION --- */
@@ -2603,6 +2606,7 @@ window.setTimeout = function(handler, timeout) {
 
             caret.style.transform = `translate3d(${left}px, ${top}px, 0)`;
             caret.style.width = `${rect.width}px`;
+            caret.style.height = `${Math.max(1, rect.height)}px`;
 
             if (isTyping) {
                 caret.classList.remove('animate-breath');
@@ -2808,11 +2812,13 @@ window.setTimeout = function(handler, timeout) {
 
         function applyPaceCaretDimensions(rect) {
             const style = getPaceCaretStyle();
+            // Match the live character box so the ghost sits on the same line as #caret
+            paceCaretEl.style.height = `${Math.max(1, rect.height)}px`;
             if (style === 'line') {
                 paceCaretEl.style.width = '2.5px';
             } else {
-                // underscore, block, outline — ::after underline spans the character width
-                paceCaretEl.style.width = `${rect.width}px`;
+                // underscore, block, outline — span the character width
+                paceCaretEl.style.width = `${Math.max(1, rect.width)}px`;
             }
         }
 

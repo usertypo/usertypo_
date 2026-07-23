@@ -324,11 +324,12 @@
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
+            element.style.height = Math.max(1, targetRect.height) + 'px';
             // Opponent ghost follows pace caret style (line is fixed-width)
             if (element === opponentCaret && getOpponentCaretStyle() === 'line') {
                 element.style.width = '2.5px';
             } else {
-                element.style.width = targetRect.width + 'px';
+                element.style.width = Math.max(1, targetRect.width) + 'px';
             }
         }
 
