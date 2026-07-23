@@ -314,8 +314,9 @@
 
         var sessions = allResult.sessions;
         // We already fetched everything (ordered desc), so we can derive the
-        // "recent 15" without an extra network request.
-        var recentSessions = sessions.slice(0, 15);
+        // "recent 10" without an extra network request. Keep this in sync with
+        // historyPageSize on the User Stats page.
+        var recentSessions = sessions.slice(0, 10);
 
         return {
             summary: computeSummary(sessions),

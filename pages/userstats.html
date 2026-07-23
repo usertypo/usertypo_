@@ -1896,8 +1896,9 @@ if ('scrollRestoration' in history) {
                     historyTotal = stats.totalSessions || 0;
                     allHistorySessions = stats.allSessions || [];
                     refreshPerformanceChart(stats.allSessions || []);
-                    renderHistoryRows(stats.recentSessions || [], false);
-                    historyOffset = (stats.recentSessions || []).length;
+                    var initialHistory = (stats.recentSessions || []).slice(0, historyPageSize);
+                    renderHistoryRows(initialHistory, false);
+                    historyOffset = initialHistory.length;
                     updateHistoryFooter();
 
                     var exportBtn = document.getElementById('test-history-export');
