@@ -94,6 +94,10 @@ begin
       when v_profile.user_id = v_me then 'self'
       else public._relationship_with_user(v_profile.user_id)
     end,
+    'i_blocked', exists (
+      select 1 from public.user_blocks ub
+      where ub.blocker_id = v_me and ub.blocked_id = v_profile.user_id
+    ),
     'level', coalesce(v_prog.level, 1),
     'xp_into_level', coalesce(v_prog.xp_into_level, 0),
     'xp_to_next', v_xp_to_next,

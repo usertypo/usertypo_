@@ -1019,6 +1019,7 @@ function createMultiplayerServer(httpServer, options) {
                 abandonStuckMembership(userId);
                 if (userToRoom.has(toUserId)) throw new Error('already_in_match');
                 if (invites.size >= LIMITS.maxInvites) throw new Error('invite_capacity');
+                if (await auth.areBlocked(userId, toUserId)) throw new Error('blocked');
                 if (!(await auth.areFriends(userId, toUserId))) throw new Error('not_friends');
                 const config = normalizeConfig(payload.config);
                 const invite = {
@@ -1151,11 +1152,12 @@ function createMultiplayerServer(httpServer, options) {
             safeAck(ack, { ok: true, removed });
         });
 
-        socket.on('duel:join-listing', (listingId, ack) => {
+        socket.on('duel:join-listing', async (listingId, ack) => {
             try {
                 const listing = listings.get(String(listingId || ''));
                 if (!listing || listing.status !== 'waiting') throw new Error('listing_unavailable');
                 if (listing.ownerUserId === userId) throw new Error('own_listing');
+                if (await auth.areBlocked(userId, listing.ownerUserId)) throw new Error('blocked');
                 abandonStuckMembership(userId);
                 if (!isOnline(listing.ownerUserId) || userToRoom.has(listing.ownerUserId)) {
                     removeListing(listing.id);

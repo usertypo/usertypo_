@@ -243,6 +243,20 @@ begin
     raise exception 'already_friends';
   end if;
 
+  if exists (
+    select 1 from public.user_blocks ub
+    where ub.blocker_id = v_target and ub.blocked_id = v_me
+  ) then
+    raise exception 'blocked_by_user';
+  end if;
+
+  if exists (
+    select 1 from public.user_blocks ub
+    where ub.blocker_id = v_me and ub.blocked_id = v_target
+  ) then
+    raise exception 'you_blocked_user';
+  end if;
+
   select fr.id
   into v_reverse_request_id
   from public.friend_requests fr
@@ -335,6 +349,10 @@ begin
 
   if v_to <> v_me then
     raise exception 'forbidden';
+  end if;
+
+  if public._block_exists(v_from, v_to) then
+    raise exception 'blocked_by_user';
   end if;
 
   update public.friend_requests

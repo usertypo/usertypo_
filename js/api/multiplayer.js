@@ -50,6 +50,7 @@
             unauthorized: 'Sign in to challenge friends.',
             friend_offline: 'That friend is no longer online.',
             not_friends: 'You can only challenge friends.',
+            blocked: "You can't dual this player because of a block.",
             invite_not_found: 'That dual request has expired.',
             listing_unavailable: 'That dual is no longer available.',
             already_searching: 'You cannot create a dual while already looking for a dual.',

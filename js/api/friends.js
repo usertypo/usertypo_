@@ -24,6 +24,9 @@
             user_not_found: 'User not found.',
             request_not_found: 'That friend request no longer exists.',
             friend_requests_disabled: 'This player is not accepting friend requests.',
+            blocked_by_user: 'This player has blocked you.',
+            you_blocked_user: 'Unblock this player before sending a friend request.',
+            cannot_block_friend: 'Unfriend this player before blocking them.',
             forbidden: 'You cannot perform this action.',
             guest: 'Sign in to manage friends.',
             not_authenticated: 'Sign in to manage friends.',
@@ -131,6 +134,28 @@
         return { ok: true };
     }
 
+    async function blockUser(userId) {
+        await requireAuth();
+        var client = await getClient();
+        var result = await client.rpc('block_user', {
+            p_user_id: userId,
+        });
+        if (result.error) throw result.error;
+        emitFriendsChanged();
+        return { ok: true };
+    }
+
+    async function unblockUser(userId) {
+        await requireAuth();
+        var client = await getClient();
+        var result = await client.rpc('unblock_user', {
+            p_user_id: userId,
+        });
+        if (result.error) throw result.error;
+        emitFriendsChanged();
+        return { ok: true };
+    }
+
     async function loadDashboard() {
         await requireAuth();
         var client = await getClient();
@@ -152,6 +177,8 @@
         declineRequest: declineRequest,
         cancelRequest: cancelRequest,
         removeFriend: removeFriend,
+        blockUser: blockUser,
+        unblockUser: unblockUser,
         loadDashboard: loadDashboard,
         mapRpcError: mapRpcError,
     };
