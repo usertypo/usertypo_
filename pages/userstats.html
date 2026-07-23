@@ -357,9 +357,9 @@
         }
 
         #hardware-hotspots-card #dynamic-keymap {
-            transform: scale(1.14);
+            transform: scale(1.14) translateY(0.45rem);
             transform-origin: center center;
-            margin: 0.75rem 0 1.25rem;
+            margin: 1rem 0 1.1rem;
             width: max-content;
             max-width: none;
         }
@@ -849,19 +849,19 @@
                                 <span class="text-xs text-slate-400">Mistype (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-error, #ff3333)"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:color-mix(in srgb, var(--theme-primary-light, #6cdaff) 75%, var(--theme-text, #e2e8f0) 25%)"></span>
                                 <span class="text-xs text-slate-400">Reversal (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:#94a3b8"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:color-mix(in srgb, var(--theme-primary-light, #6cdaff) 50%, var(--theme-text, #e2e8f0) 50%)"></span>
                                 <span class="text-xs text-slate-400">Overshoot (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:#64748b"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:color-mix(in srgb, var(--theme-primary-light, #6cdaff) 25%, var(--theme-text, #e2e8f0) 75%)"></span>
                                 <span class="text-xs text-slate-400">Missed (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:#334155"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-text, #e2e8f0)"></span>
                                 <span class="text-xs text-slate-400">Extra (—)</span>
                             </div>
                         </div>
@@ -1719,14 +1719,52 @@ if ('scrollRestoration' in history) {
                 );
             }
 
+            function readCssColor(varName, fallback) {
+                var value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+                return value || fallback;
+            }
+
+            function parseCssColorToRgb(color) {
+                if (!color) return null;
+                var hex = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+                if (hex) {
+                    var h = hex[1];
+                    if (h.length === 3) {
+                        h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+                    }
+                    return {
+                        r: parseInt(h.slice(0, 2), 16),
+                        g: parseInt(h.slice(2, 4), 16),
+                        b: parseInt(h.slice(4, 6), 16),
+                    };
+                }
+                var rgb = color.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i);
+                if (rgb) {
+                    return {
+                        r: Math.round(Number(rgb[1])),
+                        g: Math.round(Number(rgb[2])),
+                        b: Math.round(Number(rgb[3])),
+                    };
+                }
+                return null;
+            }
+
+            // Logo: typ_ → --theme-primary-light, user → --theme-text
+            function buildAnatomyThemeColors() {
+                var from = parseCssColorToRgb(readCssColor('--theme-primary-light', '#6cdaff'))
+                    || { r: 108, g: 218, b: 255 };
+                var to = parseCssColorToRgb(readCssColor('--theme-text', '#e2e8f0'))
+                    || { r: 226, g: 232, b: 240 };
+                return [0, 0.25, 0.5, 0.75, 1].map(function (t) {
+                    var r = Math.round(from.r + (to.r - from.r) * t);
+                    var g = Math.round(from.g + (to.g - from.g) * t);
+                    var b = Math.round(from.b + (to.b - from.b) * t);
+                    return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+                });
+            }
+
             function renderErrorDiagnostics(agg) {
-                var anatomyColors = [
-                    'var(--theme-primary-light, #6cdaff)',
-                    'var(--theme-error, #ff3333)',
-                    '#94a3b8',
-                    '#64748b',
-                    '#334155',
-                ];
+                var anatomyColors = buildAnatomyThemeColors();
                 var blankAnatomy = [
                     { label: 'Mistype', count: 0, percent: null },
                     { label: 'Reversal', count: 0, percent: null },
@@ -1779,8 +1817,8 @@ if ('scrollRestoration' in history) {
                 if (svg) {
                     var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
                     var offset = 0;
-                    // Butt caps + explicit gap so neighboring slices do not visually overlap.
-                    var gap = 1.6;
+                    // Round caps extend ~strokeWidth/2 past each dash end; keep a larger gap so rounded ends stay separated.
+                    var gap = 5.2;
                     var visibleSlices = isBlank
                         ? []
                         : (data.anatomy || []).filter(function (slice) { return slice.count; });
@@ -1791,7 +1829,7 @@ if ('scrollRestoration' in history) {
                         var arc = Math.max(0.5, pct - sliceGap);
                         rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
                             + anatomyColors[colorIndex >= 0 ? colorIndex : index]
-                            + '" stroke-linecap="butt" stroke-dasharray="' + arc + ' ' + (100 - arc)
+                            + '" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + (100 - arc)
                             + '" stroke-dashoffset="' + (-offset)
                             + '" stroke-width="4"></circle>';
                         offset += pct;
