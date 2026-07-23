@@ -577,6 +577,11 @@
                 if (startOpen || hostOpen) return;
                 if (inEditable) return;
 
+                var shortcutsOn = window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                    ? window.usertypo_settingsApi.areKeyboardShortcutsEnabled()
+                    : (window.usertypo_settings?.keyboardLayout?.keyboardShortcuts !== false);
+                if (!shortcutsOn) return;
+
                 var leaveBtn = state === 'lobby'
                     ? document.getElementById('leave-btn')
                     : document.getElementById('stats-leave-room-btn');

@@ -750,7 +750,14 @@
     }
 
     function isShortcutContextAllowed() {
-        return !isTestViewActive();
+        if (isTestViewActive()) return false;
+        const api = window.usertypo_settingsApi;
+        if (api?.areKeyboardShortcutsEnabled && !api.areKeyboardShortcutsEnabled()) return false;
+        if (api?.areQuickSettingsEnabled && !api.areQuickSettingsEnabled()) return false;
+        const settings = window.usertypo_settings;
+        if (settings?.keyboardLayout?.keyboardShortcuts === false) return false;
+        if (settings?.keyboardLayout?.quickSettings === false) return false;
+        return true;
     }
 
     function insertIntoSearch(char) {
