@@ -236,7 +236,17 @@
         #panel-main-content .sub-setting-card,
         #settings-panel .panel-body-inner .sub-setting-card,
         #settings-panel .panel-body-inner .sub-setting-card.glass-card,
-        #panel-main-content .sub-setting-card/* Navigable row header = same pill as setting-select */
+        #panel-main-content .sub-setting-card.glass-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+        }
+        /* Navigable row header = same pill as setting-select */
         #settings-panel .sub-card-header,
         #panel-main-content .sub-card-header {
             border-radius: 9999px !important;
@@ -1180,7 +1190,7 @@
 
                 <!-- Card 11: Account Settings -->
                 <div class="setting-card" data-category="account-settings"
-                    data-keywords="account name leaderboards personal bests authentication email password google logout block unblock report">
+                    data-keywords="account name email password personal bests logout blocked users">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1188,8 +1198,8 @@
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Account Settings</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Account, auth, and blocked
-                                    users</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Account and blocked users
+                                </p>
                             </div>
                 </div>
 
@@ -3864,9 +3874,9 @@
 
                             <!-- â•â•â•â•â•â•â•â•â•â• CATEGORY 11: Account Settings â•â•â•â•â•â•â•â•â•â• -->
                             <div class="category-content hidden" data-panel="account-settings">
-                                <div class="flex flex-col gap-4">
+                                <div class="flex flex-col gap-3">
                                     <!-- Sub: Account -->
-                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
+                                    <div class="sub-setting-card overflow-hidden"
                                         data-sub-title="Account" data-sub-icon="account_circle">
                                         <button
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
@@ -3880,8 +3890,8 @@
                                                 class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-4">
-                                                <!-- Update account name -->
+                                            <div class="flex flex-col gap-5">
+                                                <!-- Account Name -->
                                                 <div class="flex flex-col gap-2 relative">
                                                     <div class="flex items-center gap-2">
                                                         <label
@@ -3905,56 +3915,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <!-- Opt out of leaderboards -->
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Opt-out of
-                                                                Leaderboards</p>
-                                                        </div>
-                                                        <p class="text-xs text-slate-500">Hide your profile from public
-                                                            leaderboards</p>
-                                                    </div>
-                                                    <div id="setting-opt-out-leaderboards"
-                                                        class="toggle-track"
-                                                        data-leaderboard-visibility="optout"
-                                                        onclick="toggleLeaderboardVisibility(this)">
-                                                        <div class="toggle-thumb"></div>
-                                                    </div>
-                                                <div class="danger-zone p-4 flex flex-col gap-3 mt-2">
-                                                    <div class="flex items-center justify-between">
-                                                        <div>
-                                                            <p class="text-sm font-bold text-error">Reset Personal Bests
-                                                            </p>
-                                                            <p class="text-xs text-error/60">Clear all your personal
-                                                                records</p>
-                                                        </div>
-                                                        <button class="danger-btn"
-                                                            onclick="triggerSave('reset')">Reset</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <!-- Sub: Authentication -->
-                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
-                                        data-sub-title="Authentication" data-sub-icon="lock">
-                                        <button
-                                            class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
-                                            onclick="openSubSetting(this)">
-                                            <div class="flex items-center gap-2.5">
-                                                <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">lock</span>
-                                                <span class="text-xs font-semibold text-slate-200">Authentication</span>
-                                            </div>
-                                            <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
-                                        </button>
-                                        <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-4">
-                                                <!-- Change Email -->
+                                                <!-- Email Address -->
                                                 <div class="flex flex-col gap-2 relative">
                                                     <div class="flex items-center gap-2">
                                                         <label
@@ -3979,8 +3941,9 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <!-- Change Password -->
-                                                <div class="flex flex-col gap-2 relative mt-2">
+
+                                                <!-- Password -->
+                                                <div class="flex flex-col gap-2 relative">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Password</label>
@@ -3991,12 +3954,12 @@
                                                     <div class="flex items-center gap-3 mt-1">
                                                         <div
                                                             class="display-mode flex-1 text-sm font-bold text-slate-200 tracking-widest">
-                                                            â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</div>
+                                                            ••••••••</div>
                                                         <div class="edit-mode hidden flex-1 flex items-center gap-3">
                                                             <div class="relative flex-1">
                                                                 <input type="password" class="search-input w-full"
                                                                     placeholder="New Password" value="password123" />
-                                                                <button
+                                                                <button type="button"
                                                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary transition-colors flex items-center justify-center"
                                                                     onclick="togglePassword(this)">
                                                                     <span
@@ -4010,33 +3973,34 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
                                                 <div class="section-divider"></div>
-                                                <!-- Add/remove Google Auth -->
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Google
-                                                                Authentication</p>
+
+                                                <!-- Reset Personal Bests -->
+                                                <div class="danger-zone p-4 flex flex-col gap-3">
+                                                    <div class="flex items-center justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <p class="text-sm font-bold text-error">Reset Personal Bests
+                                                            </p>
+                                                            <p class="text-xs text-error/60">Clear all your personal
+                                                                records</p>
                                                         </div>
-                                                        <p class="text-xs text-slate-500">Sign in with your Google
-                                                            account</p>
-                                                    </div>
-                                                    <div class="toggle-track on" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
+                                                        <button type="button" class="danger-btn shrink-0"
+                                                            onclick="triggerSave('reset')">Reset</button>
                                                     </div>
                                                 </div>
-                                                <div class="section-divider"></div>
+
                                                 <!-- Logout all devices -->
                                                 <div class="danger-zone p-4 flex flex-col gap-3">
-                                                    <div class="flex items-center justify-between">
-                                                        <div>
+                                                    <div class="flex items-center justify-between gap-3">
+                                                        <div class="min-w-0">
                                                             <p class="text-sm font-bold text-error">Logout from all
                                                                 devices</p>
                                                             <p class="text-xs text-error/60">Sign out of all active
                                                                 sessions</p>
                                                         </div>
-                                                        <button class="danger-btn" onclick="triggerSave()">Logout
+                                                        <button type="button" class="danger-btn shrink-0"
+                                                            onclick="triggerSave()">Logout
                                                             All</button>
                                                     </div>
                                                 </div>
@@ -4045,7 +4009,7 @@
                                     </div>
 
                                     <!-- Sub: Blocked Users -->
-                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
+                                    <div class="sub-setting-card overflow-hidden"
                                         data-sub-title="Blocked Users" data-sub-icon="block">
                                         <button
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
