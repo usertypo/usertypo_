@@ -2890,6 +2890,24 @@ function _reapplyAllSettings() {
     }
 }
 
+/**
+ * Wipe local settings back to shipped defaults and refresh UI/theme/audio.
+ */
+function resetToDefaults() {
+    const settings = structuredClone(DEFAULTS);
+    saveSettings(settings);
+    applyAllSettings(settings);
+
+    if (_isOnSettingsPage()) {
+        try {
+            restoreUI(settings);
+            applyKeymapDisplay(settings);
+        } catch (e) { /* ignore */ }
+    }
+
+    return settings;
+}
+
 // 1. Cross-tab sync: another tab (settings page) wrote to localStorage
 window.addEventListener('storage', (event) => {
     if (event.key === STORAGE_KEY) {
@@ -3251,6 +3269,7 @@ window.usertypo_settingsApi = {
     applyKeymapDisplay,
     refreshActiveTestVisuals,
     reapplyAllSettings: _reapplyAllSettings,
+    resetToDefaults,
     toggleFooterMute,
     selectColorTheme,
     maybeRandomizeTheme,

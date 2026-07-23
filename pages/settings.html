@@ -1165,7 +1165,7 @@
 
                 <!-- Card 10: System & Data -->
                 <div class="setting-card" data-category="system-data"
-                    data-keywords="auto save import export reset delete account danger preferences">
+                    data-keywords="export data reset settings reset account delete account danger destructive">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1173,8 +1173,8 @@
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">System & Data</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Preferences, reset, and
-                                    export</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Export, reset, and delete
+                                </p>
                             </div>
                 </div>
 
@@ -3782,82 +3782,33 @@
                             <!-- â•â•â•â•â•â•â•â•â•â• CATEGORY 10: System & Data â•â•â•â•â•â•â•â•â•â• -->
                             <div class="category-content hidden" data-panel="system-data">
                                 <div class="flex flex-col gap-4">
-                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
-                                        data-sub-title="Preferences" data-sub-icon="tune">
-                                        <button
-                                            class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
-                                            onclick="openSubSetting(this)">
-                                            <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">tune</span><span
-                                                    class="text-xs font-semibold text-slate-200">Preferences</span>
-                                            </div><span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
-                                        </button>
-                                        <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-4">
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-semibold text-slate-200">Export Data</p>
                                                 <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Auto-save
-                                                            </p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Saves your settings immediately whenever you change
-                                                                    them. Disable to require manual saving.
-                                                                </div>
-                                                            </div>
+                                                    class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span
+                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div
+                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            <span
+                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                            How it works
                                                         </div>
-                                                        <p class="text-xs text-slate-500">Automatically save settings on
-                                                            change</p>
-                                                    </div>
-                                                    <div class="toggle-track on" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                                        <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Auto-switch
-                                                                Theme on Fail</p>
-                                                            <div
-                                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                                <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                                <div
-                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                    <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                        <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
-                                                                        How it works
-                                                                    </div>
-                                                                    Automatically switches to a warning theme color when
-                                                                    your test result falls below your set thresholds.
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p class="text-xs text-slate-500">Change theme color when test
-                                                            fails threshold</p>
-                                                    </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
-                                                        <div class="toggle-thumb"></div>
+                                                        Downloads your comprehensive test history as a CSV file — the
+                                                        same export available on User Stats.
                                                     </div>
                                                 </div>
                                             </div>
+                                            <p class="text-xs text-slate-500">Download your usertypo_ test history</p>
                                         </div>
+                                        <button type="button" class="opt-btn highlighted"
+                                            onclick="openExportDataModal()">Export</button>
                                     </div>
+
                                     <!-- Sub: Destructive Actions -->
                                     <div class="sub-setting-card overflow-hidden" data-sub-title="Destructive Actions"
                                         data-sub-icon="warning">
@@ -3876,52 +3827,33 @@
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-3">
                                                 <div class="danger-zone p-4 flex flex-col gap-3">
-                                                    <div class="flex items-center justify-between">
-                                                        <div>
-                                                            <p class="text-sm font-semibold text-slate-200">Import
-                                                                Settings</p>
-                                                            <p class="text-xs text-slate-500">Load settings from a JSON
-                                                                file</p>
-                                                        </div>
-                                                        <button class="opt-btn highlighted"
-                                                            onclick="triggerSave()">Import</button>
-                                                    </div>
-                                                    <div class="flex items-center justify-between">
-                                                        <div>
-                                                            <p class="text-sm font-semibold text-slate-200">Export
-                                                                Settings</p>
-                                                            <p class="text-xs text-slate-500">Save current settings as
-                                                                JSON</p>
-                                                        </div>
-                                                        <button class="opt-btn" onclick="triggerSave()">Export</button>
-                                                    </div>
-                                                </div>
-                                                <div class="danger-zone p-4 flex flex-col gap-3">
-                                                    <div class="flex items-center justify-between">
+                                                    <div class="flex items-center justify-between gap-3">
                                                         <div>
                                                             <p class="text-sm font-bold text-error">Reset All Settings
                                                             </p>
-                                                            <p class="text-xs text-error/60">Revert to default values
-                                                            </p>
+                                                            <p class="text-xs text-error/60">Revert typing preferences to
+                                                                defaults</p>
                                                         </div>
-                                                        <button class="danger-btn"
-                                                            onclick="triggerSave('reset')">Reset</button>
+                                                        <button type="button" class="danger-btn"
+                                                            onclick="confirmSystemDanger('reset-settings')">Reset</button>
                                                     </div>
-                                                    <div class="flex items-center justify-between">
+                                                    <div class="flex items-center justify-between gap-3">
                                                         <div>
                                                             <p class="text-sm font-bold text-error">Reset Account</p>
-                                                            <p class="text-xs text-error/60">Clear all test history and
-                                                                stats</p>
+                                                            <p class="text-xs text-error/60">Clear all test history, stats,
+                                                                friends, and progress</p>
                                                         </div>
-                                                        <button class="danger-btn">Reset</button>
+                                                        <button type="button" class="danger-btn"
+                                                            onclick="confirmSystemDanger('reset-account')">Reset</button>
                                                     </div>
-                                                    <div class="flex items-center justify-between">
+                                                    <div class="flex items-center justify-between gap-3">
                                                         <div>
                                                             <p class="text-sm font-bold text-error">Delete Account</p>
                                                             <p class="text-xs text-error/60">Permanently delete your
-                                                                account</p>
+                                                                account and all data</p>
                                                         </div>
-                                                        <button class="danger-btn">Delete</button>
+                                                        <button type="button" class="danger-btn"
+                                                            onclick="confirmSystemDanger('delete-account')">Delete</button>
                                                     </div>
                                                 </div>
                                             </div>

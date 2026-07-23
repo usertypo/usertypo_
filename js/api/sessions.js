@@ -377,11 +377,85 @@
         return 'words ' + amount;
     }
 
+    function escapeCsvValue(value) {
+        if (value == null) return '';
+        var text = String(value);
+        if (/[",\r\n]/.test(text)) {
+            return '"' + text.replace(/"/g, '""') + '"';
+        }
+        return text;
+    }
+
+    /**
+     * Same CSV as User Stats → Comprehensive Test History → Export CSV.
+     */
+    async function exportTestHistoryCsv(sessions) {
+        var rowsData = sessions;
+        if (!Array.isArray(rowsData)) {
+            var fetched = await fetchAllMySessions();
+            if (fetched.error) return { error: fetched.error };
+            rowsData = fetched.sessions || [];
+        }
+        if (!rowsData.length) {
+            return { error: 'no_sessions', message: 'No test history to export.' };
+        }
+
+        var rows = [[
+            'Date (UTC)',
+            'Mode',
+            'Amount',
+            'WPM',
+            'Raw WPM',
+            'Accuracy (%)',
+            'Consistency (%)',
+            'Failed',
+        ]];
+
+        rowsData.forEach(function (session) {
+            var createdAt = session.created_at ? new Date(session.created_at) : null;
+            var isoDate = createdAt && isFinite(createdAt.getTime())
+                ? createdAt.toISOString()
+                : '';
+
+            rows.push([
+                isoDate,
+                session.mode || '',
+                session.amount == null ? '' : session.amount,
+                session.wpm == null ? '' : session.wpm,
+                session.raw_wpm == null ? '' : session.raw_wpm,
+                session.accuracy == null ? '' : session.accuracy,
+                session.consistency == null ? '' : session.consistency,
+                session.failed ? 'true' : 'false',
+            ]);
+        });
+
+        var csv = rows.map(function (row) {
+            return row.map(escapeCsvValue).join(',');
+        }).join('\r\n');
+        var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        var dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = url;
+        link.download = 'usertypo-test-history-' + dateStamp + '.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () {
+            URL.revokeObjectURL(url);
+        }, 0);
+
+        return { ok: true, count: rowsData.length };
+    }
+
     window.usertypoSessions = {
         saveSession: saveSession,
         currentLanguage: currentLanguage,
         listMySessions: listMySessions,
         getMyStats: getMyStats,
+        fetchAllMySessions: fetchAllMySessions,
+        exportTestHistoryCsv: exportTestHistoryCsv,
         computeScoreDistribution: computeScoreDistribution,
         formatCompactNumber: formatCompactNumber,
         formatDurationShort: formatDurationShort,
