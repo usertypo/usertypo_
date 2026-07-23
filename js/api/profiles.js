@@ -290,6 +290,19 @@
         return { profile: profile };
     }
 
+    async function setUsername(username) {
+        var name = String(username || '').trim();
+        if (name.length < 3 || name.length > 32) {
+            throw new Error('form_username_invalid_length');
+        }
+        var profile = await updateMyProfileFields({
+            username: name,
+            display_name: name,
+        });
+        console.info('[usertypo profiles] username =', name);
+        return { profile: profile };
+    }
+
     function bindAuthSync() {
         if (!window.usertypoAuth) return;
 
@@ -348,6 +361,7 @@
         setShowOnLeaderboard: setShowOnLeaderboard,
         setAllowFriendRequests: setAllowFriendRequests,
         setProfileVisibility: setProfileVisibility,
+        setUsername: setUsername,
         clearCache: clearProfileCache,
     };
 })();
