@@ -59,6 +59,8 @@
         var countdownAnimToken = 0;
         var introBusy = false;
         var countdownSequenceStarted = false;
+        var countdownEndsAt = 0;
+        var countdownWakeResolve = null;
         var countdownTapeLocked = false;
         var countdownTapeTransform = '';
         var countdownTapeBaseX = 0;
@@ -835,6 +837,7 @@
             resetLocalRaceState();
             abortCountdownIntro();
             countdownSequenceStarted = false;
+            countdownEndsAt = 0;
             pendingRacePayload = null;
             state = 'joining';
             if (statsView) {
@@ -854,6 +857,38 @@
 
         function delay(ms) {
             return new Promise(function (resolve) { setTimeout(resolve, ms); });
+        }
+
+        function wakeCountdownLoop() {
+            if (!countdownWakeResolve) return;
+            var resolve = countdownWakeResolve;
+            countdownWakeResolve = null;
+            resolve();
+        }
+
+        // Resolves on timeout or when the tab becomes visible again (background timers stall).
+        function delayOrWake(ms) {
+            return new Promise(function (resolve) {
+                var done = false;
+                function finish() {
+                    if (done) return;
+                    done = true;
+                    if (countdownWakeResolve === finish) countdownWakeResolve = null;
+                    resolve();
+                }
+                countdownWakeResolve = finish;
+                setTimeout(finish, ms);
+            });
+        }
+
+        function noteCountdownEndsAt(endsAt, secondsFallback) {
+            var parsed = Number(endsAt);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                countdownEndsAt = parsed;
+                return;
+            }
+            var seconds = Math.max(0, Number(secondsFallback) || 0);
+            if (seconds > 0) countdownEndsAt = Date.now() + (seconds * 1000);
         }
 
         function waitForLayout() {
@@ -1057,12 +1092,10 @@
         }
 
         function beginRaceIfAlreadyLive() {
-            // Only used after the typed intro finishes (or on tab focus) — never cut the
-            // on-screen 3→2→1 short just because the server clock already reached go.
+            // Skip leftover countdown when the server race is already live (e.g. background tab).
             if (!pendingRacePayload || state === 'finished' || state === 'racing') {
                 return false;
             }
-            if (introBusy || state === 'countdown') return false;
             if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
             var payload = pendingRacePayload;
             pendingRacePayload = null;
@@ -1073,6 +1106,14 @@
             return true;
         }
 
+        // Digit to show from shared server clock. Only 3→2→1 are typed; earlier seconds breathe.
+        function countdownDigitForRemaining(remainingMs) {
+            if (remainingMs <= 0) return null;
+            var sec = Math.ceil(remainingMs / 1000);
+            if (sec > 3) return '';
+            return String(sec);
+        }
+
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
@@ -1080,25 +1121,47 @@
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
-            await delay(650);
-            if (token !== countdownAnimToken) return;
 
-            var digits = ['3', '2', '1'];
-            for (var i = 0; i < digits.length; i += 1) {
-                if (token !== countdownAnimToken) return;
-                if (caret) caret.classList.remove('animate-breath');
-                await typeCountdownDigit(digits[i], token);
-                if (token !== countdownAnimToken) return;
-                await delay(1000);
-                if (token !== countdownAnimToken) return;
-                await backspaceCountdownDigit(token);
-                if (token !== countdownAnimToken) return;
-                if (caret) caret.classList.add('animate-breath');
-                await delay(280);
+            if (!countdownEndsAt) countdownEndsAt = Date.now() + 5000;
+
+            var lastShown = '';
+            while (token === countdownAnimToken) {
+                if (beginRaceIfAlreadyLive()) return;
+
+                var remaining = countdownEndsAt - Date.now();
+                if (remaining <= 0) {
+                    introBusy = false;
+                    if (beginRaceIfAlreadyLive()) return;
+                    tryBeginRaceAfterIntro();
+                    return;
+                }
+
+                var want = countdownDigitForRemaining(remaining);
+                if (want === null) {
+                    introBusy = false;
+                    if (beginRaceIfAlreadyLive()) return;
+                    tryBeginRaceAfterIntro();
+                    return;
+                }
+
+                if (want !== lastShown) {
+                    if (lastShown) {
+                        await backspaceCountdownDigit(token);
+                        if (token !== countdownAnimToken) return;
+                    }
+                    if (!want) {
+                        syncCountdownLayout(false);
+                        if (caret) caret.classList.add('animate-breath');
+                    } else {
+                        if (caret) caret.classList.remove('animate-breath');
+                        await typeCountdownDigit(want, token);
+                        if (token !== countdownAnimToken) return;
+                    }
+                    lastShown = want;
+                }
+
+                await delayOrWake(50);
             }
-            if (token !== countdownAnimToken) return;
-            introBusy = false;
-            tryBeginRaceAfterIntro();
         }
 
         function ensureCountdownSequence() {
@@ -1112,6 +1175,7 @@
         function abortCountdownIntro() {
             countdownAnimToken += 1;
             introBusy = false;
+            wakeCountdownLoop();
             countdownTapeLocked = false;
             countdownTapeTransform = '';
             countdownTapeBaseX = 0;
@@ -1130,6 +1194,7 @@
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'finished') return;
             pendingRacePayload = payload;
+            if (beginRaceIfAlreadyLive()) return;
             ensureCountdownSequence();
             if (!introBusy) tryBeginRaceAfterIntro();
         }
@@ -1395,8 +1460,10 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
-                // Local 3→2→1 typed countdown; ignore server tick values (no overlay "Go").
+                noteCountdownEndsAt(payload[2], payload[1]);
+                // Shared wall-clock 3→2→1; server ticks keep endsAt aligned.
                 ensureCountdownSequence();
+                wakeCountdownLoop();
             });
             listen('race-start', function (event) {
                 if (state === 'finished') return;
@@ -1404,6 +1471,7 @@
             });
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState !== 'visible') return;
+                wakeCountdownLoop();
                 beginRaceIfAlreadyLive();
             }, { signal: signal });
             listen('race-progress', function (event) { applyOpponentProgress(event.detail); });
@@ -1486,6 +1554,10 @@
                     return;
                 }
                 if (response.state === 'countdown') {
+                    noteCountdownEndsAt(
+                        response.countdownEndsAt,
+                        response.countdown
+                    );
                     ensureCountdownSequence();
                     return;
                 }
@@ -1502,6 +1574,7 @@
             abortCountdownIntro();
             pendingRacePayload = null;
             countdownSequenceStarted = false;
+            countdownEndsAt = 0;
             clearInterval(updateTimer);
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
