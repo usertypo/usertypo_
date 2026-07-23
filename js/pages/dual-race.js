@@ -319,12 +319,7 @@
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            var paceStyle = ((window.usertypo_settings || {}).cursor || {}).paceCaretStyle || 'underscore';
-            if (element === opponentCaret && String(paceStyle).toLowerCase() === 'line') {
-                element.style.width = '2.5px';
-            } else {
-                element.style.width = targetRect.width + 'px';
-            }
+            element.style.width = targetRect.width + 'px';
         }
 
         function updateCaret() {
@@ -1463,11 +1458,6 @@
             }
             document.addEventListener('keydown', function (event) {
                 if (state !== 'finished') return;
-                var shortcutsOn = window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
-                    ? window.usertypo_settingsApi.areKeyboardShortcutsEnabled()
-                    : (window.usertypo_settings?.keyboardLayout?.keyboardShortcuts !== false);
-                if (!shortcutsOn) return;
-
                 var tag = (event.target && event.target.tagName || '').toLowerCase();
                 var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
                 if (inEditable) return;

@@ -2072,16 +2072,9 @@ window.setTimeout = function(handler, timeout) {
             }
 
             // ── Quick Restart: Tab ──
-            const shortcutsOn = window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
-                ? window.usertypo_settingsApi.areKeyboardShortcutsEnabled()
-                : (window.usertypo_settings?.keyboardLayout?.keyboardShortcuts !== false);
             const quickRestart = getTestRule('quickRestart');
 
             if (e.key === 'Tab') {
-                if (!shortcutsOn) {
-                    e.preventDefault();
-                    return;
-                }
                 const isQuickRestartKey = (quickRestart === 'Tab');
                 const isDefaultNav = (quickRestart === 'Off');
 
@@ -2099,10 +2092,9 @@ window.setTimeout = function(handler, timeout) {
                 e.preventDefault();
             }
 
-            // ── Stats View Enter to Next Test ──
+            // â”€â”€ Stats View Enter to Next Test â”€â”€
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (!shortcutsOn) return;
                 const statsView = document.getElementById('stats-view');
                 if (statsView && !statsView.classList.contains('hidden') && canSkipStats) {
                     showTestView(true);
@@ -2325,22 +2317,33 @@ window.setTimeout = function(handler, timeout) {
                     }
                 }
 
-                // ── Difficulty: Expert — fail when submitting an incorrect word ──
-                if (getTestRule('difficulty') === 'Expert') {
-                    let wordIncorrect = currentCharIndex < currentWordText.length;
-                    if (!wordIncorrect) {
-                        for (let i = 0; i < currentWordText.length; i++) {
-                            const cEl = document.getElementById(`char-${currentWordIndex}-${i}`);
-                            if (!cEl || !cEl.classList.contains('text-primary')) {
-                                wordIncorrect = true;
-                                break;
-                            }
+                // ── Min Burst: per-word speed threshold (instant fail) ──
+                const _burstCfg = (window.usertypo_settings || {}).resultsAndGraphs || {};
+                const _minBurstVal = _burstCfg.minBurst;
+                if (_minBurstVal && _minBurstVal !== 'Off' && currentWordIndex >= 1) {
+                    const justRecorded = wordTimestamps[wordTimestamps.length - 1];
+                    if (justRecorded && justRecorded.endTime > justRecorded.startTime) {
+                        const wordLen = (justRecorded.word || '').length;
+                        const elMin = Math.max((justRecorded.endTime - justRecorded.startTime) / 60000, 0.5 / 60);
+                        const wordBurst = (wordLen / 5) / elMin;
+
+                        let burstThreshold;
+                        if (String(_minBurstVal).startsWith('Flex:')) {
+                            const base = parseFloat(String(_minBurstVal).split(':')[1]);
+                            // Scale down for longer words: short words (≤4 chars) use full threshold,
+                            // longer words get progressively easier. Floor at 30% of base.
+                            const scale = Math.max(0.3, Math.pow(4 / Math.max(wordLen, 1), 0.4));
+                            burstThreshold = base * scale;
+                        } else {
+                            burstThreshold = parseFloat(_minBurstVal);
                         }
-                    }
-                    if (wordEl && wordEl.querySelectorAll('.extra').length > 0) wordIncorrect = true;
-                    if (wordIncorrect) {
-                        failTest('Expert Mode Failed', 'You submitted an incorrect word. In Expert mode, every word must be correct.');
-                        return;
+
+                        if (!isNaN(burstThreshold) && wordBurst < burstThreshold) {
+                            testComplete = true;
+                            const failMsg = `Test failed due to burst wpm less than ${Math.round(burstThreshold)}`;
+                            setTimeout(() => { if (!isRestarting) endTest(failMsg); }, 10);
+                            return;
+                        }
                     }
                 }
 
@@ -2469,10 +2472,6 @@ window.setTimeout = function(handler, timeout) {
                                 wordIndex: currentWordIndex, charIndex: currentCharIndex,
                                 typed: e.key, expected: expectedChar, word: currentWord
                             });
-                            if (getTestRule('difficulty') === 'Master') {
-                                failTest('Master Mode Failed', 'You pressed an incorrect key. In Master mode, a single mistake ends the test.');
-                                return;
-                            }
                             // Reset the char to untyped (don't advance)
                             charEl.className = 'char text-slate-500 transition-all duration-150';
                             updateLineLayout();
@@ -2500,12 +2499,6 @@ window.setTimeout = function(handler, timeout) {
                             expected: expectedChar,
                             word: currentWord
                         });
-
-                        // ── Difficulty: Master — fail on any incorrect key ──
-                        if (getTestRule('difficulty') === 'Master') {
-                            failTest('Master Mode Failed', 'You pressed an incorrect key. In Master mode, a single mistake ends the test.');
-                            return;
-                        }
                     }
                 } else {
                     if (currentCharIndex >= currentWord.length + 15) return;
@@ -2526,11 +2519,6 @@ window.setTimeout = function(handler, timeout) {
                         expected: '',
                         word: currentWord
                     });
-
-                    if (getTestRule('difficulty') === 'Master') {
-                        failTest('Master Mode Failed', 'You pressed an incorrect key. In Master mode, a single mistake ends the test.');
-                        return;
-                    }
 
 
                 }
@@ -2631,52 +2619,15 @@ window.setTimeout = function(handler, timeout) {
         let paceCaretStartTimestamp = 0;
         let lastTestWpm = 0;
         let isPaceRepeat = false;
-        const PACE_STATS_KEY = 'usertypo_pace_stats';
 
         function getCursorSettings() {
             return (window.usertypo_settings || {}).cursor || {};
-        }
-
-        function loadPaceStats() {
-            try {
-                return JSON.parse(localStorage.getItem(PACE_STATS_KEY) || '{}') || {};
-            } catch {
-                return {};
-            }
-        }
-
-        function savePaceStats(stats) {
-            localStorage.setItem(PACE_STATS_KEY, JSON.stringify(stats));
-        }
-
-        function todayKey() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
-
-        function recordPaceStats(wpm) {
-            if (!wpm || wpm < 1 || Number.isNaN(wpm)) return;
-            const stats = loadPaceStats();
-            const today = todayKey();
-            stats.last = wpm;
-            stats.pb = Math.max(Number(stats.pb) || 0, wpm);
-            stats.sum = (Number(stats.sum) || 0) + wpm;
-            stats.count = (Number(stats.count) || 0) + 1;
-            if (stats.dailyDate !== today) {
-                stats.dailyDate = today;
-                stats.dailyBest = wpm;
-            } else {
-                stats.dailyBest = Math.max(Number(stats.dailyBest) || 0, wpm);
-            }
-            savePaceStats(stats);
-            lastTestWpm = wpm;
         }
 
         function setLastTestWpm(wpm) {
             if (!isPaceRepeat || (isPaceRepeat && wpm > lastTestWpm)) {
                 lastTestWpm = wpm;
             }
-            if (!isPaceRepeat) recordPaceStats(wpm);
         }
 
         function shouldUsePaceCaret() {
@@ -2689,19 +2640,10 @@ window.setTimeout = function(handler, timeout) {
         function resolvePaceCaretWpm() {
             const cursor = getCursorSettings();
             const mode = (cursor.paceCaretMode || 'off').toLowerCase();
-            const stats = loadPaceStats();
 
             if (mode === 'custom') return cursor.paceCaretCustomSpeed || 100;
-            if (mode === 'last' || isPaceRepeat) return stats.last || lastTestWpm || 0;
-            if (mode === 'pb') return stats.pb || lastTestWpm || 0;
-            if (mode === 'average') {
-                if (stats.count > 0) return Math.round(stats.sum / stats.count);
-                return lastTestWpm || 0;
-            }
-            if (mode === 'daily') {
-                if (stats.dailyDate === todayKey()) return stats.dailyBest || 0;
-                return 0;
-            }
+            if (mode === 'average' || mode === 'pb' || mode === 'daily') return lastTestWpm;
+            if (mode === 'last' || isPaceRepeat) return lastTestWpm;
             return 0;
         }
 
@@ -3103,7 +3045,7 @@ window.setTimeout = function(handler, timeout) {
             const elapsedMinutes = Math.max((currentTime - startTime) / 60000, 2 / 60);
 
             const config = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
-            const resSettings = config.resultsAndGraphs || { decimalPrecision: false, alwaysShowCPS: false, minWPM: 'Off', minAccuracy: '75%' };
+            const resSettings = config.resultsAndGraphs || { decimalPrecision: false, alwaysShowCPS: false, minWPM: 'Off', minAccuracy: '75%', minBurst: 'Off' };
 
             const exactWpm = (validChars / 5) / elapsedMinutes;
             const exactRawWpm = (rawChars / 5) / elapsedMinutes;
@@ -3197,13 +3139,6 @@ window.setTimeout = function(handler, timeout) {
                         }, 350);
                     }, 3500);
                 }
-            } else {
-                window.testFailedThreshold = false;
-            }
-
-            // Randomize theme after each completed test (when enabled)
-            if (window.usertypo_settingsApi?.maybeRandomizeThemeAfterTest) {
-                try { window.usertypo_settingsApi.maybeRandomizeThemeAfterTest(); } catch (_) { /* ignore */ }
             }
 
             document.getElementById('stats-wpm').innerHTML = wpmDisplay;
@@ -3659,6 +3594,39 @@ window.setTimeout = function(handler, timeout) {
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
             window.lastBurstVal = burst;
+
+            // Live Threshold Check
+            const config = window.usertypo_settings || {};
+            const resSettings = config.resultsAndGraphs || {};
+
+            if (!testComplete) {
+                let liveFailedReason = null;
+
+                if (resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
+                    // 2-word grace period for accuracy
+                    if (currentWordIndex >= 2) {
+                        let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
+                        if (!isNaN(minAccVal) && acc < minAccVal) {
+                            liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
+                        }
+                    }
+                }
+
+                if (resSettings.minWPM && resSettings.minWPM !== 'Off') {
+                    // 5-word grace period
+                    if (currentWordIndex >= 5) {
+                        let minWpmVal = parseFloat(resSettings.minWPM);
+                        if (!isNaN(minWpmVal) && wpm < minWpmVal) {
+                            liveFailedReason = `Test failed wpm less than ${minWpmVal}`;
+                        }
+                    }
+                }
+
+                if (liveFailedReason) {
+                    testComplete = true;
+                    setTimeout(() => { if (!isRestarting) endTest(liveFailedReason); }, 10);
+                }
+            }
         }
 
         let testInactivityTimer = null;
