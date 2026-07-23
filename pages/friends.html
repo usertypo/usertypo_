@@ -1812,9 +1812,14 @@ window.__spaPageInit = function() {
             }
 
             document.addEventListener('keydown', (e) => {
+                const shortcutsOn = window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                    ? window.usertypo_settingsApi.areKeyboardShortcutsEnabled()
+                    : (window.usertypo_settings?.keyboardLayout?.keyboardShortcuts !== false);
+
                 // Rooms choice must win over create/join Enter handlers: opening the
                 // next modal synchronously would otherwise submit on the same keypress.
                 if (isModalVisible(roomsChoiceModal)) {
+                    if (!shortcutsOn) return;
                     if (e.key === 'Tab') {
                         e.preventDefault();
                         e.stopImmediatePropagation();
@@ -1831,6 +1836,7 @@ window.__spaPageInit = function() {
                     return;
                 }
                 if (e.key !== 'Enter') return;
+                if (!shortcutsOn) return;
                 if (isModalVisible(configureDualModal)) {
                     e.preventDefault();
                     submitDualRequestBtn?.click();
@@ -2311,6 +2317,10 @@ window.__spaPageInit = function() {
 
             document.addEventListener('keydown', (e) => {
                 if (!isModalVisible(findMatchModal)) return;
+                const shortcutsOn = window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                    ? window.usertypo_settingsApi.areKeyboardShortcutsEnabled()
+                    : (window.usertypo_settings?.keyboardLayout?.keyboardShortcuts !== false);
+                if (!shortcutsOn) return;
                 if (!findMatchChoice?.classList.contains('hidden')) {
                     if (e.key === 'Tab') {
                         e.preventDefault();
