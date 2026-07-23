@@ -211,25 +211,21 @@
             border-radius: 9999px;
         }
 
-        /* --- PACE CARET (ghost caret — styled via settings.js data-pace-style) --- */
+        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
         #pace-caret {
             position: absolute;
-            display: block;
-            box-sizing: border-box;
             pointer-events: none;
             left: 0;
             top: 0;
             z-index: 9;
             height: 1.2em;
             opacity: 0;
-            will-change: transform, width, height, opacity;
-            transform-origin: top left;
+            will-change: transform, width, opacity;
         }
 
-        #pace-caret.pace-off {
+        #pace-caret.hidden {
             opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
+            visibility: hidden;
         }
 
         /* --- TEXT CONTAINER WITH SLOW OPACITY FADE AND NEW SCROLL TRANSITION --- */
@@ -727,7 +723,7 @@
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
                             <div id="text-container" class="relative w-full transition-all duration-300">
-                                <span id="pace-caret" class="pace-off" data-pace-style="underscore"></span>
+                                <span id="pace-caret" class="hidden"></span>
                                 <span id="caret"
                                     class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
                             </div>
@@ -2607,7 +2603,6 @@ window.setTimeout = function(handler, timeout) {
 
             caret.style.transform = `translate3d(${left}px, ${top}px, 0)`;
             caret.style.width = `${rect.width}px`;
-            caret.style.height = `${Math.max(1, rect.height)}px`;
 
             if (isTyping) {
                 caret.classList.remove('animate-breath');
@@ -2622,24 +2617,16 @@ window.setTimeout = function(handler, timeout) {
         // --- PACE CARET (monkeytype-style replay ghost caret) ---
         let paceCaretSettings = null;
         let paceCaretStartTimestamp = 0;
-        let lastTestWpm = Number(localStorage.getItem('usertypo_previous_wpm')) || 0;
+        let lastTestWpm = 0;
         let isPaceRepeat = false;
-        let paceCaretStatsCache = null;
-        let paceCaretStatsPromise = null;
 
         function getCursorSettings() {
             return (window.usertypo_settings || {}).cursor || {};
         }
 
         function setLastTestWpm(wpm) {
-            const n = Number(wpm) || 0;
-            if (!isPaceRepeat || (isPaceRepeat && n > lastTestWpm)) {
-                lastTestWpm = n;
-            }
-            if (n > 0) {
-                try { localStorage.setItem('usertypo_previous_wpm', String(n)); } catch (e) { /* ignore */ }
-                // Force a fresh average / PB / daily lookup on the next test
-                if (!isPaceRepeat) paceCaretStatsCache = null;
+            if (!isPaceRepeat || (isPaceRepeat && wpm > lastTestWpm)) {
+                lastTestWpm = wpm;
             }
         }
 
@@ -2650,105 +2637,26 @@ window.setTimeout = function(handler, timeout) {
             return mode !== 'off' || (repeatedPace && isPaceRepeat);
         }
 
-        async function ensurePaceCaretStats(force) {
-            const needsRemote = ['average', 'pb', 'daily'].includes(
-                (getCursorSettings().paceCaretMode || 'off').toLowerCase()
-            );
-            if (!needsRemote && !force) return paceCaretStatsCache;
-
-            if (!force && paceCaretStatsCache) return paceCaretStatsCache;
-            if (paceCaretStatsPromise) return paceCaretStatsPromise;
-
-            if (!window.usertypoSessions || typeof window.usertypoSessions.getPaceCaretStats !== 'function') {
-                paceCaretStatsCache = {
-                    average: null,
-                    pb: null,
-                    last: lastTestWpm || null,
-                    daily: null,
-                    pbModeKey: (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount),
-                    _pbByMode: {},
-                };
-                return paceCaretStatsCache;
-            }
-
-            paceCaretStatsPromise = window.usertypoSessions
-                .getPaceCaretStats(testMode, testAmount)
-                .then(function (stats) {
-                    const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
-                    paceCaretStatsCache = Object.assign({
-                        pbModeKey: key,
-                        _pbByMode: {},
-                    }, stats || {});
-                    if (stats && stats.pb != null) {
-                        paceCaretStatsCache._pbByMode[key] = stats.pb;
-                    }
-                    if (lastTestWpm > 0) {
-                        paceCaretStatsCache.last = lastTestWpm;
-                    }
-                    return paceCaretStatsCache;
-                })
-                .catch(function () {
-                    paceCaretStatsCache = {
-                        average: null,
-                        pb: null,
-                        last: lastTestWpm || null,
-                        daily: null,
-                        pbModeKey: (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount),
-                        _pbByMode: {},
-                    };
-                    return paceCaretStatsCache;
-                })
-                .finally(function () {
-                    paceCaretStatsPromise = null;
-                });
-
-            return paceCaretStatsPromise;
-        }
-
-        function resolvePaceCaretWpmSync() {
+        function resolvePaceCaretWpm() {
             const cursor = getCursorSettings();
             const mode = (cursor.paceCaretMode || 'off').toLowerCase();
-            const stats = paceCaretStatsCache;
 
-            if (mode === 'custom') {
-                const custom = Number(cursor.paceCaretCustomSpeed);
-                return custom > 0 ? custom : 100;
-            }
-            if (mode === 'last' || (mode === 'off' && isPaceRepeat)) {
-                return lastTestWpm || (stats && stats.last) || 0;
-            }
-            if (mode === 'average') {
-                return (stats && stats.average) || 0;
-            }
-            if (mode === 'pb') {
-                const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
-                if (stats && stats._pbByMode && stats._pbByMode[key] != null) {
-                    return stats._pbByMode[key];
-                }
-                if (stats && stats.pbModeKey === key && stats.pb != null) return stats.pb;
-                return (stats && stats.pb) || 0;
-            }
-            if (mode === 'daily') {
-                // Include lastTestWpm so a just-finished test counts before DB sync
-                return Math.max((stats && stats.daily) || 0, lastTestWpm || 0);
-            }
-            if (isPaceRepeat) return lastTestWpm || 0;
+            if (mode === 'custom') return cursor.paceCaretCustomSpeed || 100;
+            if (mode === 'average' || mode === 'pb' || mode === 'daily') return lastTestWpm;
+            if (mode === 'last' || isPaceRepeat) return lastTestWpm;
             return 0;
         }
 
         function showPaceCaret() {
             if (!paceCaretEl) return;
-            paceCaretEl.classList.remove('pace-off', 'hidden');
+            paceCaretEl.classList.remove('hidden');
             paceCaretEl.style.visibility = '';
-            paceCaretEl.style.opacity = '';
-            const style = getPaceCaretStyle();
-            paceCaretEl.setAttribute('data-pace-style', style);
         }
 
         function hidePaceCaret() {
             if (!paceCaretEl) return;
-            paceCaretEl.classList.add('pace-off');
-            paceCaretEl.classList.remove('hidden');
+            paceCaretEl.classList.add('hidden');
+            paceCaretEl.style.visibility = 'hidden';
         }
 
         function resetPaceCaret() {
@@ -2760,28 +2668,14 @@ window.setTimeout = function(handler, timeout) {
             hidePaceCaret();
         }
 
-        async function initPaceCaret() {
+        function initPaceCaret() {
             hidePaceCaret();
             if (!shouldUsePaceCaret()) {
                 paceCaretSettings = null;
                 return;
             }
 
-            const mode = (getCursorSettings().paceCaretMode || 'off').toLowerCase();
-            if (mode === 'average' || mode === 'pb' || mode === 'daily') {
-                const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
-                if (mode === 'pb' && paceCaretStatsCache && paceCaretStatsCache.pbModeKey !== key) {
-                    paceCaretStatsCache = null;
-                }
-                await ensurePaceCaretStats(mode === 'pb' && !paceCaretStatsCache);
-            } else if (mode === 'last' && !lastTestWpm) {
-                await ensurePaceCaretStats(true);
-                if (paceCaretStatsCache && paceCaretStatsCache.last) {
-                    lastTestWpm = paceCaretStatsCache.last;
-                }
-            }
-
-            const wpm = resolvePaceCaretWpmSync();
+            const wpm = resolvePaceCaretWpm();
             if (!wpm || wpm < 1 || Number.isNaN(wpm)) {
                 paceCaretSettings = null;
                 return;
@@ -2789,10 +2683,6 @@ window.setTimeout = function(handler, timeout) {
 
             const characters = wpm * 5;
             const spc = 60 / characters;
-
-            if (paceCaretEl) {
-                paceCaretEl.setAttribute('data-pace-style', getPaceCaretStyle());
-            }
 
             paceCaretSettings = {
                 wpm,
@@ -2818,27 +2708,14 @@ window.setTimeout = function(handler, timeout) {
             return (getCursorSettings().paceCaretStyle || 'underscore').toLowerCase();
         }
 
-        /**
-         * Size + place the pace caret exactly like the main caret:
-         * - line: thin vertical bar at letter left, full letter height
-         * - block / outline: full letter box
-         * - underscore: full letter box; the underline is drawn by CSS ::after
-         * Vertical alignment matches updateCaretPosition() (top + full height).
-         */
-        function applyPaceCaretBox(left, top, rect) {
+        function applyPaceCaretDimensions(rect) {
             const style = getPaceCaretStyle();
-            paceCaretEl.setAttribute('data-pace-style', style);
-
-            const letterW = Math.max(1, rect.width);
-            const letterH = Math.max(1, rect.height);
-
             if (style === 'line') {
                 paceCaretEl.style.width = '2.5px';
             } else {
-                paceCaretEl.style.width = `${letterW}px`;
+                // underscore, block, outline — ::after underline spans the character width
+                paceCaretEl.style.width = `${rect.width}px`;
             }
-            paceCaretEl.style.height = `${letterH}px`;
-            paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
         }
 
         function incrementPaceLetterIndex() {
@@ -2924,7 +2801,8 @@ window.setTimeout = function(handler, timeout) {
                 paceCaretEl.style.removeProperty('transition');
             }
 
-            applyPaceCaretBox(left, top, rect);
+            applyPaceCaretDimensions(rect);
+            paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
 
             if (!animate) {
                 void paceCaretEl.offsetWidth;
@@ -2964,7 +2842,7 @@ window.setTimeout = function(handler, timeout) {
         }
 
         window.refreshPaceCaretVisual = function () {
-            if (!paceCaretSettings || !isTyping || !paceCaretEl || paceCaretEl.classList.contains('pace-off')) return;
+            if (!paceCaretSettings || !isTyping || paceCaretEl.classList.contains('hidden')) return;
             goToPaceCaretPosition(
                 paceCaretSettings.currentWordIndex,
                 paceCaretSettings.currentLetterIndex,
@@ -3086,18 +2964,8 @@ window.setTimeout = function(handler, timeout) {
             caret.classList.remove('animate-breath');
 
             try {
-                if (shouldUsePaceCaret()) {
-                    if (paceCaretSettings) {
-                        startPaceCaret();
-                    } else {
-                        // Async init (average/pb/daily fetch stats) may not be ready
-                        // yet — start the pace caret as soon as it resolves.
-                        initPaceCaret().then(() => {
-                            if (isTyping && !testComplete && paceCaretSettings) {
-                                startPaceCaret();
-                            }
-                        }).catch(() => {});
-                    }
+                if (shouldUsePaceCaret() && paceCaretSettings) {
+                    startPaceCaret();
                 }
             } catch (e) {}
 

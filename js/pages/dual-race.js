@@ -302,11 +302,6 @@
             textContainer.style.transform = 'translateY(-' + offset + 'px)';
         }
 
-        function getOpponentCaretStyle() {
-            var cursor = (window.usertypo_settings && window.usertypo_settings.cursor) || {};
-            return String(cursor.paceCaretStyle || 'underscore').toLowerCase();
-        }
-
         function positionCaretAt(element, wordIndex, charIndex) {
             if (!element || !textContainer || !words[wordIndex]) return;
             var wordElement = document.getElementById('word-' + wordIndex);
@@ -324,20 +319,7 @@
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            element.style.height = Math.max(1, targetRect.height) + 'px';
-            if (element === opponentCaret) {
-                // Ghost caret mirrors the main caret: full-height box; the
-                // underscore underline is drawn by CSS ::after (buildPaceCaretCSS).
-                var paceStyle = getOpponentCaretStyle();
-                opponentCaret.setAttribute('data-pace-style', paceStyle);
-                if (paceStyle === 'line') {
-                    element.style.width = '2.5px';
-                } else {
-                    element.style.width = Math.max(1, targetRect.width) + 'px';
-                }
-            } else {
-                element.style.width = Math.max(1, targetRect.width) + 'px';
-            }
+            element.style.width = targetRect.width + 'px';
         }
 
         function updateCaret() {

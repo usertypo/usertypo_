@@ -302,25 +302,21 @@
             border-radius: 9999px;
         }
 
-        /* --- PACE CARET (ghost caret — styled via settings.js data-pace-style) --- */
+        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
         #pace-caret {
             position: absolute;
-            display: block;
-            box-sizing: border-box;
             pointer-events: none;
             left: 0;
             top: 0;
             z-index: 9;
             height: 1.2em;
             opacity: 0;
-            will-change: transform, width, height, opacity;
-            transform-origin: top left;
+            will-change: transform, width, opacity;
         }
 
-        #pace-caret.pace-off {
+        #pace-caret.hidden {
             opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
+            visibility: hidden;
         }
 
         /* --- TEXT CONTAINER WITH SLOW OPACITY FADE AND NEW SCROLL TRANSITION --- */

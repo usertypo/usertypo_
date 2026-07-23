@@ -377,74 +377,11 @@
         return 'words ' + amount;
     }
 
-    /**
-     * Stats used by the solo pace caret (average / PB / last / daily).
-     * Returns nulls when the user is a guest or has no qualifying sessions.
-     */
-    async function getPaceCaretStats(mode, amount) {
-        var lastWpm = Number(localStorage.getItem('usertypo_previous_wpm')) || 0;
-        var empty = {
-            average: null,
-            pb: null,
-            last: lastWpm || null,
-            daily: null,
-        };
-
-        try {
-            var stats = await getMyStats();
-            if (stats.error || !stats.allSessions) return empty;
-
-            var sessions = stats.allSessions.filter(function (s) {
-                return !s.failed && isFinite(Number(s.wpm)) && Number(s.wpm) > 0;
-            });
-
-            var average = stats.scoreDistribution && stats.scoreDistribution.average != null
-                ? Number(stats.scoreDistribution.average)
-                : null;
-
-            var pb = null;
-            var modeKey = (mode === 'time' ? 'time' : 'words') + ':' + Number(amount);
-            if (stats.bests && stats.bests[modeKey] && stats.bests[modeKey].wpm != null) {
-                pb = Number(stats.bests[modeKey].wpm);
-            } else {
-                sessions.forEach(function (s) {
-                    if (s.mode === (mode === 'time' ? 'time' : 'words') && Number(s.amount) === Number(amount)) {
-                        pb = Math.max(pb || 0, Number(s.wpm));
-                    }
-                });
-            }
-
-            var last = lastWpm > 0
-                ? lastWpm
-                : (sessions.length ? Number(sessions[0].wpm) : null);
-
-            var startOfDay = new Date();
-            startOfDay.setHours(0, 0, 0, 0);
-            var dayStartMs = startOfDay.getTime();
-            var daily = null;
-            sessions.forEach(function (s) {
-                var created = new Date(s.created_at).getTime();
-                if (!isFinite(created) || created < dayStartMs) return;
-                daily = Math.max(daily || 0, Number(s.wpm));
-            });
-
-            return {
-                average: average != null && isFinite(average) ? average : null,
-                pb: pb != null && pb > 0 ? pb : null,
-                last: last != null && last > 0 ? last : null,
-                daily: daily != null && daily > 0 ? daily : null,
-            };
-        } catch (e) {
-            return empty;
-        }
-    }
-
     window.usertypoSessions = {
         saveSession: saveSession,
         currentLanguage: currentLanguage,
         listMySessions: listMySessions,
         getMyStats: getMyStats,
-        getPaceCaretStats: getPaceCaretStats,
         computeScoreDistribution: computeScoreDistribution,
         formatCompactNumber: formatCompactNumber,
         formatDurationShort: formatDurationShort,
