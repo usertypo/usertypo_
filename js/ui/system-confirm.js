@@ -8,7 +8,6 @@
         RESET_SETTINGS: 'reset-settings',
         RESET_ACCOUNT: 'reset-account',
         DELETE_ACCOUNT: 'delete-account',
-        RESET_PERSONAL_BESTS: 'reset-personal-bests',
         LOGOUT_ALL: 'logout-all',
     };
 
@@ -91,17 +90,6 @@
             if (title) title.textContent = 'Reset All Settings';
             if (message) message.textContent = 'This will restore every typing setting to its default value. Continue?';
             if (icon) icon.textContent = 'refresh';
-            if (ok) {
-                ok.textContent = 'Reset';
-                ok.classList.add('system-confirm-ok-danger');
-            }
-            return;
-        }
-
-        if (mode === MODE.RESET_PERSONAL_BESTS) {
-            if (title) title.textContent = 'Reset Personal Bests';
-            if (message) message.textContent = 'This clears your test history and personal best records. Friends and account login stay. Continue?';
-            if (icon) icon.textContent = 'trophy';
             if (ok) {
                 ok.textContent = 'Reset';
                 ok.classList.add('system-confirm-ok-danger');
@@ -211,12 +199,6 @@
         else toast('Settings reset to defaults', 'refresh');
     }
 
-    async function runResetPersonalBests() {
-        if (!window.usertypoAccount) throw new Error('Account helpers unavailable.');
-        await window.usertypoAccount.resetPersonalBests();
-        toast('Personal bests cleared.', 'trophy');
-    }
-
     async function runLogoutAll() {
         if (!window.usertypoAccount) throw new Error('Account helpers unavailable.');
         await window.usertypoAccount.logoutAllDevices();
@@ -257,7 +239,6 @@
         try {
             if (mode === MODE.EXPORT) await runExport();
             else if (mode === MODE.RESET_SETTINGS) await runResetSettings();
-            else if (mode === MODE.RESET_PERSONAL_BESTS) await runResetPersonalBests();
             else if (mode === MODE.LOGOUT_ALL) await runLogoutAll();
             else if (mode === MODE.RESET_ACCOUNT) await runResetAccount();
             else if (mode === MODE.DELETE_ACCOUNT) await runDeleteAccount();
@@ -301,7 +282,6 @@
 
     window.confirmSystemDanger = function (kind) {
         if (kind === 'reset-settings') openModal(MODE.RESET_SETTINGS);
-        else if (kind === 'reset-personal-bests') openModal(MODE.RESET_PERSONAL_BESTS);
         else if (kind === 'logout-all') openModal(MODE.LOGOUT_ALL);
         else if (kind === 'reset-account') openModal(MODE.RESET_ACCOUNT);
         else if (kind === 'delete-account') openModal(MODE.DELETE_ACCOUNT);

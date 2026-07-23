@@ -486,6 +486,28 @@
         .setting-select:focus { border-color: rgba(var(--theme-primary-rgb),0.4); box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb),0.1); }
         .setting-select option { background: #1a1d23; color: #cbd5e1; }
 
+        .coming-soon-setting[data-coming-soon] {
+            position: relative;
+        }
+        .coming-soon-setting[data-coming-soon]:hover::after {
+            content: attr(data-coming-soon);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            white-space: nowrap;
+            background-color: rgba(26, 29, 35, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 4px 10px;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 40;
+        }
+
         /* â”€â”€â”€ Search â”€â”€â”€ */
         .search-area {
             display: flex;
@@ -1101,7 +1123,7 @@
 
                 <!-- Card 5: Live Feed -->
                 <div class="setting-card" data-category="live-feed"
-                    data-keywords="live wpm accuracy burst timer progress opacity color">
+                    data-keywords="live wpm accuracy burst timer progress opacity">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1116,7 +1138,7 @@
 
                 <!-- Card 6: Results & Graphs -->
                 <div class="setting-card" data-category="results-graphs"
-                    data-keywords="decimal precision graph smooth cps threshold min wpm accuracy burst">
+                    data-keywords="decimal precision graph smooth cps threshold min wpm accuracy">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1252,7 +1274,7 @@
                                         </div>
                                         <div class="flex gap-2 flex-wrap" data-setting="cursor.caretStyle">
                                             <button
-                                                class="opt-btn active flex items-center justify-center min-w-[2.5rem]"
+                                                class="opt-btn flex items-center justify-center min-w-[2.5rem]"
                                                 title="Line" onclick="selectOpt(this)">
                                                 <div class="w-0.5 h-3.5 bg-current"></div>
                                             </button>
@@ -1260,7 +1282,7 @@
                                                 title="Block" onclick="selectOpt(this)">
                                                 <div class="w-2 h-3.5 bg-current"></div>
                                             </button>
-                                            <button class="opt-btn flex items-center justify-center min-w-[2.5rem]"
+                                            <button class="opt-btn active flex items-center justify-center min-w-[2.5rem]"
                                                 title="Underscore" onclick="selectOpt(this)">
                                                 <div class="w-2 h-0.5 bg-current translate-y-[5px]"></div>
                                             </button>
@@ -1506,35 +1528,6 @@
                                             <div class="toggle-thumb"></div>
                                         </div>
                                     </div>
-                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
-                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
-                                            <div class="flex items-center gap-2">
-                                                <p class="text-sm font-semibold text-slate-200">Mute Sounds</p>
-                                                <div
-                                                    class="info-icon-wrapper group relative flex items-center justify-center">
-                                                    <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                    <div
-                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                        <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                            <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
-                                                            How it works
-                                                        </div>
-                                                        Silently mutes all typing sounds without changing your click
-                                                        sounds, error sounds, or volume preferences. Also available from
-                                                        the volume icon on the home page footer.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p class="text-xs text-slate-500">Temporarily silence all audio</p>
-                                        </div>
-                                        <div class="toggle-track" data-setting="soundscape.muted"
-                                            onclick="toggleSwitch(this)">
-                                            <div class="toggle-thumb"></div>
-                                        </div>
-                                    </div>
                                     <div class="flex flex-col gap-2 relative">
                                         <div class="flex items-center gap-2">
                                             <p class="text-sm font-semibold text-slate-200">Error Sounds</p>
@@ -1555,9 +1548,9 @@
                                             </div>
                                         </div>
                                         <div class="flex gap-2 flex-wrap" data-setting="soundscape.errorSounds">
-                                            <button class="opt-btn" onclick="selectOpt(this)">Off</button>
+                                            <button class="opt-btn active" onclick="selectOpt(this)">Off</button>
                                             <button class="opt-btn" onclick="selectOpt(this)">Mute</button>
-                                            <button class="opt-btn active" onclick="selectOpt(this)">Beep</button>
+                                            <button class="opt-btn" onclick="selectOpt(this)">Beep</button>
                                         </div>
                                     </div>
                                     <div class="section-divider"></div>
@@ -2533,34 +2526,6 @@
                                                 class="opt-btn" onclick="selectOpt(this)">0.75</button><button
                                                 class="opt-btn" onclick="selectOpt(this)">1.0</button></div>
                                     </div>
-                                    <div class="flex flex-col gap-2 relative">
-                                        <div class="flex items-center gap-2">
-                                            <label
-                                                class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Timer
-                                                /
-                                                Progress Color</label>
-                                            <div
-                                                class="info-icon-wrapper group relative flex items-center justify-center">
-                                                <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                <div
-                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                    <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
-                                                        How it works
-                                                    </div>
-                                                    Choose which color the timer uses. Sub uses the subtitle color, Main
-                                                    uses the primary accent, Text uses the body text color.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
-                                                onclick="selectOpt(this)">Sub</button><button class="opt-btn"
-                                                onclick="selectOpt(this)">Main</button><button class="opt-btn"
-                                                onclick="selectOpt(this)">Text</button><button class="opt-btn"
-                                                onclick="selectOpt(this)">Custom</button></div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -2853,60 +2818,6 @@
                                                                 <button
                                                                     class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
                                                                     onclick="applyCustomPopover(this, 'resultsAndGraphs.minAccuracy')">Apply</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="flex flex-col gap-2 relative">
-                                                    <div class="flex items-center gap-2">
-                                                        <label
-                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Min
-                                                            Burst</label>
-                                                        <div
-                                                            class="info-icon-wrapper group relative flex items-center justify-center">
-                                                            <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                            <div
-                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
-                                                                <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                    <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
-                                                                    How it works
-                                                                </div>
-                                                                Set a minimum burst WPM. Fixed uses a constant value,
-                                                                Flex adjusts based on your average.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2 flex-wrap"
-                                                        data-setting="resultsAndGraphs.minBurst">
-                                                        <button class="opt-btn active"
-                                                            onclick="selectOpt(this)">Off</button>
-                                                        <div class="relative custom-popover-wrapper">
-                                                            <button class="opt-btn"
-                                                                onclick="toggleCustomPopover(this)">Fixed</button>
-                                                            <div
-                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
-                                                                <input type="number"
-                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
-                                                                    placeholder="WPM...">
-                                                                <button
-                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
-                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst')">Apply</button>
-                                                            </div>
-                                                        </div>
-                                                        <div class="relative custom-popover-wrapper">
-                                                            <button class="opt-btn"
-                                                                onclick="toggleCustomPopover(this)">Flex</button>
-                                                            <div
-                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
-                                                                <input type="number"
-                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
-                                                                    placeholder="Flex %...">
-                                                                <button
-                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
-                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst', true)">Apply</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -3325,8 +3236,9 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex flex-col gap-2 relative sub-setting-card"
-                                        data-sub-title="UI Language" data-sub-icon="translate" data-searchable="true">
+                                    <div class="flex flex-col gap-2 relative sub-setting-card coming-soon-setting"
+                                        data-sub-title="UI Language" data-sub-icon="translate" data-searchable="true"
+                                        data-coming-soon="Coming Soon">
                                         <div class="flex items-center gap-2">
                                             <label
                                                 class="text-xs font-semibold text-slate-400 uppercase tracking-widest">UI
@@ -3347,30 +3259,14 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <button
-                                            class="setting-select flex items-center justify-between cursor-pointer w-full text-left"
+                                        <button type="button"
+                                            class="setting-select flex items-center justify-between w-full text-left cursor-not-allowed opacity-60"
                                             style="background-image: none; padding-right: 0.7rem;"
-                                            onclick="openSubSetting(this)">
+                                            aria-disabled="true" tabindex="-1">
                                             <span class="truncate">English (US)</span>
                                             <span
                                                 class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
                                         </button>
-                                        <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-4">
-                                                <div class="grid grid-cols-5 gap-2">
-                                                    <button class="opt-btn active" onclick="selectOpt(this)">English
-                                                        (US)</button>
-                                                    <button class="opt-btn" onclick="selectOpt(this)">English
-                                                        (UK)</button>
-                                                    <button class="opt-btn" onclick="selectOpt(this)">Spanish</button>
-                                                    <button class="opt-btn" onclick="selectOpt(this)">French</button>
-                                                    <button class="opt-btn" onclick="selectOpt(this)">German</button>
-                                                    <button class="opt-btn" onclick="selectOpt(this)">Japanese</button>
-                                                    <button class="opt-btn"
-                                                        onclick="selectOpt(this)">Portuguese</button>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
 
                                 </div>
@@ -4000,20 +3896,6 @@
                                                 </div>
 
                                                 <div class="section-divider"></div>
-
-                                                <!-- Reset Personal Bests -->
-                                                <div class="danger-zone p-4 flex flex-col gap-3">
-                                                    <div class="flex items-center justify-between gap-3">
-                                                        <div class="min-w-0">
-                                                            <p class="text-sm font-bold text-error">Reset Personal Bests
-                                                            </p>
-                                                            <p class="text-xs text-error/60">Clear all your personal
-                                                                records</p>
-                                                        </div>
-                                                        <button type="button" class="danger-btn shrink-0"
-                                                            onclick="confirmSystemDanger('reset-personal-bests')">Reset</button>
-                                                    </div>
-                                                </div>
 
                                                 <!-- Logout all devices -->
                                                 <div class="danger-zone p-4 flex flex-col gap-3">
