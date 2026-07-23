@@ -6,6 +6,7 @@
 (function () {
     var openUserId = null;
     var sending = false;
+    var blocking = false;
 
     function $(id) {
         return document.getElementById(id);
@@ -56,6 +57,7 @@
             overlay.setAttribute('aria-hidden', 'true');
             openUserId = null;
             sending = false;
+            blocking = false;
         }
     }
 
@@ -80,31 +82,72 @@
         if (!slot) return;
         slot.innerHTML = '';
         if (!card || card.isSelf || card.relationship === 'self') return;
-        if (card.relationship === 'friends' || card.relationship === 'pending_sent') return;
-        if (card.relationship === 'pending_received') {
-            slot.innerHTML =
-                '<p class="text-xs text-slate-500 font-bold text-center mt-4">Friend request received — check Friends</p>';
+        // Friends: no friend request and no block (must unfriend first).
+        if (card.relationship === 'friends') return;
+
+        var wrap = document.createElement('div');
+        wrap.className = 'mt-5 w-full flex flex-col sm:flex-row items-center justify-center gap-2';
+
+        if (card.iBlocked) {
+            var unblockBtn = document.createElement('button');
+            unblockBtn.type = 'button';
+            unblockBtn.id = 'ppc-unblock-btn';
+            unblockBtn.className =
+                'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl ' +
+                'bg-surface/60 hover:bg-surface text-slate-300 border border-white/10 ' +
+                'text-sm font-bold transition-colors';
+            unblockBtn.innerHTML =
+                '<span class="material-symbols-outlined text-[18px]">lock_open</span>' +
+                '<span>Unblock</span>';
+            unblockBtn.addEventListener('click', function () {
+                unblockPlayer(card.userId, unblockBtn);
+            });
+            wrap.appendChild(unblockBtn);
+            slot.appendChild(wrap);
             return;
         }
 
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.id = 'ppc-friend-btn';
-        btn.className =
-            'mt-5 w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl ' +
-            'bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 ' +
+        if (card.relationship === 'pending_received') {
+            var note = document.createElement('p');
+            note.className = 'text-xs text-slate-500 font-bold text-center w-full sm:w-auto';
+            note.textContent = 'Friend request received — check Friends';
+            wrap.appendChild(note);
+        } else if (card.relationship !== 'pending_sent') {
+            var friendBtn = document.createElement('button');
+            friendBtn.type = 'button';
+            friendBtn.id = 'ppc-friend-btn';
+            friendBtn.className =
+                'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl ' +
+                'bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 ' +
+                'text-sm font-bold transition-colors';
+            friendBtn.innerHTML =
+                '<span class="material-symbols-outlined text-[18px]">person_add</span>' +
+                '<span>Send Friend Request</span>';
+            friendBtn.addEventListener('click', function () {
+                sendFriendRequest(card.userId, friendBtn);
+            });
+            wrap.appendChild(friendBtn);
+        }
+
+        var blockBtn = document.createElement('button');
+        blockBtn.type = 'button';
+        blockBtn.id = 'ppc-block-btn';
+        blockBtn.className =
+            'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl ' +
+            'bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-400/20 ' +
             'text-sm font-bold transition-colors';
-        btn.innerHTML =
-            '<span class="material-symbols-outlined text-[18px]">person_add</span>' +
-            '<span>Send Friend Request</span>';
-        btn.addEventListener('click', function () {
-            sendFriendRequest(card.userId, btn);
+        blockBtn.innerHTML =
+            '<span class="material-symbols-outlined text-[18px]">block</span>' +
+            '<span>Block</span>';
+        blockBtn.addEventListener('click', function () {
+            blockPlayer(card.userId, blockBtn);
         });
-        slot.appendChild(btn);
+        wrap.appendChild(blockBtn);
+        slot.appendChild(wrap);
     }
 
     async function sendFriendRequest(userId, btn) {
-        if (sending || !userId || !window.usertypoFriends) return;
+        if (sending || blocking || !userId || !window.usertypoFriends) return;
         sending = true;
         if (btn) {
             btn.disabled = true;
@@ -114,19 +157,27 @@
         try {
             await window.usertypoFriends.sendRequest(userId);
             if (window.usertypoPublicProfile) window.usertypoPublicProfile.invalidate(userId);
-            var slot = $('ppc-friend-slot');
-            if (slot) slot.innerHTML = '';
             if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
                 window.usertypoNotifications.showToast('Friend request sent.', 'person_add');
+            }
+            var card = await window.usertypoPublicProfile.getCard(userId, { force: true });
+            if (card && !card.error) setFriendSlot(card);
+            else {
+                var slot = $('ppc-friend-slot');
+                if (slot) slot.innerHTML = '';
             }
         } catch (err) {
             var mapped = window.usertypoFriends.mapRpcError
                 ? window.usertypoFriends.mapRpcError(err)
                 : { message: (err && err.message) || 'Could not send request' };
             if (mapped.code === 'already_friends' || mapped.code === 'request_already_sent') {
-                var slot = $('ppc-friend-slot');
-                if (slot) slot.innerHTML = '';
                 if (window.usertypoPublicProfile) window.usertypoPublicProfile.invalidate(userId);
+                var refreshed = await window.usertypoPublicProfile.getCard(userId, { force: true }).catch(function () { return null; });
+                if (refreshed && !refreshed.error) setFriendSlot(refreshed);
+                else {
+                    var slot = $('ppc-friend-slot');
+                    if (slot) slot.innerHTML = '';
+                }
             } else if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
                 window.usertypoNotifications.showToast(mapped.message, 'error');
             }
@@ -137,6 +188,72 @@
             }
         } finally {
             sending = false;
+        }
+    }
+
+    async function blockPlayer(userId, btn) {
+        if (blocking || sending || !userId || !window.usertypoFriends) return;
+        blocking = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-not-allowed');
+            btn.querySelector('span:last-child').textContent = 'Blocking…';
+        }
+        try {
+            await window.usertypoFriends.blockUser(userId);
+            if (window.usertypoPublicProfile) window.usertypoPublicProfile.invalidate(userId);
+            if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                window.usertypoNotifications.showToast('Player blocked.', 'block');
+            }
+            var card = await window.usertypoPublicProfile.getCard(userId, { force: true });
+            if (card && !card.error) setFriendSlot(card);
+        } catch (err) {
+            var mapped = window.usertypoFriends.mapRpcError
+                ? window.usertypoFriends.mapRpcError(err)
+                : { message: (err && err.message) || 'Could not block player' };
+            if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                window.usertypoNotifications.showToast(mapped.message, 'error');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+                btn.querySelector('span:last-child').textContent = 'Block';
+            }
+        } finally {
+            blocking = false;
+        }
+    }
+
+    async function unblockPlayer(userId, btn) {
+        if (blocking || sending || !userId || !window.usertypoFriends) return;
+        blocking = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-not-allowed');
+            btn.querySelector('span:last-child').textContent = 'Unblocking…';
+        }
+        try {
+            await window.usertypoFriends.unblockUser(userId);
+            if (window.usertypoPublicProfile) window.usertypoPublicProfile.invalidate(userId);
+            if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                window.usertypoNotifications.showToast('Player unblocked.', 'lock_open');
+            }
+            var card = await window.usertypoPublicProfile.getCard(userId, { force: true });
+            if (card && !card.error) setFriendSlot(card);
+        } catch (err) {
+            var mapped = window.usertypoFriends.mapRpcError
+                ? window.usertypoFriends.mapRpcError(err)
+                : { message: (err && err.message) || 'Could not unblock player' };
+            if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                window.usertypoNotifications.showToast(mapped.message, 'error');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+                btn.querySelector('span:last-child').textContent = 'Unblock';
+            }
+        } finally {
+            blocking = false;
         }
     }
 

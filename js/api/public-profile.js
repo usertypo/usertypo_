@@ -51,6 +51,7 @@
             avatarUrl: raw.avatar_url || '',
             isSelf: !!raw.is_self,
             relationship: raw.relationship || 'none',
+            iBlocked: !!raw.i_blocked,
             level: level,
             xpIntoLevel: xpInto,
             xpToNext: xpToNext,
