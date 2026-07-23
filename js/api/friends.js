@@ -156,6 +156,19 @@
         return { ok: true };
     }
 
+    async function listBlockedUsers() {
+        await requireAuth();
+        var client = await getClient();
+        var result = await client.rpc('get_my_blocked_users');
+        if (result.error) throw result.error;
+        var data = result.data;
+        if (Array.isArray(data)) return data;
+        if (typeof data === 'string') {
+            try { return JSON.parse(data); } catch (e) { return []; }
+        }
+        return [];
+    }
+
     async function loadDashboard() {
         await requireAuth();
         var client = await getClient();
@@ -179,6 +192,7 @@
         removeFriend: removeFriend,
         blockUser: blockUser,
         unblockUser: unblockUser,
+        listBlockedUsers: listBlockedUsers,
         loadDashboard: loadDashboard,
         mapRpcError: mapRpcError,
     };

@@ -3890,88 +3890,113 @@
                                                 class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
-                                            <div class="flex flex-col gap-5">
+                                            <div class="flex flex-col gap-5" id="account-settings-form">
                                                 <!-- Account Name -->
-                                                <div class="flex flex-col gap-2 relative">
+                                                <div class="flex flex-col gap-2 relative" data-account-field="username">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Account
                                                             Name</label>
                                                         <span
                                                             class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
-                                                            onclick="toggleEdit(this)">edit</span>
+                                                            data-account-edit="username">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
-                                                        <div
+                                                        <div id="account-username-display"
                                                             class="display-mode flex-1 text-sm font-bold text-slate-200">
-                                                            GAMER_42</div>
+                                                            —</div>
                                                         <div class="edit-mode hidden flex-1 flex items-center gap-3">
-                                                            <input type="text" class="search-input" style="flex:1"
-                                                                placeholder="GAMER_42" value="GAMER_42" />
-                                                            <button class="opt-btn highlighted"
-                                                                onclick="triggerSave(); toggleEdit(this)">Save</button>
-                                                            <button class="opt-btn"
-                                                                onclick="toggleEdit(this)">Cancel</button>
+                                                            <input id="account-username-input" type="text"
+                                                                class="search-input" style="flex:1"
+                                                                placeholder="Username" maxlength="32" />
+                                                            <button type="button" class="opt-btn highlighted"
+                                                                data-account-save="username">Save</button>
+                                                            <button type="button" class="opt-btn"
+                                                                data-account-cancel="username">Cancel</button>
                                                         </div>
                                                     </div>
+                                                    <p class="account-field-status text-xs text-slate-500 hidden"></p>
                                                 </div>
 
                                                 <!-- Email Address -->
-                                                <div class="flex flex-col gap-2 relative">
+                                                <div class="flex flex-col gap-2 relative" data-account-field="email">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Email
                                                             Address</label>
                                                         <span
                                                             class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
-                                                            onclick="toggleEdit(this)">edit</span>
+                                                            data-account-edit="email">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
-                                                        <div
+                                                        <div id="account-email-display"
                                                             class="display-mode flex-1 text-sm font-bold text-slate-200">
-                                                            user@example.com</div>
-                                                        <div class="edit-mode hidden flex-1 flex items-center gap-3">
-                                                            <input type="email" class="search-input" style="flex:1"
-                                                                placeholder="user@example.com"
-                                                                value="user@example.com" />
-                                                            <button class="opt-btn highlighted"
-                                                                onclick="triggerSave(); toggleEdit(this)">Save</button>
-                                                            <button class="opt-btn"
-                                                                onclick="toggleEdit(this)">Cancel</button>
+                                                            —</div>
+                                                        <div class="edit-mode hidden flex-1 flex flex-col gap-3">
+                                                            <div class="flex items-center gap-3">
+                                                                <input id="account-email-input" type="email"
+                                                                    class="search-input" style="flex:1"
+                                                                    placeholder="you@example.com" />
+                                                                <button type="button" class="opt-btn highlighted"
+                                                                    data-account-save="email">Save</button>
+                                                                <button type="button" class="opt-btn"
+                                                                    data-account-cancel="email">Cancel</button>
+                                                            </div>
+                                                            <div id="account-email-verify"
+                                                                class="hidden flex flex-col gap-2">
+                                                                <p class="text-xs text-slate-400">Enter the verification
+                                                                    code sent to your new email.</p>
+                                                                <div class="flex items-center gap-3">
+                                                                    <input id="account-email-code" type="text"
+                                                                        class="search-input" style="flex:1"
+                                                                        placeholder="Verification code"
+                                                                        autocomplete="one-time-code" />
+                                                                    <button type="button" class="opt-btn highlighted"
+                                                                        data-account-verify-email>Verify</button>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <p class="account-field-status text-xs text-slate-500 hidden"></p>
                                                 </div>
 
                                                 <!-- Password -->
-                                                <div class="flex flex-col gap-2 relative">
+                                                <div class="flex flex-col gap-2 relative" data-account-field="password">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Password</label>
                                                         <span
                                                             class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
-                                                            onclick="toggleEdit(this)">edit</span>
+                                                            data-account-edit="password">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
-                                                        <div
+                                                        <div id="account-password-display"
                                                             class="display-mode flex-1 text-sm font-bold text-slate-200 tracking-widest">
                                                             ••••••••</div>
-                                                        <div class="edit-mode hidden flex-1 flex items-center gap-3">
-                                                            <div class="relative flex-1">
-                                                                <input type="password" class="search-input w-full"
-                                                                    placeholder="New Password" value="password123" />
+                                                        <div class="edit-mode hidden flex-1 flex flex-col gap-3">
+                                                            <input id="account-password-current" type="password"
+                                                                class="search-input w-full"
+                                                                placeholder="Current password" autocomplete="current-password" />
+                                                            <div class="relative w-full">
+                                                                <input id="account-password-new" type="password"
+                                                                    class="search-input w-full"
+                                                                    placeholder="New password" autocomplete="new-password" />
                                                                 <button type="button"
                                                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary transition-colors flex items-center justify-center"
-                                                                    onclick="togglePassword(this)">
+                                                                    data-account-toggle-password>
                                                                     <span
                                                                         class="material-symbols-outlined text-[18px]">visibility</span>
                                                                 </button>
                                                             </div>
-                                                            <button class="opt-btn highlighted"
-                                                                onclick="triggerSave(); toggleEdit(this)">Save</button>
-                                                            <button class="opt-btn"
-                                                                onclick="toggleEdit(this)">Cancel</button>
+                                                            <div class="flex items-center gap-3">
+                                                                <button type="button" class="opt-btn highlighted"
+                                                                    data-account-save="password">Save</button>
+                                                                <button type="button" class="opt-btn"
+                                                                    data-account-cancel="password">Cancel</button>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <p class="account-field-status text-xs text-slate-500 hidden"></p>
                                                 </div>
 
                                                 <div class="section-divider"></div>
@@ -3986,7 +4011,7 @@
                                                                 records</p>
                                                         </div>
                                                         <button type="button" class="danger-btn shrink-0"
-                                                            onclick="triggerSave('reset')">Reset</button>
+                                                            onclick="confirmSystemDanger('reset-personal-bests')">Reset</button>
                                                     </div>
                                                 </div>
 
@@ -4000,7 +4025,7 @@
                                                                 sessions</p>
                                                         </div>
                                                         <button type="button" class="danger-btn shrink-0"
-                                                            onclick="triggerSave()">Logout
+                                                            onclick="confirmSystemDanger('logout-all')">Logout
                                                             All</button>
                                                     </div>
                                                 </div>
@@ -4024,68 +4049,14 @@
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-3">
-                                                <p class="text-xs text-slate-400 mb-2">Manage users you have blocked
+                                                <p class="text-xs text-slate-400 mb-1">Manage users you have blocked
                                                     from interacting with you.</p>
-                                                <!-- Blocked User 1 -->
-                                                <div
-                                                    class="glass-card border border-white/5 bg-black/20 rounded-xl p-3 flex items-center justify-between transition-all group">
-                                                    <div class="flex items-center gap-3">
-                                                        <div
-                                                            class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 font-black text-sm">
-                                                            T
-                                                        </div>
-                                                        <div class="flex flex-col justify-center">
-                                                            <span
-                                                                class="text-slate-200 font-bold text-xs leading-tight">ToxicPlayer99</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2">
-                                                        <button class="opt-btn" onclick="triggerSave()">Unblock</button>
-                                                        <button class="opt-btn"
-                                                            style="background:rgba(255,51,51,0.15)!important; color:#ff6666!important; border-color:rgba(255,51,51,0.3)!important; box-shadow: 0 0 10px rgba(255,51,51,0.2)!important;"
-                                                            onclick="triggerSave()">Report</button>
-                                                    </div>
-                                                </div>
-                                                <!-- Blocked User 2 -->
-                                                <div
-                                                    class="glass-card border border-white/5 bg-black/20 rounded-xl p-3 flex items-center justify-between transition-all group">
-                                                    <div class="flex items-center gap-3">
-                                                        <div
-                                                            class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 font-black text-sm">
-                                                            S
-                                                        </div>
-                                                        <div class="flex flex-col justify-center">
-                                                            <span
-                                                                class="text-slate-200 font-bold text-xs leading-tight">SpammerBot</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2">
-                                                        <button class="opt-btn" onclick="triggerSave()">Unblock</button>
-                                                        <button class="opt-btn"
-                                                            style="background:rgba(255,51,51,0.15)!important; color:#ff6666!important; border-color:rgba(255,51,51,0.3)!important; box-shadow: 0 0 10px rgba(255,51,51,0.2)!important;"
-                                                            onclick="triggerSave()">Report</button>
-                                                    </div>
-                                                </div>
-                                                <!-- Blocked User 3 -->
-                                                <div
-                                                    class="glass-card border border-white/5 bg-black/20 rounded-xl p-3 flex items-center justify-between transition-all group">
-                                                    <div class="flex items-center gap-3">
-                                                        <div
-                                                            class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 font-black text-sm">
-                                                            A
-                                                        </div>
-                                                        <div class="flex flex-col justify-center">
-                                                            <span
-                                                                class="text-slate-200 font-bold text-xs leading-tight">AnnoyingUser</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2">
-                                                        <button class="opt-btn" onclick="triggerSave()">Unblock</button>
-                                                        <button class="opt-btn"
-                                                            style="background:rgba(255,51,51,0.15)!important; color:#ff6666!important; border-color:rgba(255,51,51,0.3)!important; box-shadow: 0 0 10px rgba(255,51,51,0.2)!important;"
-                                                            onclick="triggerSave()">Report</button>
-                                                    </div>
-                                                </div>
+                                                <p id="blocked-users-status"
+                                                    class="text-xs text-slate-500 hidden"></p>
+                                                <div id="blocked-users-list" class="flex flex-col gap-3"></div>
+                                                <p id="blocked-users-empty"
+                                                    class="text-sm text-slate-500 text-center py-6 hidden">You have not
+                                                    blocked anyone.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -4095,27 +4066,413 @@
                         </div><!-- end panel-main-content -->
 
                         <script>
-                            function toggleEdit(btn) {
-                                const container = btn.closest('.relative');
-                                container.querySelector('.display-mode').classList.toggle('hidden');
-                                container.querySelector('.edit-mode').classList.toggle('hidden');
-                            }
+                            (function () {
+                                var pendingEmailAddressId = null;
+                                var activeAccountRoot = null;
+                                var activeBlockedRoot = null;
 
-                            function togglePassword(btn) {
-                                const container = btn.closest('.relative');
-                                const input = container.querySelector('input');
-                                const icon = btn.querySelector('.material-symbols-outlined');
-                                if (input.type === 'password') {
-                                    input.type = 'text';
-                                    icon.textContent = 'visibility_off';
-                                } else {
-                                    input.type = 'password';
-                                    icon.textContent = 'visibility';
+                                function toast(message, icon) {
+                                    if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                                        window.usertypoNotifications.showToast(message, icon || 'check_circle');
+                                        return;
+                                    }
+                                    if (typeof window.triggerSave === 'function') window.triggerSave();
                                 }
-                            }
 
-                            window.toggleEdit = toggleEdit;
-                            window.togglePassword = togglePassword;
+                                function mapErr(err) {
+                                    if (window.usertypoAccount && window.usertypoAccount.mapRpcError) {
+                                        return window.usertypoAccount.mapRpcError(err);
+                                    }
+                                    return { message: (err && err.message) || 'Something went wrong.' };
+                                }
+
+                                function q(root, sel) {
+                                    return (root || document).querySelector(sel);
+                                }
+
+                                function resolveAccountRoot(hint) {
+                                    if (hint && hint.querySelector && hint.querySelector('[data-account-field="username"]')) {
+                                        return hint;
+                                    }
+                                    var detail = document.querySelector('#settings-panel .settings-panel-card.is-detail');
+                                    if (detail && detail.querySelector('[data-account-field="username"]')) return detail;
+                                    return document.getElementById('account-settings-form') || document;
+                                }
+
+                                function resolveBlockedRoot(hint) {
+                                    if (hint && hint.querySelector && hint.querySelector('#blocked-users-list')) {
+                                        return hint;
+                                    }
+                                    var detail = document.querySelector('#settings-panel .settings-panel-card.is-detail');
+                                    if (detail && detail.querySelector('#blocked-users-list')) return detail;
+                                    return document.querySelector('[data-sub-title="Blocked Users"] .sub-setting-content') || document;
+                                }
+
+                                function fieldRoot(name, root) {
+                                    return q(root || activeAccountRoot || document, '[data-account-field="' + name + '"]');
+                                }
+
+                                function setFieldStatus(name, message, isError, root) {
+                                    var field = fieldRoot(name, root);
+                                    if (!field) return;
+                                    var status = field.querySelector('.account-field-status');
+                                    if (!status) return;
+                                    if (!message) {
+                                        status.textContent = '';
+                                        status.classList.add('hidden');
+                                        status.classList.remove('text-error');
+                                        return;
+                                    }
+                                    status.textContent = message;
+                                    status.classList.remove('hidden');
+                                    status.classList.toggle('text-error', !!isError);
+                                }
+
+                                function setEditMode(name, editing, root) {
+                                    var field = fieldRoot(name, root);
+                                    if (!field) return;
+                                    var display = field.querySelector('.display-mode');
+                                    var edit = field.querySelector('.edit-mode');
+                                    if (display) display.classList.toggle('hidden', !!editing);
+                                    if (edit) edit.classList.toggle('hidden', !editing);
+                                    if (name === 'email') {
+                                        var verify = field.querySelector('#account-email-verify');
+                                        if (verify && !editing) {
+                                            verify.classList.add('hidden');
+                                            pendingEmailAddressId = null;
+                                        }
+                                    }
+                                    if (!editing) setFieldStatus(name, '', false, root);
+                                }
+
+                                function fillAccountFields(root) {
+                                    root = resolveAccountRoot(root || activeAccountRoot);
+                                    activeAccountRoot = root;
+
+                                    var profile = window.__USERTYPO_PROFILE__;
+                                    var state = window.usertypoAuth && window.usertypoAuth.getState
+                                        ? window.usertypoAuth.getState()
+                                        : null;
+                                    var user = state && state.user;
+                                    var username = (profile && (profile.username || profile.display_name))
+                                        || (user && (user.username || user.fullName))
+                                        || '—';
+                                    var email = (user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress)
+                                        || '—';
+
+                                    var nameDisplay = q(root, '#account-username-display');
+                                    var nameInput = q(root, '#account-username-input');
+                                    var emailDisplay = q(root, '#account-email-display');
+                                    var emailInput = q(root, '#account-email-input');
+                                    var passwordDisplay = q(root, '#account-password-display');
+                                    var currentPw = q(root, '#account-password-current');
+
+                                    if (nameDisplay) nameDisplay.textContent = username;
+                                    if (nameInput) {
+                                        nameInput.value = username === '—' ? '' : username;
+                                        nameInput.placeholder = username === '—' ? 'Username' : username;
+                                    }
+                                    if (emailDisplay) emailDisplay.textContent = email;
+                                    if (emailInput) {
+                                        emailInput.value = email === '—' ? '' : email;
+                                        emailInput.placeholder = email === '—' ? 'you@example.com' : email;
+                                    }
+                                    if (passwordDisplay) {
+                                        passwordDisplay.textContent = (user && user.passwordEnabled === false)
+                                            ? 'Not set'
+                                            : '••••••••';
+                                    }
+                                    if (currentPw) {
+                                        currentPw.classList.toggle('hidden', !!(user && user.passwordEnabled === false));
+                                        currentPw.placeholder = (user && user.passwordEnabled === false)
+                                            ? 'No current password'
+                                            : 'Current password';
+                                    }
+                                }
+
+                                async function loadAccountSettings(root) {
+                                    if (!window.usertypoAuth) return;
+                                    try {
+                                        await window.usertypoAuth.ready();
+                                        var state = window.usertypoAuth.getState();
+                                        if (!state.isSignedIn || !state.user) return;
+                                        if (window.usertypoProfiles) {
+                                            await window.usertypoProfiles.ensureMyProfile(state.user, { force: true });
+                                        }
+                                        fillAccountFields(root);
+                                    } catch (err) {
+                                        console.error('[usertypo settings] account load failed', err);
+                                    }
+                                }
+
+                                function initialFor(name) {
+                                    var clean = String(name || '?').trim();
+                                    return (clean.charAt(0) || '?').toUpperCase();
+                                }
+
+                                function renderBlockedUsers(rows, root) {
+                                    root = resolveBlockedRoot(root || activeBlockedRoot);
+                                    activeBlockedRoot = root;
+                                    var list = q(root, '#blocked-users-list');
+                                    var empty = q(root, '#blocked-users-empty');
+                                    var status = q(root, '#blocked-users-status');
+                                    if (!list) return;
+                                    list.innerHTML = '';
+                                    if (status) {
+                                        status.textContent = '';
+                                        status.classList.add('hidden');
+                                        status.classList.remove('text-error');
+                                    }
+
+                                    var items = Array.isArray(rows) ? rows : [];
+                                    if (!items.length) {
+                                        if (empty) empty.classList.remove('hidden');
+                                        return;
+                                    }
+                                    if (empty) empty.classList.add('hidden');
+
+                                    items.forEach(function (row) {
+                                        var name = row.username || row.display_name || 'Player';
+                                        var card = document.createElement('div');
+                                        card.className =
+                                            'glass-card border border-white/5 bg-black/20 rounded-xl p-3 flex items-center justify-between transition-all group';
+                                        card.setAttribute('data-blocked-user-id', row.user_id);
+
+                                        var left = document.createElement('div');
+                                        left.className = 'flex items-center gap-3 min-w-0';
+
+                                        var avatar = document.createElement('div');
+                                        avatar.className =
+                                            'w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 font-black text-sm shrink-0 overflow-hidden';
+                                        if (row.avatar_url) {
+                                            var img = document.createElement('img');
+                                            img.src = row.avatar_url;
+                                            img.alt = '';
+                                            img.className = 'w-full h-full object-cover';
+                                            avatar.appendChild(img);
+                                        } else {
+                                            avatar.textContent = initialFor(name);
+                                        }
+
+                                        var meta = document.createElement('div');
+                                        meta.className = 'flex flex-col justify-center min-w-0';
+                                        var label = document.createElement('span');
+                                        label.className = 'text-slate-200 font-bold text-xs leading-tight truncate';
+                                        label.textContent = name;
+                                        meta.appendChild(label);
+
+                                        left.appendChild(avatar);
+                                        left.appendChild(meta);
+
+                                        var actions = document.createElement('div');
+                                        actions.className = 'flex gap-2 shrink-0';
+                                        var unblockBtn = document.createElement('button');
+                                        unblockBtn.type = 'button';
+                                        unblockBtn.className = 'opt-btn';
+                                        unblockBtn.textContent = 'Unblock';
+                                        unblockBtn.addEventListener('click', function () {
+                                            unblockUser(row.user_id, unblockBtn, root);
+                                        });
+                                        actions.appendChild(unblockBtn);
+
+                                        card.appendChild(left);
+                                        card.appendChild(actions);
+                                        list.appendChild(card);
+                                    });
+                                }
+
+                                async function loadBlockedUsers(root) {
+                                    root = resolveBlockedRoot(root || activeBlockedRoot);
+                                    activeBlockedRoot = root;
+                                    var status = q(root, '#blocked-users-status');
+                                    var empty = q(root, '#blocked-users-empty');
+                                    var list = q(root, '#blocked-users-list');
+                                    if (!window.usertypoAccount && !window.usertypoFriends) return;
+                                    try {
+                                        if (status) {
+                                            status.textContent = 'Loading…';
+                                            status.classList.remove('hidden', 'text-error');
+                                        }
+                                        var rows = window.usertypoAccount && window.usertypoAccount.listBlockedUsers
+                                            ? await window.usertypoAccount.listBlockedUsers()
+                                            : await window.usertypoFriends.listBlockedUsers();
+                                        renderBlockedUsers(rows, root);
+                                    } catch (err) {
+                                        console.error('[usertypo settings] blocked users load failed', err);
+                                        if (list) list.innerHTML = '';
+                                        if (empty) empty.classList.add('hidden');
+                                        if (status) {
+                                            status.textContent = mapErr(err).message;
+                                            status.classList.remove('hidden');
+                                            status.classList.add('text-error');
+                                        }
+                                    }
+                                }
+
+                                async function unblockUser(userId, btn, root) {
+                                    if (!userId || !window.usertypoFriends) return;
+                                    if (btn) {
+                                        btn.disabled = true;
+                                        btn.textContent = 'Unblocking…';
+                                    }
+                                    try {
+                                        await window.usertypoFriends.unblockUser(userId);
+                                        toast('Player unblocked.', 'lock_open');
+                                        await loadBlockedUsers(root);
+                                    } catch (err) {
+                                        toast(mapErr(err).message, 'error');
+                                        if (btn) {
+                                            btn.disabled = false;
+                                            btn.textContent = 'Unblock';
+                                        }
+                                    }
+                                }
+
+                                async function saveUsername(root) {
+                                    root = resolveAccountRoot(root || activeAccountRoot);
+                                    var input = q(root, '#account-username-input');
+                                    var value = input ? input.value.trim() : '';
+                                    setFieldStatus('username', 'Saving…', false, root);
+                                    try {
+                                        await window.usertypoAccount.updateUsername(value);
+                                        setEditMode('username', false, root);
+                                        fillAccountFields(root);
+                                        toast('Account name updated.', 'check_circle');
+                                        if (typeof window.triggerSave === 'function') window.triggerSave();
+                                    } catch (err) {
+                                        setFieldStatus('username', mapErr(err).message, true, root);
+                                    }
+                                }
+
+                                async function saveEmail(root) {
+                                    root = resolveAccountRoot(root || activeAccountRoot);
+                                    var input = q(root, '#account-email-input');
+                                    var value = input ? input.value.trim() : '';
+                                    setFieldStatus('email', 'Saving…', false, root);
+                                    try {
+                                        var result = await window.usertypoAccount.startEmailChange(value);
+                                        if (result && result.unchanged) {
+                                            setEditMode('email', false, root);
+                                            setFieldStatus('email', '', false, root);
+                                            return;
+                                        }
+                                        if (result && result.needs_verification) {
+                                            pendingEmailAddressId = result.emailAddressId;
+                                            var verify = q(root, '#account-email-verify');
+                                            if (verify) verify.classList.remove('hidden');
+                                            setFieldStatus('email', 'Verification code sent. Check your inbox.', false, root);
+                                            return;
+                                        }
+                                        setEditMode('email', false, root);
+                                        fillAccountFields(root);
+                                        toast('Email updated.', 'check_circle');
+                                    } catch (err) {
+                                        setFieldStatus('email', mapErr(err).message, true, root);
+                                    }
+                                }
+
+                                async function verifyEmail(root) {
+                                    root = resolveAccountRoot(root || activeAccountRoot);
+                                    var codeInput = q(root, '#account-email-code');
+                                    var code = codeInput ? codeInput.value.trim() : '';
+                                    setFieldStatus('email', 'Verifying…', false, root);
+                                    try {
+                                        await window.usertypoAccount.confirmEmailChange(pendingEmailAddressId, code);
+                                        pendingEmailAddressId = null;
+                                        setEditMode('email', false, root);
+                                        fillAccountFields(root);
+                                        toast('Email updated.', 'check_circle');
+                                        if (typeof window.triggerSave === 'function') window.triggerSave();
+                                    } catch (err) {
+                                        setFieldStatus('email', mapErr(err).message, true, root);
+                                    }
+                                }
+
+                                async function savePassword(root) {
+                                    root = resolveAccountRoot(root || activeAccountRoot);
+                                    var currentEl = q(root, '#account-password-current');
+                                    var newEl = q(root, '#account-password-new');
+                                    var currentPassword = currentEl && !currentEl.classList.contains('hidden')
+                                        ? currentEl.value
+                                        : '';
+                                    var newPassword = newEl ? newEl.value : '';
+                                    setFieldStatus('password', 'Saving…', false, root);
+                                    try {
+                                        await window.usertypoAccount.updatePassword(currentPassword, newPassword);
+                                        if (currentEl) currentEl.value = '';
+                                        if (newEl) newEl.value = '';
+                                        setEditMode('password', false, root);
+                                        toast('Password updated.', 'check_circle');
+                                        if (typeof window.triggerSave === 'function') window.triggerSave();
+                                    } catch (err) {
+                                        setFieldStatus('password', mapErr(err).message, true, root);
+                                    }
+                                }
+
+                                function onAccountClick(event) {
+                                    var target = event.target && event.target.closest
+                                        ? event.target.closest('[data-account-edit], [data-account-save], [data-account-cancel], [data-account-verify-email], [data-account-toggle-password]')
+                                        : null;
+                                    if (!target) return;
+
+                                    var root = target.closest('.settings-panel-card')
+                                        || target.closest('#account-settings-form')
+                                        || activeAccountRoot;
+
+                                    var edit = target.getAttribute('data-account-edit');
+                                    if (edit) {
+                                        setEditMode(edit, true, root);
+                                        return;
+                                    }
+
+                                    var cancel = target.getAttribute('data-account-cancel');
+                                    if (cancel) {
+                                        setEditMode(cancel, false, root);
+                                        fillAccountFields(root);
+                                        return;
+                                    }
+
+                                    if (target.hasAttribute('data-account-toggle-password')) {
+                                        var input = q(root, '#account-password-new');
+                                        var icon = target.querySelector('.material-symbols-outlined');
+                                        if (!input) return;
+                                        if (input.type === 'password') {
+                                            input.type = 'text';
+                                            if (icon) icon.textContent = 'visibility_off';
+                                        } else {
+                                            input.type = 'password';
+                                            if (icon) icon.textContent = 'visibility';
+                                        }
+                                        return;
+                                    }
+
+                                    if (target.hasAttribute('data-account-verify-email')) {
+                                        verifyEmail(root);
+                                        return;
+                                    }
+
+                                    var save = target.getAttribute('data-account-save');
+                                    if (save === 'username') saveUsername(root);
+                                    else if (save === 'email') saveEmail(root);
+                                    else if (save === 'password') savePassword(root);
+                                }
+
+                                document.addEventListener('click', onAccountClick);
+                                window.addEventListener('usertypo:profile-synced', function () {
+                                    fillAccountFields(activeAccountRoot);
+                                });
+                                window.addEventListener('usertypo:friends-changed', function () {
+                                    if (activeBlockedRoot) loadBlockedUsers(activeBlockedRoot);
+                                });
+
+                                window.usertypoAccountSettingsPage = {
+                                    loadAccount: loadAccountSettings,
+                                    loadBlocked: loadBlockedUsers,
+                                    fillAccount: fillAccountFields,
+                                };
+
+                                loadAccountSettings();
+                            })();
                         </script>
 
                     </div>
@@ -4612,6 +4969,11 @@ window.__spaPageInit = function() {
             const content = document.querySelector(`.category-content[data-panel="${categoryId}"]`);
             if (content) content.classList.remove('hidden');
 
+            if (categoryId === 'account-settings' && window.usertypoAccountSettingsPage
+                && typeof window.usertypoAccountSettingsPage.loadAccount === 'function') {
+                window.usertypoAccountSettingsPage.loadAccount();
+            }
+
             // Update panel header
             const catTitle = card.querySelector('.card-title').textContent.trim();
             const panelTitleEl = document.getElementById('panel-title');
@@ -4841,6 +5203,14 @@ window.__spaPageInit = function() {
                     panel.classList.remove('panel-growing');
                     panel.classList.add('is-detail');
                     syncVisiblePanels();
+                    if (window.usertypoAccountSettingsPage) {
+                        if (title === 'Account' && typeof window.usertypoAccountSettingsPage.loadAccount === 'function') {
+                            window.usertypoAccountSettingsPage.loadAccount(panel);
+                        }
+                        if (title === 'Blocked Users' && typeof window.usertypoAccountSettingsPage.loadBlocked === 'function') {
+                            window.usertypoAccountSettingsPage.loadBlocked(panel);
+                        }
+                    }
                 });
             });
 
