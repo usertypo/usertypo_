@@ -613,10 +613,16 @@
             });
 
             var count = keyErrorCount(el, map);
-            if (count > 0) {
+            var special = el.getAttribute('data-special');
+            var skipTooltip = special === 'Enter' || special === 'Tab' || special === 'Shift';
+            if (!skipTooltip) {
                 var label = '';
-                if (el.getAttribute('data-special') === 'Space') {
+                if (special === 'Space') {
                     label = 'Space';
+                } else if (special === 'Backspace') {
+                    label = 'Backspace';
+                } else if (special === 'Caps') {
+                    label = 'Caps';
                 } else {
                     var raw = (el.getAttribute('data-chars') || '').charAt(0);
                     label = formatCharLabel(raw) || (el.querySelector('.keymap-main-text') || {}).textContent || 'Key';
