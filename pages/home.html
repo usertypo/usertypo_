@@ -2819,10 +2819,11 @@ window.setTimeout = function(handler, timeout) {
         }
 
         /**
-         * Size + place the pace caret like Monkeytype:
+         * Size + place the pace caret exactly like the main caret:
          * - line: thin vertical bar at letter left, full letter height
-         * - block/outline: full letter box
-         * - underscore: thin horizontal bar sitting on the letter baseline
+         * - block / outline: full letter box
+         * - underscore: full letter box; the underline is drawn by CSS ::after
+         * Vertical alignment matches updateCaretPosition() (top + full height).
          */
         function applyPaceCaretBox(left, top, rect) {
             const style = getPaceCaretStyle();
@@ -2830,23 +2831,14 @@ window.setTimeout = function(handler, timeout) {
 
             const letterW = Math.max(1, rect.width);
             const letterH = Math.max(1, rect.height);
-            const barH = 2.5;
 
             if (style === 'line') {
                 paceCaretEl.style.width = '2.5px';
-                paceCaretEl.style.height = `${letterH}px`;
-                paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-            } else if (style === 'underscore') {
-                // Thin bar just below the letter box — matches main caret ::after (bottom: -2.5px)
-                paceCaretEl.style.width = `${letterW}px`;
-                paceCaretEl.style.height = `${barH}px`;
-                paceCaretEl.style.transform = `translate3d(${left}px, ${top + letterH}px, 0)`;
             } else {
-                // block + outline
                 paceCaretEl.style.width = `${letterW}px`;
-                paceCaretEl.style.height = `${letterH}px`;
-                paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
             }
+            paceCaretEl.style.height = `${letterH}px`;
+            paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
         }
 
         function incrementPaceLetterIndex() {
@@ -3094,8 +3086,18 @@ window.setTimeout = function(handler, timeout) {
             caret.classList.remove('animate-breath');
 
             try {
-                if (shouldUsePaceCaret() && paceCaretSettings) {
-                    startPaceCaret();
+                if (shouldUsePaceCaret()) {
+                    if (paceCaretSettings) {
+                        startPaceCaret();
+                    } else {
+                        // Async init (average/pb/daily fetch stats) may not be ready
+                        // yet — start the pace caret as soon as it resolves.
+                        initPaceCaret().then(() => {
+                            if (isTyping && !testComplete && paceCaretSettings) {
+                                startPaceCaret();
+                            }
+                        }).catch(() => {});
+                    }
                 }
             } catch (e) {}
 

@@ -324,23 +324,16 @@
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            var paceStyle = getOpponentCaretStyle();
-            opponentCaret && opponentCaret.setAttribute('data-pace-style', paceStyle);
             element.style.height = Math.max(1, targetRect.height) + 'px';
             if (element === opponentCaret) {
+                // Ghost caret mirrors the main caret: full-height box; the
+                // underscore underline is drawn by CSS ::after (buildPaceCaretCSS).
+                var paceStyle = getOpponentCaretStyle();
+                opponentCaret.setAttribute('data-pace-style', paceStyle);
                 if (paceStyle === 'line') {
                     element.style.width = '2.5px';
-                    element.style.height = Math.max(1, targetRect.height) + 'px';
-                    element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-                } else if (paceStyle === 'underscore') {
-                    var barH = 2.5;
-                    element.style.width = Math.max(1, targetRect.width) + 'px';
-                    element.style.height = barH + 'px';
-                    element.style.transform = 'translate3d(' + left + 'px,' + (top + targetRect.height) + 'px,0)';
                 } else {
                     element.style.width = Math.max(1, targetRect.width) + 'px';
-                    element.style.height = Math.max(1, targetRect.height) + 'px';
-                    element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
                 }
             } else {
                 element.style.width = Math.max(1, targetRect.width) + 'px';
