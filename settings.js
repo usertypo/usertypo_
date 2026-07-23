@@ -80,6 +80,11 @@ const DEFAULTS = {
     lookFeel: {
         colorTheme: 'usertypo_',
         fontFamily: 'JetBrains Mono',
+        randomizeTheme: 'Off',
+        // Up to 3 saved custom presets: { id, name, mode, main, secondary }
+        customThemes: [],
+        // Working draft for the custom theme editor (used for live preview)
+        customThemeDraft: { mode: 'dark', main: '#00d0ff', secondary: '#1a1d23' },
     }
 };
 
@@ -1323,43 +1328,28 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
 }
 
 /**
- * Pace caret styles — class-driven (Monkeytype approach).
- * Styles are applied via data-pace-style on the element + these rules.
- * Underscore is a thin bar at the letter baseline (not a full-height box with ::after).
+ * Pace caret (ghost) styles — mirrors buildCaretCSS exactly so the ghost caret
+ * renders with the same proven approach as the main caret. The element itself
+ * carries the background/border; underscore uses ::after. Sizing/position is set
+ * inline from JS (width, height, transform). Visibility is toggled with the
+ * .pace-off / .hidden classes.
  */
 function buildPaceCaretCSS(style, smoothness) {
     style = (style || 'underscore').toLowerCase();
     const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
-    const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, height ${dur} ${ease}, opacity 0.5s ease-in-out`;
-    const liveWhite = '#ffffff';
-    const liveWhiteRGB = '255, 255, 255';
+    const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
+    const white = '#ffffff';
+    const whiteRGB = '255, 255, 255';
     const sel = '#pace-caret, #bot-caret';
 
-    // Base box — never rely on Tailwind .hidden (display:none fights visibility).
-    // Visibility is toggled with .pace-off instead.
-    return `
+    // Base: always semi-visible; hidden only when .pace-off / .hidden is present.
+    let css = `
         ${sel} {
-            display: block !important;
-            box-sizing: border-box !important;
-            position: absolute !important;
-            left: 0;
-            top: 0;
-            pointer-events: none !important;
-            transform-origin: top left;
             transition: ${transition} !important;
             opacity: 0.55 !important;
-            visibility: visible !important;
-            background-color: ${liveWhite} !important;
-            border: none !important;
-            border-radius: 2px !important;
-            box-shadow: none !important;
-            filter: drop-shadow(0 0 6px rgba(${liveWhiteRGB}, 0.35));
-            z-index: 9;
-        }
-        ${sel}::after {
-            content: none !important;
-            display: none !important;
+            visibility: visible;
+            filter: drop-shadow(0 0 8px rgba(${whiteRGB}, 0.3));
         }
         ${sel}.pace-off,
         ${sel}.hidden {
@@ -1367,40 +1357,90 @@ function buildPaceCaretCSS(style, smoothness) {
             visibility: hidden !important;
             pointer-events: none !important;
         }
-
-        /* line — thin vertical bar */
-        ${sel}[data-pace-style="line"] {
-            width: 2.5px !important;
-            background-color: ${liveWhite} !important;
-            border: none !important;
-            border-radius: 2px !important;
-        }
-
-        /* block — solid highlight behind the glyph */
-        ${sel}[data-pace-style="block"] {
-            background-color: rgba(${liveWhiteRGB}, 0.4) !important;
-            border: none !important;
-            border-radius: 2px !important;
-            z-index: 0 !important;
-        }
-
-        /* underscore — thin bar; height/width set in JS at letter baseline */
-        ${sel}[data-pace-style="underscore"] {
-            height: 2.5px !important;
-            background-color: ${liveWhite} !important;
-            border: none !important;
-            border-radius: 9999px !important;
-        }
-
-        /* outline — hollow box */
-        ${sel}[data-pace-style="outline"] {
-            background-color: transparent !important;
-            border: 2px solid rgba(${liveWhiteRGB}, 0.9) !important;
-            border-radius: 3px !important;
-            box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25) !important;
-            outline: none !important;
-        }
     `;
+
+    switch (style) {
+        case 'line':
+            css += `
+                ${sel} {
+                    background-color: ${white};
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                ${sel}::after { content: none !important; display: none !important; }
+            `;
+            break;
+
+        case 'block':
+            css += `
+                ${sel} {
+                    background-color: rgba(${whiteRGB}, 0.4);
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                ${sel}::after { content: none !important; display: none !important; }
+            `;
+            break;
+
+        case 'underscore':
+            css += `
+                ${sel} {
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                ${sel}::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${white};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${whiteRGB}, 0.25);
+                }
+            `;
+            break;
+
+        case 'outline':
+            css += `
+                ${sel} {
+                    background-color: transparent;
+                    border: 2px solid rgba(${whiteRGB}, 0.7) !important;
+                    border-radius: 3px;
+                    box-shadow: 0 0 6px rgba(${whiteRGB}, 0.2);
+                }
+                ${sel}::after { content: none !important; display: none !important; }
+            `;
+            break;
+
+        default:
+            css += `
+                ${sel} {
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                ${sel}::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${white};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${whiteRGB}, 0.25);
+                }
+            `;
+    }
+
+    return css;
 }
 
 function applyPaceCaretStyleAttrs(settings) {
@@ -1409,11 +1449,6 @@ function applyPaceCaretStyleAttrs(settings) {
         const el = document.getElementById(id);
         if (!el) return;
         el.setAttribute('data-pace-style', style);
-        // Drop Tailwind hidden — we use .pace-off for hide/show
-        if (el.id === 'pace-caret' && el.classList.contains('hidden')) {
-            el.classList.add('pace-off');
-            el.classList.remove('hidden');
-        }
     });
 }
 
