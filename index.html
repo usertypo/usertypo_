@@ -1019,6 +1019,33 @@
         </div>
     </div>
 
+    <!-- Export Data / System danger confirm (menu-bubble glass) -->
+    <div id="system-confirm-modal"
+        class="fixed inset-0 z-[250] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 bg-background/80 backdrop-blur-sm"
+        aria-hidden="true">
+        <div id="system-confirm-box"
+            class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-sm rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] transform scale-95 transition-transform duration-300 flex flex-col gap-4 border border-white/10">
+            <div class="text-primary font-mono text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]" id="system-confirm-icon">download</span>
+                <span id="system-confirm-title">Export Data</span>
+            </div>
+            <p id="system-confirm-message" class="text-sm text-slate-300 leading-relaxed">
+                Would you like to download your usertypo_ data?
+            </p>
+            <p id="system-confirm-status" class="text-xs text-slate-500 hidden"></p>
+            <div class="flex justify-end gap-3 mt-1 font-mono text-xs">
+                <button type="button" id="system-confirm-cancel"
+                    class="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-colors uppercase font-bold tracking-widest">
+                    Cancel
+                </button>
+                <button type="button" id="system-confirm-ok"
+                    class="px-4 py-2 rounded-lg bg-primary text-background-dark font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]">
+                    Download
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom-right notification stack -->
     <div id="save-toast"
         aria-live="polite" aria-relevant="additions"
@@ -1192,7 +1219,7 @@
     <script src="languages.js"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
-    <script src="settings.js?v=4"></script>
+    <script src="settings.js?v=5"></script>
     <script src="footer-picker.js"></script>
     <script src="settings-search.js"></script>
     <!-- Config + auth + data API (before router) -->
@@ -1200,11 +1227,13 @@
     <script src="js/auth/clerk.js"></script>
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js?v=2"></script>
-    <script src="js/api/sessions.js?v=8"></script>
+    <script src="js/api/sessions.js?v=9"></script>
+    <script src="js/api/account.js?v=1"></script>
     <script src="js/api/progression.js?v=6"></script>
     <script src="js/ui/player-avatar.js?v=2"></script>
     <script src="js/api/public-profile.js?v=1"></script>
     <script src="js/ui/player-profile-card.js?v=2"></script>
+    <script src="js/ui/system-confirm.js?v=1"></script>
     <script src="js/auth/header.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
