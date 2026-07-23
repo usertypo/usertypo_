@@ -23,6 +23,7 @@
             cannot_friend_self: 'You cannot add yourself.',
             user_not_found: 'User not found.',
             request_not_found: 'That friend request no longer exists.',
+            friend_requests_disabled: 'This player is not accepting friend requests.',
             forbidden: 'You cannot perform this action.',
             guest: 'Sign in to manage friends.',
             not_authenticated: 'Sign in to manage friends.',

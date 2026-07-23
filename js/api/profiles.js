@@ -216,26 +216,24 @@
         }
     }
 
-    /**
-     * Update leaderboard privacy preference in Postgres, then sync Redis.
-     */
-    async function setShowOnLeaderboard(enabled) {
+    async function requireSignedInUser() {
         if (!window.usertypoAuth || !window.usertypoDb) {
             throw new Error('auth_or_db_missing');
         }
-
         await window.usertypoAuth.ready();
         var state = window.usertypoAuth.getState();
         if (!state.isSignedIn || !state.user) {
             throw new Error('guest');
         }
+        return state.user;
+    }
 
-        var user = state.user;
-        var show = !!enabled;
+    async function updateMyProfileFields(patch) {
+        var user = await requireSignedInUser();
         var client = await window.usertypoDb.getClient();
         var updated = await client
             .from('profiles')
-            .update({ show_on_leaderboard: show })
+            .update(patch || {})
             .eq('user_id', user.id)
             .select('*')
             .single();
@@ -247,6 +245,15 @@
         lastSyncedUserId = user.id;
         storeProfile(user.id, lastFingerprint, updated.data);
         notifyProfileSynced(updated.data);
+        return updated.data;
+    }
+
+    /**
+     * Update leaderboard privacy preference in Postgres, then sync Redis.
+     */
+    async function setShowOnLeaderboard(enabled) {
+        var show = !!enabled;
+        var profile = await updateMyProfileFields({ show_on_leaderboard: show });
 
         var redisSync = null;
         if (window.usertypoLeaderboards && typeof window.usertypoLeaderboards.syncVisibility === 'function') {
@@ -260,9 +267,27 @@
         );
 
         return {
-            profile: updated.data,
+            profile: profile,
             redisSync: redisSync,
         };
+    }
+
+    async function setAllowFriendRequests(enabled) {
+        var allow = !!enabled;
+        var profile = await updateMyProfileFields({ allow_friend_requests: allow });
+        console.info('[usertypo profiles] allow_friend_requests =', allow);
+        return { profile: profile };
+    }
+
+    async function setProfileVisibility(visibility) {
+        var value = String(visibility || 'public').trim().toLowerCase();
+        if (value === 'friends only' || value === 'friends_only') value = 'friends';
+        if (value !== 'public' && value !== 'friends' && value !== 'private') {
+            throw new Error('invalid_visibility');
+        }
+        var profile = await updateMyProfileFields({ profile_visibility: value });
+        console.info('[usertypo profiles] profile_visibility =', value);
+        return { profile: profile };
     }
 
     function bindAuthSync() {
@@ -321,6 +346,8 @@
         getMyProfile: getMyProfile,
         ensureMyProfile: ensureMyProfile,
         setShowOnLeaderboard: setShowOnLeaderboard,
+        setAllowFriendRequests: setAllowFriendRequests,
+        setProfileVisibility: setProfileVisibility,
         clearCache: clearProfileCache,
     };
 })();

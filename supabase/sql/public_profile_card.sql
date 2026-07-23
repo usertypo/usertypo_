@@ -1,4 +1,5 @@
--- One lean RPC for the mid-page player profile box (no new tables/columns).
+-- One lean RPC for the mid-page player profile box.
+-- Enforces profiles.profile_visibility (public | friends | private).
 create or replace function public.get_public_profile_card(p_user_id text)
 returns jsonb
 language plpgsql
@@ -14,6 +15,7 @@ declare
   v_summary jsonb;
   v_bests jsonb;
   v_xp_to_next integer;
+  v_visibility text;
 begin
   if v_me is null or trim(v_me) = '' then
     return jsonb_build_object('error', 'not_authenticated');
@@ -29,6 +31,19 @@ begin
 
   if not found then
     return jsonb_build_object('error', 'user_not_found');
+  end if;
+
+  -- Own profile is always visible.
+  if v_profile.user_id <> v_me then
+    v_visibility := coalesce(nullif(trim(v_profile.profile_visibility), ''), 'public');
+
+    if v_visibility = 'private' then
+      return jsonb_build_object('error', 'profile_not_allowed');
+    end if;
+
+    if v_visibility = 'friends' and not public._friendship_exists(v_me, v_profile.user_id) then
+      return jsonb_build_object('error', 'profile_not_allowed');
+    end if;
   end if;
 
   select * into v_prog

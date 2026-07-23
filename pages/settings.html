@@ -3707,7 +3707,10 @@
                                             </div>
                                             <p class="text-xs text-slate-500">Allow others to send friend requests</p>
                                         </div>
-                                        <div class="toggle-track on" onclick="toggleSwitch(this)">
+                                        <div id="setting-allow-friend-requests"
+                                            class="toggle-track on"
+                                            data-identity-social="friend-requests"
+                                            onclick="toggleFriendRequestsSetting(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
                                     </div>
@@ -3761,10 +3764,17 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
-                                                onclick="selectOpt(this)">Public</button><button class="opt-btn"
-                                                onclick="selectOpt(this)">Friends Only</button><button class="opt-btn"
-                                                onclick="selectOpt(this)">Private</button></div>
+                                        <div class="flex gap-2 flex-wrap" data-identity-social="profile-visibility">
+                                            <button type="button" class="opt-btn active"
+                                                data-visibility="public"
+                                                onclick="selectProfileVisibility(this)">Public</button>
+                                            <button type="button" class="opt-btn"
+                                                data-visibility="friends"
+                                                onclick="selectProfileVisibility(this)">Friends Only</button>
+                                            <button type="button" class="opt-btn"
+                                                data-visibility="private"
+                                                onclick="selectProfileVisibility(this)">Private</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -5108,6 +5118,8 @@ window.__spaPageInit = function() {
 
         // â”€â”€ TOGGLE SWITCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var leaderboardVisibilitySaving = false;
+        var friendRequestsSaving = false;
+        var profileVisibilitySaving = false;
 
         function setLeaderboardToggleUI(showOnLeaderboard) {
             var show = !!showOnLeaderboard;
@@ -5119,21 +5131,55 @@ window.__spaPageInit = function() {
             });
         }
 
-        async function loadLeaderboardVisibilitySetting() {
+        function setFriendRequestsToggleUI(allow) {
+            document.querySelectorAll('[data-identity-social="friend-requests"]').forEach(function (el) {
+                el.classList.toggle('on', !!allow);
+            });
+        }
+
+        function setProfileVisibilityUI(visibility) {
+            var value = String(visibility || 'public').toLowerCase();
+            if (value === 'friends only' || value === 'friends_only') value = 'friends';
+            if (value !== 'public' && value !== 'friends' && value !== 'private') value = 'public';
+            document.querySelectorAll('[data-identity-social="profile-visibility"]').forEach(function (group) {
+                group.querySelectorAll('.opt-btn').forEach(function (btn) {
+                    var btnVal = (btn.getAttribute('data-visibility') || '').toLowerCase();
+                    btn.classList.toggle('active', btnVal === value);
+                });
+            });
+        }
+
+        async function requireSignedInForIdentity() {
+            if (!window.usertypoAuth) return null;
+            await window.usertypoAuth.ready();
+            var state = window.usertypoAuth.getState();
+            if (!state.isSignedIn) {
+                if (window.navigateTo) window.navigateTo('/signin');
+                else window.location.href = '/signin';
+                return null;
+            }
+            return state;
+        }
+
+        async function loadIdentitySocialSettings(options) {
             if (!window.usertypoAuth || !window.usertypoProfiles) return;
             try {
                 await window.usertypoAuth.ready();
                 var state = window.usertypoAuth.getState();
                 if (!state.isSignedIn || !state.user) return;
 
-                var profile = window.__USERTYPO_PROFILE__
-                    || await window.usertypoProfiles.ensureMyProfile(state.user);
+                var force = !!(options && options.force);
+                var profile = force
+                    ? await window.usertypoProfiles.ensureMyProfile(state.user, { force: true })
+                    : (window.__USERTYPO_PROFILE__
+                        || await window.usertypoProfiles.ensureMyProfile(state.user));
                 if (!profile) return;
 
-                var show = profile.show_on_leaderboard !== false;
-                setLeaderboardToggleUI(show);
+                setLeaderboardToggleUI(profile.show_on_leaderboard !== false);
+                setFriendRequestsToggleUI(profile.allow_friend_requests !== false);
+                setProfileVisibilityUI(profile.profile_visibility || 'public');
             } catch (err) {
-                console.error('[usertypo settings] leaderboard visibility load failed', err);
+                console.error('[usertypo settings] identity & social load failed', err);
             }
         }
 
@@ -5146,8 +5192,7 @@ window.__spaPageInit = function() {
 
             // Click flips the clicked toggle; derive show_on_leaderboard from that.
             if (kind === 'optout') {
-                nextShow = currentlyOn; // turning opt-out OFF means show ON, and vice versa after flip
-                // We'll flip UI ourselves: if currently opted-out (on), clicking turns it off → show=true
+                // if currently opted-out (on), clicking turns it off → show=true
                 nextShow = currentlyOn ? true : false;
             } else {
                 // show toggle: if currently on, click turns off
@@ -5160,13 +5205,8 @@ window.__spaPageInit = function() {
                 return;
             }
 
-            await window.usertypoAuth.ready();
-            var state = window.usertypoAuth.getState();
-            if (!state.isSignedIn) {
-                if (window.navigateTo) window.navigateTo('/signin');
-                else window.location.href = '/signin';
-                return;
-            }
+            var state = await requireSignedInForIdentity();
+            if (!state) return;
 
             // Optimistic UI
             setLeaderboardToggleUI(nextShow);
@@ -5184,6 +5224,78 @@ window.__spaPageInit = function() {
                 if (typeof triggerSave === 'function') triggerSave();
             } finally {
                 leaderboardVisibilitySaving = false;
+            }
+        }
+
+        async function toggleFriendRequestsSetting(track) {
+            if (friendRequestsSaving) return;
+            var currentlyOn = track.classList.contains('on');
+            var nextAllow = !currentlyOn;
+
+            if (!window.usertypoAuth) {
+                setFriendRequestsToggleUI(nextAllow);
+                if (typeof triggerSave === 'function') triggerSave();
+                return;
+            }
+
+            var state = await requireSignedInForIdentity();
+            if (!state) return;
+
+            setFriendRequestsToggleUI(nextAllow);
+            if (typeof triggerSave === 'function') triggerSave();
+
+            friendRequestsSaving = true;
+            try {
+                if (!window.usertypoProfiles || typeof window.usertypoProfiles.setAllowFriendRequests !== 'function') {
+                    throw new Error('profiles helper missing');
+                }
+                await window.usertypoProfiles.setAllowFriendRequests(nextAllow);
+            } catch (err) {
+                console.error('[usertypo settings] friend requests save failed', err);
+                setFriendRequestsToggleUI(!nextAllow);
+                if (typeof triggerSave === 'function') triggerSave();
+            } finally {
+                friendRequestsSaving = false;
+            }
+        }
+
+        async function selectProfileVisibility(btn) {
+            if (profileVisibilitySaving || !btn) return;
+            var nextVisibility = (btn.getAttribute('data-visibility') || 'public').toLowerCase();
+            if (nextVisibility !== 'public' && nextVisibility !== 'friends' && nextVisibility !== 'private') {
+                nextVisibility = 'public';
+            }
+
+            var previous = 'public';
+            var active = btn.parentElement && btn.parentElement.querySelector('.opt-btn.active');
+            if (active && active.getAttribute('data-visibility')) {
+                previous = active.getAttribute('data-visibility').toLowerCase();
+            }
+
+            if (!window.usertypoAuth) {
+                setProfileVisibilityUI(nextVisibility);
+                if (typeof triggerSave === 'function') triggerSave();
+                return;
+            }
+
+            var state = await requireSignedInForIdentity();
+            if (!state) return;
+
+            setProfileVisibilityUI(nextVisibility);
+            if (typeof triggerSave === 'function') triggerSave();
+
+            profileVisibilitySaving = true;
+            try {
+                if (!window.usertypoProfiles || typeof window.usertypoProfiles.setProfileVisibility !== 'function') {
+                    throw new Error('profiles helper missing');
+                }
+                await window.usertypoProfiles.setProfileVisibility(nextVisibility);
+            } catch (err) {
+                console.error('[usertypo settings] profile visibility save failed', err);
+                setProfileVisibilityUI(previous);
+                if (typeof triggerSave === 'function') triggerSave();
+            } finally {
+                profileVisibilitySaving = false;
             }
         }
 
@@ -5273,8 +5385,13 @@ window.__spaPageInit = function() {
         window.toggleSwitch = toggleSwitch;
         window.selectOpt = selectOpt;
         window.toggleLeaderboardVisibility = toggleLeaderboardVisibility;
+        window.toggleFriendRequestsSetting = toggleFriendRequestsSetting;
+        window.selectProfileVisibility = selectProfileVisibility;
 
-        loadLeaderboardVisibilitySetting();
+        loadIdentitySocialSettings({ force: true });
+        window.addEventListener('usertypo:profile-synced', function () {
+            loadIdentitySocialSettings();
+        });
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {

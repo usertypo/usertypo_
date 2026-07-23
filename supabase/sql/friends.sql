@@ -241,6 +241,14 @@ begin
   end if;
 
   if exists (
+    select 1 from public.profiles p
+    where p.user_id = v_target
+      and coalesce(p.allow_friend_requests, true) is not true
+  ) then
+    raise exception 'friend_requests_disabled';
+  end if;
+
+  if exists (
     select 1 from public.friend_requests fr
     where fr.from_user_id = v_me
       and fr.to_user_id = v_target
