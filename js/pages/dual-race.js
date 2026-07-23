@@ -334,11 +334,14 @@
             var elapsedSeconds = Math.min(0.1, Math.max(0, (now - opponentFrameAt) / 1000));
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
-                var desiredWpm = opponentHasReport ? opponentTargetWpm : currentLocalWpm();
-                if (opponentHasReport && opponentTargetWpm <= 0) desiredWpm = currentLocalWpm();
+                // Never mirror the local player. No report / 0 WPM => ghost stays still.
+                var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
                 var blend = 1 - Math.exp(-elapsedSeconds * 3);
                 opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
-                opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
+                if (opponentDisplayWpm > 0) {
+                    opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                }
                 var last = Math.max(0, words.length - 1);
                 var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
                 opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
@@ -1199,7 +1202,7 @@
                 state = 'racing';
                 if (immediate) startTime = Date.now();
                 hideMessage();
-                opponentDisplayWpm = currentLocalWpm();
+                opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
                     try {
                         window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
@@ -1223,11 +1226,9 @@
         function applyOpponentProgress(payload) {
             if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
             var nextWpm = Math.max(0, Number(payload[1]) || 0);
-            if (nextWpm > 0) {
-                opponentTargetWpm = nextWpm;
-                opponentHasReport = true;
-                if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(nextWpm);
-            }
+            opponentTargetWpm = nextWpm;
+            opponentHasReport = true;
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(nextWpm);
         }
 
         function fillCard(prefix, data) {
