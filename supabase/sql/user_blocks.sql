@@ -103,3 +103,7 @@ revoke all on function public.block_user(text) from public;
 revoke all on function public.unblock_user(text) from public;
 grant execute on function public.block_user(text) to authenticated;
 grant execute on function public.unblock_user(text) to authenticated;
+-- Multiplayer (service role) needs a lean either-way check.
+grant execute on function public._block_exists(text, text) to service_role;
+grant select on table public.user_blocks to service_role;
+grant select on table public.user_blocks to authenticated;
