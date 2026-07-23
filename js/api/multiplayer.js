@@ -363,7 +363,13 @@
     }
 
     function sendChallenge(toUserId, config) {
-        return emitAck('duel:challenge', { toUserId: toUserId, config: config });
+        return emitAck('duel:challenge', { toUserId: toUserId, config: config }).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/already in a match/i.test(message)) throw error;
+            return leaveRace('').then(function () {
+                return emitAck('duel:challenge', { toUserId: toUserId, config: config });
+            });
+        });
     }
 
     function respondToChallenge(inviteId, accepted) {
@@ -375,7 +381,13 @@
     }
 
     function createPublicDuel(config) {
-        return emitAck('duel:create', config);
+        return emitAck('duel:create', config).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/already in a match/i.test(message)) throw error;
+            return leaveRace('').then(function () {
+                return emitAck('duel:create', config);
+            });
+        });
     }
 
     function cancelPublicDuel() {
@@ -402,7 +414,13 @@
     }
 
     function joinListing(listingId) {
-        return emitAck('duel:join-listing', listingId);
+        return emitAck('duel:join-listing', listingId).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/already in a match/i.test(message)) throw error;
+            return leaveRace('').then(function () {
+                return emitAck('duel:join-listing', listingId);
+            });
+        });
     }
 
     function joinMatch(roomId) {
