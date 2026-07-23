@@ -347,10 +347,21 @@
         .hotspotsHeatLegend div[data-level="3"] { background: rgba(185, 28, 28, 0.75); }
         .hotspotsHeatLegend div[data-level="4"] { background: rgba(185, 28, 28, 0.92); }
 
+        #hardware-hotspots-card #dynamic-keymap-container {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
         #hardware-hotspots-card #dynamic-keymap {
             transform: scale(1.14);
             transform-origin: center center;
             margin: 0.75rem 0 1.25rem;
+            width: max-content;
+            max-width: none;
         }
 
         #hardware-hotspots-card .hotspot-key-tip {
@@ -450,9 +461,9 @@
                 <div class="relative flex items-center justify-center w-40 h-40 mb-6">
                     <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 40 40" aria-hidden="true">
                         <circle id="profile-xp-track" cx="20" cy="20" r="18" fill="none"
-                            stroke="rgba(255,255,255,0.12)" stroke-width="2.5"></circle>
+                            stroke="rgba(255,255,255,0.12)" stroke-width="1.35"></circle>
                         <circle id="profile-xp-ring" cx="20" cy="20" r="18" fill="none"
-                            stroke="rgb(var(--theme-primary-rgb))" stroke-width="2.5" stroke-linecap="round"
+                            stroke="rgb(var(--theme-primary-rgb))" stroke-width="1.35" stroke-linecap="round"
                             class="transition-[stroke-dashoffset] duration-700 ease-out"
                             style="stroke-dasharray: 113.097; stroke-dashoffset: 113.097;"></circle>
                     </svg>
@@ -838,7 +849,7 @@
                                 <span class="text-xs text-slate-400">Mistype (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+                                <span class="w-2 h-2 rounded-full" style="background:var(--theme-error, #ff3333)"></span>
                                 <span class="text-xs text-slate-400">Reversal (—)</span>
                             </div>
                             <div class="flex items-center gap-2">
@@ -891,10 +902,10 @@
                             <div class="text-xs text-slate-500 font-headline">—</div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col items-center overflow-x-auto order-1 lg:order-2 py-2">
-                        <div id="dynamic-keymap-container" class="w-full max-w-full flex flex-col items-center overflow-x-auto">
+                    <div class="flex-1 min-w-0 flex flex-col items-center justify-center overflow-hidden order-1 lg:order-2 py-2">
+                        <div id="dynamic-keymap-container" class="w-full flex flex-col items-center justify-center">
                             <div id="dynamic-keymap"
-                                class="flex flex-col gap-1.5 w-full min-w-max pb-2"></div>
+                                class="flex flex-col gap-1.5 items-center justify-center pb-2"></div>
                         </div>
                     </div>
                 </div>
@@ -1227,7 +1238,7 @@ if ('scrollRestoration' in history) {
             });
 
             var historyOffset = 0;
-            var historyPageSize = 15;
+            var historyPageSize = 10;
             var historyTotal = 0;
             var historyLoading = false;
             var allHistorySessions = [];
@@ -1711,7 +1722,7 @@ if ('scrollRestoration' in history) {
             function renderErrorDiagnostics(agg) {
                 var anatomyColors = [
                     'var(--theme-primary-light, #6cdaff)',
-                    '#f59e0b',
+                    'var(--theme-error, #ff3333)',
                     '#94a3b8',
                     '#64748b',
                     '#334155',
@@ -1768,20 +1779,23 @@ if ('scrollRestoration' in history) {
                 if (svg) {
                     var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
                     var offset = 0;
-                    var gap = 2.2;
-                    if (!isBlank) {
-                        (data.anatomy || []).forEach(function (slice, index) {
-                            if (!slice.count) return;
-                            var pct = Math.max(0, Math.min(100, slice.percent));
-                            var arc = Math.max(0.8, pct - gap);
-                            rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
-                                + anatomyColors[index]
-                                + '" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + (100 - arc)
-                                + '" stroke-dashoffset="' + (-offset)
-                                + '" stroke-width="4"></circle>';
-                            offset += pct;
-                        });
-                    }
+                    // Butt caps + explicit gap so neighboring slices do not visually overlap.
+                    var gap = 1.6;
+                    var visibleSlices = isBlank
+                        ? []
+                        : (data.anatomy || []).filter(function (slice) { return slice.count; });
+                    var sliceGap = visibleSlices.length > 1 ? gap : 0;
+                    visibleSlices.forEach(function (slice, index) {
+                        var colorIndex = (data.anatomy || []).indexOf(slice);
+                        var pct = Math.max(0, Math.min(100, slice.percent));
+                        var arc = Math.max(0.5, pct - sliceGap);
+                        rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+                            + anatomyColors[colorIndex >= 0 ? colorIndex : index]
+                            + '" stroke-linecap="butt" stroke-dasharray="' + arc + ' ' + (100 - arc)
+                            + '" stroke-dashoffset="' + (-offset)
+                            + '" stroke-width="4"></circle>';
+                        offset += pct;
+                    });
                     svg.innerHTML = rings;
                 }
                 if (legend) {
