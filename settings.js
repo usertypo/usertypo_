@@ -1323,8 +1323,9 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
 }
 
 /**
- * Pace caret styles — ghost caret matching live-stats white at 50% opacity.
- * Movement smoothness mirrors the main caret (caretSmoothness setting).
+ * Pace caret styles — class-driven (Monkeytype approach).
+ * Styles are applied via data-pace-style on the element + these rules.
+ * Underscore is a thin bar at the letter baseline (not a full-height box with ::after).
  */
 function buildPaceCaretCSS(style, smoothness) {
     style = (style || 'underscore').toLowerCase();
@@ -1333,109 +1334,87 @@ function buildPaceCaretCSS(style, smoothness) {
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, height ${dur} ${ease}, opacity 0.5s ease-in-out`;
     const liveWhite = '#ffffff';
     const liveWhiteRGB = '255, 255, 255';
-    // Solo pace caret + dual-page opponent ghost share the same style setting.
     const sel = '#pace-caret, #bot-caret';
 
-    let css = `
+    // Base box — never rely on Tailwind .hidden (display:none fights visibility).
+    // Visibility is toggled with .pace-off instead.
+    return `
         ${sel} {
             display: block !important;
             box-sizing: border-box !important;
+            position: absolute !important;
+            left: 0;
+            top: 0;
+            pointer-events: none !important;
+            transform-origin: top left;
             transition: ${transition} !important;
             opacity: 0.55 !important;
-            filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.35));
+            visibility: visible !important;
+            background-color: ${liveWhite} !important;
+            border: none !important;
+            border-radius: 2px !important;
+            box-shadow: none !important;
+            filter: drop-shadow(0 0 6px rgba(${liveWhiteRGB}, 0.35));
+            z-index: 9;
         }
+        ${sel}::after {
+            content: none !important;
+            display: none !important;
+        }
+        ${sel}.pace-off,
         ${sel}.hidden {
-            display: block !important;
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
         }
+
+        /* line — thin vertical bar */
+        ${sel}[data-pace-style="line"] {
+            width: 2.5px !important;
+            background-color: ${liveWhite} !important;
+            border: none !important;
+            border-radius: 2px !important;
+        }
+
+        /* block — solid highlight behind the glyph */
+        ${sel}[data-pace-style="block"] {
+            background-color: rgba(${liveWhiteRGB}, 0.4) !important;
+            border: none !important;
+            border-radius: 2px !important;
+            z-index: 0 !important;
+        }
+
+        /* underscore — thin bar; height/width set in JS at letter baseline */
+        ${sel}[data-pace-style="underscore"] {
+            height: 2.5px !important;
+            background-color: ${liveWhite} !important;
+            border: none !important;
+            border-radius: 9999px !important;
+        }
+
+        /* outline — hollow box */
+        ${sel}[data-pace-style="outline"] {
+            background-color: transparent !important;
+            border: 2px solid rgba(${liveWhiteRGB}, 0.9) !important;
+            border-radius: 3px !important;
+            box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25) !important;
+            outline: none !important;
+        }
     `;
+}
 
-    switch (style) {
-        case 'line':
-            css += `
-                ${sel} {
-                    width: 2.5px !important;
-                    background-color: ${liveWhite} !important;
-                    border: none !important;
-                    border-radius: 2px !important;
-                    box-shadow: none !important;
-                }
-                ${sel}::after { content: none !important; display: none !important; }
-            `;
-            break;
-
-        case 'block':
-            css += `
-                ${sel} {
-                    background-color: rgba(${liveWhiteRGB}, 0.35) !important;
-                    border: none !important;
-                    border-radius: 2px !important;
-                    box-shadow: none !important;
-                }
-                ${sel}::after { content: none !important; display: none !important; }
-            `;
-            break;
-
-        case 'underscore':
-            css += `
-                ${sel} {
-                    background-color: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                }
-                ${sel}::after {
-                    content: '' !important;
-                    display: block !important;
-                    position: absolute;
-                    bottom: -2.5px;
-                    left: 0;
-                    right: 0;
-                    height: 2.5px;
-                    background-color: ${liveWhite} !important;
-                    border-radius: 9999px;
-                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
-                }
-            `;
-            break;
-
-        case 'outline':
-            css += `
-                ${sel} {
-                    background-color: transparent !important;
-                    border: 2px solid rgba(${liveWhiteRGB}, 0.85) !important;
-                    border-radius: 3px !important;
-                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.2) !important;
-                }
-                ${sel}::after { content: none !important; display: none !important; }
-            `;
-            break;
-
-        default:
-            css += `
-                ${sel} {
-                    background-color: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                }
-                ${sel}::after {
-                    content: '' !important;
-                    display: block !important;
-                    position: absolute;
-                    bottom: -2.5px;
-                    left: 0;
-                    right: 0;
-                    height: 2.5px;
-                    background-color: ${liveWhite} !important;
-                    border-radius: 9999px;
-                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
-                }
-            `;
-            break;
-    }
-
-    return css;
+function applyPaceCaretStyleAttrs(settings) {
+    const style = ((settings?.cursor?.paceCaretStyle) || 'underscore').toLowerCase();
+    ['pace-caret', 'bot-caret'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.setAttribute('data-pace-style', style);
+        // Drop Tailwind hidden — we use .pace-off for hide/show
+        if (el.id === 'pace-caret' && el.classList.contains('hidden')) {
+            el.classList.add('pace-off');
+            el.classList.remove('hidden');
+        }
+    });
 }
 
 function buildLayoutCSS(smoothLineScroll, tapeMode) {
@@ -1525,6 +1504,8 @@ function applyCursorSettings(settings) {
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
         + buildPaceCaretCSS(settings.cursor.paceCaretStyle, settings.cursor.caretSmoothness)
         + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode);
+
+    applyPaceCaretStyleAttrs(settings);
 
     // ── Data attributes on <body> ──
     if (document.body) {
@@ -1987,12 +1968,32 @@ function persistFromOpt(btn) {
     if (!path) return;
 
     const settings = loadSettings();
-    setByPath(settings, path, resolveOptValue(btn));
+    const value = resolveOptValue(btn);
+    setByPath(settings, path, value);
     saveSettings(settings);
     applyAllSettings(settings);
 
+    // Keep every clone of this option group in sync (open sub-panels + hidden source)
+    document.querySelectorAll(`[data-setting="${path}"]`).forEach(container => {
+        container.querySelectorAll('.opt-btn').forEach(b => {
+            const match = resolveOptValue(b) === value;
+            b.classList.toggle('active', match);
+            if (match && path === 'cursor.paceCaretMode' && value !== 'custom') {
+                if (b.hasAttribute('data-original-text')) {
+                    // leave non-custom labels alone
+                }
+            }
+            // Reset custom pace button label when leaving custom mode
+            if (path === 'cursor.paceCaretMode' && value !== 'custom' && b.closest('.custom-popover-wrapper')) {
+                b.setAttribute('data-original-text', 'Custom');
+                b.setAttribute('data-value', 'custom');
+                b.textContent = 'Custom';
+                b.classList.remove('active');
+            }
+        });
+    });
+
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
-        // slight delay to let the soundpack load if it changed
         setTimeout(() => window.playKeystrokeSound('a'), 100);
     }
 }
@@ -2069,11 +2070,11 @@ function restoreCustomButtonValues() {
         });
     });
 
-    // Pace caret Custom stores mode + speed separately; data-value="custom" keeps restoreUI matched
+    // Pace caret Custom — update EVERY clone (original + open sub-panels)
     if ((settings.cursor?.paceCaretMode || '').toLowerCase() === 'custom') {
-        const container = document.querySelector('[data-setting="cursor.paceCaretMode"]');
         const speed = settings.cursor.paceCaretCustomSpeed;
-        if (container && speed != null && speed !== '') {
+        document.querySelectorAll('[data-setting="cursor.paceCaretMode"]').forEach(container => {
+            if (speed == null || speed === '') return;
             container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
                 const isCustom = (triggerBtn.getAttribute('data-value') || '').toLowerCase() === 'custom'
                     || (triggerBtn.getAttribute('data-original-text') || '') === 'Custom'
@@ -2081,12 +2082,15 @@ function restoreCustomButtonValues() {
                     || /^\d+(\.\d+)?$/.test(triggerBtn.textContent.trim());
                 if (isCustom) {
                     triggerBtn.setAttribute('data-original-text', 'Custom');
+                    if (!triggerBtn.getAttribute('data-value')) {
+                        triggerBtn.setAttribute('data-value', 'custom');
+                    }
                     triggerBtn.textContent = String(speed);
                     container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
                     triggerBtn.classList.add('active');
                 }
             });
-        }
+        });
     }
 }
 
@@ -2503,10 +2507,9 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
         return;
     }
 
-    let finalVal = isFlex ? 'Flex:' + val : val;
-
+    const finalVal = isFlex ? 'Flex:' + val : val;
     const settings = loadSettings();
-    // Pace caret Custom: store WPM as a number and activate custom mode
+
     if (path === 'cursor.paceCaretCustomSpeed') {
         const speed = Number(val);
         const wpm = Number.isFinite(speed) && speed > 0 ? speed : 100;
@@ -2519,32 +2522,41 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     applyAllSettings(settings);
     if (typeof triggerSave === 'function') triggerSave();
 
-    // UI update — set button text to the entered value
-    const container = btn.closest('[data-setting]');
-    if (container) {
-        // Reset all buttons in this group
-        container.querySelectorAll('.opt-btn').forEach(b => {
-            b.classList.remove('active');
-            if (b.hasAttribute('data-original-text')) {
-                b.textContent = b.getAttribute('data-original-text');
-            }
-        });
+    function activateCustomTrigger(optBtn, label) {
+        if (!optBtn) return;
+        optBtn.classList.add('active');
+        optBtn.setAttribute('data-original-text', label);
+        if (path === 'cursor.paceCaretCustomSpeed') {
+            optBtn.setAttribute('data-value', 'custom');
+        }
+        optBtn.textContent = val;
+    }
 
-        // Set the trigger button (the one right before the popover div) as active
-        const optBtn = popover.previousElementSibling;
-        if (optBtn) {
-            optBtn.classList.add('active');
-            // Save original text so we can restore it later
-            if (!optBtn.hasAttribute('data-original-text')) {
-                const fallback = path === 'cursor.paceCaretCustomSpeed' ? 'Custom' : optBtn.textContent.trim();
-                optBtn.setAttribute('data-original-text', fallback);
-            }
-            // Show the custom number on the button
-            optBtn.textContent = val;
+    if (path === 'cursor.paceCaretCustomSpeed') {
+        // Sync every pace-mode group: open panel clones + hidden source content
+        document.querySelectorAll('[data-setting="cursor.paceCaretMode"]').forEach(container => {
+            container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+            container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(optBtn => {
+                activateCustomTrigger(optBtn, 'Custom');
+            });
+        });
+    } else {
+        const container = btn.closest('[data-setting]');
+        if (container) {
+            container.querySelectorAll('.opt-btn').forEach(b => {
+                b.classList.remove('active');
+                if (b.hasAttribute('data-original-text')) {
+                    b.textContent = b.getAttribute('data-original-text');
+                }
+            });
+            const optBtn = popover.previousElementSibling;
+            const label = optBtn?.getAttribute('data-original-text')
+                || optBtn?.textContent.trim()
+                || 'Custom';
+            activateCustomTrigger(optBtn, label);
         }
     }
 
-    // Close the popover
     popover.classList.remove('opacity-100', 'pointer-events-auto');
     popover.classList.add('opacity-0', 'pointer-events-none');
     input.value = '';

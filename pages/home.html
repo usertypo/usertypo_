@@ -211,7 +211,7 @@
             border-radius: 9999px;
         }
 
-        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
+        /* --- PACE CARET (ghost caret — styled via settings.js data-pace-style) --- */
         #pace-caret {
             position: absolute;
             display: block;
@@ -223,9 +223,10 @@
             height: 1.2em;
             opacity: 0;
             will-change: transform, width, height, opacity;
+            transform-origin: top left;
         }
 
-        #pace-caret.hidden {
+        #pace-caret.pace-off {
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
@@ -726,7 +727,7 @@
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
                             <div id="text-container" class="relative w-full transition-all duration-300">
-                                <span id="pace-caret" class="hidden"></span>
+                                <span id="pace-caret" class="pace-off" data-pace-style="underscore"></span>
                                 <span id="caret"
                                     class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
                             </div>
@@ -2737,14 +2738,17 @@ window.setTimeout = function(handler, timeout) {
 
         function showPaceCaret() {
             if (!paceCaretEl) return;
-            paceCaretEl.classList.remove('hidden');
+            paceCaretEl.classList.remove('pace-off', 'hidden');
             paceCaretEl.style.visibility = '';
+            paceCaretEl.style.opacity = '';
+            const style = getPaceCaretStyle();
+            paceCaretEl.setAttribute('data-pace-style', style);
         }
 
         function hidePaceCaret() {
             if (!paceCaretEl) return;
-            paceCaretEl.classList.add('hidden');
-            paceCaretEl.style.visibility = 'hidden';
+            paceCaretEl.classList.add('pace-off');
+            paceCaretEl.classList.remove('hidden');
         }
 
         function resetPaceCaret() {
@@ -2786,6 +2790,10 @@ window.setTimeout = function(handler, timeout) {
             const characters = wpm * 5;
             const spc = 60 / characters;
 
+            if (paceCaretEl) {
+                paceCaretEl.setAttribute('data-pace-style', getPaceCaretStyle());
+            }
+
             paceCaretSettings = {
                 wpm,
                 spc,
@@ -2810,15 +2818,34 @@ window.setTimeout = function(handler, timeout) {
             return (getCursorSettings().paceCaretStyle || 'underscore').toLowerCase();
         }
 
-        function applyPaceCaretDimensions(rect) {
+        /**
+         * Size + place the pace caret like Monkeytype:
+         * - line: thin vertical bar at letter left, full letter height
+         * - block/outline: full letter box
+         * - underscore: thin horizontal bar sitting on the letter baseline
+         */
+        function applyPaceCaretBox(left, top, rect) {
             const style = getPaceCaretStyle();
-            // Match the live character box so the ghost sits on the same line as #caret
-            paceCaretEl.style.height = `${Math.max(1, rect.height)}px`;
+            paceCaretEl.setAttribute('data-pace-style', style);
+
+            const letterW = Math.max(1, rect.width);
+            const letterH = Math.max(1, rect.height);
+            const barH = 2.5;
+
             if (style === 'line') {
                 paceCaretEl.style.width = '2.5px';
+                paceCaretEl.style.height = `${letterH}px`;
+                paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+            } else if (style === 'underscore') {
+                // Thin bar just below the letter box — matches main caret ::after (bottom: -2.5px)
+                paceCaretEl.style.width = `${letterW}px`;
+                paceCaretEl.style.height = `${barH}px`;
+                paceCaretEl.style.transform = `translate3d(${left}px, ${top + letterH}px, 0)`;
             } else {
-                // underscore, block, outline — span the character width
-                paceCaretEl.style.width = `${Math.max(1, rect.width)}px`;
+                // block + outline
+                paceCaretEl.style.width = `${letterW}px`;
+                paceCaretEl.style.height = `${letterH}px`;
+                paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
             }
         }
 
@@ -2905,8 +2932,7 @@ window.setTimeout = function(handler, timeout) {
                 paceCaretEl.style.removeProperty('transition');
             }
 
-            applyPaceCaretDimensions(rect);
-            paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+            applyPaceCaretBox(left, top, rect);
 
             if (!animate) {
                 void paceCaretEl.offsetWidth;
@@ -2946,7 +2972,7 @@ window.setTimeout = function(handler, timeout) {
         }
 
         window.refreshPaceCaretVisual = function () {
-            if (!paceCaretSettings || !isTyping || paceCaretEl.classList.contains('hidden')) return;
+            if (!paceCaretSettings || !isTyping || !paceCaretEl || paceCaretEl.classList.contains('pace-off')) return;
             goToPaceCaretPosition(
                 paceCaretSettings.currentWordIndex,
                 paceCaretSettings.currentLetterIndex,

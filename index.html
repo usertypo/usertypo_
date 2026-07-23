@@ -302,7 +302,7 @@
             border-radius: 9999px;
         }
 
-        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
+        /* --- PACE CARET (ghost caret — styled via settings.js data-pace-style) --- */
         #pace-caret {
             position: absolute;
             display: block;
@@ -314,9 +314,10 @@
             height: 1.2em;
             opacity: 0;
             will-change: transform, width, height, opacity;
+            transform-origin: top left;
         }
 
-        #pace-caret.hidden {
+        #pace-caret.pace-off {
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
