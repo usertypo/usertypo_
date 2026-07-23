@@ -642,7 +642,7 @@
             if (!q) return true;
             return l.name.toLowerCase().includes(q) || l.file.toLowerCase().includes(q);
         });
-        const current = loadSettings().languageContent?.testLanguage || 'english_10k';
+        const current = loadSettings().languageContent?.testLanguage || 'english';
 
         viewport.innerHTML = `
             <p class="footer-picker-list-title">Test Languages</p>

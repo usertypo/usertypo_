@@ -194,24 +194,6 @@
         return { ok: true };
     }
 
-    async function resetPersonalBests() {
-        await requireAuth();
-        var client = await window.usertypoDb.getClient();
-        var result = await client.rpc('reset_my_personal_bests');
-        if (result.error) throw result.error;
-
-        await purgeLeaderboards();
-        try {
-            var profile = window.__USERTYPO_PROFILE__;
-            if (profile && profile.show_on_leaderboard !== false && window.usertypoLeaderboards) {
-                await window.usertypoLeaderboards.syncVisibility(true);
-            }
-        } catch (e) { /* ignore */ }
-
-        await clearClientCaches();
-        return result.data || { ok: true };
-    }
-
     async function logoutAllDevices() {
         var state = await requireAuth();
         var user = state.user;
@@ -315,7 +297,6 @@
         startEmailChange: startEmailChange,
         confirmEmailChange: confirmEmailChange,
         updatePassword: updatePassword,
-        resetPersonalBests: resetPersonalBests,
         logoutAllDevices: logoutAllDevices,
         listBlockedUsers: listBlockedUsers,
         resetAccountData: resetAccountData,

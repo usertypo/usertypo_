@@ -21,7 +21,7 @@ const STORAGE_KEY = 'usertypo_settings';
 
 const DEFAULTS = {
     cursor: {
-        caretStyle: 'line',      // line | block | underscore | outline
+        caretStyle: 'underscore', // line | block | underscore | outline
         caretSmoothness: 'medium',    // off | slow | medium | fast
         adaptiveSmoothness: false,
         paceCaretMode: 'off',       // off | average | pb | last | custom | daily
@@ -33,13 +33,13 @@ const DEFAULTS = {
     },
     soundscape: {
         clickSounds: false,
-        errorSounds: 'beep', // Changed from boolean to string
+        errorSounds: 'off', // off | mute | beep
         masterVolume: 50,
-        muted: true,
+        muted: false,
         soundPack: 'Steelseries Apex Pro V2',
     },
     languageContent: {
-        testLanguage: 'english_10k',
+        testLanguage: 'english',
     },
     testRules: {
         difficulty: 'Normal',
@@ -69,7 +69,6 @@ const DEFAULTS = {
         startGraphFromZero: false,
         minWPM: 'Off',
         minAccuracy: '75%',
-        minBurst: 'Off'
     },
     liveFeed: {
         liveWpm: true,
@@ -79,7 +78,7 @@ const DEFAULTS = {
         timerOpacity: '0.5',
     },
     lookFeel: {
-        colorTheme: 'usertypo_',
+        colorTheme: 'Abyss',
         fontFamily: 'JetBrains Mono',
         randomizeTheme: 'Off',
         customTheme: {
@@ -100,8 +99,25 @@ const CUSTOM_THEME_DEFAULT = {
 };
 const MAX_CUSTOM_PRESETS = 3;
 
+/** Abyss on dark OS theme, Paper on light — used for fresh defaults / reset. */
+function getPreferredDefaultTheme() {
+    try {
+        if (typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'Paper';
+        }
+    } catch (e) { /* ignore */ }
+    return 'Abyss';
+}
+
+function cloneDefaults() {
+    const settings = structuredClone(DEFAULTS);
+    settings.lookFeel.colorTheme = getPreferredDefaultTheme();
+    return settings;
+}
+
 function loadSettings() {
-    let settings = structuredClone(DEFAULTS);
+    let settings = cloneDefaults();
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
@@ -132,6 +148,10 @@ function loadSettings() {
         }
         delete settings.cursor.tapeModeInDual;
         delete settings.cursor.tapeModeInRooms;
+    }
+
+    if (settings.resultsAndGraphs && settings.resultsAndGraphs.minBurst !== undefined) {
+        delete settings.resultsAndGraphs.minBurst;
     }
 
     // Migrate quickRestart from testRules to keyboardLayout
@@ -2242,7 +2262,7 @@ function applySoundscapeSettings(settings) {
  * Resolve a language file id to a human-readable display name.
  */
 function getLanguageDisplayName(langFile) {
-    const file = langFile || 'english_10k';
+    const file = langFile || 'english';
     if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
         const found = ALL_LANGUAGES.find(l => l.file === file);
         if (found) return found.name;
@@ -2261,7 +2281,7 @@ function applyFooterSettings(settings) {
 
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
     const themeLabel = getThemeDisplayName(themeName, settings);
-    const langFile = settings.languageContent?.testLanguage || 'english_10k';
+    const langFile = settings.languageContent?.testLanguage || 'english';
     const langName = getLanguageDisplayName(langFile);
 
     document.querySelectorAll('[data-footer-picker]').forEach(el => {
@@ -2709,10 +2729,9 @@ function restoreCustomButtonValues() {
     const thresholdPaths = [
         { path: 'resultsAndGraphs.minWPM', labels: ['Custom'] },
         { path: 'resultsAndGraphs.minAccuracy', labels: ['Custom'] },
-        { path: 'resultsAndGraphs.minBurst', labels: ['Fixed', 'Flex'] }
     ];
 
-    thresholdPaths.forEach(({ path, labels }) => {
+    thresholdPaths.forEach(({ path }) => {
         const saved = getByPath(settings, path);
         if (!saved || saved === 'Off') return;
 
@@ -2730,26 +2749,11 @@ function restoreCustomButtonValues() {
 
         container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
             const btnLabel = triggerBtn.textContent.trim();
-
-            if (path === 'resultsAndGraphs.minBurst') {
-                if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
-                    triggerBtn.setAttribute('data-original-text', 'Flex');
-                    triggerBtn.textContent = String(saved).split(':')[1];
-                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                    triggerBtn.classList.add('active');
-                } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
-                    triggerBtn.setAttribute('data-original-text', 'Fixed');
-                    triggerBtn.textContent = saved;
-                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                    triggerBtn.classList.add('active');
-                }
-            } else {
-                if (btnLabel === 'Custom') {
-                    triggerBtn.setAttribute('data-original-text', 'Custom');
-                    triggerBtn.textContent = saved;
-                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                    triggerBtn.classList.add('active');
-                }
+            if (btnLabel === 'Custom') {
+                triggerBtn.setAttribute('data-original-text', 'Custom');
+                triggerBtn.textContent = saved;
+                container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                triggerBtn.classList.add('active');
             }
         });
     });
@@ -2894,7 +2898,7 @@ function _reapplyAllSettings() {
  * Wipe local settings back to shipped defaults and refresh UI/theme/audio.
  */
 function resetToDefaults() {
-    const settings = structuredClone(DEFAULTS);
+    const settings = cloneDefaults();
     saveSettings(settings);
     applyAllSettings(settings);
 

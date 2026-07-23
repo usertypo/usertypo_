@@ -410,7 +410,7 @@ let wordList = [
 ];
 
 // Currently loaded language filename
-let currentLanguageFile = 'english_10k';
+let currentLanguageFile = 'english';
 
 // Cache loaded languages to avoid re-fetching
 const _langCache = {};
@@ -468,15 +468,15 @@ async function loadLanguage(filename) {
 }
 
 /**
- * Get the saved language from settings, or default to 'english_10k'.
+ * Get the saved language from settings, or default to 'english'.
  */
 function getSavedLanguage() {
     try {
         const settings = JSON.parse(localStorage.getItem('usertypo_settings') || '{}');
         const lang = settings.languageContent && settings.languageContent.testLanguage;
-        return lang || 'english_10k';
+        return lang || 'english';
     } catch (e) {
-        return 'english_10k';
+        return 'english';
     }
 }
 
