@@ -419,6 +419,7 @@
                             name: friend.username || friend.display_name || 'Friend',
                             level: friend.level,
                             percentToNext: friend.percent_to_next != null ? friend.percent_to_next : friend.percentToNext,
+                            userId: friend.user_id,
                         }, 'sm') +
                         '<span class="flex-1 text-sm font-semibold text-on-surface truncate">' + escapeHtml(friend.username || friend.display_name || 'Friend') + '</span>' +
                         '<button type="button" class="room-invite-friend-btn text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ' +

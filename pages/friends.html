@@ -1043,6 +1043,7 @@ window.__spaPageInit = function() {
                 if (window.usertypoPlayerAvatar) {
                     return window.usertypoPlayerAvatar.fromPlayer({
                         avatar_url: profile && profile.avatar_url,
+                        user_id: profile && profile.user_id,
                         name: displayName(profile || {}),
                         level: profile && profile.level,
                         percentToNext: profile && (profile.percentToNext != null ? profile.percentToNext : profile.percent_to_next),

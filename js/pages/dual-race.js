@@ -1385,6 +1385,7 @@
                         level: data.level,
                         percentToNext: data.percentToNext,
                         isBot: !!data.isBot,
+                        userId: data.userId || data.user_id || '',
                     }, {
                         size: 'md',
                         id: prefix + '-avatar',
@@ -1454,11 +1455,13 @@
                     total: 0,
                     extra: 0,
                 };
-                otherData.name = other.name;
-                otherData.avatarUrl = other.avatarUrl;
-                otherData.level = other.level;
-                otherData.percentToNext = other.percentToNext;
-                otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+            otherData.name = other.name;
+            otherData.avatarUrl = other.avatarUrl;
+            otherData.level = other.level;
+            otherData.percentToNext = other.percentToNext;
+            otherData.userId = other.userId;
+            otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+            meData.userId = me.userId;
                 var meWon = rows.length && rows[0][0] === selfIndex;
                 fillCard('w', meWon ? meData : otherData);
                 fillCard('l', meWon ? otherData : meData);

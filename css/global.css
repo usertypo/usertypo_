@@ -326,3 +326,39 @@ html {
 .player-level-avatar.is-dimmed {
     opacity: 0.9;
 }
+
+.player-level-avatar--clickable {
+    cursor: pointer;
+}
+
+.player-level-avatar--clickable:hover .player-level-avatar__photo {
+    border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
+}
+
+.player-level-avatar--clickable:focus-visible {
+    outline: 2px solid rgb(var(--theme-primary-rgb, 0, 208, 255));
+    outline-offset: 2px;
+    border-radius: 9999px;
+}
+
+/* Player profile box — transparent hit area, no dim/blur of the page behind */
+#player-profile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: transparent;
+    transition: opacity 0.2s ease;
+}
+
+            #player-profile-box .ppc-hero-avatar {
+                --pla-size: 7.5rem;
+            }
+            @media (min-width: 768px) {
+                #player-profile-box .ppc-hero-avatar {
+                    --pla-size: 8.5rem;
+                }
+            }

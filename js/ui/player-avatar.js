@@ -82,9 +82,14 @@
         var name = opts.name || (opts.isBot ? 'Bot' : 'Player');
         var initial = opts.initial || initialFor(name);
         var avatarUrl = opts.avatarUrl || '';
+        var userId = opts.userId || opts.user_id || '';
+        if (opts.isBot || (userId && String(userId).indexOf('guest_') === 0)) userId = '';
+        var clickable = !!userId && opts.clickable !== false;
         var extraClass = opts.className ? (' ' + String(opts.className)) : '';
+        if (clickable) extraClass += ' player-level-avatar--clickable';
         var title = opts.title != null ? opts.title : name;
         var idAttr = opts.id ? ' id="' + escapeAttr(opts.id) + '"' : '';
+        var userAttr = userId ? ' data-user-id="' + escapeAttr(userId) + '"' : '';
         var offset = ringOffset(showLevel ? progress.percentToNext : 0);
         var ringOpacity = showLevel ? '' : ' opacity-0';
 
@@ -98,12 +103,13 @@
             photoInner = '<span class="player-level-avatar__initial">' + escapeHtml(initial) + '</span>';
         }
 
-        return '<span' + idAttr +
+        return '<span' + idAttr + userAttr +
             ' class="player-level-avatar player-level-avatar--' + escapeAttr(size) + extraClass + '"' +
             ' title="' + escapeAttr(title) + '"' +
             ' data-level="' + progress.level + '"' +
             ' data-xp-percent="' + progress.percentToNext + '"' +
-            ' role="img" aria-label="' + escapeAttr(name + (showLevel ? (', level ' + progress.level) : '')) + '">' +
+            (clickable ? ' role="button" tabindex="0"' : ' role="img"') +
+            ' aria-label="' + escapeAttr(name + (showLevel ? (', level ' + progress.level) : '') + (clickable ? ' — view profile' : '')) + '">' +
             '<svg class="player-level-avatar__ring" viewBox="0 0 40 40" aria-hidden="true">' +
                 '<circle class="player-level-avatar__track' + ringOpacity + '" cx="20" cy="20" r="18" fill="none"></circle>' +
                 '<circle class="player-level-avatar__progress' + ringOpacity + '" cx="20" cy="20" r="18" fill="none"' +
@@ -126,6 +132,7 @@
             level: progress.level,
             percentToNext: progress.percentToNext,
             isBot: !!(source.isBot || source.is_bot),
+            userId: source.userId || source.user_id || '',
         }, options || {}));
     }
 
