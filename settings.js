@@ -35,7 +35,6 @@ const DEFAULTS = {
         clickSounds: false,
         errorSounds: 'beep', // Changed from boolean to string
         masterVolume: 50,
-        muted: true,
         soundPack: 'Steelseries Apex Pro V2',
     },
     languageContent: {
@@ -1317,9 +1316,11 @@ function buildPaceCaretCSS(style, smoothness) {
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
     const liveWhite = '#ffffff';
     const liveWhiteRGB = '255, 255, 255';
+    // Solo pace caret + dual-page opponent ghost share the same style setting.
+    const sel = '#pace-caret, #bot-caret';
 
     let css = `
-        #pace-caret {
+        ${sel} {
             transition: ${transition} !important;
             opacity: 0.5 !important;
             filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.3));
@@ -1329,37 +1330,37 @@ function buildPaceCaretCSS(style, smoothness) {
     switch (style) {
         case 'line':
             css += `
-                #pace-caret {
+                ${sel} {
                     width: 2.5px !important;
                     background-color: ${liveWhite};
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
                 }
-                #pace-caret::after { display: none !important; }
+                ${sel}::after { display: none !important; }
             `;
             break;
 
         case 'block':
             css += `
-                #pace-caret {
+                ${sel} {
                     background-color: rgba(${liveWhiteRGB}, 0.25);
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
                 }
-                #pace-caret::after { display: none !important; }
+                ${sel}::after { display: none !important; }
             `;
             break;
 
         case 'underscore':
             css += `
-                #pace-caret {
+                ${sel} {
                     background-color: transparent;
                     border: none !important;
                     box-shadow: none;
                 }
-                #pace-caret::after {
+                ${sel}::after {
                     content: '' !important;
                     display: block !important;
                     position: absolute;
@@ -1376,24 +1377,24 @@ function buildPaceCaretCSS(style, smoothness) {
 
         case 'outline':
             css += `
-                #pace-caret {
+                ${sel} {
                     background-color: transparent;
                     border: 2px solid rgba(${liveWhiteRGB}, 0.6) !important;
                     border-radius: 3px;
                     box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.15);
                 }
-                #pace-caret::after { display: none !important; }
+                ${sel}::after { display: none !important; }
             `;
             break;
 
         default:
             css += `
-                #pace-caret {
+                ${sel} {
                     background-color: transparent;
                     border: none !important;
                     box-shadow: none;
                 }
-                #pace-caret::after {
+                ${sel}::after {
                     content: '' !important;
                     display: block !important;
                     position: absolute;
@@ -1533,12 +1534,11 @@ function applySoundscapeSettings(settings) {
         document.body.setAttribute('data-click-sounds', String(!!settings.soundscape.clickSounds));
         document.body.setAttribute('data-error-sounds', String(!!settings.soundscape.errorSounds));
         document.body.setAttribute('data-master-volume', String(settings.soundscape.masterVolume));
-        document.body.setAttribute('data-sound-muted', String(!!settings.soundscape.muted));
         document.body.setAttribute('data-sound-pack', settings.soundscape.soundPack);
     }
 
     // Pre-load the chosen sound pack if the audio manager is available
-    if (settings.soundscape.clickSounds && !settings.soundscape.muted && typeof window.loadSoundPack === 'function') {
+    if (settings.soundscape.clickSounds && typeof window.loadSoundPack === 'function') {
         window.loadSoundPack(settings.soundscape.soundPack);
     }
 
@@ -2037,6 +2037,23 @@ function restoreCustomButtonValues() {
             }
         });
     });
+
+    // Pace caret Custom stores mode + speed separately
+    if ((settings.cursor?.paceCaretMode || '').toLowerCase() === 'custom') {
+        const container = document.querySelector('[data-setting="cursor.paceCaretMode"]');
+        const speed = settings.cursor.paceCaretCustomSpeed;
+        if (container && speed != null && speed !== '') {
+            container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
+                const label = triggerBtn.getAttribute('data-original-text') || triggerBtn.textContent.trim();
+                if (label === 'Custom' || triggerBtn.textContent.trim() === 'Custom' || /^\d+(\.\d+)?$/.test(triggerBtn.textContent.trim())) {
+                    triggerBtn.setAttribute('data-original-text', 'Custom');
+                    triggerBtn.textContent = String(speed);
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                }
+            });
+        }
+    }
 }
 
 /** Wire settings page controls after DOM is present (standalone load or SPA navigation). */
@@ -2455,6 +2472,12 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
 
     const settings = loadSettings();
     setByPath(settings, path, finalVal);
+    // Pace caret Custom: store WPM and activate custom mode
+    if (path === 'cursor.paceCaretCustomSpeed') {
+        const speed = Number(val);
+        setByPath(settings, 'cursor.paceCaretCustomSpeed', Number.isFinite(speed) ? speed : 100);
+        setByPath(settings, 'cursor.paceCaretMode', 'custom');
+    }
     saveSettings(settings);
     applyAllSettings(settings);
     if (typeof triggerSave === 'function') triggerSave();
@@ -2476,7 +2499,8 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
             optBtn.classList.add('active');
             // Save original text so we can restore it later
             if (!optBtn.hasAttribute('data-original-text')) {
-                optBtn.setAttribute('data-original-text', optBtn.textContent.trim());
+                const fallback = path === 'cursor.paceCaretCustomSpeed' ? 'Custom' : optBtn.textContent.trim();
+                optBtn.setAttribute('data-original-text', fallback);
             }
             // Show the custom number on the button
             optBtn.textContent = val;

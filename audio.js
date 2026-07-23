@@ -48,7 +48,6 @@ window.loadSoundPack = async function loadSoundPack(packName) {
 
 window.playErrorSound = function (keyName) {
     const settings = window.usertypo_settings?.soundscape || {};
-    if (settings.muted) return;
 
     const mode = settings.errorSounds || 'beep';
     
@@ -83,7 +82,7 @@ window.playErrorSound = function (keyName) {
 
 window.playKeystrokeSound = function (keyName) {
     const settings = window.usertypo_settings?.soundscape || {};
-    if (settings.muted || !settings.clickSounds) return;
+    if (!settings.clickSounds) return;
 
     if (currentPackLoaded !== settings.soundPack) {
         loadSoundPack(settings.soundPack);
@@ -122,7 +121,7 @@ window.playKeystrokeSound = function (keyName) {
 // Pre-load sound pack on page load so first keypress is never silent
 document.addEventListener('DOMContentLoaded', () => {
     const settings = window.usertypo_settings?.soundscape || {};
-    if (settings.clickSounds && !settings.muted && settings.soundPack) {
+    if (settings.clickSounds && settings.soundPack) {
         loadSoundPack(settings.soundPack);
     }
 });

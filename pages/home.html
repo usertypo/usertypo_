@@ -2617,16 +2617,24 @@ window.setTimeout = function(handler, timeout) {
         // --- PACE CARET (monkeytype-style replay ghost caret) ---
         let paceCaretSettings = null;
         let paceCaretStartTimestamp = 0;
-        let lastTestWpm = 0;
+        let lastTestWpm = Number(localStorage.getItem('usertypo_previous_wpm')) || 0;
         let isPaceRepeat = false;
+        let paceCaretStatsCache = null;
+        let paceCaretStatsPromise = null;
 
         function getCursorSettings() {
             return (window.usertypo_settings || {}).cursor || {};
         }
 
         function setLastTestWpm(wpm) {
-            if (!isPaceRepeat || (isPaceRepeat && wpm > lastTestWpm)) {
-                lastTestWpm = wpm;
+            const n = Number(wpm) || 0;
+            if (!isPaceRepeat || (isPaceRepeat && n > lastTestWpm)) {
+                lastTestWpm = n;
+            }
+            if (n > 0) {
+                try { localStorage.setItem('usertypo_previous_wpm', String(n)); } catch (e) { /* ignore */ }
+                // Force a fresh average / PB / daily lookup on the next test
+                if (!isPaceRepeat) paceCaretStatsCache = null;
             }
         }
 
@@ -2637,13 +2645,89 @@ window.setTimeout = function(handler, timeout) {
             return mode !== 'off' || (repeatedPace && isPaceRepeat);
         }
 
-        function resolvePaceCaretWpm() {
+        async function ensurePaceCaretStats(force) {
+            const needsRemote = ['average', 'pb', 'daily'].includes(
+                (getCursorSettings().paceCaretMode || 'off').toLowerCase()
+            );
+            if (!needsRemote && !force) return paceCaretStatsCache;
+
+            if (!force && paceCaretStatsCache) return paceCaretStatsCache;
+            if (paceCaretStatsPromise) return paceCaretStatsPromise;
+
+            if (!window.usertypoSessions || typeof window.usertypoSessions.getPaceCaretStats !== 'function') {
+                paceCaretStatsCache = {
+                    average: null,
+                    pb: null,
+                    last: lastTestWpm || null,
+                    daily: null,
+                    pbModeKey: (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount),
+                    _pbByMode: {},
+                };
+                return paceCaretStatsCache;
+            }
+
+            paceCaretStatsPromise = window.usertypoSessions
+                .getPaceCaretStats(testMode, testAmount)
+                .then(function (stats) {
+                    const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
+                    paceCaretStatsCache = Object.assign({
+                        pbModeKey: key,
+                        _pbByMode: {},
+                    }, stats || {});
+                    if (stats && stats.pb != null) {
+                        paceCaretStatsCache._pbByMode[key] = stats.pb;
+                    }
+                    if (lastTestWpm > 0) {
+                        paceCaretStatsCache.last = lastTestWpm;
+                    }
+                    return paceCaretStatsCache;
+                })
+                .catch(function () {
+                    paceCaretStatsCache = {
+                        average: null,
+                        pb: null,
+                        last: lastTestWpm || null,
+                        daily: null,
+                        pbModeKey: (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount),
+                        _pbByMode: {},
+                    };
+                    return paceCaretStatsCache;
+                })
+                .finally(function () {
+                    paceCaretStatsPromise = null;
+                });
+
+            return paceCaretStatsPromise;
+        }
+
+        function resolvePaceCaretWpmSync() {
             const cursor = getCursorSettings();
             const mode = (cursor.paceCaretMode || 'off').toLowerCase();
+            const stats = paceCaretStatsCache;
 
-            if (mode === 'custom') return cursor.paceCaretCustomSpeed || 100;
-            if (mode === 'average' || mode === 'pb' || mode === 'daily') return lastTestWpm;
-            if (mode === 'last' || isPaceRepeat) return lastTestWpm;
+            if (mode === 'custom') {
+                const custom = Number(cursor.paceCaretCustomSpeed);
+                return custom > 0 ? custom : 100;
+            }
+            if (mode === 'last' || (mode === 'off' && isPaceRepeat)) {
+                return lastTestWpm || (stats && stats.last) || 0;
+            }
+            if (mode === 'average') {
+                return (stats && stats.average) || 0;
+            }
+            if (mode === 'pb') {
+                const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
+                if (stats && stats._pbByMode && stats._pbByMode[key] != null) {
+                    return stats._pbByMode[key];
+                }
+                if (stats && stats.pbModeKey === key && stats.pb != null) return stats.pb;
+                return (stats && stats.pb) || 0;
+            }
+            if (mode === 'daily') {
+                // Include lastTestWpm so a just-finished test counts before DB sync
+                return Math.max((stats && stats.daily) || 0, lastTestWpm || 0);
+            }
+            if (isPaceRepeat) return lastTestWpm || 0;
             return 0;
         }
 
@@ -2668,14 +2752,28 @@ window.setTimeout = function(handler, timeout) {
             hidePaceCaret();
         }
 
-        function initPaceCaret() {
+        async function initPaceCaret() {
             hidePaceCaret();
             if (!shouldUsePaceCaret()) {
                 paceCaretSettings = null;
                 return;
             }
 
-            const wpm = resolvePaceCaretWpm();
+            const mode = (getCursorSettings().paceCaretMode || 'off').toLowerCase();
+            if (mode === 'average' || mode === 'pb' || mode === 'daily') {
+                const key = (testMode === 'time' ? 'time' : 'words') + ':' + Number(testAmount);
+                if (mode === 'pb' && paceCaretStatsCache && paceCaretStatsCache.pbModeKey !== key) {
+                    paceCaretStatsCache = null;
+                }
+                await ensurePaceCaretStats(mode === 'pb' && !paceCaretStatsCache);
+            } else if (mode === 'last' && !lastTestWpm) {
+                await ensurePaceCaretStats(true);
+                if (paceCaretStatsCache && paceCaretStatsCache.last) {
+                    lastTestWpm = paceCaretStatsCache.last;
+                }
+            }
+
+            const wpm = resolvePaceCaretWpmSync();
             if (!wpm || wpm < 1 || Number.isNaN(wpm)) {
                 paceCaretSettings = null;
                 return;

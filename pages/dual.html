@@ -27,6 +27,7 @@ html {
         }
 
         /* --- BOT (OPPONENT) GHOST CARET --- */
+        /* Appearance (line/block/underscore/outline) comes from paceCaretStyle via settings.js */
         #bot-caret {
             position: absolute;
             transition: transform 0.18s linear, width 0.18s linear;
@@ -38,17 +39,6 @@ html {
             height: 1.2em;
             opacity: 0.5;
             display: none;
-        }
-
-        #bot-caret::after {
-            content: '';
-            position: absolute;
-            bottom: -2.5px;
-            left: 0;
-            right: 0;
-            height: 2.5px;
-            background-color: #ffffff;
-            border-radius: 9999px;
         }
 
         /* --- TEXT CONTAINER --- */
