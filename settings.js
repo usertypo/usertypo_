@@ -81,8 +81,22 @@ const DEFAULTS = {
     lookFeel: {
         colorTheme: 'usertypo_',
         fontFamily: 'JetBrains Mono',
+        randomizeTheme: 'Off',
+        customTheme: {
+            mode: 'Dark',
+            mainColor: '#00d0ff',
+            secondaryColor: '#1a1d23',
+        },
+        customPresets: [],
     }
 };
+
+const CUSTOM_THEME_DEFAULT = {
+    mode: 'Dark',
+    mainColor: '#00d0ff',
+    secondaryColor: '#1a1d23',
+};
+const MAX_CUSTOM_PRESETS = 3;
 
 function loadSettings() {
     let settings = structuredClone(DEFAULTS);
@@ -127,6 +141,43 @@ function loadSettings() {
         }
         delete settings.testRules.quickRestart;
         delete settings.testRules.quickRestartCustomKey;
+    }
+
+    // Look & Feel migrations
+    if (settings.lookFeel) {
+        if (settings.lookFeel.randomizeTheme === 'Favorites') {
+            settings.lookFeel.randomizeTheme = 'All';
+        }
+        if (!settings.lookFeel.customTheme || typeof settings.lookFeel.customTheme !== 'object') {
+            settings.lookFeel.customTheme = structuredClone(CUSTOM_THEME_DEFAULT);
+        } else {
+            settings.lookFeel.customTheme = {
+                mode: isLightModeValue(settings.lookFeel.customTheme.mode) ? 'Light' : 'Dark',
+                mainColor: normalizeHexColor(
+                    settings.lookFeel.customTheme.mainColor,
+                    CUSTOM_THEME_DEFAULT.mainColor
+                ),
+                secondaryColor: normalizeHexColor(
+                    settings.lookFeel.customTheme.secondaryColor,
+                    CUSTOM_THEME_DEFAULT.secondaryColor
+                ),
+            };
+        }
+        if (!Array.isArray(settings.lookFeel.customPresets)) {
+            settings.lookFeel.customPresets = [];
+        } else {
+            settings.lookFeel.customPresets = settings.lookFeel.customPresets
+                .slice(0, MAX_CUSTOM_PRESETS)
+                .map((p, i) => ({
+                    name: (p && p.name) || `Custom ${i + 1}`,
+                    mode: isLightModeValue(p?.mode) ? 'Light' : 'Dark',
+                    mainColor: normalizeHexColor(p?.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+                    secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+                }));
+        }
+        if (!settings.lookFeel.randomizeTheme) {
+            settings.lookFeel.randomizeTheme = 'Off';
+        }
     }
 
     window.usertypo_settings = settings;
@@ -369,6 +420,462 @@ const THEME_PALETTES = {
 
 window.usertypo_THEME_PALETTES = THEME_PALETTES;
 
+function normalizeHexColor(value, fallback = '#00d0ff') {
+    if (typeof value !== 'string') return fallback;
+    let hex = value.trim();
+    if (!hex.startsWith('#')) hex = `#${hex}`;
+    if (/^#[0-9a-fA-F]{3}$/.test(hex)) {
+        hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+    }
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return fallback;
+    return hex.toLowerCase();
+}
+
+function getHexLuminance(hex) {
+    const clean = normalizeHexColor(hex, '#000000').slice(1);
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function isLightModeValue(mode) {
+    return String(mode || '').toLowerCase() === 'light';
+}
+
+function getCustomThemeConfig(settings, themeName) {
+    const lf = settings?.lookFeel || {};
+    const name = themeName || lf.colorTheme || 'custom';
+    if (typeof name === 'string' && name.startsWith('custom:')) {
+        const idx = parseInt(name.slice(7), 10);
+        const preset = Array.isArray(lf.customPresets) ? lf.customPresets[idx] : null;
+        if (preset) {
+            return {
+                mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
+                mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+                secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+                name: preset.name || `Custom ${idx + 1}`,
+                presetIndex: idx,
+            };
+        }
+    }
+    const live = lf.customTheme || CUSTOM_THEME_DEFAULT;
+    return {
+        mode: isLightModeValue(live.mode) ? 'Light' : 'Dark',
+        mainColor: normalizeHexColor(live.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+        secondaryColor: normalizeHexColor(live.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+        name: 'Custom',
+        presetIndex: null,
+    };
+}
+
+/**
+ * Build a full theme palette from mode + main/secondary colors.
+ * main → accent; secondary → surface / muted; mode → light or dark base.
+ */
+function buildCustomPalette(config) {
+    const cfg = config || CUSTOM_THEME_DEFAULT;
+    const main = normalizeHexColor(cfg.mainColor, CUSTOM_THEME_DEFAULT.mainColor);
+    const secondary = normalizeHexColor(cfg.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor);
+    const light = isLightModeValue(cfg.mode);
+    const secondaryLum = getHexLuminance(secondary);
+
+    if (light) {
+        const bgMain = secondaryLum > 0.72 ? secondary : _shadeColor(secondary, 72);
+        const bgSecondary = secondaryLum > 0.55 ? _darkenColor(secondary, 8) : _shadeColor(secondary, 55);
+        return {
+            bgMain,
+            bgSecondary,
+            textPrimary: '#1a1f2c',
+            textMuted: secondaryLum < 0.45 ? _shadeColor(secondary, 25) : _darkenColor(secondary, 35),
+            accentPrimary: main,
+            accentHover: _darkenColor(main, 12),
+            error: '#e03e3e',
+        };
+    }
+
+    const bgMain = secondaryLum < 0.22 ? secondary : _darkenColor(secondary, 42);
+    const bgSecondary = secondaryLum < 0.35 ? _shadeColor(secondary, 10) : secondary;
+    return {
+        bgMain,
+        bgSecondary,
+        textPrimary: '#e8edf5',
+        textMuted: secondaryLum > 0.55 ? _darkenColor(secondary, 15) : _shadeColor(secondary, 35),
+        accentPrimary: main,
+        accentHover: _shadeColor(main, 18),
+        error: '#ff4545',
+    };
+}
+
+function isCustomThemeName(themeName) {
+    return themeName === 'custom' || (typeof themeName === 'string' && themeName.startsWith('custom:'));
+}
+
+function resolveThemePalette(settings, themeName) {
+    if (!settings) settings = loadSettings();
+    const name = themeName || settings.lookFeel?.colorTheme || 'usertypo_';
+    if (isCustomThemeName(name)) {
+        return buildCustomPalette(getCustomThemeConfig(settings, name));
+    }
+    return THEME_PALETTES[name] || THEME_PALETTES['usertypo_'];
+}
+
+function getThemeDisplayName(themeName, settings) {
+    if (!settings) settings = loadSettings();
+    if (!isCustomThemeName(themeName)) return themeName || 'usertypo_';
+    return getCustomThemeConfig(settings, themeName).name || 'Custom';
+}
+
+function isThemeLight(themeName, settings) {
+    if (!settings) settings = loadSettings();
+    if (isCustomThemeName(themeName)) {
+        return isLightModeValue(getCustomThemeConfig(settings, themeName).mode);
+    }
+    const p = THEME_PALETTES[themeName];
+    if (!p?.bgMain) return false;
+    return getHexLuminance(p.bgMain) > 0.55;
+}
+
+function getRandomizeThemePool(mode, settings) {
+    if (!settings) settings = loadSettings();
+    const builtIn = Object.keys(THEME_PALETTES);
+    const presets = Array.isArray(settings.lookFeel?.customPresets)
+        ? settings.lookFeel.customPresets.map((_, i) => `custom:${i}`)
+        : [];
+    let pool = [...builtIn, ...presets];
+    const filter = String(mode || 'Off');
+    if (filter === 'Light') pool = pool.filter((n) => isThemeLight(n, settings));
+    else if (filter === 'Dark') pool = pool.filter((n) => !isThemeLight(n, settings));
+    else if (filter !== 'All') return [];
+    return pool;
+}
+
+function maybeRandomizeTheme() {
+    const settings = loadSettings();
+    const mode = settings.lookFeel?.randomizeTheme || 'Off';
+    if (!mode || mode === 'Off') return null;
+    const pool = getRandomizeThemePool(mode, settings);
+    if (!pool.length) return null;
+    const current = settings.lookFeel?.colorTheme;
+    const candidates = pool.length > 1 ? pool.filter((n) => n !== current) : pool;
+    const next = candidates[Math.floor(Math.random() * candidates.length)];
+    selectColorTheme(next);
+    return next;
+}
+
+function syncCustomThemeEditor(settings) {
+    const editor = document.getElementById('custom-theme-editor');
+    if (!editor) return;
+    if (!settings) settings = loadSettings();
+    const cfg = getCustomThemeConfig(settings, 'custom');
+
+    const modeBox = editor.querySelector('#custom-theme-mode');
+    if (modeBox) {
+        modeBox.querySelectorAll('.opt-btn').forEach((btn) => {
+            btn.classList.toggle('active', resolveOptValue(btn) === cfg.mode);
+        });
+    }
+
+    ['mainColor', 'secondaryColor'].forEach((key) => {
+        const hex = cfg[key];
+        const colorInput = editor.querySelector(`[data-custom-color="${key}"]`);
+        const hexInput = editor.querySelector(`[data-custom-hex="${key}"]`);
+        const face = editor.querySelector(`[data-swatch-face="${key}"]`);
+        if (colorInput) colorInput.value = hex;
+        if (hexInput && document.activeElement !== hexInput) hexInput.value = hex;
+        if (face) face.style.background = hex;
+    });
+
+    const preview = editor.querySelector('#custom-theme-preview');
+    if (preview) {
+        const palette = buildCustomPalette(cfg);
+        const bg = preview.querySelector('[data-preview="bg"]');
+        const main = preview.querySelector('[data-preview="main"]');
+        const secondary = preview.querySelector('[data-preview="secondary"]');
+        if (bg) bg.style.background = palette.bgMain;
+        if (main) main.style.background = palette.accentPrimary;
+        if (secondary) secondary.style.background = palette.bgSecondary;
+    }
+
+    renderCustomThemePresets(settings);
+}
+
+function renderCustomThemePresets(settings) {
+    const list = document.getElementById('custom-theme-preset-list');
+    const countEl = document.getElementById('custom-preset-count');
+    const saveBtn = document.getElementById('save-custom-theme-preset-btn');
+    if (!list) return;
+    if (!settings) settings = loadSettings();
+
+    const presets = Array.isArray(settings.lookFeel?.customPresets)
+        ? settings.lookFeel.customPresets
+        : [];
+    if (countEl) countEl.textContent = String(presets.length);
+    if (saveBtn) saveBtn.disabled = presets.length >= MAX_CUSTOM_PRESETS;
+
+    const active = settings.lookFeel?.colorTheme || '';
+    if (!presets.length) {
+        list.innerHTML = `<p class="custom-preset-empty">No saved presets yet. Build a theme above, then save it here.</p>`;
+        return;
+    }
+
+    list.innerHTML = presets.map((preset, index) => {
+        const main = normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor);
+        const secondary = normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor);
+        const mode = isLightModeValue(preset.mode) ? 'Light' : 'Dark';
+        const name = preset.name || `Custom ${index + 1}`;
+        const themeId = `custom:${index}`;
+        const isActive = active === themeId;
+        return `
+            <div class="custom-preset-card${isActive ? ' is-active' : ''}" data-preset-index="${index}">
+                <div class="custom-preset-swatches" aria-hidden="true">
+                    <i style="background:${secondary}"></i>
+                    <i style="background:${main}"></i>
+                </div>
+                <div class="custom-preset-meta">
+                    <div class="name">${name}</div>
+                    <div class="sub">${mode} · ${main}</div>
+                </div>
+                <div class="custom-preset-actions">
+                    <button type="button" class="custom-preset-icon-btn" data-preset-apply="${index}" title="Apply preset">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                    </button>
+                    <button type="button" class="custom-preset-icon-btn is-danger" data-preset-delete="${index}" title="Delete preset">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function readCustomThemeFromEditor() {
+    const editor = document.getElementById('custom-theme-editor');
+    const settings = loadSettings();
+    const fallback = getCustomThemeConfig(settings, 'custom');
+    if (!editor) {
+        return {
+            mode: fallback.mode,
+            mainColor: fallback.mainColor,
+            secondaryColor: fallback.secondaryColor,
+        };
+    }
+    const modeBtn = editor.querySelector('#custom-theme-mode .opt-btn.active');
+    const mode = modeBtn ? resolveOptValue(modeBtn) : fallback.mode;
+    const mainColor = normalizeHexColor(
+        editor.querySelector('[data-custom-hex="mainColor"]')?.value
+        || editor.querySelector('[data-custom-color="mainColor"]')?.value
+        || fallback.mainColor,
+        fallback.mainColor
+    );
+    const secondaryColor = normalizeHexColor(
+        editor.querySelector('[data-custom-hex="secondaryColor"]')?.value
+        || editor.querySelector('[data-custom-color="secondaryColor"]')?.value
+        || fallback.secondaryColor,
+        fallback.secondaryColor
+    );
+    return {
+        mode: isLightModeValue(mode) ? 'Light' : 'Dark',
+        mainColor,
+        secondaryColor,
+    };
+}
+
+function applyCustomThemeFromEditor(persistLive = true) {
+    const settings = loadSettings();
+    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+    const cfg = readCustomThemeFromEditor();
+    settings.lookFeel.customTheme = cfg;
+    if (persistLive) settings.lookFeel.colorTheme = 'custom';
+    saveSettings(settings);
+    applyAllSettings(settings);
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
+    return cfg;
+}
+
+function saveCustomThemePreset() {
+    const settings = loadSettings();
+    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+    if (!Array.isArray(settings.lookFeel.customPresets)) settings.lookFeel.customPresets = [];
+    if (settings.lookFeel.customPresets.length >= MAX_CUSTOM_PRESETS) return false;
+
+    const cfg = readCustomThemeFromEditor();
+    settings.lookFeel.customTheme = cfg;
+    const index = settings.lookFeel.customPresets.length;
+    settings.lookFeel.customPresets.push({
+        name: `Custom ${index + 1}`,
+        mode: cfg.mode,
+        mainColor: cfg.mainColor,
+        secondaryColor: cfg.secondaryColor,
+    });
+    settings.lookFeel.colorTheme = `custom:${index}`;
+    saveSettings(settings);
+    applyAllSettings(settings);
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
+    return true;
+}
+
+function applyCustomThemePreset(index) {
+    const settings = loadSettings();
+    const presets = settings.lookFeel?.customPresets;
+    if (!Array.isArray(presets) || !presets[index]) return;
+    const preset = presets[index];
+    settings.lookFeel.customTheme = {
+        mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
+        mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+        secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+    };
+    settings.lookFeel.colorTheme = `custom:${index}`;
+    saveSettings(settings);
+    applyAllSettings(settings);
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
+}
+
+function deleteCustomThemePreset(index) {
+    const settings = loadSettings();
+    const presets = settings.lookFeel?.customPresets;
+    if (!Array.isArray(presets) || !presets[index]) return;
+
+    const current = settings.lookFeel.colorTheme;
+    presets.splice(index, 1);
+
+    if (current === `custom:${index}`) {
+        settings.lookFeel.colorTheme = 'custom';
+    } else if (typeof current === 'string' && current.startsWith('custom:')) {
+        const curIdx = parseInt(current.slice(7), 10);
+        if (!Number.isNaN(curIdx) && curIdx > index) {
+            settings.lookFeel.colorTheme = `custom:${curIdx - 1}`;
+        }
+    }
+
+    // Rename remaining presets to stay sequential
+    settings.lookFeel.customPresets = presets.map((p, i) => ({
+        ...p,
+        name: p.name && !/^Custom \d+$/.test(p.name) ? p.name : `Custom ${i + 1}`,
+    }));
+
+    saveSettings(settings);
+    applyAllSettings(settings);
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
+}
+
+function syncColorThemeSelectLabel(settings) {
+    if (!settings) settings = loadSettings();
+    const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const label = getThemeDisplayName(themeName, settings);
+    const container = document.querySelector('[data-setting="lookFeel.colorTheme"]');
+    if (!container) return;
+
+    if (isCustomThemeName(themeName)) {
+        container.querySelectorAll('.opt-btn').forEach((btn) => btn.classList.remove('active'));
+    } else {
+        const savedNorm = String(themeName).replace(/\s+/g, ' ').trim();
+        container.querySelectorAll('.opt-btn').forEach((btn) => {
+            btn.classList.toggle('active', resolveOptValue(btn) === savedNorm);
+        });
+    }
+
+    const card = container.closest('.sub-setting-card') || container.closest('[data-sub-title]');
+    const selectLabel = card?.querySelector('.setting-select .truncate');
+    if (selectLabel) selectLabel.textContent = label;
+}
+
+function initCustomThemeEditor() {
+    const editor = document.getElementById('custom-theme-editor');
+    if (!editor || editor.dataset.wired === '1') {
+        syncCustomThemeEditor();
+        return;
+    }
+    editor.dataset.wired = '1';
+
+    editor.querySelectorAll('[data-custom-color]').forEach((input) => {
+        input.addEventListener('input', () => {
+            const key = input.dataset.customColor;
+            const hex = normalizeHexColor(input.value, input.value);
+            const hexInput = editor.querySelector(`[data-custom-hex="${key}"]`);
+            const face = editor.querySelector(`[data-swatch-face="${key}"]`);
+            if (hexInput) hexInput.value = hex;
+            if (face) face.style.background = hex;
+            const settings = loadSettings();
+            if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+            settings.lookFeel.customTheme = {
+                ...(settings.lookFeel.customTheme || CUSTOM_THEME_DEFAULT),
+                [key]: hex,
+            };
+            // Live preview of colors in editor; apply only when theme is already custom
+            if (isCustomThemeName(settings.lookFeel.colorTheme)) {
+                settings.lookFeel.colorTheme = 'custom';
+                saveSettings(settings);
+                applyAllSettings(settings);
+                syncColorThemeSelectLabel(settings);
+            } else {
+                saveSettings(settings);
+            }
+            syncCustomThemeEditor(settings);
+        });
+    });
+
+    editor.querySelectorAll('[data-custom-hex]').forEach((input) => {
+        const commit = () => {
+            const key = input.dataset.customHex;
+            const hex = normalizeHexColor(input.value, CUSTOM_THEME_DEFAULT[key]);
+            input.value = hex;
+            const colorInput = editor.querySelector(`[data-custom-color="${key}"]`);
+            const face = editor.querySelector(`[data-swatch-face="${key}"]`);
+            if (colorInput) colorInput.value = hex;
+            if (face) face.style.background = hex;
+            const settings = loadSettings();
+            if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+            settings.lookFeel.customTheme = {
+                ...(settings.lookFeel.customTheme || CUSTOM_THEME_DEFAULT),
+                [key]: hex,
+            };
+            if (isCustomThemeName(settings.lookFeel.colorTheme)) {
+                settings.lookFeel.colorTheme = 'custom';
+                saveSettings(settings);
+                applyAllSettings(settings);
+                syncColorThemeSelectLabel(settings);
+            } else {
+                saveSettings(settings);
+            }
+            syncCustomThemeEditor(settings);
+        };
+        input.addEventListener('change', commit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+                input.blur();
+            }
+        });
+    });
+
+    document.getElementById('apply-custom-theme-btn')?.addEventListener('click', () => {
+        applyCustomThemeFromEditor(true);
+    });
+    document.getElementById('save-custom-theme-preset-btn')?.addEventListener('click', () => {
+        saveCustomThemePreset();
+    });
+
+    document.getElementById('custom-theme-preset-list')?.addEventListener('click', (e) => {
+        const applyBtn = e.target.closest('[data-preset-apply]');
+        if (applyBtn) {
+            applyCustomThemePreset(parseInt(applyBtn.dataset.presetApply, 10));
+            return;
+        }
+        const deleteBtn = e.target.closest('[data-preset-delete]');
+        if (deleteBtn) {
+            deleteCustomThemePreset(parseInt(deleteBtn.dataset.presetDelete, 10));
+        }
+    });
+
+    syncCustomThemeEditor();
+}
+
 /**
  * Derive lighter / darker shades from a hex color.
  */
@@ -416,7 +923,7 @@ function _hexToRGB(hex) {
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
-    const p = THEME_PALETTES[themeName] || THEME_PALETTES['usertypo_'];
+    const p = resolveThemePalette(settings, themeName);
 
     // ── Font Family ──
     const fontFamily = settings.lookFeel?.fontFamily || 'Roboto Mono';
@@ -1493,7 +2000,7 @@ function applyCursorSettings(settings) {
     if (document.head) document.head.appendChild(styleEl);
 
     const _themeName = settings.lookFeel?.colorTheme || 'usertypo_';
-    const _palette = THEME_PALETTES[_themeName] || THEME_PALETTES['usertypo_'];
+    const _palette = resolveThemePalette(settings, _themeName);
     const _caretAccent = _palette.accentPrimary;
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
@@ -1567,11 +2074,12 @@ function applyFooterSettings(settings) {
     if (!settings) settings = loadSettings();
 
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const themeLabel = getThemeDisplayName(themeName, settings);
     const langFile = settings.languageContent?.testLanguage || 'english_10k';
     const langName = getLanguageDisplayName(langFile);
 
     document.querySelectorAll('[data-footer-picker]').forEach(el => {
-        el.textContent = `${themeName}, ${langName}`;
+        el.textContent = `${themeLabel}, ${langName}`;
     });
 
     updateFooterMuteUI(settings);
@@ -1611,23 +2119,25 @@ function toggleFooterMute() {
  */
 function selectColorTheme(themeName) {
     const settings = loadSettings();
+    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+
+    if (isCustomThemeName(themeName) && themeName.startsWith('custom:')) {
+        const idx = parseInt(themeName.slice(7), 10);
+        const preset = settings.lookFeel.customPresets?.[idx];
+        if (preset) {
+            settings.lookFeel.customTheme = {
+                mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
+                mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+                secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+            };
+        }
+    }
+
     setByPath(settings, 'lookFeel.colorTheme', themeName);
     saveSettings(settings);
     applyAllSettings(settings);
-
-    const container = document.querySelector('[data-setting="lookFeel.colorTheme"]');
-    if (container) {
-        const savedNorm = String(themeName).replace(/\s+/g, ' ').trim();
-        container.querySelectorAll('.opt-btn').forEach(btn => {
-            const btnVal = resolveOptValue(btn);
-            btn.classList.toggle('active', btnVal === savedNorm);
-        });
-        const card = container.closest('.sub-setting-card') || container.closest('[data-sub-title]');
-        if (card) {
-            const label = card.querySelector('.setting-select .truncate');
-            if (label) label.textContent = themeName;
-        }
-    }
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
 }
 
 
@@ -1947,6 +2457,9 @@ function restoreUI(settings) {
             }
         }
     });
+
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
 }
 
 
@@ -1959,9 +2472,30 @@ function persistFromOpt(btn) {
     if (!path) return;
 
     const settings = loadSettings();
-    setByPath(settings, path, resolveOptValue(btn));
+    const value = resolveOptValue(btn);
+    setByPath(settings, path, value);
+
+    // Mode changes while a custom theme is active should re-apply immediately
+    if (path === 'lookFeel.customTheme.mode') {
+        if (!settings.lookFeel.customTheme) {
+            settings.lookFeel.customTheme = structuredClone(CUSTOM_THEME_DEFAULT);
+        }
+        settings.lookFeel.customTheme.mode = isLightModeValue(value) ? 'Light' : 'Dark';
+        if (isCustomThemeName(settings.lookFeel.colorTheme)) {
+            settings.lookFeel.colorTheme = 'custom';
+        }
+    }
+
     saveSettings(settings);
     applyAllSettings(settings);
+
+    if (path === 'lookFeel.colorTheme') {
+        syncColorThemeSelectLabel(settings);
+        syncCustomThemeEditor(settings);
+    } else if (path === 'lookFeel.customTheme.mode') {
+        syncCustomThemeEditor(settings);
+        syncColorThemeSelectLabel(settings);
+    }
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         // slight delay to let the soundpack load if it changed
@@ -2047,6 +2581,7 @@ function initSettingsPage() {
     const settings = loadSettings();
     restoreUI(settings);
     restoreCustomButtonValues();
+    initCustomThemeEditor();
 
     if (!root.dataset.usertypoOptWired) {
         root.dataset.usertypoOptWired = '1';
@@ -2536,6 +3071,11 @@ window.usertypo_settingsApi = {
     reapplyAllSettings: _reapplyAllSettings,
     toggleFooterMute,
     selectColorTheme,
+    maybeRandomizeTheme,
+    resolveThemePalette,
+    getThemeDisplayName,
+    isThemeLight,
+    isCustomThemeName,
     getLanguageDisplayName,
     isDualPage,
     isRoomPage,

@@ -7,6 +7,7 @@
     const VIEW_HOME = 'home';
     const VIEW_DARK = 'dark-themes';
     const VIEW_LIGHT = 'light-themes';
+    const VIEW_CUSTOM = 'custom-themes';
     const VIEW_TEST_LANG = 'test-languages';
 
     const BLINK_MS = 130;
@@ -32,6 +33,8 @@
     }
 
     function isLightTheme(themeName) {
+        const api = getSettingsApi();
+        if (api.isThemeLight) return !!api.isThemeLight(themeName);
         const p = getPalettes()[themeName];
         if (!p?.bgMain) return false;
         const hex = p.bgMain.replace('#', '');
@@ -43,7 +46,18 @@
     }
 
     function getThemeNames() {
-        return Object.keys(getPalettes());
+        const names = Object.keys(getPalettes());
+        const settings = loadSettings();
+        const presets = Array.isArray(settings.lookFeel?.customPresets)
+            ? settings.lookFeel.customPresets.map((_, i) => `custom:${i}`)
+            : [];
+        return [...names, ...presets];
+    }
+
+    function getThemeLabel(themeName) {
+        const api = getSettingsApi();
+        if (api.getThemeDisplayName) return api.getThemeDisplayName(themeName);
+        return themeName;
     }
 
     function getDarkThemes() {
@@ -570,7 +584,7 @@
                     </button>
                 </div>
             </div>
-            <button type="button" class="footer-picker-pill glass-panel bg-surface/85 !backdrop-blur-sm" disabled>
+            <button type="button" class="footer-picker-pill glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="custom-themes">
                 <span>Custom Theme</span>
                 <span class="material-symbols-outlined">chevron_right</span>
             </button>
@@ -607,7 +621,7 @@
                 ${filtered.length ? `
                     <div class="footer-picker-list-grid">
                         ${filtered.map(name => `
-                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${name === current ? ' is-active' : ''}" data-theme="${name}">${name}</button>
+                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${name === current ? ' is-active' : ''}" data-theme="${name}">${getThemeLabel(name)}</button>
                         `).join('')}
                     </div>
                 ` : `<p class="footer-picker-empty">No themes found</p>`}
@@ -654,10 +668,69 @@
         });
     }
 
+    function renderCustomThemes() {
+        const viewport = document.getElementById('footer-picker-viewport');
+        if (!viewport) return;
+        const settings = loadSettings();
+        const presets = Array.isArray(settings.lookFeel?.customPresets)
+            ? settings.lookFeel.customPresets
+            : [];
+        const current = settings.lookFeel?.colorTheme || 'usertypo_';
+        const live = settings.lookFeel?.customTheme;
+        const q = searchQuery.toLowerCase().trim();
+
+        const items = [];
+        if (live) {
+            items.push({
+                id: 'custom',
+                label: 'Current Custom',
+                mode: live.mode || 'Dark',
+                main: live.mainColor || '#00d0ff',
+                secondary: live.secondaryColor || '#1a1d23',
+            });
+        }
+        presets.forEach((p, i) => {
+            items.push({
+                id: `custom:${i}`,
+                label: p.name || `Custom ${i + 1}`,
+                mode: p.mode || 'Dark',
+                main: p.mainColor || '#00d0ff',
+                secondary: p.secondaryColor || '#1a1d23',
+            });
+        });
+
+        const filtered = items.filter((item) => {
+            if (!q) return true;
+            return item.label.toLowerCase().includes(q)
+                || String(item.mode).toLowerCase().includes(q)
+                || String(item.main).toLowerCase().includes(q);
+        });
+
+        viewport.innerHTML = `
+            <p class="footer-picker-list-title">Custom Themes</p>
+            <div class="footer-picker-list-scroll">
+                ${filtered.length ? `
+                    <div class="footer-picker-list-grid">
+                        ${filtered.map((item) => `
+                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${item.id === current ? ' is-active' : ''}" data-theme="${item.id}" title="${item.mode} · ${item.main}">
+                                ${item.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                ` : `<p class="footer-picker-empty">${items.length ? 'No themes found' : 'Save a custom theme in Settings → Look & Feel'}</p>`}
+            </div>
+        `;
+
+        viewport.querySelectorAll('[data-theme]').forEach(btn => {
+            btn.addEventListener('click', () => selectTheme(btn.dataset.theme));
+        });
+    }
+
     function renderViewContent(view) {
         if (view === VIEW_HOME) renderHome();
         else if (view === VIEW_DARK) renderThemeList('dark');
         else if (view === VIEW_LIGHT) renderThemeList('light');
+        else if (view === VIEW_CUSTOM) renderCustomThemes();
         else if (view === VIEW_TEST_LANG) renderLanguageList();
     }
 
