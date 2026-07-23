@@ -81,7 +81,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
     <link href="css/test-activity.css?v=4" rel="stylesheet" />
-    <link href="css/global.css?v=4" rel="stylesheet" />
+    <link href="css/global.css?v=5" rel="stylesheet" />
 
     <script>
         tailwind.config = {
@@ -1041,6 +1041,154 @@
         </div>
     </div>
 
+    <!-- Player profile box (no page dim) -->
+    <div id="player-profile-overlay"
+        class="opacity-0 pointer-events-none"
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ppc-username">
+        <div id="player-profile-box"
+            class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 opacity-0 relative">
+            <button type="button" id="ppc-close-btn"
+                class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close profile">
+                <span class="material-symbols-outlined text-[22px]">close</span>
+            </button>
+            <p id="ppc-status" class="text-center text-xs text-slate-500 font-bold mb-2 min-h-[1rem]"></p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                <div class="flex flex-col gap-3 order-2 lg:order-1">
+                    <h3 class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-1">Timed Bests</h3>
+                    <div data-ppc-best="time:15" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">15 Seconds</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="time:30" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">30 Seconds</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="time:60" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">60 Seconds</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="time:120" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">120 Seconds</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center order-1 lg:order-2">
+                    <div id="ppc-avatar-host" class="mb-4 flex items-center justify-center"></div>
+                    <h2 id="ppc-username" class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 mb-1 text-center">Player</h2>
+                    <p id="ppc-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
+                    <div class="flex items-center gap-4 mb-5 text-[11px] font-bold text-slate-500">
+                        <span id="ppc-xp-progress" class="tracking-wide">0 / 100 XP</span>
+                        <span class="flex items-center gap-1 text-amber-400">
+                            <span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                            <span id="ppc-streak">0</span>
+                            <span class="text-slate-500">day streak</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+                        <div class="glass-panel p-3 rounded-lg text-center">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
+                            <span id="ppc-stat-tests" class="font-headline text-base font-semibold text-slate-100">—</span>
+                        </div>
+                        <div class="glass-panel p-3 rounded-lg text-center">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
+                            <span id="ppc-stat-time" class="font-headline text-base font-semibold text-slate-100">—</span>
+                        </div>
+                        <div class="glass-panel p-3 rounded-lg text-center">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
+                            <span id="ppc-stat-words" class="font-headline text-base font-semibold text-slate-100">—</span>
+                        </div>
+                        <div class="glass-panel p-3 rounded-lg text-center">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
+                            <span id="ppc-stat-rank" class="font-headline text-base font-semibold text-primary">—</span>
+                        </div>
+                    </div>
+                    <div id="ppc-friend-slot" class="w-full flex justify-center"></div>
+                </div>
+
+                <div class="flex flex-col gap-3 order-3">
+                    <h3 class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-1">Word Bests</h3>
+                    <div data-ppc-best="words:10" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">10 Words</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="words:25" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">25 Words</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="words:50" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">50 Words</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                    <div data-ppc-best="words:100" class="glass-panel p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-headline text-slate-400 text-sm block">100 Words</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span class="text-xs text-primary ml-1">WPM</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 text-xs block">Accuracy</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="languages.js"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
@@ -1054,7 +1202,9 @@
     <script src="js/api/profiles.js"></script>
     <script src="js/api/sessions.js?v=8"></script>
     <script src="js/api/progression.js?v=6"></script>
-    <script src="js/ui/player-avatar.js?v=1"></script>
+    <script src="js/ui/player-avatar.js?v=2"></script>
+    <script src="js/api/public-profile.js?v=1"></script>
+    <script src="js/ui/player-profile-card.js?v=1"></script>
     <script src="js/auth/header.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
@@ -1069,7 +1219,7 @@
     <script src="js/pages/dual-race.js?v=20"></script>
     <script src="js/pages/room-race.js?v=29"></script>
     <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=49"></script>
+    <script src="js/page-fragments.js?v=50"></script>
     <script src="js/router.js?v=6"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
