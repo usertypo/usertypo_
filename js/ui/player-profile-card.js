@@ -201,24 +201,40 @@
         if (statusEl) statusEl.textContent = message || 'Could not load profile.';
     }
 
+    function notifyProfileDenied() {
+        var message = 'You are not allowed to see this players profile.';
+        if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+            window.usertypoNotifications.showToast(message, 'lock');
+            return;
+        }
+        try {
+            window.alert(message);
+        } catch (e) { /* ignore */ }
+    }
+
     async function open(userId) {
         if (!ensureDom()) return;
         var id = String(userId || '').trim();
         if (!id || id.indexOf('guest_') === 0) return;
 
-        openUserId = id;
-        showLoading();
-        setOpen(true);
-
         if (!window.usertypoPublicProfile) {
+            openUserId = id;
+            showLoading();
+            setOpen(true);
             showError('Profile unavailable.');
             return;
         }
 
         try {
-            var card = await window.usertypoPublicProfile.getCard(id);
-            if (openUserId !== id) return;
+            var card = await window.usertypoPublicProfile.getCard(id, { force: true });
             if (!card || card.error) {
+                if (card && card.error === 'profile_not_allowed') {
+                    notifyProfileDenied();
+                    return;
+                }
+                openUserId = id;
+                showLoading();
+                setOpen(true);
                 var msg = {
                     guest: 'Sign in to view profiles.',
                     not_authenticated: 'Sign in to view profiles.',
@@ -228,10 +244,15 @@
                 showError(msg);
                 return;
             }
+            openUserId = id;
+            showLoading();
+            setOpen(true);
             fillCard(card);
         } catch (err) {
-            if (openUserId !== id) return;
             console.warn('[usertypo profile card]', err);
+            openUserId = id;
+            showLoading();
+            setOpen(true);
             showError('Could not load profile.');
         }
     }
