@@ -811,7 +811,7 @@
 
                 <!-- Card 3: Look & Feel -->
                 <div class="setting-card" data-category="look-feel"
-                    data-keywords="theme font color typography custom randomize">
+                    data-keywords="theme font color colorblind high contrast animations accessibility typography">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -1097,19 +1097,8 @@
                                                             onclick="selectOpt(this)">Average</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">PB</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Last</button>
-                                                        <div class="relative custom-popover-wrapper">
-                                                            <button class="opt-btn"
-                                                                onclick="toggleCustomPopover(this)">Custom</button>
-                                                            <div
-                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
-                                                                <input type="number" min="1" max="500"
-                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
-                                                                    placeholder="WPM...">
-                                                                <button
-                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
-                                                                    onclick="applyCustomPopover(this, 'cursor.paceCaretMode')">Apply</button>
-                                                            </div>
-                                                        </div>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Custom</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Daily</button>
                                                     </div>
                                                 </div>
@@ -1252,6 +1241,35 @@
                                             <p class="text-xs text-slate-500">Play sounds on each keypress</p>
                                         </div>
                                         <div class="toggle-track" data-setting="soundscape.clickSounds"
+                                            onclick="toggleSwitch(this)">
+                                            <div class="toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-semibold text-slate-200">Mute Sounds</p>
+                                                <div
+                                                    class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span
+                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div
+                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            <span
+                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                            How it works
+                                                        </div>
+                                                        Silently mutes all typing sounds without changing your click
+                                                        sounds, error sounds, or volume preferences. Also available from
+                                                        the volume icon on the home page footer.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Temporarily silence all audio</p>
+                                        </div>
+                                        <div class="toggle-track" data-setting="soundscape.muted"
                                             onclick="toggleSwitch(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
@@ -1493,45 +1511,68 @@
                                                             class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
                                                     </button>
                                                     <div class="sub-setting-content hidden">
-                                                        <div class="flex flex-col gap-4 p-1">
-                                                            <div class="flex flex-col gap-2">
-                                                                <label class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Mode</label>
-                                                                <div class="flex gap-2 flex-wrap" data-setting="lookFeel.customTheme.mode">
-                                                                    <button class="opt-btn" onclick="selectOpt(this)">Light</button>
-                                                                    <button class="opt-btn active" onclick="selectOpt(this)">Dark</button>
+                                                        <!-- Empty for now -->
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold text-slate-200">Flip Test
+                                                                Colors</p>
+                                                            <div
+                                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                                <span
+                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                <div
+                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                    <div
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        <span
+                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                        How it works
+                                                                    </div>
+                                                                    Inverts the text and background colors of the typing
+                                                                    area for a different visual feel.
                                                                 </div>
-                                                            </div>
-                                                            <div class="flex flex-col gap-2">
-                                                                <label class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Main Color</label>
-                                                                <div class="flex items-center gap-3">
-                                                                    <input id="custom-theme-main-color" type="color" value="#00d0ff"
-                                                                        class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-white/10"
-                                                                        oninput="document.getElementById('custom-theme-main-hex').textContent=this.value.toUpperCase(); applyCustomThemeFromEditor()">
-                                                                    <span id="custom-theme-main-hex" class="text-xs font-mono text-slate-400">#00D0FF</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex flex-col gap-2">
-                                                                <label class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Secondary Color</label>
-                                                                <div class="flex items-center gap-3">
-                                                                    <input id="custom-theme-secondary-color" type="color" value="#1a1d23"
-                                                                        class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-white/10"
-                                                                        oninput="document.getElementById('custom-theme-secondary-hex').textContent=this.value.toUpperCase(); applyCustomThemeFromEditor()">
-                                                                    <span id="custom-theme-secondary-hex" class="text-xs font-mono text-slate-400">#1A1D23</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex items-center gap-2 flex-wrap">
-                                                                <button type="button"
-                                                                    class="opt-btn !px-3"
-                                                                    onclick="applyCustomThemeFromEditor()">Apply Theme</button>
-                                                                <button type="button" id="custom-theme-save-preset"
-                                                                    class="opt-btn !px-3"
-                                                                    onclick="saveCustomThemePreset()">Save Preset</button>
-                                                            </div>
-                                                            <div class="flex flex-col gap-1">
-                                                                <label class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Saved Presets</label>
-                                                                <div id="custom-theme-presets" class="flex flex-col"></div>
                                                             </div>
                                                         </div>
+                                                        <p class="text-xs text-slate-500">Swap text and background
+                                                            colors</p>
+                                                    </div>
+                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                        <div class="toggle-thumb"></div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold text-slate-200">Colorful
+                                                                Mode</p>
+                                                            <div
+                                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                                <span
+                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                <div
+                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                    <div
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        <span
+                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                        How it works
+                                                                    </div>
+                                                                    Assigns different colors to correctly typed
+                                                                    characters, creating a rainbow-like effect as you
+                                                                    type.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="text-xs text-slate-500">Use multiple colors for typed
+                                                            text</p>
+                                                    </div>
+                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                        <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">
@@ -1552,14 +1593,16 @@
                                                                     How it works
                                                                 </div>
                                                                 Automatically picks a random theme after each test. You
-                                                                can limit it to light themes, dark themes, or
+                                                                can limit it to favorites, light themes, dark themes, or
                                                                 all available themes.
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="flex gap-2 flex-wrap" data-setting="lookFeel.randomizeTheme">
+                                                    <div class="flex gap-2 flex-wrap">
                                                         <button class="opt-btn active"
                                                             onclick="selectOpt(this)">Off</button>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Favorites</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Light</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Dark</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">All</button>
@@ -1584,7 +1627,9 @@
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
-                                                <div class="flex flex-col gap-2 relative" data-searchable="true" data-setting="lookFeel.fontFamily">
+                                                <div class="flex flex-col gap-2 relative sub-setting-card"
+                                                    data-sub-title="Font Family" data-sub-icon="font_download"
+                                                    data-searchable="true" data-setting="lookFeel.fontFamily">
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
@@ -1607,39 +1652,191 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="grid grid-cols-5 gap-2"
-                                                        data-setting="lookFeel.fontFamily">
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Cutive</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">Cutive
-                                                            Mono</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">JetBrains Mono</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">Kode
-                                                            Mono</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Roboto</button>
-                                                        <button class="opt-btn active"
-                                                            onclick="selectOpt(this)">Roboto Mono</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">SUSE</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">SUSE
-                                                            Mono</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Ubuntu</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">Ubuntu
-                                                            Sans Mono</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">Xanh
-                                                            Mono</button>
+                                                    <button
+                                                        class="setting-select flex items-center justify-between cursor-pointer w-full text-left"
+                                                        style="background-image: none; padding-right: 0.7rem;"
+                                                        onclick="openSubSetting(this)">
+                                                        <span class="truncate">Roboto Mono</span>
+                                                        <span
+                                                            class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                                    </button>
+                                                    <div class="sub-setting-content hidden">
+                                                        <div class="flex flex-col gap-4">
+                                                            <div class="grid grid-cols-5 gap-2"
+                                                                data-setting="lookFeel.fontFamily">
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Cutive</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Cutive
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">JetBrains Mono</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Kode
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Roboto</button>
+                                                                <button class="opt-btn active"
+                                                                    onclick="selectOpt(this)">Roboto Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">SUSE</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">SUSE
+                                                                    Mono</button>
+                                                                <button class="opt-btn"
+                                                                    onclick="selectOpt(this)">Ubuntu</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Ubuntu
+                                                                    Sans Mono</button>
+                                                                <button class="opt-btn" onclick="selectOpt(this)">Xanh
+                                                                    Mono</button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div class="flex flex-col gap-2 relative">
+                                                    <div class="flex items-center gap-2">
+                                                        <label
+                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
+                                                            Size</label>
+                                                        <div
+                                                            class="info-icon-wrapper group relative flex items-center justify-center">
+                                                            <span
+                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                            <div
+                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                <div
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                    How it works
+                                                                </div>
+                                                                Scales the text size in the typing area. Larger sizes
+                                                                are easier to read but show fewer words per line.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 mt-1">
+                                                        <span class="text-xs font-mono text-slate-500">1x</span>
+                                                        <input type="range" min="1" max="4" step="0.25" value="1.25"
+                                                            class="w-1/2 appearance-none cursor-pointer custom-slider" />
+                                                        <span class="text-xs font-mono text-slate-500">4x</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-col gap-2 relative">
+                                                    <div class="flex items-center gap-2">
+                                                        <label
+                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Font
+                                                            Weight</label>
+                                                        <div
+                                                            class="info-icon-wrapper group relative flex items-center justify-center">
+                                                            <span
+                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                            <div
+                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                <div
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                    How it works
+                                                                </div>
+                                                                Controls the thickness of the test text. Lower values
+                                                                are thinner, higher values are bolder and more
+                                                                prominent.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 mt-1">
+                                                        <span class="text-xs font-mono text-slate-500">300</span>
+                                                        <input type="range" min="300" max="900" step="100" value="400"
+                                                            class="w-1/2 appearance-none cursor-pointer custom-slider" />
+                                                        <span class="text-xs font-mono text-slate-500">900</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Sub: Accessibility -->
+                                    <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
+                                        data-sub-title="Accessibility" data-sub-icon="accessibility_new">
+                                        <button
+                                            class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
+                                            onclick="openSubSetting(this)">
+                                            <div class="flex items-center gap-2.5">
+                                                <span
+                                                    class="material-symbols-outlined text-primary text-[16px]">accessibility_new</span>
+                                                <span class="text-xs font-semibold text-slate-200">Accessibility</span>
+                                            </div>
+                                            <span
+                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                        </button>
+                                        <div class="sub-setting-content hidden">
+                                            <div class="flex flex-col gap-4">
+                                                <div
+                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold text-slate-200">Colorblind
+                                                                Mode</p>
+                                                            <div
+                                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                                <span
+                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                <div
+                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                    <div
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        <span
+                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                        How it works
+                                                                    </div>
+                                                                    Replaces red and green indicators with blue and
+                                                                    orange, making error and success states
+                                                                    distinguishable for colorblind users.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="text-xs text-slate-500">Replace red/green with
+                                                            accessible colors</p>
+                                                    </div>
+                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                        <div class="toggle-thumb"></div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold text-slate-200">High
+                                                                Contrast</p>
+                                                            <div
+                                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                                <span
+                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                <div
+                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                    <div
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        <span
+                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                        How it works
+                                                                    </div>
+                                                                    Boosts the color contrast between text and
+                                                                    background for improved readability in bright
+                                                                    environments.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="text-xs text-slate-500">Increase contrast for
+                                                            readability</p>
+                                                    </div>
+                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                        <div class="toggle-thumb"></div>
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- CATEGORY 4: Test Rules -->
                             <!-- â•â•â•â•â•â•â•â•â•â• CATEGORY 4: Test Rules â•â•â•â•â•â•â•â•â•â• -->
                             <div class="category-content hidden" data-panel="test-rules">
                                 <div class="flex flex-col gap-4">
@@ -2149,6 +2346,34 @@
                                                 class="opt-btn" onclick="selectOpt(this)">0.75</button><button
                                                 class="opt-btn" onclick="selectOpt(this)">1.0</button></div>
                                     </div>
+                                    <div class="flex flex-col gap-2 relative">
+                                        <div class="flex items-center gap-2">
+                                            <label
+                                                class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Timer
+                                                /
+                                                Progress Color</label>
+                                            <div
+                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                <span
+                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                <div
+                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                    <div
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        How it works
+                                                    </div>
+                                                    Choose which color the timer uses. Sub uses the subtitle color, Main
+                                                    uses the primary accent, Text uses the body text color.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 flex-wrap"><button class="opt-btn active"
+                                                onclick="selectOpt(this)">Sub</button><button class="opt-btn"
+                                                onclick="selectOpt(this)">Main</button><button class="opt-btn"
+                                                onclick="selectOpt(this)">Text</button><button class="opt-btn"
+                                                onclick="selectOpt(this)">Custom</button></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -2377,8 +2602,8 @@
                                                                         class="material-symbols-outlined text-[14px]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Set a minimum WPM threshold. The test only fails if your
-                                                                speed is below this at the end of the test.
+                                                                Set a minimum WPM threshold. Tests below this speed will
+                                                                be flagged or discarded from your stats.
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2418,8 +2643,8 @@
                                                                         class="material-symbols-outlined text-[14px]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Set a minimum accuracy threshold. The test only fails
-                                                                if your accuracy is below this at the end of the test.
+                                                                Set a minimum accuracy threshold. Tests below this
+                                                                accuracy will be flagged or discarded.
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2441,6 +2666,60 @@
                                                                 <button
                                                                     class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
                                                                     onclick="applyCustomPopover(this, 'resultsAndGraphs.minAccuracy')">Apply</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-col gap-2 relative">
+                                                    <div class="flex items-center gap-2">
+                                                        <label
+                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Min
+                                                            Burst</label>
+                                                        <div
+                                                            class="info-icon-wrapper group relative flex items-center justify-center">
+                                                            <span
+                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                            <div
+                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                <div
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                    How it works
+                                                                </div>
+                                                                Set a minimum burst WPM. Fixed uses a constant value,
+                                                                Flex adjusts based on your average.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex gap-2 flex-wrap"
+                                                        data-setting="resultsAndGraphs.minBurst">
+                                                        <button class="opt-btn active"
+                                                            onclick="selectOpt(this)">Off</button>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Fixed</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="WPM...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst')">Apply</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Flex</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="Flex %...">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'resultsAndGraphs.minBurst', true)">Apply</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2859,7 +3138,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex flex-col gap-2 relative sub-setting-card group/uilang"
+                                    <div class="flex flex-col gap-2 relative sub-setting-card"
                                         data-sub-title="UI Language" data-sub-icon="translate" data-searchable="true">
                                         <div class="flex items-center gap-2">
                                             <label
@@ -2881,17 +3160,28 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="relative">
-                                            <button
-                                                class="setting-select flex items-center justify-between cursor-not-allowed w-full text-left opacity-60"
-                                                style="background-image: none; padding-right: 0.7rem;"
-                                                type="button" disabled aria-disabled="true">
-                                                <span class="truncate">English (US)</span>
-                                                <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
-                                            </button>
-                                            <div class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover/uilang:opacity-100 transition-opacity bg-slate-950/80 border border-primary/20">
-                                                <span class="text-xs font-semibold text-primary tracking-widest uppercase">Coming soon</span>
+                                        <button
+                                            class="setting-select flex items-center justify-between cursor-pointer w-full text-left"
+                                            style="background-image: none; padding-right: 0.7rem;"
+                                            onclick="openSubSetting(this)">
+                                            <span class="truncate">English (US)</span>
+                                            <span
+                                                class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                        </button>
+                                        <div class="sub-setting-content hidden">
+                                            <div class="flex flex-col gap-4">
+                                                <div class="grid grid-cols-5 gap-2">
+                                                    <button class="opt-btn active" onclick="selectOpt(this)">English
+                                                        (US)</button>
+                                                    <button class="opt-btn" onclick="selectOpt(this)">English
+                                                        (UK)</button>
+                                                    <button class="opt-btn" onclick="selectOpt(this)">Spanish</button>
+                                                    <button class="opt-btn" onclick="selectOpt(this)">French</button>
+                                                    <button class="opt-btn" onclick="selectOpt(this)">German</button>
+                                                    <button class="opt-btn" onclick="selectOpt(this)">Japanese</button>
+                                                    <button class="opt-btn"
+                                                        onclick="selectOpt(this)">Portuguese</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -3111,8 +3401,7 @@
                                                         <p class="text-xs text-slate-500">Enable tab/esc/backslash
                                                             shortcuts</p>
                                                     </div>
-                                                    <div class="toggle-track on" data-setting="keyboardLayout.keyboardShortcuts"
-                                                        onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track on" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>
@@ -3152,8 +3441,8 @@
                                                     class="setting-toggle-row flex items-center justify-between gap-4 py-1">
                                                     <div class="flex flex-col flex-1 min-w-0 justify-center">
                                                         <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Quick
-                                                                Settings</p>
+                                                            <p class="text-sm font-semibold text-slate-200">Single List
+                                                                Command Line</p>
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
@@ -3166,16 +3455,15 @@
                                                                             class="material-symbols-outlined text-[14px]">info</span>
                                                                         How it works
                                                                     </div>
-                                                                    When enabled, pressing Esc opens the quick settings
-                                                                    search overlay from any page.
+                                                                    Displays all command line options in a single flat
+                                                                    list instead of categorized groups.
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <p class="text-xs text-slate-500">Open quick settings with Esc
+                                                        <p class="text-xs text-slate-500">Show commands in a flat list
                                                         </p>
                                                     </div>
-                                                    <div class="toggle-track on" data-setting="keyboardLayout.quickSettings"
-                                                        onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>

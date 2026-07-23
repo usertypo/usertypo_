@@ -35,6 +35,7 @@ const DEFAULTS = {
         clickSounds: false,
         errorSounds: 'beep', // Changed from boolean to string
         masterVolume: 50,
+        muted: true,
         soundPack: 'Steelseries Apex Pro V2',
     },
     languageContent: {
@@ -59,8 +60,6 @@ const DEFAULTS = {
         keymapLegend: 'Lowercase',
         quickRestart: 'Tab',
         quickRestartCustomKey: '',
-        keyboardShortcuts: true,
-        quickSettings: true,
     },
     resultsAndGraphs: {
         decimalPrecision: false,
@@ -70,6 +69,7 @@ const DEFAULTS = {
         startGraphFromZero: false,
         minWPM: 'Off',
         minAccuracy: '75%',
+        minBurst: 'Off'
     },
     liveFeed: {
         liveWpm: true,
@@ -81,13 +81,6 @@ const DEFAULTS = {
     lookFeel: {
         colorTheme: 'usertypo_',
         fontFamily: 'JetBrains Mono',
-        randomizeTheme: 'off', // off | light | dark | all
-        customTheme: {
-            mode: 'dark',
-            mainColor: '#00d0ff',
-            secondaryColor: '#1a1d23',
-        },
-        customThemePresets: [], // max 3
     }
 };
 
@@ -109,50 +102,6 @@ function loadSettings() {
     // Migrate old boolean errorSounds to new string options ('beep', 'mute', 'off')
     if (settings.soundscape && typeof settings.soundscape.errorSounds === 'boolean') {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
-    }
-
-    // Mute Sounds setting removed — fold legacy muted into clickSounds off
-    if (settings.soundscape) {
-        if (settings.soundscape.muted) {
-            settings.soundscape.clickSounds = false;
-        }
-        delete settings.soundscape.muted;
-    }
-
-    // Drop removed settings
-    if (settings.resultsAndGraphs) {
-        delete settings.resultsAndGraphs.minBurst;
-    }
-    if (settings.liveFeed) {
-        delete settings.liveFeed.timerProgressColor;
-    }
-
-    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-    if (!settings.lookFeel.customTheme) {
-        settings.lookFeel.customTheme = structuredClone(DEFAULTS.lookFeel.customTheme);
-    }
-    if (!Array.isArray(settings.lookFeel.customThemePresets)) {
-        settings.lookFeel.customThemePresets = [];
-    }
-    if (settings.lookFeel.randomizeTheme === 'Favorites' || settings.lookFeel.randomizeTheme === 'favorites') {
-        settings.lookFeel.randomizeTheme = 'off';
-    }
-    if (typeof settings.lookFeel.randomizeTheme === 'string') {
-        settings.lookFeel.randomizeTheme = settings.lookFeel.randomizeTheme.toLowerCase();
-    }
-
-    if (!settings.keyboardLayout) settings.keyboardLayout = structuredClone(DEFAULTS.keyboardLayout);
-    if (settings.keyboardLayout.keyboardShortcuts === undefined) {
-        settings.keyboardLayout.keyboardShortcuts = true;
-    }
-    if (settings.keyboardLayout.quickSettings === undefined) {
-        // Migrate old Single List Command Line name if present
-        if (settings.keyboardLayout.singleListCommandLine !== undefined) {
-            settings.keyboardLayout.quickSettings = !!settings.keyboardLayout.singleListCommandLine;
-            delete settings.keyboardLayout.singleListCommandLine;
-        } else {
-            settings.keyboardLayout.quickSettings = true;
-        }
     }
 
     if (settings.cursor) {
@@ -420,56 +369,6 @@ const THEME_PALETTES = {
 
 window.usertypo_THEME_PALETTES = THEME_PALETTES;
 
-const CUSTOM_THEME_ID = '__custom__';
-
-function isLightThemeName(themeName) {
-    const p = THEME_PALETTES[themeName];
-    if (!p?.bgMain) return false;
-    const hex = p.bgMain.replace('#', '');
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return lum > 0.55;
-}
-
-function buildCustomPalette(custom) {
-    const cfg = custom || {};
-    const mode = (cfg.mode || 'dark').toLowerCase() === 'light' ? 'light' : 'dark';
-    const main = cfg.mainColor || '#00d0ff';
-    const secondary = cfg.secondaryColor || (mode === 'light' ? '#c2c7b4' : '#1a1d23');
-    const accentHover = _shadeColor(main, 20);
-
-    if (mode === 'light') {
-        return {
-            bgMain: '#f4f4f0',
-            bgSecondary: secondary,
-            textPrimary: '#1f2937',
-            textMuted: '#6b7280',
-            accentPrimary: main,
-            accentHover,
-            error: '#d97373',
-        };
-    }
-    return {
-        bgMain: '#0a0a12',
-        bgSecondary: secondary,
-        textPrimary: '#e2e8f0',
-        textMuted: '#64748b',
-        accentPrimary: main,
-        accentHover,
-        error: '#ff3333',
-    };
-}
-
-function resolveThemePalette(settings) {
-    const themeName = settings?.lookFeel?.colorTheme || 'usertypo_';
-    if (themeName === CUSTOM_THEME_ID) {
-        return buildCustomPalette(settings.lookFeel?.customTheme);
-    }
-    return THEME_PALETTES[themeName] || THEME_PALETTES['usertypo_'];
-}
-
 /**
  * Derive lighter / darker shades from a hex color.
  */
@@ -517,7 +416,7 @@ function _hexToRGB(hex) {
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
-    const p = resolveThemePalette(settings);
+    const p = THEME_PALETTES[themeName] || THEME_PALETTES['usertypo_'];
 
     // ── Font Family ──
     const fontFamily = settings.lookFeel?.fontFamily || 'Roboto Mono';
@@ -1285,7 +1184,7 @@ function resolveOptValue(btn) {
     const text = btn.textContent.replace(/\s+/g, ' ').trim();
     const path = getSettingPath(btn);
     let val = text || (btn.getAttribute('title') || '');
-    if (path && (path.startsWith('cursor.') || path === 'soundscape.errorSounds' || path === 'lookFeel.randomizeTheme' || path === 'lookFeel.customTheme.mode')) return val.toLowerCase();
+    if (path && (path.startsWith('cursor.') || path === 'soundscape.errorSounds')) return val.toLowerCase();
     return val;
 }
 
@@ -1418,11 +1317,9 @@ function buildPaceCaretCSS(style, smoothness) {
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
     const liveWhite = '#ffffff';
     const liveWhiteRGB = '255, 255, 255';
-    // Home pace caret + dual opponent ghost caret share paceCaretStyle
-    const sel = '#pace-caret, #bot-caret';
 
     let css = `
-        ${sel} {
+        #pace-caret {
             transition: ${transition} !important;
             opacity: 0.5 !important;
             filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.3));
@@ -1432,37 +1329,37 @@ function buildPaceCaretCSS(style, smoothness) {
     switch (style) {
         case 'line':
             css += `
-                ${sel} {
+                #pace-caret {
                     width: 2.5px !important;
                     background-color: ${liveWhite};
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
                 }
-                ${sel}::after { display: none !important; }
+                #pace-caret::after { display: none !important; }
             `;
             break;
 
         case 'block':
             css += `
-                ${sel} {
+                #pace-caret {
                     background-color: rgba(${liveWhiteRGB}, 0.25);
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
                 }
-                ${sel}::after { display: none !important; }
+                #pace-caret::after { display: none !important; }
             `;
             break;
 
         case 'underscore':
             css += `
-                ${sel} {
+                #pace-caret {
                     background-color: transparent;
                     border: none !important;
                     box-shadow: none;
                 }
-                ${sel}::after {
+                #pace-caret::after {
                     content: '' !important;
                     display: block !important;
                     position: absolute;
@@ -1479,24 +1376,24 @@ function buildPaceCaretCSS(style, smoothness) {
 
         case 'outline':
             css += `
-                ${sel} {
+                #pace-caret {
                     background-color: transparent;
                     border: 2px solid rgba(${liveWhiteRGB}, 0.6) !important;
                     border-radius: 3px;
                     box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.15);
                 }
-                ${sel}::after { display: none !important; }
+                #pace-caret::after { display: none !important; }
             `;
             break;
 
         default:
             css += `
-                ${sel} {
+                #pace-caret {
                     background-color: transparent;
                     border: none !important;
                     box-shadow: none;
                 }
-                ${sel}::after {
+                #pace-caret::after {
                     content: '' !important;
                     display: block !important;
                     position: absolute;
@@ -1595,7 +1492,8 @@ function applyCursorSettings(settings) {
     }
     if (document.head) document.head.appendChild(styleEl);
 
-    const _palette = resolveThemePalette(settings);
+    const _themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const _palette = THEME_PALETTES[_themeName] || THEME_PALETTES['usertypo_'];
     const _caretAccent = _palette.accentPrimary;
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
@@ -1635,11 +1533,12 @@ function applySoundscapeSettings(settings) {
         document.body.setAttribute('data-click-sounds', String(!!settings.soundscape.clickSounds));
         document.body.setAttribute('data-error-sounds', String(!!settings.soundscape.errorSounds));
         document.body.setAttribute('data-master-volume', String(settings.soundscape.masterVolume));
+        document.body.setAttribute('data-sound-muted', String(!!settings.soundscape.muted));
         document.body.setAttribute('data-sound-pack', settings.soundscape.soundPack);
     }
 
     // Pre-load the chosen sound pack if the audio manager is available
-    if (settings.soundscape.clickSounds && typeof window.loadSoundPack === 'function') {
+    if (settings.soundscape.clickSounds && !settings.soundscape.muted && typeof window.loadSoundPack === 'function') {
         window.loadSoundPack(settings.soundscape.soundPack);
     }
 
@@ -1668,12 +1567,11 @@ function applyFooterSettings(settings) {
     if (!settings) settings = loadSettings();
 
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
-    const themeLabel = themeName === '__custom__' ? 'Custom' : themeName;
     const langFile = settings.languageContent?.testLanguage || 'english_10k';
     const langName = getLanguageDisplayName(langFile);
 
     document.querySelectorAll('[data-footer-picker]').forEach(el => {
-        el.textContent = `${themeLabel}, ${langName}`;
+        el.textContent = `${themeName}, ${langName}`;
     });
 
     updateFooterMuteUI(settings);
@@ -1824,177 +1722,9 @@ function applyKeyboardLayoutSettings(settings) {
 
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
     document.body.setAttribute('data-quick-restart', kl.quickRestart || 'Tab');
-    document.body.setAttribute('data-keyboard-shortcuts', String(kl.keyboardShortcuts !== false));
-    document.body.setAttribute('data-quick-settings', String(kl.quickSettings !== false));
 
     applyKeymapDisplay(settings);
 }
-
-function areKeyboardShortcutsEnabled(settings) {
-    if (!settings) settings = window.usertypo_settings || loadSettings();
-    return settings?.keyboardLayout?.keyboardShortcuts !== false;
-}
-
-function areQuickSettingsEnabled(settings) {
-    if (!settings) settings = window.usertypo_settings || loadSettings();
-    return settings?.keyboardLayout?.quickSettings !== false;
-}
-
-/**
- * After a completed test, optionally pick a random theme based on randomizeTheme.
- */
-function maybeRandomizeThemeAfterTest(settings) {
-    if (!settings) settings = loadSettings();
-    const mode = String(settings.lookFeel?.randomizeTheme || 'off').toLowerCase();
-    if (!mode || mode === 'off') return null;
-
-    let pool = Object.keys(THEME_PALETTES);
-    if (mode === 'light') pool = pool.filter(isLightThemeName);
-    else if (mode === 'dark') pool = pool.filter((n) => !isLightThemeName(n));
-    // 'all' keeps full pool
-
-    if (!pool.length) return null;
-    const current = settings.lookFeel?.colorTheme;
-    let next = pool[Math.floor(Math.random() * pool.length)];
-    if (pool.length > 1) {
-        let guard = 0;
-        while (next === current && guard < 8) {
-            next = pool[Math.floor(Math.random() * pool.length)];
-            guard++;
-        }
-    }
-    selectColorTheme(next);
-    return next;
-}
-
-function applyCustomThemeFromEditor() {
-    const settings = loadSettings();
-    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-    if (!settings.lookFeel.customTheme) {
-        settings.lookFeel.customTheme = structuredClone(DEFAULTS.lookFeel.customTheme);
-    }
-
-    const modeBtn = document.querySelector('[data-setting="lookFeel.customTheme.mode"] .opt-btn.active');
-    const mainInput = document.getElementById('custom-theme-main-color');
-    const secondaryInput = document.getElementById('custom-theme-secondary-color');
-
-    if (modeBtn) {
-        settings.lookFeel.customTheme.mode = resolveOptValue(modeBtn).toLowerCase() === 'light' ? 'light' : 'dark';
-    }
-    if (mainInput?.value) settings.lookFeel.customTheme.mainColor = mainInput.value;
-    if (secondaryInput?.value) settings.lookFeel.customTheme.secondaryColor = secondaryInput.value;
-
-    settings.lookFeel.colorTheme = CUSTOM_THEME_ID;
-    saveSettings(settings);
-    applyAllSettings(settings);
-    syncCustomThemeUI(settings);
-    return settings;
-}
-
-function saveCustomThemePreset() {
-    const settings = applyCustomThemeFromEditor();
-    const presets = Array.isArray(settings.lookFeel.customThemePresets)
-        ? settings.lookFeel.customThemePresets
-        : [];
-    if (presets.length >= 3) {
-        if (window.usertypoNotifications?.showToast) {
-            window.usertypoNotifications.showToast('You can save at most 3 custom themes.', 'warning');
-        }
-        return;
-    }
-    const cfg = settings.lookFeel.customTheme;
-    presets.push({
-        id: 'preset_' + Date.now(),
-        name: 'Custom ' + (presets.length + 1),
-        mode: cfg.mode,
-        mainColor: cfg.mainColor,
-        secondaryColor: cfg.secondaryColor,
-    });
-    settings.lookFeel.customThemePresets = presets;
-    saveSettings(settings);
-    syncCustomThemeUI(settings);
-}
-
-function loadCustomThemePreset(presetId) {
-    const settings = loadSettings();
-    const presets = settings.lookFeel?.customThemePresets || [];
-    const preset = presets.find((p) => p.id === presetId);
-    if (!preset) return;
-    settings.lookFeel.customTheme = {
-        mode: preset.mode === 'light' ? 'light' : 'dark',
-        mainColor: preset.mainColor,
-        secondaryColor: preset.secondaryColor,
-    };
-    settings.lookFeel.colorTheme = CUSTOM_THEME_ID;
-    saveSettings(settings);
-    applyAllSettings(settings);
-    syncCustomThemeUI(settings);
-}
-
-function deleteCustomThemePreset(presetId) {
-    const settings = loadSettings();
-    settings.lookFeel.customThemePresets = (settings.lookFeel.customThemePresets || [])
-        .filter((p) => p.id !== presetId);
-    saveSettings(settings);
-    syncCustomThemeUI(settings);
-}
-
-function syncCustomThemeUI(settings) {
-    if (!settings) settings = loadSettings();
-    const cfg = settings.lookFeel?.customTheme || DEFAULTS.lookFeel.customTheme;
-    const modeContainer = document.querySelector('[data-setting="lookFeel.customTheme.mode"]');
-    if (modeContainer) {
-        const mode = (cfg.mode || 'dark').toLowerCase();
-        modeContainer.querySelectorAll('.opt-btn').forEach((btn) => {
-            btn.classList.toggle('active', resolveOptValue(btn).toLowerCase() === mode);
-        });
-    }
-    const mainInput = document.getElementById('custom-theme-main-color');
-    const mainHex = document.getElementById('custom-theme-main-hex');
-    const secondaryInput = document.getElementById('custom-theme-secondary-color');
-    const secondaryHex = document.getElementById('custom-theme-secondary-hex');
-    if (mainInput) mainInput.value = cfg.mainColor || '#00d0ff';
-    if (mainHex) mainHex.textContent = (cfg.mainColor || '#00d0ff').toUpperCase();
-    if (secondaryInput) secondaryInput.value = cfg.secondaryColor || '#1a1d23';
-    if (secondaryHex) secondaryHex.textContent = (cfg.secondaryColor || '#1a1d23').toUpperCase();
-
-    const list = document.getElementById('custom-theme-presets');
-    if (list) {
-        const presets = settings.lookFeel?.customThemePresets || [];
-        if (!presets.length) {
-            list.innerHTML = '<p class="text-xs text-slate-500">No saved presets yet. Save up to 3.</p>';
-        } else {
-            list.innerHTML = presets.map((p) => `
-                <div class="flex items-center gap-2 py-1.5">
-                    <button type="button" class="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-primary/40 text-left transition-colors"
-                        onclick="loadCustomThemePreset('${p.id}')">
-                        <span class="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" style="background:${p.mainColor}"></span>
-                        <span class="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0" style="background:${p.secondaryColor}"></span>
-                        <span class="text-xs text-slate-200 truncate">${p.name} · ${p.mode}</span>
-                    </button>
-                    <button type="button" class="text-slate-500 hover:text-error transition-colors p-1"
-                        title="Delete preset" onclick="deleteCustomThemePreset('${p.id}')">
-                        <span class="material-symbols-outlined text-[16px]">delete</span>
-                    </button>
-                </div>
-            `).join('');
-        }
-    }
-
-    const saveBtn = document.getElementById('custom-theme-save-preset');
-    if (saveBtn) {
-        const count = (settings.lookFeel?.customThemePresets || []).length;
-        saveBtn.disabled = count >= 3;
-        saveBtn.classList.toggle('opacity-40', count >= 3);
-        saveBtn.classList.toggle('pointer-events-none', count >= 3);
-    }
-}
-
-window.applyCustomThemeFromEditor = applyCustomThemeFromEditor;
-window.saveCustomThemePreset = saveCustomThemePreset;
-window.loadCustomThemePreset = loadCustomThemePreset;
-window.deleteCustomThemePreset = deleteCustomThemePreset;
-window.syncCustomThemeUI = syncCustomThemeUI;
 
 /**
  * Apply live feed / timer display settings on index and room pages.
@@ -2230,20 +1960,8 @@ function persistFromOpt(btn) {
 
     const settings = loadSettings();
     setByPath(settings, path, resolveOptValue(btn));
-
-    // Custom theme mode → activate custom theme
-    if (path === 'lookFeel.customTheme.mode') {
-        settings.lookFeel.colorTheme = CUSTOM_THEME_ID;
-        const mode = resolveOptValue(btn).toLowerCase();
-        settings.lookFeel.customTheme.mode = mode === 'light' ? 'light' : 'dark';
-    }
-
     saveSettings(settings);
     applyAllSettings(settings);
-
-    if (path === 'lookFeel.customTheme.mode') {
-        syncCustomThemeUI(settings);
-    }
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         // slight delay to let the soundpack load if it changed
@@ -2275,12 +1993,12 @@ function restoreCustomButtonValues() {
     const thresholdPaths = [
         { path: 'resultsAndGraphs.minWPM', labels: ['Custom'] },
         { path: 'resultsAndGraphs.minAccuracy', labels: ['Custom'] },
-        { path: 'cursor.paceCaretMode', labels: ['Custom'] },
+        { path: 'resultsAndGraphs.minBurst', labels: ['Fixed', 'Flex'] }
     ];
 
     thresholdPaths.forEach(({ path, labels }) => {
         const saved = getByPath(settings, path);
-        if (!saved || saved === 'Off' || saved === 'off') return;
+        if (!saved || saved === 'Off') return;
 
         const container = document.querySelector(`[data-setting="${path}"]`);
         if (!container) return;
@@ -2289,34 +2007,33 @@ function restoreCustomButtonValues() {
         container.querySelectorAll('.opt-btn').forEach(b => {
             if (!b.closest('.custom-popover-wrapper')) {
                 const btnText = b.textContent.trim();
-                if (btnText === String(saved) || btnText.toLowerCase() === String(saved).toLowerCase()) {
-                    matchedRegular = true;
-                }
+                if (btnText === String(saved)) matchedRegular = true;
             }
         });
         if (matchedRegular) return;
 
-        if (path === 'cursor.paceCaretMode') {
-            if (String(saved).toLowerCase() !== 'custom') return;
-            container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
-                const label = (triggerBtn.getAttribute('data-original-text') || triggerBtn.textContent).trim();
-                if (label !== 'Custom' && !/WPM/i.test(triggerBtn.textContent)) return;
-                const speed = settings.cursor?.paceCaretCustomSpeed || 100;
-                triggerBtn.setAttribute('data-original-text', 'Custom');
-                triggerBtn.textContent = `${speed} WPM`;
-                container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                triggerBtn.classList.add('active');
-            });
-            return;
-        }
-
         container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
             const btnLabel = triggerBtn.textContent.trim();
-            if (btnLabel === 'Custom' || labels.includes(btnLabel)) {
-                triggerBtn.setAttribute('data-original-text', 'Custom');
-                triggerBtn.textContent = saved;
-                container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
-                triggerBtn.classList.add('active');
+
+            if (path === 'resultsAndGraphs.minBurst') {
+                if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
+                    triggerBtn.setAttribute('data-original-text', 'Flex');
+                    triggerBtn.textContent = String(saved).split(':')[1];
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
+                    triggerBtn.setAttribute('data-original-text', 'Fixed');
+                    triggerBtn.textContent = saved;
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                }
+            } else {
+                if (btnLabel === 'Custom') {
+                    triggerBtn.setAttribute('data-original-text', 'Custom');
+                    triggerBtn.textContent = saved;
+                    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+                    triggerBtn.classList.add('active');
+                }
             }
         });
     });
@@ -2330,7 +2047,6 @@ function initSettingsPage() {
     const settings = loadSettings();
     restoreUI(settings);
     restoreCustomButtonValues();
-    syncCustomThemeUI(settings);
 
     if (!root.dataset.usertypoOptWired) {
         root.dataset.usertypoOptWired = '1';
@@ -2735,42 +2451,9 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
         return;
     }
 
-    const settings = loadSettings();
-
-    // Pace caret custom speed: store mode + speed separately
-    if (path === 'cursor.paceCaretMode') {
-        const speed = Math.max(1, Math.min(500, parseFloat(val) || 100));
-        setByPath(settings, 'cursor.paceCaretMode', 'custom');
-        setByPath(settings, 'cursor.paceCaretCustomSpeed', speed);
-        saveSettings(settings);
-        applyAllSettings(settings);
-        if (typeof triggerSave === 'function') triggerSave();
-
-        const container = btn.closest('[data-setting]');
-        if (container) {
-            container.querySelectorAll('.opt-btn').forEach(b => {
-                b.classList.remove('active');
-                if (b.hasAttribute('data-original-text')) {
-                    b.textContent = b.getAttribute('data-original-text');
-                }
-            });
-            const optBtn = popover.previousElementSibling;
-            if (optBtn) {
-                optBtn.classList.add('active');
-                if (!optBtn.hasAttribute('data-original-text')) {
-                    optBtn.setAttribute('data-original-text', 'Custom');
-                }
-                optBtn.textContent = `${speed} WPM`;
-            }
-        }
-        popover.classList.remove('opacity-100', 'pointer-events-auto');
-        popover.classList.add('opacity-0', 'pointer-events-none');
-        input.value = '';
-        return;
-    }
-
     let finalVal = isFlex ? 'Flex:' + val : val;
 
+    const settings = loadSettings();
     setByPath(settings, path, finalVal);
     saveSettings(settings);
     applyAllSettings(settings);
@@ -2857,9 +2540,4 @@ window.usertypo_settingsApi = {
     isDualPage,
     isRoomPage,
     getEffectiveTapeMode,
-    areKeyboardShortcutsEnabled,
-    areQuickSettingsEnabled,
-    maybeRandomizeThemeAfterTest,
-    resolveThemePalette,
-    CUSTOM_THEME_ID,
 };
