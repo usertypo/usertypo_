@@ -1091,29 +1091,15 @@
                                                     </div>
                                                     <div class="flex gap-2 flex-wrap"
                                                         data-setting="cursor.paceCaretMode">
-                                                        <button class="opt-btn active" data-value="off"
+                                                        <button class="opt-btn active"
                                                             onclick="selectOpt(this)">Off</button>
-                                                        <button class="opt-btn" data-value="average"
+                                                        <button class="opt-btn"
                                                             onclick="selectOpt(this)">Average</button>
-                                                        <button class="opt-btn" data-value="pb"
-                                                            onclick="selectOpt(this)">PB</button>
-                                                        <button class="opt-btn" data-value="last"
-                                                            onclick="selectOpt(this)">Last</button>
-                                                        <div class="relative custom-popover-wrapper">
-                                                            <button class="opt-btn" data-value="custom"
-                                                                onclick="toggleCustomPopover(this)">Custom</button>
-                                                            <div
-                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
-                                                                <input type="number" min="1" max="500" step="1"
-                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
-                                                                    placeholder="WPM...">
-                                                                <button
-                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
-                                                                    onclick="applyCustomPopover(this, 'cursor.paceCaretCustomSpeed')">Apply</button>
-                                                            </div>
-                                                        </div>
-                                                        <button class="opt-btn" data-value="daily"
-                                                            onclick="selectOpt(this)">Daily</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">PB</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Last</button>
+                                                        <button class="opt-btn"
+                                                            onclick="selectOpt(this)">Custom</button>
+                                                        <button class="opt-btn" onclick="selectOpt(this)">Daily</button>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">
@@ -1143,22 +1129,22 @@
                                                         data-setting="cursor.paceCaretStyle">
                                                         <button
                                                             class="opt-btn flex items-center justify-center min-w-[2.5rem]"
-                                                            data-value="line" title="Line" onclick="selectOpt(this)">
+                                                            title="Line" onclick="selectOpt(this)">
                                                             <div class="w-0.5 h-3.5 bg-current"></div>
                                                         </button>
                                                         <button
                                                             class="opt-btn flex items-center justify-center min-w-[2.5rem]"
-                                                            data-value="block" title="Block" onclick="selectOpt(this)">
+                                                            title="Block" onclick="selectOpt(this)">
                                                             <div class="w-2 h-3.5 bg-current"></div>
                                                         </button>
                                                         <button
                                                             class="opt-btn active flex items-center justify-center min-w-[2.5rem]"
-                                                            data-value="underscore" title="Underscore" onclick="selectOpt(this)">
+                                                            title="Underscore" onclick="selectOpt(this)">
                                                             <div class="w-2 h-0.5 bg-current translate-y-[5px]"></div>
                                                         </button>
                                                         <button
                                                             class="opt-btn flex items-center justify-center min-w-[2.5rem]"
-                                                            data-value="outline" title="Outline" onclick="selectOpt(this)">
+                                                            title="Outline" onclick="selectOpt(this)">
                                                             <div class="w-2 h-3.5 border border-current"></div>
                                                         </button>
                                                     </div>
@@ -1255,6 +1241,35 @@
                                             <p class="text-xs text-slate-500">Play sounds on each keypress</p>
                                         </div>
                                         <div class="toggle-track" data-setting="soundscape.clickSounds"
+                                            onclick="toggleSwitch(this)">
+                                            <div class="toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-semibold text-slate-200">Mute Sounds</p>
+                                                <div
+                                                    class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span
+                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div
+                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            <span
+                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                            How it works
+                                                        </div>
+                                                        Silently mutes all typing sounds without changing your click
+                                                        sounds, error sounds, or volume preferences. Also available from
+                                                        the volume icon on the home page footer.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Temporarily silence all audio</p>
+                                        </div>
+                                        <div class="toggle-track" data-setting="soundscape.muted"
                                             onclick="toggleSwitch(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
@@ -4717,16 +4732,6 @@ window.__spaPageInit = function() {
 
             if (typeof initTooltips === 'function') initTooltips(panel);
 
-            // Sub-panels are HTML clones of the hidden source — re-apply saved values
-            // so Custom / style selections survive open, tab-switch, and re-open.
-            if (window.usertypo_settingsApi) {
-                try {
-                    const s = window.usertypo_settingsApi.loadSettings();
-                    window.usertypo_settingsApi.restoreUI?.(s);
-                    window.usertypo_settingsApi.restoreCustomButtonValues?.(s);
-                } catch (e) { /* ignore */ }
-            }
-
             // Start split: keep primary at full width for one frame, then animate to 1/3
             settingsPanel.classList.add('has-sub');
             if (panelDepth.length === 1 && mainCard) {
@@ -5032,14 +5037,7 @@ window.__spaPageInit = function() {
         }
 
         function selectOpt(btn) {
-            function optIdentity(el) {
-                return (el.getAttribute('data-value')
-                    || el.getAttribute('title')
-                    || el.textContent.replace(/\s+/g, ' ').trim());
-            }
-            const selectedId = optIdentity(btn);
-            const group = btn.closest('[data-setting]') || btn.parentElement;
-            group.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+            btn.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
             if (typeof activeSubCards !== 'undefined' && activeSubCards.length > 0) {
@@ -5051,12 +5049,12 @@ window.__spaPageInit = function() {
                     document.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                         // Update active option
                         card.querySelectorAll('.opt-btn').forEach(b => {
-                            b.classList.toggle('active', optIdentity(b) === selectedId);
+                            b.classList.toggle('active', b.textContent === btn.textContent);
                         });
                         // Update select label
                         if (card.dataset.searchable === 'true') {
                             const selectBtn = card.querySelector('.setting-select span.truncate');
-                            if (selectBtn) selectBtn.textContent = btn.textContent.replace(/\s+/g, ' ').trim() || selectedId;
+                            if (selectBtn) selectBtn.textContent = btn.textContent;
                         }
                     });
 
@@ -5065,11 +5063,11 @@ window.__spaPageInit = function() {
                         panelDepth.forEach(panel => {
                             panel.querySelectorAll(`.sub-setting-card[data-sub-title="${subTitle}"]`).forEach(card => {
                                 card.querySelectorAll('.opt-btn').forEach(b => {
-                                    b.classList.toggle('active', optIdentity(b) === selectedId);
+                                    b.classList.toggle('active', b.textContent === btn.textContent);
                                 });
                                 if (card.dataset.searchable === 'true') {
                                     const selectBtn = card.querySelector('.setting-select span.truncate');
-                                    if (selectBtn) selectBtn.textContent = btn.textContent.replace(/\s+/g, ' ').trim() || selectedId;
+                                    if (selectBtn) selectBtn.textContent = btn.textContent;
                                 }
                             });
                         });
