@@ -84,8 +84,8 @@ const DEFAULTS = {
         randomizeTheme: 'Off',
         customTheme: {
             mode: 'Dark',
-            mainColor: '#00d0ff',
-            secondaryColor: '#1a1d23',
+            mainColor: '#ffffff',
+            secondaryColor: '#444444',
         },
         customPresets: [],
     }
@@ -93,8 +93,8 @@ const DEFAULTS = {
 
 const CUSTOM_THEME_DEFAULT = {
     mode: 'Dark',
-    mainColor: '#00d0ff',
-    secondaryColor: '#1a1d23',
+    mainColor: '#ffffff',
+    secondaryColor: '#444444',
 };
 const MAX_CUSTOM_PRESETS = 3;
 
@@ -471,39 +471,36 @@ function getCustomThemeConfig(settings, themeName) {
 
 /**
  * Build a full theme palette from mode + main/secondary colors.
- * main → accent; secondary → surface / muted; mode → light or dark base.
+ * Light mode bases on Paper; Dark mode bases on Abyss.
+ * main → accent; secondary → surface.
  */
 function buildCustomPalette(config) {
     const cfg = config || CUSTOM_THEME_DEFAULT;
-    const main = normalizeHexColor(cfg.mainColor, CUSTOM_THEME_DEFAULT.mainColor);
-    const secondary = normalizeHexColor(cfg.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor);
     const light = isLightModeValue(cfg.mode);
-    const secondaryLum = getHexLuminance(secondary);
+    const base = light
+        ? (THEME_PALETTES['Paper'] || THEME_PALETTES['usertypo_'])
+        : (THEME_PALETTES['Abyss'] || THEME_PALETTES['usertypo_']);
+    const main = normalizeHexColor(cfg.mainColor, base.accentPrimary);
+    const secondary = normalizeHexColor(cfg.secondaryColor, base.bgSecondary);
 
-    if (light) {
-        const bgMain = secondaryLum > 0.72 ? secondary : _shadeColor(secondary, 72);
-        const bgSecondary = secondaryLum > 0.55 ? _darkenColor(secondary, 8) : _shadeColor(secondary, 55);
-        return {
-            bgMain,
-            bgSecondary,
-            textPrimary: '#1a1f2c',
-            textMuted: secondaryLum < 0.45 ? _shadeColor(secondary, 25) : _darkenColor(secondary, 35),
-            accentPrimary: main,
-            accentHover: _darkenColor(main, 12),
-            error: '#e03e3e',
-        };
-    }
-
-    const bgMain = secondaryLum < 0.22 ? secondary : _darkenColor(secondary, 42);
-    const bgSecondary = secondaryLum < 0.35 ? _shadeColor(secondary, 10) : secondary;
     return {
-        bgMain,
-        bgSecondary,
-        textPrimary: '#e8edf5',
-        textMuted: secondaryLum > 0.55 ? _darkenColor(secondary, 15) : _shadeColor(secondary, 35),
+        bgMain: base.bgMain,
+        bgSecondary: secondary,
+        textPrimary: base.textPrimary,
+        textMuted: base.textMuted,
         accentPrimary: main,
-        accentHover: _shadeColor(main, 18),
-        error: '#ff4545',
+        accentHover: light ? _darkenColor(main, 12) : _shadeColor(main, 18),
+        error: base.error,
+    };
+}
+
+function getModeDefaults(mode) {
+    const light = isLightModeValue(mode);
+    const base = light ? THEME_PALETTES['Paper'] : THEME_PALETTES['Abyss'];
+    return {
+        mode: light ? 'Light' : 'Dark',
+        mainColor: normalizeHexColor(base?.accentPrimary, light ? '#000000' : '#ffffff'),
+        secondaryColor: normalizeHexColor(base?.bgSecondary, light ? '#b3b3b3' : '#444444'),
     };
 }
 
@@ -522,8 +519,8 @@ function resolveThemePalette(settings, themeName) {
 
 function getThemeDisplayName(themeName, settings) {
     if (!settings) settings = loadSettings();
-    if (!isCustomThemeName(themeName)) return themeName || 'usertypo_';
-    return getCustomThemeConfig(settings, themeName).name || 'Custom';
+    if (isCustomThemeName(themeName || settings.lookFeel?.colorTheme)) return 'custom';
+    return themeName || settings.lookFeel?.colorTheme || 'usertypo_';
 }
 
 function isThemeLight(themeName, settings) {
@@ -563,13 +560,26 @@ function maybeRandomizeTheme() {
     return next;
 }
 
-function syncCustomThemeEditor(settings) {
-    const editor = document.getElementById('custom-theme-editor');
-    if (!editor) return;
-    if (!settings) settings = loadSettings();
-    const cfg = getCustomThemeConfig(settings, 'custom');
+/** Prefer the cloned editor in the open detail panel over the hidden source copy. */
+function getActiveCustomThemeEditor() {
+    const detail = document.querySelector(
+        '#settings-panel .settings-panel-card.is-detail [data-custom-theme-editor]'
+    );
+    if (detail) return detail;
+    const inPanel = document.querySelector(
+        '#settings-panel .settings-panel-card:not(#panel-card) [data-custom-theme-editor]'
+    );
+    if (inPanel) return inPanel;
+    return document.querySelector('[data-custom-theme-editor]');
+}
 
-    const modeBox = editor.querySelector('#custom-theme-mode');
+function forEachCustomThemeEditor(callback) {
+    document.querySelectorAll('[data-custom-theme-editor]').forEach(callback);
+}
+
+function syncOneCustomThemeEditor(editor, settings, cfg) {
+    if (!editor) return;
+    const modeBox = editor.querySelector('[data-custom-theme-mode]');
     if (modeBox) {
         modeBox.querySelectorAll('.opt-btn').forEach((btn) => {
             btn.classList.toggle('active', resolveOptValue(btn) === cfg.mode);
@@ -586,7 +596,7 @@ function syncCustomThemeEditor(settings) {
         if (face) face.style.background = hex;
     });
 
-    const preview = editor.querySelector('#custom-theme-preview');
+    const preview = editor.querySelector('[data-custom-theme-preview]');
     if (preview) {
         const palette = buildCustomPalette(cfg);
         const bg = preview.querySelector('[data-preview="bg"]');
@@ -597,13 +607,25 @@ function syncCustomThemeEditor(settings) {
         if (secondary) secondary.style.background = palette.bgSecondary;
     }
 
-    renderCustomThemePresets(settings);
+    renderCustomThemePresetsInto(editor, settings);
+}
+
+function syncCustomThemeEditor(settings) {
+    if (!settings) settings = loadSettings();
+    const cfg = getCustomThemeConfig(settings, 'custom');
+    forEachCustomThemeEditor((editor) => syncOneCustomThemeEditor(editor, settings, cfg));
 }
 
 function renderCustomThemePresets(settings) {
-    const list = document.getElementById('custom-theme-preset-list');
-    const countEl = document.getElementById('custom-preset-count');
-    const saveBtn = document.getElementById('save-custom-theme-preset-btn');
+    if (!settings) settings = loadSettings();
+    forEachCustomThemeEditor((editor) => renderCustomThemePresetsInto(editor, settings));
+}
+
+function renderCustomThemePresetsInto(editor, settings) {
+    if (!editor) return;
+    const list = editor.querySelector('[data-custom-theme-preset-list]');
+    const countEl = editor.querySelector('[data-custom-preset-count]');
+    const saveBtn = editor.querySelector('[data-custom-theme-save]');
     if (!list) return;
     if (!settings) settings = loadSettings();
 
@@ -625,9 +647,9 @@ function renderCustomThemePresets(settings) {
         const mode = isLightModeValue(preset.mode) ? 'Light' : 'Dark';
         const name = preset.name || `Custom ${index + 1}`;
         const themeId = `custom:${index}`;
-        const isActive = active === themeId;
+        const activeClass = active === themeId ? ' is-active' : '';
         return `
-            <div class="custom-preset-card${isActive ? ' is-active' : ''}" data-preset-index="${index}">
+            <div class="custom-preset-card${activeClass}" data-preset-index="${index}">
                 <div class="custom-preset-swatches" aria-hidden="true">
                     <i style="background:${secondary}"></i>
                     <i style="background:${main}"></i>
@@ -649,28 +671,28 @@ function renderCustomThemePresets(settings) {
     }).join('');
 }
 
-function readCustomThemeFromEditor() {
-    const editor = document.getElementById('custom-theme-editor');
+function readCustomThemeFromEditor(editor) {
+    const root = editor || getActiveCustomThemeEditor();
     const settings = loadSettings();
     const fallback = getCustomThemeConfig(settings, 'custom');
-    if (!editor) {
+    if (!root) {
         return {
             mode: fallback.mode,
             mainColor: fallback.mainColor,
             secondaryColor: fallback.secondaryColor,
         };
     }
-    const modeBtn = editor.querySelector('#custom-theme-mode .opt-btn.active');
+    const modeBtn = root.querySelector('[data-custom-theme-mode] .opt-btn.active');
     const mode = modeBtn ? resolveOptValue(modeBtn) : fallback.mode;
     const mainColor = normalizeHexColor(
-        editor.querySelector('[data-custom-hex="mainColor"]')?.value
-        || editor.querySelector('[data-custom-color="mainColor"]')?.value
+        root.querySelector('[data-custom-hex="mainColor"]')?.value
+        || root.querySelector('[data-custom-color="mainColor"]')?.value
         || fallback.mainColor,
         fallback.mainColor
     );
     const secondaryColor = normalizeHexColor(
-        editor.querySelector('[data-custom-hex="secondaryColor"]')?.value
-        || editor.querySelector('[data-custom-color="secondaryColor"]')?.value
+        root.querySelector('[data-custom-hex="secondaryColor"]')?.value
+        || root.querySelector('[data-custom-color="secondaryColor"]')?.value
         || fallback.secondaryColor,
         fallback.secondaryColor
     );
@@ -681,17 +703,38 @@ function readCustomThemeFromEditor() {
     };
 }
 
-function applyCustomThemeFromEditor(persistLive = true) {
+/** Persist custom theme config and apply it site-wide immediately. */
+function commitCustomTheme(partial, options = {}) {
     const settings = loadSettings();
     if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-    const cfg = readCustomThemeFromEditor();
-    settings.lookFeel.customTheme = cfg;
-    if (persistLive) settings.lookFeel.colorTheme = 'custom';
+
+    const current = settings.lookFeel.customTheme || structuredClone(CUSTOM_THEME_DEFAULT);
+    let next = {
+        mode: isLightModeValue(partial?.mode ?? current.mode) ? 'Light' : 'Dark',
+        mainColor: normalizeHexColor(partial?.mainColor ?? current.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+        secondaryColor: normalizeHexColor(
+            partial?.secondaryColor ?? current.secondaryColor,
+            CUSTOM_THEME_DEFAULT.secondaryColor
+        ),
+    };
+
+    // Switching Light/Dark reseeds from Paper / Abyss defaults
+    if (options.seedFromMode) {
+        next = getModeDefaults(next.mode);
+    }
+
+    settings.lookFeel.customTheme = next;
+    settings.lookFeel.colorTheme = 'custom';
     saveSettings(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
-    return cfg;
+    if (typeof window.triggerSave === 'function') window.triggerSave();
+    return next;
+}
+
+function applyCustomThemeFromEditor() {
+    return commitCustomTheme(readCustomThemeFromEditor());
 }
 
 function saveCustomThemePreset() {
@@ -714,6 +757,7 @@ function saveCustomThemePreset() {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    if (typeof window.triggerSave === 'function') window.triggerSave();
     return true;
 }
 
@@ -732,6 +776,7 @@ function applyCustomThemePreset(index) {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    if (typeof window.triggerSave === 'function') window.triggerSave();
 }
 
 function deleteCustomThemePreset(index) {
@@ -751,7 +796,6 @@ function deleteCustomThemePreset(index) {
         }
     }
 
-    // Rename remaining presets to stay sequential
     settings.lookFeel.customPresets = presets.map((p, i) => ({
         ...p,
         name: p.name && !/^Custom \d+$/.test(p.name) ? p.name : `Custom ${i + 1}`,
@@ -761,124 +805,102 @@ function deleteCustomThemePreset(index) {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    if (typeof window.triggerSave === 'function') window.triggerSave();
 }
 
 function syncColorThemeSelectLabel(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
     const label = getThemeDisplayName(themeName, settings);
-    const container = document.querySelector('[data-setting="lookFeel.colorTheme"]');
-    if (!container) return;
 
-    if (isCustomThemeName(themeName)) {
-        container.querySelectorAll('.opt-btn').forEach((btn) => btn.classList.remove('active'));
-    } else {
-        const savedNorm = String(themeName).replace(/\s+/g, ' ').trim();
-        container.querySelectorAll('.opt-btn').forEach((btn) => {
-            btn.classList.toggle('active', resolveOptValue(btn) === savedNorm);
-        });
-    }
+    document.querySelectorAll('[data-setting="lookFeel.colorTheme"]').forEach((container) => {
+        if (isCustomThemeName(themeName)) {
+            container.querySelectorAll('.opt-btn').forEach((btn) => btn.classList.remove('active'));
+        } else {
+            const savedNorm = String(themeName).replace(/\s+/g, ' ').trim();
+            container.querySelectorAll('.opt-btn').forEach((btn) => {
+                btn.classList.toggle('active', resolveOptValue(btn) === savedNorm);
+            });
+        }
 
-    const card = container.closest('.sub-setting-card') || container.closest('[data-sub-title]');
-    const selectLabel = card?.querySelector('.setting-select .truncate');
-    if (selectLabel) selectLabel.textContent = label;
+        const card = container.closest('.sub-setting-card') || container.closest('[data-sub-title]');
+        const selectLabel = card?.querySelector('.setting-select .truncate');
+        if (selectLabel) selectLabel.textContent = label;
+    });
 }
 
 function initCustomThemeEditor() {
-    const editor = document.getElementById('custom-theme-editor');
-    if (!editor || editor.dataset.wired === '1') {
-        syncCustomThemeEditor();
-        return;
-    }
-    editor.dataset.wired = '1';
+    // Document-level delegation so cloned Custom Theme panels (SPA sub-setting
+    // copies via innerHTML) still receive events.
+    if (!window.__usertypoCustomThemeDelegated) {
+        window.__usertypoCustomThemeDelegated = true;
 
-    editor.querySelectorAll('[data-custom-color]').forEach((input) => {
-        input.addEventListener('input', () => {
+        document.addEventListener('input', (e) => {
+            const input = e.target.closest?.('[data-custom-color]');
+            if (!input || !input.closest('[data-custom-theme-editor]')) return;
             const key = input.dataset.customColor;
             const hex = normalizeHexColor(input.value, input.value);
+            const editor = input.closest('[data-custom-theme-editor]');
             const hexInput = editor.querySelector(`[data-custom-hex="${key}"]`);
             const face = editor.querySelector(`[data-swatch-face="${key}"]`);
             if (hexInput) hexInput.value = hex;
             if (face) face.style.background = hex;
-            const settings = loadSettings();
-            if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-            settings.lookFeel.customTheme = {
-                ...(settings.lookFeel.customTheme || CUSTOM_THEME_DEFAULT),
-                [key]: hex,
-            };
-            // Live preview of colors in editor; apply only when theme is already custom
-            if (isCustomThemeName(settings.lookFeel.colorTheme)) {
-                settings.lookFeel.colorTheme = 'custom';
-                saveSettings(settings);
-                applyAllSettings(settings);
-                syncColorThemeSelectLabel(settings);
-            } else {
-                saveSettings(settings);
-            }
-            syncCustomThemeEditor(settings);
-        });
-    });
+            commitCustomTheme({ ...readCustomThemeFromEditor(editor), [key]: hex });
+        }, true);
 
-    editor.querySelectorAll('[data-custom-hex]').forEach((input) => {
-        const commit = () => {
+        document.addEventListener('change', (e) => {
+            const input = e.target.closest?.('[data-custom-hex]');
+            if (!input || !input.closest('[data-custom-theme-editor]')) return;
             const key = input.dataset.customHex;
             const hex = normalizeHexColor(input.value, CUSTOM_THEME_DEFAULT[key]);
             input.value = hex;
+            const editor = input.closest('[data-custom-theme-editor]');
             const colorInput = editor.querySelector(`[data-custom-color="${key}"]`);
             const face = editor.querySelector(`[data-swatch-face="${key}"]`);
             if (colorInput) colorInput.value = hex;
             if (face) face.style.background = hex;
-            const settings = loadSettings();
-            if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-            settings.lookFeel.customTheme = {
-                ...(settings.lookFeel.customTheme || CUSTOM_THEME_DEFAULT),
-                [key]: hex,
-            };
-            if (isCustomThemeName(settings.lookFeel.colorTheme)) {
-                settings.lookFeel.colorTheme = 'custom';
-                saveSettings(settings);
-                applyAllSettings(settings);
-                syncColorThemeSelectLabel(settings);
-            } else {
-                saveSettings(settings);
-            }
-            syncCustomThemeEditor(settings);
-        };
-        input.addEventListener('change', commit);
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+            commitCustomTheme({ ...readCustomThemeFromEditor(editor), [key]: hex });
+        }, true);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const input = e.target.closest?.('[data-custom-hex]');
+            if (!input || !input.closest('[data-custom-theme-editor]')) return;
+            e.preventDefault();
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            input.blur();
+        }, true);
+
+        document.addEventListener('click', (e) => {
+            const applyBtn = e.target.closest?.('[data-custom-theme-apply]');
+            if (applyBtn) {
                 e.preventDefault();
-                commit();
-                input.blur();
+                applyCustomThemeFromEditor();
+                return;
             }
-        });
-    });
-
-    document.getElementById('apply-custom-theme-btn')?.addEventListener('click', () => {
-        applyCustomThemeFromEditor(true);
-    });
-    document.getElementById('save-custom-theme-preset-btn')?.addEventListener('click', () => {
-        saveCustomThemePreset();
-    });
-
-    document.getElementById('custom-theme-preset-list')?.addEventListener('click', (e) => {
-        const applyBtn = e.target.closest('[data-preset-apply]');
-        if (applyBtn) {
-            applyCustomThemePreset(parseInt(applyBtn.dataset.presetApply, 10));
-            return;
-        }
-        const deleteBtn = e.target.closest('[data-preset-delete]');
-        if (deleteBtn) {
-            deleteCustomThemePreset(parseInt(deleteBtn.dataset.presetDelete, 10));
-        }
-    });
+            const saveBtn = e.target.closest?.('[data-custom-theme-save]');
+            if (saveBtn) {
+                e.preventDefault();
+                saveCustomThemePreset();
+                return;
+            }
+            const applyPreset = e.target.closest?.('[data-preset-apply]');
+            if (applyPreset) {
+                e.preventDefault();
+                applyCustomThemePreset(parseInt(applyPreset.dataset.presetApply, 10));
+                return;
+            }
+            const deletePreset = e.target.closest?.('[data-preset-delete]');
+            if (deletePreset) {
+                e.preventDefault();
+                deleteCustomThemePreset(parseInt(deletePreset.dataset.presetDelete, 10));
+            }
+        }, true);
+    }
 
     syncCustomThemeEditor();
 }
 
-/**
- * Derive lighter / darker shades from a hex color.
- */
 function _shadeColor(hex, percent) {
     let r = parseInt(hex.slice(1, 3), 16);
     let g = parseInt(hex.slice(3, 5), 16);
@@ -2475,15 +2497,10 @@ function persistFromOpt(btn) {
     const value = resolveOptValue(btn);
     setByPath(settings, path, value);
 
-    // Mode changes while a custom theme is active should re-apply immediately
+    // Mode changes always apply a live custom theme (Paper/Abyss seeded)
     if (path === 'lookFeel.customTheme.mode') {
-        if (!settings.lookFeel.customTheme) {
-            settings.lookFeel.customTheme = structuredClone(CUSTOM_THEME_DEFAULT);
-        }
-        settings.lookFeel.customTheme.mode = isLightModeValue(value) ? 'Light' : 'Dark';
-        if (isCustomThemeName(settings.lookFeel.colorTheme)) {
-            settings.lookFeel.colorTheme = 'custom';
-        }
+        commitCustomTheme({ mode: value }, { seedFromMode: true });
+        return;
     }
 
     saveSettings(settings);
@@ -2492,9 +2509,6 @@ function persistFromOpt(btn) {
     if (path === 'lookFeel.colorTheme') {
         syncColorThemeSelectLabel(settings);
         syncCustomThemeEditor(settings);
-    } else if (path === 'lookFeel.customTheme.mode') {
-        syncCustomThemeEditor(settings);
-        syncColorThemeSelectLabel(settings);
     }
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
@@ -3076,6 +3090,8 @@ window.usertypo_settingsApi = {
     getThemeDisplayName,
     isThemeLight,
     isCustomThemeName,
+    syncCustomThemeEditor,
+    commitCustomTheme,
     getLanguageDisplayName,
     isDualPage,
     isRoomPage,
