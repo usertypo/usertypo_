@@ -30,8 +30,9 @@ html {
         /* Appearance (line/block/underscore/outline) comes from paceCaretStyle via settings.js */
         #bot-caret {
             position: absolute;
-            transition: transform 0.18s linear, width 0.18s linear;
-            will-change: transform, width;
+            box-sizing: border-box;
+            transition: transform 0.18s linear, width 0.18s linear, height 0.18s linear;
+            will-change: transform, width, height;
             pointer-events: none;
             left: 0;
             top: 0;

@@ -570,6 +570,7 @@
         const settings = settingsApi.loadSettings();
         settingsApi.applyAllSettings?.(settings);
         settingsApi.restoreUI?.(settings);
+        settingsApi.restoreCustomButtonValues?.(settings);
         document.querySelectorAll('#global-settings-search-overlay input[type="range"].custom-slider').forEach(updateSlider);
     }
 
@@ -674,6 +675,7 @@
 
         if (settingsApi) {
             settingsApi.restoreUI(settingsApi.loadSettings());
+            settingsApi.restoreCustomButtonValues?.();
             resultsContainer.querySelectorAll('input[type="range"].custom-slider').forEach(updateSlider);
         }
     }

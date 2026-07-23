@@ -115,6 +115,17 @@ function loadSettings() {
         }
         delete settings.cursor.tapeModeInDual;
         delete settings.cursor.tapeModeInRooms;
+
+        if (settings.cursor.paceCaretMode) {
+            settings.cursor.paceCaretMode = String(settings.cursor.paceCaretMode).toLowerCase();
+        }
+        if (settings.cursor.paceCaretStyle) {
+            settings.cursor.paceCaretStyle = String(settings.cursor.paceCaretStyle).toLowerCase();
+        }
+        const customSpeed = Number(settings.cursor.paceCaretCustomSpeed);
+        settings.cursor.paceCaretCustomSpeed = Number.isFinite(customSpeed) && customSpeed > 0
+            ? customSpeed
+            : 100;
     }
 
     // Migrate quickRestart from testRules to keyboardLayout
@@ -1175,14 +1186,20 @@ function applyThemeSettings(settings) {
 
 /**
  * Resolve the value of an opt-btn.
+ * Prefer data-value when present (stable even if the label shows a custom number).
  * Icon-only buttons (caret style) use the title attribute.
  * Text buttons use textContent.
  */
 function resolveOptValue(btn) {
-    // Collapse internal whitespace/newlines from multi-line HTML button text
-    const text = btn.textContent.replace(/\s+/g, ' ').trim();
     const path = getSettingPath(btn);
-    let val = text || (btn.getAttribute('title') || '');
+    let val = '';
+    if (btn.dataset.value) {
+        val = String(btn.dataset.value).trim();
+    } else {
+        // Collapse internal whitespace/newlines from multi-line HTML button text
+        const text = btn.textContent.replace(/\s+/g, ' ').trim();
+        val = text || (btn.getAttribute('title') || '');
+    }
     if (path && (path.startsWith('cursor.') || path === 'soundscape.errorSounds')) return val.toLowerCase();
     return val;
 }
@@ -1313,7 +1330,7 @@ function buildPaceCaretCSS(style, smoothness) {
     style = (style || 'underscore').toLowerCase();
     const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
-    const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
+    const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, height ${dur} ${ease}, opacity 0.5s ease-in-out`;
     const liveWhite = '#ffffff';
     const liveWhiteRGB = '255, 255, 255';
     // Solo pace caret + dual-page opponent ghost share the same style setting.
@@ -1321,9 +1338,17 @@ function buildPaceCaretCSS(style, smoothness) {
 
     let css = `
         ${sel} {
+            display: block !important;
+            box-sizing: border-box !important;
             transition: ${transition} !important;
-            opacity: 0.5 !important;
-            filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.3));
+            opacity: 0.55 !important;
+            filter: drop-shadow(0 0 8px rgba(${liveWhiteRGB}, 0.35));
+        }
+        ${sel}.hidden {
+            display: block !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
     `;
 
@@ -1332,33 +1357,33 @@ function buildPaceCaretCSS(style, smoothness) {
             css += `
                 ${sel} {
                     width: 2.5px !important;
-                    background-color: ${liveWhite};
+                    background-color: ${liveWhite} !important;
                     border: none !important;
-                    border-radius: 2px;
-                    box-shadow: none;
+                    border-radius: 2px !important;
+                    box-shadow: none !important;
                 }
-                ${sel}::after { display: none !important; }
+                ${sel}::after { content: none !important; display: none !important; }
             `;
             break;
 
         case 'block':
             css += `
                 ${sel} {
-                    background-color: rgba(${liveWhiteRGB}, 0.25);
+                    background-color: rgba(${liveWhiteRGB}, 0.35) !important;
                     border: none !important;
-                    border-radius: 2px;
-                    box-shadow: none;
+                    border-radius: 2px !important;
+                    box-shadow: none !important;
                 }
-                ${sel}::after { display: none !important; }
+                ${sel}::after { content: none !important; display: none !important; }
             `;
             break;
 
         case 'underscore':
             css += `
                 ${sel} {
-                    background-color: transparent;
+                    background-color: transparent !important;
                     border: none !important;
-                    box-shadow: none;
+                    box-shadow: none !important;
                 }
                 ${sel}::after {
                     content: '' !important;
@@ -1368,7 +1393,7 @@ function buildPaceCaretCSS(style, smoothness) {
                     left: 0;
                     right: 0;
                     height: 2.5px;
-                    background-color: ${liveWhite};
+                    background-color: ${liveWhite} !important;
                     border-radius: 9999px;
                     box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
                 }
@@ -1378,21 +1403,21 @@ function buildPaceCaretCSS(style, smoothness) {
         case 'outline':
             css += `
                 ${sel} {
-                    background-color: transparent;
-                    border: 2px solid rgba(${liveWhiteRGB}, 0.6) !important;
-                    border-radius: 3px;
-                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.15);
+                    background-color: transparent !important;
+                    border: 2px solid rgba(${liveWhiteRGB}, 0.85) !important;
+                    border-radius: 3px !important;
+                    box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.2) !important;
                 }
-                ${sel}::after { display: none !important; }
+                ${sel}::after { content: none !important; display: none !important; }
             `;
             break;
 
         default:
             css += `
                 ${sel} {
-                    background-color: transparent;
+                    background-color: transparent !important;
                     border: none !important;
-                    box-shadow: none;
+                    box-shadow: none !important;
                 }
                 ${sel}::after {
                     content: '' !important;
@@ -1402,7 +1427,7 @@ function buildPaceCaretCSS(style, smoothness) {
                     left: 0;
                     right: 0;
                     height: 2.5px;
-                    background-color: ${liveWhite};
+                    background-color: ${liveWhite} !important;
                     border-radius: 9999px;
                     box-shadow: 0 0 6px rgba(${liveWhiteRGB}, 0.25);
                 }
@@ -1930,7 +1955,10 @@ function restoreUI(settings) {
         }
 
         // Opt-btn groups — normalize saved value for comparison
-        const savedNorm = String(saved).replace(/\s+/g, ' ').trim();
+        let savedNorm = String(saved).replace(/\s+/g, ' ').trim();
+        if (path.startsWith('cursor.') || path === 'soundscape.errorSounds') {
+            savedNorm = savedNorm.toLowerCase();
+        }
         container.querySelectorAll('.opt-btn').forEach(btn => {
             const btnVal = resolveOptValue(btn); // already whitespace-normalized
             btn.classList.toggle('active', btnVal === savedNorm);
@@ -2013,22 +2041,25 @@ function restoreCustomButtonValues() {
         if (matchedRegular) return;
 
         container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
-            const btnLabel = triggerBtn.textContent.trim();
+            const btnLabel = (triggerBtn.getAttribute('data-original-text')
+                || triggerBtn.getAttribute('data-value')
+                || triggerBtn.textContent.trim());
+            const labelNorm = String(btnLabel).replace(/\s+/g, ' ').trim();
 
             if (path === 'resultsAndGraphs.minBurst') {
-                if (String(saved).startsWith('Flex:') && btnLabel === 'Flex') {
+                if (String(saved).startsWith('Flex:') && (labelNorm === 'Flex' || labelNorm.toLowerCase() === 'flex')) {
                     triggerBtn.setAttribute('data-original-text', 'Flex');
                     triggerBtn.textContent = String(saved).split(':')[1];
                     container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
                     triggerBtn.classList.add('active');
-                } else if (!String(saved).startsWith('Flex:') && btnLabel === 'Fixed') {
+                } else if (!String(saved).startsWith('Flex:') && (labelNorm === 'Fixed' || labelNorm.toLowerCase() === 'fixed')) {
                     triggerBtn.setAttribute('data-original-text', 'Fixed');
                     triggerBtn.textContent = saved;
                     container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
                     triggerBtn.classList.add('active');
                 }
             } else {
-                if (btnLabel === 'Custom') {
+                if (labelNorm === 'Custom' || labelNorm.toLowerCase() === 'custom' || /^\d+(\.\d+)?$/.test(triggerBtn.textContent.trim())) {
                     triggerBtn.setAttribute('data-original-text', 'Custom');
                     triggerBtn.textContent = saved;
                     container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
@@ -2038,14 +2069,17 @@ function restoreCustomButtonValues() {
         });
     });
 
-    // Pace caret Custom stores mode + speed separately
+    // Pace caret Custom stores mode + speed separately; data-value="custom" keeps restoreUI matched
     if ((settings.cursor?.paceCaretMode || '').toLowerCase() === 'custom') {
         const container = document.querySelector('[data-setting="cursor.paceCaretMode"]');
         const speed = settings.cursor.paceCaretCustomSpeed;
         if (container && speed != null && speed !== '') {
             container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
-                const label = triggerBtn.getAttribute('data-original-text') || triggerBtn.textContent.trim();
-                if (label === 'Custom' || triggerBtn.textContent.trim() === 'Custom' || /^\d+(\.\d+)?$/.test(triggerBtn.textContent.trim())) {
+                const isCustom = (triggerBtn.getAttribute('data-value') || '').toLowerCase() === 'custom'
+                    || (triggerBtn.getAttribute('data-original-text') || '') === 'Custom'
+                    || triggerBtn.textContent.trim() === 'Custom'
+                    || /^\d+(\.\d+)?$/.test(triggerBtn.textContent.trim());
+                if (isCustom) {
                     triggerBtn.setAttribute('data-original-text', 'Custom');
                     triggerBtn.textContent = String(speed);
                     container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
@@ -2179,6 +2213,7 @@ function _reapplyAllSettings() {
 
     if (_isOnSettingsPage()) {
         restoreUI(settings);
+        restoreCustomButtonValues();
         applyKeymapDisplay(settings);
     }
 
@@ -2471,12 +2506,14 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     let finalVal = isFlex ? 'Flex:' + val : val;
 
     const settings = loadSettings();
-    setByPath(settings, path, finalVal);
-    // Pace caret Custom: store WPM and activate custom mode
+    // Pace caret Custom: store WPM as a number and activate custom mode
     if (path === 'cursor.paceCaretCustomSpeed') {
         const speed = Number(val);
-        setByPath(settings, 'cursor.paceCaretCustomSpeed', Number.isFinite(speed) ? speed : 100);
+        const wpm = Number.isFinite(speed) && speed > 0 ? speed : 100;
+        setByPath(settings, 'cursor.paceCaretCustomSpeed', wpm);
         setByPath(settings, 'cursor.paceCaretMode', 'custom');
+    } else {
+        setByPath(settings, path, finalVal);
     }
     saveSettings(settings);
     applyAllSettings(settings);
@@ -2548,6 +2585,7 @@ window.usertypo_settingsApi = {
     saveSettings,
     setByPath,
     restoreUI,
+    restoreCustomButtonValues,
     initSettingsPage,
     persistFromOpt,
     persistFromToggle,
