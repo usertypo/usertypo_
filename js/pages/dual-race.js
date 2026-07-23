@@ -497,7 +497,26 @@
             var avatarEl = statsView.querySelector('#dual-stats-user-avatar');
             if (nameEl) nameEl.textContent = name;
             if (tierEl) tierEl.textContent = tier;
-            if (avatarEl) avatarEl.textContent = initial;
+            if (avatarEl && window.usertypoPlayerAvatar) {
+                var progression = window.usertypoProgression && window.usertypoProgression.getCached
+                    ? window.usertypoProgression.getCached()
+                    : null;
+                var photo = (profile && profile.avatar_url)
+                    || (authState && authState.user && authState.user.imageUrl)
+                    || '';
+                avatarEl.outerHTML = window.usertypoPlayerAvatar.render({
+                    id: 'dual-stats-user-avatar',
+                    avatarUrl: photo,
+                    name: name,
+                    level: progression && progression.level || 1,
+                    percentToNext: progression && progression.percentToNext || 0,
+                    size: 'sm',
+                    showLevel: !!(authState && authState.isSignedIn),
+                    className: 'shrink-0',
+                });
+            } else if (avatarEl) {
+                avatarEl.textContent = initial;
+            }
         }
 
         function initStatsHeader() {
@@ -1240,8 +1259,13 @@
             var opponent = players.find(function (player) { return player.userId !== selfUserId; });
             selfIndex = self ? self.index : 0;
             opponentIndex = opponent ? opponent.index : (bot ? bot.index : 1);
-            if (opponentAvatar && opponent && opponent.avatarUrl) {
-                opponentAvatar.style.backgroundImage = "url('" + String(opponent.avatarUrl).replace(/'/g, '%27') + "')";
+            paintDualOpponentAvatar(opponent);
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(function () {
+                    if (token !== raceStartToken) return;
+                    opponent = players.find(function (player) { return player.userId !== selfUserId; });
+                    paintDualOpponentAvatar(opponent);
+                }).catch(function () { /* ignore */ });
             }
             currentWordIndex = 0;
             currentCharIndex = 0;
@@ -1317,6 +1341,27 @@
             /* Config pill removed from dual test view. */
         }
 
+        function paintDualOpponentAvatar(opponent) {
+            opponentAvatar = document.getElementById('bot-avatar');
+            if (!opponentAvatar) return;
+            if (window.usertypoPlayerAvatar && opponent) {
+                opponentAvatar.outerHTML = window.usertypoPlayerAvatar.fromPlayer({
+                    name: opponent.name,
+                    avatarUrl: opponent.avatarUrl,
+                    level: opponent.level,
+                    percentToNext: opponent.percentToNext,
+                    isBot: !!(bot && (!opponent || opponent.userId === 'bot')),
+                }, {
+                    size: 'xs',
+                    id: 'bot-avatar',
+                    showLevel: !(bot && (!opponent || opponent.userId === 'bot')),
+                });
+                opponentAvatar = document.getElementById('bot-avatar');
+            } else if (opponent && opponent.avatarUrl) {
+                opponentAvatar.style.backgroundImage = "url('" + String(opponent.avatarUrl).replace(/'/g, '%27') + "')";
+            }
+        }
+
         function applyOpponentProgress(payload) {
             if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
             var nextWpm = Math.max(0, Number(payload[1]) || 0);
@@ -1333,11 +1378,35 @@
             set(prefix + '-name', data.name);
             var avatar = document.getElementById(prefix + '-avatar');
             if (avatar) {
-                avatar.textContent = data.name ? data.name.charAt(0).toUpperCase() : '?';
-                if (data.avatarUrl) {
-                    avatar.textContent = '';
-                    avatar.style.backgroundImage = "url('" + String(data.avatarUrl).replace(/'/g, '%27') + "')";
-                    avatar.style.backgroundSize = 'cover';
+                if (window.usertypoPlayerAvatar) {
+                    var html = window.usertypoPlayerAvatar.fromPlayer({
+                        name: data.name,
+                        avatarUrl: data.avatarUrl,
+                        level: data.level,
+                        percentToNext: data.percentToNext,
+                        isBot: !!data.isBot,
+                    }, {
+                        size: 'md',
+                        id: prefix + '-avatar',
+                        className: prefix === 'w'
+                            ? 'shadow-[0_0_12px_rgba(0,208,255,0.25)]'
+                            : '',
+                    });
+                    if (avatar.classList && avatar.classList.contains('player-level-avatar')) {
+                        avatar.outerHTML = html;
+                    } else {
+                        avatar.innerHTML = html;
+                        var nested = avatar.firstElementChild;
+                        if (nested) nested.id = prefix + '-avatar';
+                        avatar.removeAttribute('id');
+                    }
+                } else {
+                    avatar.textContent = data.name ? data.name.charAt(0).toUpperCase() : '?';
+                    if (data.avatarUrl) {
+                        avatar.textContent = '';
+                        avatar.style.backgroundImage = "url('" + String(data.avatarUrl).replace(/'/g, '%27') + "')";
+                        avatar.style.backgroundSize = 'cover';
+                    }
                 }
             }
             set(prefix + '-wpm', data.wpm);
@@ -1362,29 +1431,43 @@
             var me = players.find(function (player) { return player.userId === selfUserId; }) || { name: 'You', avatarUrl: '' };
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
-            var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
-            var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
-            var meData = parseServerResult(myRow) || computeFinalStats(localFinishTime || Date.now());
-            meData.name = me.name;
-            meData.avatarUrl = me.avatarUrl;
-            var otherData = parseServerResult(otherRow) || {
-                name: other.name,
-                avatarUrl: other.avatarUrl,
-                wpm: 0,
-                accuracy: 0,
-                time: config && config.mode === 'time' ? config.amount : 0,
-                consistency: 0,
-                raw: 0,
-                errors: 0,
-                correct: 0,
-                total: 0,
-                extra: 0,
+            var paintResults = function () {
+                var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
+                var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
+                var meData = parseServerResult(myRow) || computeFinalStats(localFinishTime || Date.now());
+                meData.name = me.name;
+                meData.avatarUrl = me.avatarUrl;
+                meData.level = me.level;
+                meData.percentToNext = me.percentToNext;
+                var otherData = parseServerResult(otherRow) || {
+                    name: other.name,
+                    avatarUrl: other.avatarUrl,
+                    level: other.level,
+                    percentToNext: other.percentToNext,
+                    wpm: 0,
+                    accuracy: 0,
+                    time: config && config.mode === 'time' ? config.amount : 0,
+                    consistency: 0,
+                    raw: 0,
+                    errors: 0,
+                    correct: 0,
+                    total: 0,
+                    extra: 0,
+                };
+                otherData.name = other.name;
+                otherData.avatarUrl = other.avatarUrl;
+                otherData.level = other.level;
+                otherData.percentToNext = other.percentToNext;
+                otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+                var meWon = rows.length && rows[0][0] === selfIndex;
+                fillCard('w', meWon ? meData : otherData);
+                fillCard('l', meWon ? otherData : meData);
             };
-            otherData.name = other.name;
-            otherData.avatarUrl = other.avatarUrl;
-            var meWon = rows.length && rows[0][0] === selfIndex;
-            fillCard('w', meWon ? meData : otherData);
-            fillCard('l', meWon ? otherData : meData);
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
+            } else {
+                paintResults();
+            }
             var label = document.getElementById('stats-race-label');
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3] || opponentLeft) {

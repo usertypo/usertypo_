@@ -98,9 +98,37 @@
         }
 
         function botAvatarHtml(sizeClass, iconSize) {
+            if (window.usertypoPlayerAvatar) {
+                var size = 'sm';
+                if (sizeClass && /w-12|lb-avatar/.test(sizeClass)) size = sizeClass.indexOf('w-12') >= 0 ? 'lg' : 'sm';
+                if (sizeClass && /w-8|w-9/.test(sizeClass)) size = 'sm';
+                return window.usertypoPlayerAvatar.render({
+                    isBot: true,
+                    name: 'Bot',
+                    size: size,
+                    showLevel: false,
+                    className: sizeClass && sizeClass.indexOf('mx-auto') >= 0 ? 'mx-auto mb-2' : '',
+                });
+            }
             return '<div class="' + sizeClass + ' rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">' +
                 '<span class="material-symbols-outlined text-primary" style="font-size:' + (iconSize || 18) + 'px;">smart_toy</span>' +
                 '</div>';
+        }
+
+        function playerAvatarHtml(player, size, extraClass) {
+            if (window.usertypoPlayerAvatar) {
+                return window.usertypoPlayerAvatar.fromPlayer(player, {
+                    size: size || 'md',
+                    className: extraClass || '',
+                    showLevel: !player.isBot && !(player.userId && String(player.userId).indexOf('guest_') === 0),
+                });
+            }
+            if (player.isBot) return botAvatarHtml(extraClass || 'w-9 h-9', 18);
+            if (player.avatarUrl) {
+                return '<img src="' + escapeHtml(player.avatarUrl) + '" class="w-9 h-9 rounded-full object-cover border border-white/10" alt="">';
+            }
+            return '<div class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-xs">' +
+                escapeHtml((player.name || '?').charAt(0).toUpperCase()) + '</div>';
         }
 
         function getSelfPlayer() {
@@ -208,18 +236,13 @@
                 var node = document.createElement('div');
                 node.className = 'orbit-counter';
                 var playerId = String(player.userId || player.index || index);
-                var avatarSrc = player.avatarUrl ? escapeHtml(player.avatarUrl) : '';
                 node.innerHTML =
                     '<div class="orbit-pulse">' +
                         '<div class="player-node' + (player.ready ? ' is-ready' : '') +
                             '" data-player-id="' + escapeHtml(playerId) +
                             '" data-player-name="' + escapeHtml(player.name) + '">' +
                             '<div class="player-avatar-ring">' +
-                                (player.isBot
-                                    ? '<span class="material-symbols-outlined player-bot-icon text-primary" aria-hidden="true">smart_toy</span>'
-                                    : (avatarSrc
-                                        ? '<img class="player-node-img" alt="' + escapeHtml(player.name) + '" src="' + avatarSrc + '" decoding="async">'
-                                        : '')) +
+                                playerAvatarHtml(player, 'lg', 'player-orbit-avatar') +
                             '</div>' +
                             '<div class="player-ready-dot"></div>' +
                         '</div>' +
@@ -272,13 +295,7 @@
                 var badge = player.ready || player.isBot
                     ? '<span class="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full whitespace-nowrap">Ready</span>'
                     : '<span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full whitespace-nowrap">Waiting</span>';
-                var imgClass = 'w-9 h-9 rounded-full border object-cover shrink-0 ' + (isRoomHost ? 'border-2 border-primary' : 'border-white/10');
-                var imgStyle = player.ready || player.isBot ? ' style="box-shadow:0 0 8px rgba(0,208,255,0.35)"' : '';
-                var avatar = player.isBot
-                    ? botAvatarHtml('w-9 h-9', 18)
-                    : (player.avatarUrl
-                        ? '<img src="' + escapeHtml(player.avatarUrl) + '" class="' + imgClass + '"' + imgStyle + ' alt="">'
-                        : '<div class="' + imgClass + ' bg-white/5 flex items-center justify-center"' + imgStyle + '><span class="material-symbols-outlined text-slate-500 text-[18px]">person</span></div>');
+                var avatar = playerAvatarHtml(player, 'sm', isRoomHost ? 'ring-2 ring-primary/60' : '');
                 var removeBtn = canRemove
                     ? '<button type="button" class="room-remove-player-btn ml-2 w-8 h-8 rounded-lg text-slate-500 hover:text-error hover:bg-error/10 transition-colors flex items-center justify-center shrink-0" data-user-id="' +
                         escapeHtml(player.userId) + '" title="Remove player" aria-label="Remove ' + escapeHtml(player.name) + '">' +
@@ -387,20 +404,22 @@
                 }).sort(function (a, b) {
                     return (b.is_online ? 1 : 0) - (a.is_online ? 1 : 0);
                 });
+                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                    await window.usertypoProgression.attachToList(friends, 'user_id');
+                }
                 if (!friends.length) {
                     list.innerHTML = '<p class="text-xs text-slate-500 italic px-2 py-3">No friends available to invite.</p>';
                     return;
                 }
                 list.innerHTML = friends.map(function (friend) {
                     var invited = !!invitedFriendIds[friend.user_id];
-                    var friendAvatar = friend.avatar_url
-                        ? 'background-image:url(\'' + escapeHtml(friend.avatar_url) + '\')'
-                        : '';
                     return '<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">' +
-                        '<div class="w-9 h-9 rounded-full bg-cover bg-center border border-white/10 shrink-0 bg-white/5 flex items-center justify-center"' +
-                            (friendAvatar ? ' style="' + friendAvatar + '"' : '') + '>' +
-                            (friendAvatar ? '' : '<span class="material-symbols-outlined text-slate-500 text-[18px]">person</span>') +
-                        '</div>' +
+                        playerAvatarHtml({
+                            avatarUrl: friend.avatar_url,
+                            name: friend.username || friend.display_name || 'Friend',
+                            level: friend.level,
+                            percentToNext: friend.percent_to_next != null ? friend.percent_to_next : friend.percentToNext,
+                        }, 'sm') +
                         '<span class="flex-1 text-sm font-semibold text-on-surface truncate">' + escapeHtml(friend.username || friend.display_name || 'Friend') + '</span>' +
                         '<button type="button" class="room-invite-friend-btn text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ' +
                             (invited
@@ -1078,32 +1097,22 @@
                 config.nums ? 'Numbers' : '',
             ].filter(Boolean).join(' · ');
 
+            paintLobbyPlayers();
+            enrichRoomPlayerLevels().then(function (changed) {
+                if (changed && room && room.roomId === roomId) paintLobbyPlayers();
+            }).catch(function () { /* ignore */ });
+        }
+
+        function paintLobbyPlayers() {
+            if (!room) return;
             var host = room.players.find(function (player) { return player.userId === room.hostUserId; });
             var hostWrap = document.getElementById('lobby-host');
             var hostBtn = document.getElementById('lobby-host-btn');
-            var hostImage = document.getElementById('lobby-host-img') || document.querySelector('#lobby-host img');
-            if (hostImage && host) {
-                var nextHostSrc = host.avatarUrl || '';
-                if (nextHostSrc) {
-                    if (hostImage.getAttribute('src') !== nextHostSrc) {
-                        hostImage.classList.remove('opacity-100');
-                        hostImage.classList.add('opacity-0');
-                        hostImage.onload = function () {
-                            hostImage.classList.remove('opacity-0');
-                            hostImage.classList.add('opacity-100');
-                        };
-                        hostImage.src = nextHostSrc;
-                        if (hostImage.complete && hostImage.naturalWidth) {
-                            hostImage.classList.remove('opacity-0');
-                            hostImage.classList.add('opacity-100');
-                        }
-                    }
-                } else {
-                    hostImage.removeAttribute('src');
-                    hostImage.classList.add('opacity-0');
-                    hostImage.classList.remove('opacity-100');
-                }
-                hostImage.alt = host.name || 'Host';
+            var hostAvatarSlot = document.getElementById('lobby-host-avatar-slot')
+                || document.querySelector('#lobby-host .lobby-host-avatar');
+            if (hostAvatarSlot && host) {
+                hostAvatarSlot.innerHTML = playerAvatarHtml(host, 'host', 'lobby-host-level-avatar');
+                hostAvatarSlot.classList.remove('opacity-0');
             }
             if (hostWrap) hostWrap.classList.toggle('is-ready', !!(host && host.ready));
             if (host && hostBtn) {
@@ -1139,6 +1148,21 @@
                 renderInviteFriends();
                 updateAddBotOption();
             }
+        }
+
+        async function enrichRoomPlayerLevels() {
+            if (!room || !Array.isArray(room.players)) return false;
+            if (!window.usertypoProgression || typeof window.usertypoProgression.attachToList !== 'function') {
+                return false;
+            }
+            var needed = room.players.some(function (player) {
+                return player && player.userId && !player.isBot
+                    && String(player.userId).indexOf('guest_') !== 0
+                    && (player.level == null || player.percentToNext == null);
+            });
+            if (!needed) return false;
+            await window.usertypoProgression.attachToList(room.players, 'userId');
+            return true;
         }
 
         function stopRaceTimers() {
@@ -1568,6 +1592,9 @@
                 return Object.assign({ index: player.index, wpm: 0, isBot: false }, progressByIndex[player.index] || {}, {
                     name: player.name,
                     avatarUrl: player.avatarUrl,
+                    level: player.level,
+                    percentToNext: player.percentToNext,
+                    userId: player.userId,
                 });
             });
             if (room.bot) {
@@ -1620,10 +1647,7 @@
             leaderboard.innerHTML = rows.map(function (row, index) {
                 var avatar = row.isBot
                     ? botAvatarHtml('lb-avatar', 16)
-                    : (row.avatarUrl
-                        ? '<img class="lb-avatar" src="' + String(row.avatarUrl).replace(/"/g, '&quot;') +
-                            '" alt="" width="28" height="28" loading="lazy" decoding="async">'
-                        : '<div class="lb-avatar flex items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-[16px]">person</span></div>');
+                    : playerAvatarHtml(row, 'sm', 'lb-level-avatar');
                 return '<div class="lb-pill player-pill' + (row.index === selfIndex ? ' me' : '') +
                     '" data-player-index="' + row.index + '">' +
                     '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
@@ -1712,9 +1736,7 @@
                 : '';
             var avatarHtml = player.isBot
                 ? botAvatarHtml('w-12 h-12 mx-auto mb-2', 24)
-                : player.avatarUrl
-                ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-12 h-12 rounded-full object-cover mx-auto mb-2 border ' + (player.isMe ? 'border-primary/40' : 'border-white/10') + '">'
-                : '<div class="w-12 h-12 rounded-full ' + (player.isMe ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_12px_rgba(0,208,255,0.25)]' : theme.avatarBg + ' border') + ' flex items-center justify-center font-black text-base mx-auto mb-2 ' + (player.isMe ? '' : theme.avatarShadow) + '">' + escapeHtml(player.initials) + '</div>';
+                : playerAvatarHtml(player, 'xl', 'mx-auto mb-2');
 
             return '<div class="flex flex-col items-center gap-3 w-[220px] anim-card" style="animation-delay: ' + theme.delay + ';">' +
                 '<div class="panel-surface rounded-xl p-5 w-full text-center relative overflow-hidden" style="' + cardBorderStyle + '">' +
@@ -1738,13 +1760,14 @@
         }
 
         function buildStatsListRow(player, rank) {
+            var avatar = player.isBot
+                ? '<div class="mr-3">' + botAvatarHtml('w-8 h-8', 16) + '</div>'
+                : '<div class="mr-3">' + playerAvatarHtml(player, 'sm') + '</div>';
             if (player.isMe) {
                 return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center relative overflow-hidden anim-card" style="border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);">' +
                     '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' +
                     '<span class="text-primary font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
-                    (player.avatarUrl
-                        ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-8 h-8 rounded-full object-cover mr-3 border border-primary/30">'
-                        : '<div class="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs mr-3 shadow-[0_0_10px_rgba(0,208,255,0.2)]">' + escapeHtml(player.initials) + '</div>') +
+                    avatar +
                     '<span class="text-white font-bold text-sm flex-1">' + escapeHtml(player.name) +
                     ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span></span>' +
                     '<span class="text-primary font-mono font-black text-lg" style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), 0.4);">' +
@@ -1752,11 +1775,7 @@
             }
             return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center hover:bg-white/5 transition-colors anim-card">' +
                 '<span class="text-slate-500 font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
-                (player.isBot
-                    ? '<div class="mr-3">' + botAvatarHtml('w-8 h-8', 16) + '</div>'
-                    : player.avatarUrl
-                    ? '<img src="' + String(player.avatarUrl).replace(/"/g, '&quot;') + '" alt="" class="w-8 h-8 rounded-full object-cover mr-3 border border-white/10">'
-                    : '<div class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-xs mr-3">' + escapeHtml(player.initials) + '</div>') +
+                avatar +
                 '<span class="text-slate-200 font-bold text-sm flex-1">' + escapeHtml(player.name) +
                 (player.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '') +
                 '</span>' +
@@ -1784,6 +1803,8 @@
                     name: name,
                     initials: initialsFromName(name),
                     avatarUrl: profile.avatarUrl || '',
+                    level: profile.level,
+                    percentToNext: profile.percentToNext,
                     isBot: isBot,
                     wpm: Math.round(Number(row[3]) || 0),
                     acc: Math.round((Number(row[4]) || 0) * 10) / 10,
@@ -1864,31 +1885,38 @@
             abortCountdownIntro();
             countdownSequenceStarted = false;
             var players = mapResultRows(payload[2] || []);
-            var top3 = players.slice(0, 3);
-            var podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-            var podium = document.getElementById('stats-podium');
-            var list = document.getElementById('stats-rankings-list');
-            if (podium) {
-                var places = [2, 1, 3];
-                podium.innerHTML = podiumOrder.map(function (player, index) {
-                    return buildPodiumCard(player, places[index]);
-                }).join('');
-            }
-            if (list) {
-                var me = players.find(function (player) { return player.isMe; });
-                var myInTop3 = top3.some(function (player) { return player.isMe; });
-                var rest = players.slice(3).filter(function (player) { return !player.isMe || myInTop3; });
-                var html = '';
-                if (!myInTop3 && me) {
-                    var myRank = players.findIndex(function (player) { return player.isMe; }) + 1;
-                    html += buildStatsListRow(me, myRank);
-                    if (rest.length) html += '<div class="h-px bg-white/5 my-1"></div>';
+            function paintRoomResults() {
+                var top3 = players.slice(0, 3);
+                var podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+                var podium = document.getElementById('stats-podium');
+                var list = document.getElementById('stats-rankings-list');
+                if (podium) {
+                    var places = [2, 1, 3];
+                    podium.innerHTML = podiumOrder.map(function (player, index) {
+                        return buildPodiumCard(player, places[index]);
+                    }).join('');
                 }
-                html += rest.map(function (player) {
-                    var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
-                    return buildStatsListRow(player, rank);
-                }).join('');
-                list.innerHTML = html;
+                if (list) {
+                    var me = players.find(function (player) { return player.isMe; });
+                    var myInTop3 = top3.some(function (player) { return player.isMe; });
+                    var rest = players.slice(3).filter(function (player) { return !player.isMe || myInTop3; });
+                    var html = '';
+                    if (!myInTop3 && me) {
+                        var myRank = players.findIndex(function (player) { return player.isMe; }) + 1;
+                        html += buildStatsListRow(me, myRank);
+                        if (rest.length) html += '<div class="h-px bg-white/5 my-1"></div>';
+                    }
+                    html += rest.map(function (player) {
+                        var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
+                        return buildStatsListRow(player, rank);
+                    }).join('');
+                    list.innerHTML = html;
+                }
+            }
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(paintRoomResults).catch(paintRoomResults);
+            } else {
+                paintRoomResults();
             }
             returnLobbyNeeded = Math.max(1, (room.players || []).filter(function (player) {
                 return player.status !== 'left';

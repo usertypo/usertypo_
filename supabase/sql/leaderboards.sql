@@ -22,7 +22,9 @@ returns table (
   raw_wpm numeric,
   accuracy numeric,
   consistency numeric,
-  session_created_at timestamptz
+  session_created_at timestamptz,
+  level integer,
+  percent_to_next numeric
 )
 language sql
 stable
@@ -96,9 +98,16 @@ as $$
     r.raw_wpm,
     r.accuracy,
     r.consistency,
-    r.session_created_at
+    r.session_created_at,
+    coalesce(up.level, 1) as level,
+    case
+      when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+        then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+      else 0
+    end as percent_to_next
   from ranked r
   inner join public.profiles p on p.user_id = r.user_id
+  left join public.user_progression up on up.user_id = r.user_id
   order by r.rank
   limit least(greatest(coalesce(p_limit, 50), 1), 100);
 $$;

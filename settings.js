@@ -1768,7 +1768,7 @@ function applyThemeSettings(settings) {
         .player-pill.me .progress-fill {
             box-shadow: 0 0 8px rgba(${accentRGB}, 0.35) !important;
         }
-        .player-node.is-ready .player-avatar-ring {
+        .player-node.is-ready .player-avatar-ring .player-level-avatar__photo {
             border-color: rgba(${accentRGB}, 0.85) !important;
             box-shadow: 0 0 12px rgba(${accentRGB}, 0.55), 0 0 28px rgba(${accentRGB}, 0.2) !important;
         }

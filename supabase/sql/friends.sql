@@ -137,13 +137,17 @@ begin
 end;
 $$;
 
+drop function if exists public.search_profiles(text, integer);
+
 create or replace function public.search_profiles(p_query text, p_limit integer default 10)
 returns table (
   user_id text,
   username text,
   display_name text,
   avatar_url text,
-  relationship text
+  relationship text,
+  level integer,
+  percent_to_next numeric
 )
 language plpgsql
 stable
@@ -169,8 +173,15 @@ begin
     p.username,
     p.display_name,
     p.avatar_url,
-    public._relationship_with_user(p.user_id) as relationship
+    public._relationship_with_user(p.user_id) as relationship,
+    coalesce(up.level, 1) as level,
+    case
+      when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+        then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+      else 0
+    end as percent_to_next
   from public.profiles p
+  left join public.user_progression up on up.user_id = p.user_id
   where p.user_id <> v_me
     and (
       (p.username is not null and p.username ilike v_query || '%')
@@ -400,9 +411,16 @@ begin
       p.username,
       p.display_name,
       p.avatar_url,
-      f.created_at as friends_since
+      f.created_at as friends_since,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friendships f
     inner join public.profiles p on p.user_id = f.friend_id
+    left join public.user_progression up on up.user_id = p.user_id
     where f.user_id = v_me
     order by f.created_at desc
   ) t;
@@ -416,9 +434,16 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url
+      p.avatar_url,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friend_requests fr
     inner join public.profiles p on p.user_id = fr.from_user_id
+    left join public.user_progression up on up.user_id = p.user_id
     where fr.to_user_id = v_me
       and fr.status = 'pending'
     order by fr.created_at desc
@@ -433,9 +458,16 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url
+      p.avatar_url,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friend_requests fr
     inner join public.profiles p on p.user_id = fr.to_user_id
+    left join public.user_progression up on up.user_id = p.user_id
     where fr.from_user_id = v_me
       and fr.status = 'pending'
     order by fr.created_at desc

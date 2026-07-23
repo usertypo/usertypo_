@@ -61,14 +61,16 @@
             width: 1rem;
             text-align: center;
         }
-        #live-leaderboard .lb-avatar {
-            width: 1.75rem;
-            height: 1.75rem;
-            border-radius: 9999px;
-            object-fit: cover;
+        #live-leaderboard .lb-avatar,
+        #live-leaderboard .lb-level-avatar,
+        #live-leaderboard .player-level-avatar {
             flex-shrink: 0;
-            background: #1a1d23;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        #live-leaderboard .player-level-avatar--sm {
+            --pla-size: 1.75rem;
+            --pla-badge-min: 0.85rem;
+            --pla-badge-h: 0.85rem;
+            --pla-badge-font: 7px;
         }
         #live-leaderboard .lb-name {
             flex: 1 1 auto;
@@ -162,10 +164,16 @@
         }
         .lobby-host-avatar {
             animation: hostBounce 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        #lobby-host.is-ready .lobby-host-avatar {
-            border-color: rgba(0, 208, 255, 0.85);
-            box-shadow: 0 0 12px rgba(0, 208, 255, 0.55), 0 0 28px rgba(0, 208, 255, 0.2);
+        #lobby-host.is-ready .lobby-host-avatar .player-level-avatar__photo {
+            border-color: rgba(0, 208, 255, 0.55);
+            box-shadow: 0 0 18px rgba(0, 208, 255, 0.45);
+        }
+        #lobby-host.is-ready .lobby-host-avatar .player-level-avatar__progress {
+            filter: drop-shadow(0 0 6px rgba(0, 208, 255, 0.55));
         }
         #ready-btn.is-disabled,
         #stats-return-lobby-btn.is-disabled {
@@ -230,59 +238,36 @@
 
         .player-node {
             position: relative;
-            width: 3.25rem;
-            height: 3.25rem;
-            margin-left: -1.625rem;
-            margin-top: -1.625rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            margin-left: -1.75rem;
+            margin-top: -1.75rem;
             flex-shrink: 0;
             cursor: pointer;
         }
         .player-avatar-ring {
             position: relative;
-            width: 3.25rem;
-            height: 3.25rem;
+            width: 3.5rem;
+            height: 3.5rem;
             border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            background: #1a1d23;
+            overflow: visible;
+            border: none;
+            background: transparent;
             box-sizing: border-box;
-            /* Reserve transparent shadow so ready glow does not reflow. */
-            box-shadow: 0 0 0 0 transparent;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: filter 0.3s ease;
         }
-        .player-node-img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #1a1d23;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+        .player-avatar-ring .player-level-avatar {
+            --pla-size: 3.5rem;
         }
-        .player-node-img.is-loaded {
-            opacity: 1;
-        }
-        /* Material Symbols sit high in the em-box — absolute grid + nudge centers optically. */
-        .player-avatar-ring > .player-bot-icon {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            margin: 0;
-            padding: 0;
-            font-size: 1.55rem;
-            line-height: 1;
-            width: 100%;
-            height: 100%;
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            -webkit-font-smoothing: antialiased;
-            transform: translateY(0.06em);
-        }
-        .player-node.is-ready .player-avatar-ring {
+        .player-node.is-ready .player-avatar-ring .player-level-avatar__photo {
             border-color: rgba(0, 208, 255, 0.85);
             box-shadow: 0 0 12px rgba(0, 208, 255, 0.55), 0 0 28px rgba(0, 208, 255, 0.2);
         }
-        .player-node:hover .player-avatar-ring {
+        .player-node:hover .player-avatar-ring .player-level-avatar__photo {
             border-color: rgba(255, 255, 255, 0.5);
         }
         /* Ready dot indicator */
@@ -397,8 +382,7 @@
                 <!-- Host (center, clickable) -->
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" id="lobby-host">
                     <button id="lobby-host-btn" class="relative focus:outline-none" title="View players">
-                        <div class="lobby-host-avatar w-28 h-28 md:w-32 md:h-32 rounded-full border-[3px] border-primary p-1 bg-surface-container neon-glow-primary-strong hover:scale-105 transition-transform duration-200">
-                            <img id="lobby-host-img" alt="Host avatar" class="w-full h-full rounded-full object-cover opacity-0 transition-opacity duration-200" decoding="async">
+                        <div id="lobby-host-avatar-slot" class="lobby-host-avatar flex items-center justify-center hover:scale-105 transition-transform duration-200">
                         </div>
                     </button>
                 </div>

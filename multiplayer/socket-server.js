@@ -96,6 +96,8 @@ function createMultiplayerServer(httpServer, options) {
             index,
             name: profile && profile.name || 'Player',
             avatarUrl: profile && profile.avatarUrl || '',
+            level: profile && profile.level != null ? profile.level : 1,
+            percentToNext: profile && profile.percentToNext != null ? profile.percentToNext : 0,
             joined: false,
             ready: false,
             socketId: null,
@@ -180,6 +182,8 @@ function createMultiplayerServer(httpServer, options) {
                 userId: player.userId,
                 name: player.name,
                 avatarUrl: player.avatarUrl,
+                level: player.level != null ? player.level : 1,
+                percentToNext: player.percentToNext != null ? player.percentToNext : 0,
                 index: player.index,
                 joined: player.joined,
                 ready: player.ready,
@@ -362,6 +366,8 @@ function createMultiplayerServer(httpServer, options) {
                 userId: player.userId,
                 name: player.name,
                 avatarUrl: player.avatarUrl,
+                level: player.level != null ? player.level : 1,
+                percentToNext: player.percentToNext != null ? player.percentToNext : 0,
             })),
             bot: room.bot ? { index: room.bot.index, name: room.bot.name, isBot: true } : null,
         };
@@ -969,7 +975,7 @@ function createMultiplayerServer(httpServer, options) {
             profiles.set(userId, await auth.getProfile(userId));
         } catch (error) {
             logger.warn('[multiplayer] profile lookup failed:', error && error.message);
-            profiles.set(userId, { userId, name: 'Player', avatarUrl: '' });
+            profiles.set(userId, { userId, name: 'Player', avatarUrl: '', level: 1, percentToNext: 0 });
         }
         const ownListing = Array.from(listings.values()).find((listing) => (
             listing.ownerUserId === userId && listing.status === 'waiting'

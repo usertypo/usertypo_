@@ -139,6 +139,10 @@
             userId: row.user_id,
             username: row.username || 'Player',
             avatarUrl: row.avatar_url || null,
+            level: row.level != null ? Math.max(1, Math.floor(Number(row.level) || 1)) : 1,
+            percentToNext: row.percent_to_next != null
+                ? Number(row.percent_to_next)
+                : (row.percentToNext != null ? Number(row.percentToNext) : 0),
             wpm: Number(row.wpm) || 0,
             rawWpm: rawWpm == null || rawWpm === '' ? null : Number(rawWpm),
             accuracy: row.accuracy == null ? null : Number(row.accuracy),
@@ -237,8 +241,13 @@
 
         if (result.error) throw result.error;
 
+        var entries = (result.data || []).map(mapEntry);
+        if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+            await window.usertypoProgression.attachToList(entries, 'userId');
+        }
+
         return {
-            entries: (result.data || []).map(mapEntry),
+            entries: entries,
             mode: mode,
             amount: amount,
             timeframe: timeframe,
@@ -297,8 +306,12 @@
             }, false);
 
             if (redisResult.ok && redisResult.data && Array.isArray(redisResult.data.entries)) {
+                var entries = redisResult.data.entries.map(mapEntry);
+                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                    await window.usertypoProgression.attachToList(entries, 'userId');
+                }
                 return {
-                    entries: redisResult.data.entries.map(mapEntry),
+                    entries: entries,
                     mode: mode,
                     amount: amount,
                     timeframe: timeframe,

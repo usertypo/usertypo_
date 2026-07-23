@@ -6,6 +6,9 @@
  */
 (function () {
     var cached = null;
+    var PUBLIC_CACHE_TTL_MS = 120000; // 2 min — avoids repeat RPCs on free tiers
+    var PUBLIC_BATCH_LIMIT = 50;
+    var publicCache = Object.create(null); // userId -> { at, data }
 
     function xpNeededForLevel(level) {
         var L = Math.max(1, Math.floor(Number(level) || 1));
@@ -259,6 +262,164 @@
         return Math.max(0, (progression.xpToNext || 0) - (progression.xpIntoLevel || 0));
     }
 
+    function publicProgressStub(userId) {
+        return {
+            userId: userId || null,
+            level: 1,
+            xpIntoLevel: 0,
+            xpToNext: xpNeededForLevel(1),
+            percentToNext: 0,
+            title: levelTitle(1),
+        };
+    }
+
+    function normalizePublicRow(row) {
+        if (!row) return null;
+        var level = Math.max(1, Math.floor(Number(row.level) || 1));
+        var xpInto = Math.max(0, Math.floor(Number(row.xp_into_level != null ? row.xp_into_level : row.xpIntoLevel) || 0));
+        var xpToNext = xpNeededForLevel(level);
+        return {
+            userId: row.user_id || row.userId || null,
+            level: level,
+            xpIntoLevel: xpInto,
+            xpToNext: xpToNext,
+            percentToNext: percentToNext(xpInto, xpToNext),
+            title: levelTitle(level),
+        };
+    }
+
+    function readPublicCache(userId) {
+        var hit = publicCache[userId];
+        if (!hit) return null;
+        if ((Date.now() - hit.at) > PUBLIC_CACHE_TTL_MS) {
+            delete publicCache[userId];
+            return null;
+        }
+        return hit.data;
+    }
+
+    function writePublicCache(userId, data) {
+        if (!userId || !data) return;
+        publicCache[userId] = { at: Date.now(), data: data };
+    }
+
+    function chunkIds(ids) {
+        var chunks = [];
+        for (var i = 0; i < ids.length; i += PUBLIC_BATCH_LIMIT) {
+            chunks.push(ids.slice(i, i + PUBLIC_BATCH_LIMIT));
+        }
+        return chunks;
+    }
+
+    async function fetchPublicChunk(client, ids) {
+        var out = {};
+        var rpc = await client.rpc('get_public_progression_batch', { p_user_ids: ids });
+        if (!rpc.error && Array.isArray(rpc.data)) {
+            rpc.data.forEach(function (row) {
+                var normalized = normalizePublicRow(row);
+                if (normalized && normalized.userId) out[normalized.userId] = normalized;
+            });
+            return out;
+        }
+
+        // Legacy fallback (friends/self only via RLS) — still lean columns only.
+        var result = await client
+            .from('user_progression')
+            .select('user_id, level, xp_into_level')
+            .in('user_id', ids);
+        if (!result.error && Array.isArray(result.data)) {
+            result.data.forEach(function (row) {
+                var normalized = normalizePublicRow(row);
+                if (normalized && normalized.userId) out[normalized.userId] = normalized;
+            });
+        }
+        return out;
+    }
+
+    /**
+     * Batch-fetch public level/XP ring data for any players (including strangers).
+     * One small RPC (≤50 ids), 2‑minute memory cache, ring % computed client-side.
+     */
+    async function getPublicBatch(userIds) {
+        var ids = Array.from(new Set((userIds || []).map(function (id) {
+            return String(id || '').trim();
+        }).filter(function (id) {
+            return id && id.indexOf('guest_') !== 0;
+        })));
+
+        var out = {};
+        var missing = [];
+        ids.forEach(function (id) {
+            var cachedRow = readPublicCache(id);
+            if (cachedRow) {
+                out[id] = cachedRow;
+            } else {
+                missing.push(id);
+                out[id] = publicProgressStub(id);
+            }
+        });
+
+        if (!missing.length || !window.usertypoDb) return out;
+
+        try {
+            var client = await window.usertypoDb.getClient();
+            var chunks = chunkIds(missing);
+            for (var c = 0; c < chunks.length; c += 1) {
+                var fetched = await fetchPublicChunk(client, chunks[c]);
+                Object.keys(fetched).forEach(function (userId) {
+                    out[userId] = fetched[userId];
+                    writePublicCache(userId, fetched[userId]);
+                });
+                // Cache stubs too so missing users aren't re-queried every paint.
+                chunks[c].forEach(function (userId) {
+                    if (!fetched[userId]) writePublicCache(userId, out[userId]);
+                });
+            }
+        } catch (err) {
+            console.warn('[usertypo progression] getPublicBatch failed', err);
+        }
+        return out;
+    }
+
+    function needsPublicProgress(row, idKey) {
+        if (!row || !row[idKey]) return false;
+        if (String(row[idKey]).indexOf('guest_') === 0) return false;
+        if (row.isBot || row.is_bot) return false;
+        return row.level == null || (row.percentToNext == null && row.percent_to_next == null);
+    }
+
+    function applyPublicProgress(row, prog) {
+        if (!row || !prog) return;
+        if (row.level == null) row.level = prog.level;
+        if (row.percentToNext == null && row.percent_to_next == null) {
+            row.percentToNext = prog.percentToNext;
+        }
+        if (row.xpIntoLevel == null && row.xp_into_level == null) {
+            row.xpIntoLevel = prog.xpIntoLevel;
+        }
+        if (row.xpToNext == null && row.xp_to_next == null) {
+            row.xpToNext = prog.xpToNext;
+        }
+    }
+
+    /** Mutate a list of user-like objects with level / percentToNext when missing. */
+    async function attachToList(list, idKey) {
+        var key = idKey || 'userId';
+        var rows = Array.isArray(list) ? list : [];
+        var missing = [];
+        rows.forEach(function (row) {
+            if (needsPublicProgress(row, key)) missing.push(row[key]);
+        });
+        if (!missing.length) return rows;
+
+        var map = await getPublicBatch(missing);
+        rows.forEach(function (row) {
+            if (!row || !row[key]) return;
+            applyPublicProgress(row, map[row[key]]);
+        });
+        return rows;
+    }
+
     window.usertypoProgression = {
         xpNeededForLevel: xpNeededForLevel,
         levelTitle: levelTitle,
@@ -273,5 +434,9 @@
         clearCache: clearCache,
         formatLevelLabel: formatLevelLabel,
         xpRemaining: xpRemaining,
+        getPublicBatch: getPublicBatch,
+        attachToList: attachToList,
+        publicProgressStub: publicProgressStub,
+        normalizePublicRow: normalizePublicRow,
     };
 })();
