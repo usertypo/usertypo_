@@ -346,10 +346,14 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function raceStartPayload(room) {
+        const endsAt = room.config && room.config.mode === 'time' && room.startsAt
+            ? room.startsAt + (room.config.amount * 1000)
+            : null;
         return {
             roomId: room.id,
             startsAt: room.startsAt,
             startsInMs: Math.max(0, room.startsAt - Date.now()),
+            endsAt,
             config: room.config,
             words: room.prompt.words,
             textHash: room.prompt.textHash,
@@ -714,21 +718,21 @@ function createMultiplayerServer(httpServer, options) {
         io.to(roomChannel(room.id)).emit('race:start', raceStartPayload(room));
         if (room.bot) startBot(room);
         if (room.config.mode === 'time') {
+            const endsAt = room.startsAt + (room.config.amount * 1000);
+            const delayMs = Math.max(0, endsAt - Date.now()) + 750;
             room.raceTimer = setTimeout(() => {
-                room.raceTimer = setTimeout(() => {
-                    room.players.forEach((player) => {
-                        if (player.status === 'racing') {
-                            player.status = 'finished';
-                            player.finishedAt = Date.now();
-                        }
-                    });
-                    if (room.bot && room.bot.status === 'racing') {
-                        room.bot.status = 'finished';
-                        room.bot.finishedAt = Date.now();
+                room.players.forEach((player) => {
+                    if (player.status === 'racing') {
+                        player.status = 'finished';
+                        player.finishedAt = endsAt;
                     }
-                    finishRoom(room, 'time');
-                }, 750);
-            }, room.config.amount * 1000 + 250);
+                });
+                if (room.bot && room.bot.status === 'racing') {
+                    room.bot.status = 'finished';
+                    room.bot.finishedAt = endsAt;
+                }
+                finishRoom(room, 'time');
+            }, delayMs);
         }
     }
 
@@ -809,6 +813,7 @@ function createMultiplayerServer(httpServer, options) {
         if (!player || player.status === 'left') {
             userToRoom.delete(userId);
             disposeCustomRoomIfNoHumans(room);
+            disposeDualIfNoHumans(room);
             return;
         }
         if (player.status === 'finished' || room.state === 'finished') {
@@ -836,16 +841,12 @@ function createMultiplayerServer(httpServer, options) {
             player.socketId = null;
             userToRoom.delete(userId);
             if (room.rematchVotes) room.rematchVotes.delete(userId);
-            const humansLeft = remainingDualHumans(room);
-            if (!humansLeft.length) {
-                disposeRoom(room.id);
-                return;
-            }
-            emitRematchState(room);
+            disposeDualIfNoHumans(room);
+            if (rooms.has(room.id)) emitRematchState(room);
             return;
         }
         player.status = 'left';
-        player.leftMidGame = room.state === 'racing';
+        player.leftMidGame = room.state === 'racing' || room.state === 'countdown';
         player.joined = false;
         player.socketId = null;
         room.opponentLeft = room.opponentLeft || player.leftMidGame;
@@ -869,6 +870,25 @@ function createMultiplayerServer(httpServer, options) {
             disposeCustomRoomIfNoHumans(room);
             return;
         }
+        // Dual/friend/bot: shut down as soon as no real players remain.
+        if (room.type !== 'custom') {
+            io.to(roomChannel(room.id)).emit('race:player-left', [
+                room.id,
+                player.index,
+                explicit ? 'left' : 'disconnected',
+            ]);
+            if (!remainingDualHumans(room).length) {
+                if (room.state === 'countdown') cancelTimer(room, 'countdownTimer');
+                disposeRoom(room.id);
+                return;
+            }
+            if (room.state !== 'racing') {
+                finishRoom(room, 'opponent-left');
+            } else {
+                maybeFinishRoom(room);
+            }
+            return;
+        }
         io.to(roomChannel(room.id)).emit('race:player-left', [
             room.id,
             player.index,
@@ -876,12 +896,8 @@ function createMultiplayerServer(httpServer, options) {
         ]);
         const remaining = Array.from(room.players.values()).filter((item) => item.status !== 'left');
         if (!remaining.length) {
-            if (room.type === 'custom') {
-                room.bot = null;
-                closeCustomRoom(room, 'empty');
-            } else {
-                disposeRoom(room.id);
-            }
+            room.bot = null;
+            closeCustomRoom(room, 'empty');
         } else if (room.state !== 'racing') {
             finishRoom(room, 'opponent-left');
         } else {
@@ -897,6 +913,19 @@ function createMultiplayerServer(httpServer, options) {
             room.bot = null;
             closeCustomRoom(room, 'empty');
         }
+    }
+
+    function disposeDualIfNoHumans(room) {
+        if (!room || room.type === 'custom' || room.state === 'disposed') return;
+        if (!remainingDualHumans(room).length) {
+            room.bot = null;
+            disposeRoom(room.id);
+        }
+    }
+
+    function abandonStuckMembership(userId) {
+        if (!userToRoom.has(userId)) return;
+        leaveRace(userId, true);
     }
 
     function clearUserTransientState(userId) {
@@ -981,7 +1010,8 @@ function createMultiplayerServer(httpServer, options) {
                 const toUserId = String(payload && payload.toUserId || '');
                 if (!toUserId || toUserId === userId) throw new Error('invalid_target');
                 if (!isOnline(toUserId)) throw new Error('friend_offline');
-                if (userToRoom.has(userId) || userToRoom.has(toUserId)) throw new Error('already_in_match');
+                abandonStuckMembership(userId);
+                if (userToRoom.has(toUserId)) throw new Error('already_in_match');
                 if (invites.size >= LIMITS.maxInvites) throw new Error('invite_capacity');
                 if (!(await auth.areFriends(userId, toUserId))) throw new Error('not_friends');
                 const config = normalizeConfig(payload.config);
@@ -1047,6 +1077,8 @@ function createMultiplayerServer(httpServer, options) {
                 return;
             }
             try {
+                abandonStuckMembership(userId);
+                abandonStuckMembership(invite.fromUserId);
                 if (userToRoom.has(invite.fromUserId) || userToRoom.has(invite.toUserId)) {
                     throw new Error('already_in_match');
                 }
@@ -1064,7 +1096,7 @@ function createMultiplayerServer(httpServer, options) {
 
         socket.on('duel:create', (payload, ack) => {
             try {
-                if (userToRoom.has(userId)) throw new Error('already_in_match');
+                abandonStuckMembership(userId);
                 for (const listing of listings.values()) {
                     if (listing.ownerUserId === userId) throw new Error('already_searching');
                 }
@@ -1094,7 +1126,7 @@ function createMultiplayerServer(httpServer, options) {
             try {
                 const listing = listings.get(String(listingId || ''));
                 if (!listing || listing.ownerUserId !== userId) throw new Error('listing_unavailable');
-                if (userToRoom.has(userId)) throw new Error('already_in_match');
+                abandonStuckMembership(userId);
                 createBotMatch(listing);
                 safeAck(ack, { ok: true });
             } catch (error) {
@@ -1118,7 +1150,7 @@ function createMultiplayerServer(httpServer, options) {
                 const listing = listings.get(String(listingId || ''));
                 if (!listing || listing.status !== 'waiting') throw new Error('listing_unavailable');
                 if (listing.ownerUserId === userId) throw new Error('own_listing');
-                if (userToRoom.has(userId)) throw new Error('already_in_match');
+                abandonStuckMembership(userId);
                 if (!isOnline(listing.ownerUserId) || userToRoom.has(listing.ownerUserId)) {
                     removeListing(listing.id);
                     throw new Error('listing_unavailable');

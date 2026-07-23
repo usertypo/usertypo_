@@ -558,13 +558,17 @@
                 burstDisplay.textContent = Math.round(correctKeystrokeTimes.length * 6);
             }
             if (config.mode === 'time') {
-                var elapsed = Math.max(0, (Date.now() - startTime) / 1000);
-                var remaining = Math.max(0, Math.ceil(config.amount - elapsed));
+                var endAt = raceEndsAt();
+                var remainingMs = Math.max(0, endAt - Date.now());
+                var remaining = Math.max(0, Math.ceil(remainingMs / 1000));
                 progressDisplay.textContent = remaining;
-                if (progressBar) progressBar.style.width = Math.min(100, (elapsed / config.amount) * 100) + '%';
-                if (remaining === 0) {
+                if (progressBar) {
+                    var elapsed = Math.max(0, (Date.now() - startTime) / 1000);
+                    progressBar.style.width = Math.min(100, (elapsed / config.amount) * 100) + '%';
+                }
+                if (remainingMs <= 0) {
                     localFinished = true;
-                    localFinishTime = Date.now();
+                    localFinishTime = endAt;
                     state = 'waiting-result';
                     clearInterval(updateTimer);
                     sendThreeWordPacket(true);
@@ -912,6 +916,23 @@
             return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
         }
 
+        function racePayloadEndsAt(payload) {
+            if (!payload) return 0;
+            if (payload.endsAt) return Number(payload.endsAt);
+            var starts = racePayloadStartsAt(payload);
+            var amount = payload.config && payload.config.mode === 'time'
+                ? Number(payload.config.amount) || 0
+                : 0;
+            return amount > 0 ? starts + (amount * 1000) : 0;
+        }
+
+        function raceEndsAt() {
+            if (config && config.mode === 'time' && startTime) {
+                return startTime + (Number(config.amount) || 0) * 1000;
+            }
+            return 0;
+        }
+
         function syncCountdownLayout(digitVisible) {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
@@ -1102,7 +1123,7 @@
             abortCountdownIntro();
             countdownSequenceStarted = true;
             introBusy = false;
-            beginActualRace(payload, true);
+            beginActualRace(payload);
             return true;
         }
 
@@ -1186,8 +1207,7 @@
             if (!pendingRacePayload) return;
             var payload = pendingRacePayload;
             pendingRacePayload = null;
-            // Typed countdown is the go signal — start immediately, don't wait on server startsAt.
-            beginActualRace(payload, true);
+            beginActualRace(payload);
         }
 
         function startRace(payload) {
@@ -1199,7 +1219,7 @@
             if (!introBusy) tryBeginRaceAfterIntro();
         }
 
-        function beginActualRace(payload, immediate) {
+        function beginActualRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
@@ -1212,13 +1232,8 @@
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            if (immediate) {
-                startTime = Date.now();
-            } else if (payload.startsAt) {
-                startTime = Number(payload.startsAt);
-            } else {
-                startTime = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
-            }
+            // Always use the shared server clock — never reset when the tab becomes visible.
+            startTime = racePayloadStartsAt(payload);
             selfUserId = window.usertypoMultiplayer.getReadyState()
                 && window.usertypoMultiplayer.getReadyState().userId || '';
             var self = players.find(function (player) { return player.userId === selfUserId; });
@@ -1251,6 +1266,7 @@
             countdownAnimToken += 1;
             introBusy = false;
             countdownSequenceStarted = false;
+            countdownEndsAt = 0;
             countdownTapeLocked = false;
             countdownTapeTransform = '';
             countdownTapeBaseX = 0;
@@ -1261,11 +1277,24 @@
             if (opponentCaret) opponentCaret.style.display = 'block';
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
-            var wait = immediate ? 0 : Math.max(0, startTime - Date.now());
+
+            // Time mode already over on the shared clock — finish immediately.
+            var endAt = racePayloadEndsAt(payload);
+            if (config.mode === 'time' && endAt && Date.now() >= endAt) {
+                state = 'waiting-result';
+                localFinished = true;
+                localFinishTime = endAt;
+                bindRaceKeys();
+                clearInterval(updateTimer);
+                sendThreeWordPacket(true);
+                showMessage('Finished', 'Calculating race results.');
+                return;
+            }
+
+            var wait = Math.max(0, startTime - Date.now());
             setTimeout(function () {
                 if (token !== raceStartToken) return;
                 state = 'racing';
-                if (immediate) startTime = Date.now();
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
@@ -1473,6 +1502,7 @@
                 if (document.visibilityState !== 'visible') return;
                 wakeCountdownLoop();
                 beginRaceIfAlreadyLive();
+                if (state === 'racing') updateLiveStats();
             }, { signal: signal });
             listen('race-progress', function (event) { applyOpponentProgress(event.detail); });
             listen('race-player-left', function (event) {
@@ -1578,9 +1608,9 @@
             clearInterval(updateTimer);
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
-            if (state !== 'finished' && !localFinished && roomId && window.usertypoMultiplayer) {
-                var activeSocket = window.usertypoMultiplayer.getSocket();
-                if (activeSocket && activeSocket.connected) activeSocket.emit('race:leave', roomId);
+            // Always leave so dual membership cannot stick after navigating away.
+            if (roomId && window.usertypoMultiplayer) {
+                window.usertypoMultiplayer.leaveRace(roomId);
             }
             abort.abort();
             if (window.updateKeymapHighlight === updateKeymapHighlight) {
