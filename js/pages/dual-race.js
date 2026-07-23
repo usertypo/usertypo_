@@ -302,6 +302,11 @@
             textContainer.style.transform = 'translateY(-' + offset + 'px)';
         }
 
+        function getOpponentCaretStyle() {
+            var cursor = (window.usertypo_settings && window.usertypo_settings.cursor) || {};
+            return String(cursor.paceCaretStyle || 'underscore').toLowerCase();
+        }
+
         function positionCaretAt(element, wordIndex, charIndex) {
             if (!element || !textContainer || !words[wordIndex]) return;
             var wordElement = document.getElementById('word-' + wordIndex);
@@ -319,7 +324,12 @@
             var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            element.style.width = targetRect.width + 'px';
+            // Opponent ghost follows pace caret style (line is fixed-width)
+            if (element === opponentCaret && getOpponentCaretStyle() === 'line') {
+                element.style.width = '2.5px';
+            } else {
+                element.style.width = targetRect.width + 'px';
+            }
         }
 
         function updateCaret() {
