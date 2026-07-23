@@ -502,6 +502,37 @@ $$;
 
 grant execute on function public.get_my_progression() to authenticated, anon;
 
+-- Public level + XP ring data for avatars (strangers included).
+-- Lean: no new storage; returns only user_id + level + xp_into_level (≤50 ids).
+-- Client computes ring percent locally and caches for ~2 minutes.
+drop function if exists public.get_public_progression_batch(text[]);
+
+create or replace function public.get_public_progression_batch(p_user_ids text[])
+returns table (
+  user_id text,
+  level integer,
+  xp_into_level integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    up.user_id,
+    up.level,
+    up.xp_into_level
+  from public.user_progression up
+  where up.user_id = any (
+    select distinct x
+    from unnest(coalesce(p_user_ids, array[]::text[])) as u(x)
+    where nullif(trim(x), '') is not null
+    limit 50
+  );
+$$;
+
+grant execute on function public.get_public_progression_batch(text[]) to authenticated, anon;
+
 grant select on public.user_progression to authenticated;
 grant select on public.xp_events to authenticated;
 

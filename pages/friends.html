@@ -233,9 +233,7 @@
                 <div class="flex items-center gap-3">
                     <div class="relative">
                         <div id="chat-header-avatar"
-                            class="w-10 h-10 rounded-full bg-cover bg-center border border-white/10"
-                            data-alt="Avatar player Neon"
-                            style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBz89sUZiIwXk5Zc3syOC0m-obiySXFriPmpx9tA3Qm6LlBjXugYkp4C2M_09_WL6fLJHbMLejOC8YbeBjHgQAS2ZkUZ2k6otEUWMSp5rq5-2qgwG_VpsdfuxiQf4eo4cA3QaxBFUongDywtIh1izg23qQ2BKXGLZmXXmvUdXPI8TBG94qf-s3WVMdrGkbCA_xe9beXNW2Zo1fNFktbwya9bJq0v_usWg6yQ8KaZO1DVrvI7cqvTvuInnZT-2C3z2_Boi2U5U_VbPDG');">
+                            class="relative flex items-center justify-center">
                         </div>
                         <div id="chat-header-status-indicator"
                             class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-yellow-500 border-2 border-background-dark rounded-full">
@@ -1041,6 +1039,25 @@ window.__spaPageInit = function() {
                 return '';
             }
 
+            function levelAvatarHtml(profile, size, extraClass) {
+                if (window.usertypoPlayerAvatar) {
+                    return window.usertypoPlayerAvatar.fromPlayer({
+                        avatar_url: profile && profile.avatar_url,
+                        name: displayName(profile || {}),
+                        level: profile && profile.level,
+                        percentToNext: profile && (profile.percentToNext != null ? profile.percentToNext : profile.percent_to_next),
+                    }, {
+                        size: size || 'lg',
+                        className: extraClass || '',
+                    });
+                }
+                var avatarUrl = profile && profile.avatar_url;
+                if (avatarUrl) {
+                    return '<div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10' + (extraClass ? ' ' + extraClass : '') + '" style="' + avatarStyle(profile) + '"></div>';
+                }
+                return '<div class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center' + (extraClass ? ' ' + extraClass : '') + '"><span class="material-symbols-outlined text-slate-400 text-3xl">person</span></div>';
+            }
+
             function relativeTime(iso) {
                 if (!iso) return '';
                 var then = new Date(iso).getTime();
@@ -1101,7 +1118,7 @@ window.__spaPageInit = function() {
                 applyFriendsTabFilter();
             }
 
-            function openChat(name, status, avatarUrl) {
+            function openChat(name, status, profileOrAvatar) {
                 if (!chatWindow) return;
                 if (currentOpenChatName === name && chatWindow.classList.contains('chat-expanded')) {
                     closeChat();
@@ -1110,8 +1127,13 @@ window.__spaPageInit = function() {
                 currentOpenChatName = name;
                 if (chatHeaderName) chatHeaderName.textContent = name;
                 if (chatHeaderStatus) chatHeaderStatus.textContent = status;
-                if (chatHeaderAvatar && avatarUrl) {
-                    chatHeaderAvatar.style.backgroundImage = 'url(\'' + String(avatarUrl).replace(/'/g, '%27') + '\')';
+                if (chatHeaderAvatar) {
+                    var avatarSource = typeof profileOrAvatar === 'string'
+                        ? { avatar_url: profileOrAvatar, name: name }
+                        : Object.assign({ name: name }, profileOrAvatar || {});
+                    chatHeaderAvatar.innerHTML = levelAvatarHtml(avatarSource, 'md');
+                    chatHeaderAvatar.className = 'relative flex items-center justify-center';
+                    chatHeaderAvatar.removeAttribute('style');
                 }
                 if (chatHeaderStatusIndicator) {
                     chatHeaderStatusIndicator.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-background-dark rounded-full';
@@ -1151,10 +1173,8 @@ window.__spaPageInit = function() {
                 card.dataset.friendUserId = friend.user_id;
                 card.dataset.searchName = name.toLowerCase();
 
-                var avatarOpacity = isOnline ? '' : ' opacity-90';
-                var avatarBlock = avatarUrl
-                    ? '<div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10' + avatarOpacity + '" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '" style="' + avatarStyle(friend) + '"></div>'
-                    : '<div class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center' + avatarOpacity + '"><span class="material-symbols-outlined text-slate-400 text-3xl">person</span></div>';
+                var avatarOpacity = isOnline ? '' : ' is-dimmed';
+                var avatarBlock = levelAvatarHtml(friend, 'lg', avatarOpacity.trim());
 
                 var statusDot = isOnline ? 'bg-green-500' : 'bg-slate-500';
                 var statusLabel = isOnline ? 'Online' : 'Offline';
@@ -1170,7 +1190,7 @@ window.__spaPageInit = function() {
                 if (isOnline) {
                     actions +=
                         '<button type="button" class="chat-btn flex-1 sm:flex-none p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-white/5" title="Chat"' +
-                        ' data-friend-name="' + name.replace(/"/g, '&quot;') + '" data-friend-status="Online" data-friend-avatar="' + String(avatarUrl).replace(/"/g, '&quot;') + '">' +
+                        ' data-friend-name="' + name.replace(/"/g, '&quot;') + '" data-friend-status="Online">' +
                         '<span class="material-symbols-outlined text-xl">chat_bubble</span></button>';
                     if (!isChallengePending) {
                         actions +=
@@ -1191,7 +1211,7 @@ window.__spaPageInit = function() {
 
                 card.innerHTML =
                     '<div class="relative">' + avatarBlock +
-                    '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 ' + statusDot + ' border-2 border-background-dark rounded-full"></div></div>' +
+                    '<div class="absolute top-0 right-0 w-3.5 h-3.5 ' + statusDot + ' border-2 border-background-dark rounded-full z-[3]"></div></div>' +
                     '<div class="flex-1 min-w-0' + (isOnline ? '' : ' opacity-90') + '">' +
                     '<div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' +
                     statusBadge + '</div>' +
@@ -1204,7 +1224,7 @@ window.__spaPageInit = function() {
                 var chatBtn = card.querySelector('.chat-btn');
                 if (chatBtn) {
                     chatBtn.addEventListener('click', function () {
-                        openChat(name, statusLabel, avatarUrl);
+                        openChat(name, statusLabel, friend);
                     });
                 }
                 var challengeBtn = card.querySelector('.dual-challenge-btn');
@@ -1231,9 +1251,7 @@ window.__spaPageInit = function() {
                 card.dataset.requestId = request.request_id;
                 card.dataset.searchName = name.toLowerCase();
 
-                var avatarBlock = request.avatar_url
-                    ? '<div class="w-14 h-14 rounded-full bg-cover bg-center border border-white/10" style="' + avatarStyle(request) + '"></div>'
-                    : '<div class="w-14 h-14 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center"><span class="material-symbols-outlined text-slate-400 text-3xl">person</span></div>';
+                var avatarBlock = levelAvatarHtml(request, 'lg');
 
                 var badge = direction === 'incoming'
                     ? '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Incoming</span>'
@@ -1246,7 +1264,7 @@ window.__spaPageInit = function() {
 
                 card.innerHTML =
                     '<div class="relative">' + avatarBlock +
-                    '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-background-dark rounded-full"></div></div>' +
+                    '<div class="absolute top-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-background-dark rounded-full z-[3]"></div></div>' +
                     '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1"><h3 class="font-bold text-slate-100 truncate">' + name + '</h3>' + badge + '</div>' +
                     '<div class="text-xs text-slate-400">Requested ' + relativeTime(request.created_at) + '</div></div>' +
                     '<div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">' + actions + '</div>';
@@ -1372,6 +1390,13 @@ window.__spaPageInit = function() {
                         incoming: data.incoming || [],
                         outgoing: serverOutgoing,
                     };
+                    if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                        var allRows = []
+                            .concat(friendsState.friends || [])
+                            .concat(friendsState.incoming || [])
+                            .concat(friendsState.outgoing || []);
+                        await window.usertypoProgression.attachToList(allRows, 'user_id');
+                    }
                     renderFriendsList();
                 } catch (err) {
                     console.error('[friends] load failed', err);
@@ -1450,9 +1475,7 @@ window.__spaPageInit = function() {
                     var row = document.createElement('div');
                     row.className = 'flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/10';
 
-                    var avatar = user.avatar_url
-                        ? '<div class="w-10 h-10 rounded-full bg-cover bg-center border border-white/10 shrink-0" style="' + avatarStyle(user) + '"></div>'
-                        : '<div class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-slate-400">person</span></div>';
+                    var avatar = levelAvatarHtml(user, 'md');
 
                     var rel = relationshipLabel(user.relationship);
                     var actionHtml = rel
@@ -1477,6 +1500,8 @@ window.__spaPageInit = function() {
                                     username: user.username,
                                     display_name: user.display_name,
                                     avatar_url: user.avatar_url,
+                                    level: user.level,
+                                    percent_to_next: user.percent_to_next != null ? user.percent_to_next : user.percentToNext,
                                 };
                                 optimisticOutgoingByUser[user.user_id] = optimisticRow;
                                 friendsState.outgoing = (friendsState.outgoing || []).filter(function (r) {
@@ -1538,6 +1563,10 @@ window.__spaPageInit = function() {
                 if (!options.quiet) setFriendsStatus(addFriendsStatus, 'Searching...', 'info');
                 try {
                     var results = await window.usertypoFriends.searchUsers(query);
+                    if (seq !== addFriendsSearchSeq) return;
+                    if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                        await window.usertypoProgression.attachToList(results, 'user_id');
+                    }
                     if (seq !== addFriendsSearchSeq) return;
                     if (!options.quiet) setFriendsStatus(addFriendsStatus, '', null);
                     renderSearchResults(results);

@@ -242,6 +242,8 @@ async function hydrateProfiles(userIds: string[]) {
   }
 
   const sb = serviceClient();
+  // Profiles only — level/XP comes from a single lean client RPC (cached),
+  // so Redis leaderboard edge stays cheap on free-tier limits.
   const result = await sb
     .from("profiles")
     .select("user_id, username, display_name, avatar_url, show_on_leaderboard")

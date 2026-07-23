@@ -1944,7 +1944,7 @@
                                     </div>
                                     <!-- Sub: Font -->
                                     <div class="sub-setting-card glass-card rounded-xl overflow-hidden"
-                                        data-sub-title="Font" data-sub-icon="text_fields">
+                                        data-sub-title="Font" data-sub-icon="text_fields" data-searchable="true">
                                         <button
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
@@ -4837,10 +4837,11 @@ window.__spaPageInit = function() {
             card.dataset.leafTitle = title;
             card.dataset.pathTitles = JSON.stringify(pathTitles);
 
+            const searchPlaceholder = title === 'Font' ? 'Search fonts...' : 'Search options...';
             const searchBlock = isSearchable ? `
                 <div class="relative w-full mb-1">
                     <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none z-10">search</span>
-                    <input type="text" class="search-input w-full" style="padding-left:2.5rem;" placeholder="Search options..." oninput="filterSubOptions(this)" autocomplete="off">
+                    <input type="text" class="search-input w-full" style="padding-left:2.5rem; border-radius:9999px;" placeholder="${searchPlaceholder}" oninput="filterSubOptions(this)" autocomplete="off">
                 </div>` : '';
 
             card.innerHTML = `

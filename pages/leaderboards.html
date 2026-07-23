@@ -291,6 +291,17 @@ window.__spaPageInit = function() {
             }
 
             function renderAvatar(entry, colorClass, isMe) {
+                if (window.usertypoPlayerAvatar) {
+                    return window.usertypoPlayerAvatar.fromPlayer({
+                        avatarUrl: entry.avatarUrl,
+                        name: entry.username,
+                        level: entry.level,
+                        percentToNext: entry.percentToNext,
+                    }, {
+                        size: 'xs',
+                        className: isMe ? 'shadow-[0_0_10px_rgba(0,208,255,0.45)]' : '',
+                    });
+                }
                 var lb = window.usertypoLeaderboards;
                 var letter = lb ? lb.initialFor(entry.username) : '?';
                 if (entry.avatarUrl) {

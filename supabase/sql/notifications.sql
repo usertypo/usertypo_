@@ -384,9 +384,16 @@ begin
       p.avatar_url,
       f.created_at as friends_since,
       (p.last_seen_at is not null and p.last_seen_at >= v_online_cutoff) as is_online,
-      p.last_seen_at
+      p.last_seen_at,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friendships f
     inner join public.profiles p on p.user_id = f.friend_id
+    left join public.user_progression up on up.user_id = p.user_id
     where f.user_id = v_me
     order by f.created_at desc
   ) t;
@@ -400,9 +407,16 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url
+      p.avatar_url,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friend_requests fr
     inner join public.profiles p on p.user_id = fr.from_user_id
+    left join public.user_progression up on up.user_id = p.user_id
     where fr.to_user_id = v_me
       and fr.status = 'pending'
     order by fr.created_at desc
@@ -417,9 +431,16 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url
+      p.avatar_url,
+      coalesce(up.level, 1) as level,
+      case
+        when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
+          then round((coalesce(up.xp_into_level, 0)::numeric / public.xp_needed_for_level(coalesce(up.level, 1))) * 1000) / 10
+        else 0
+      end as percent_to_next
     from public.friend_requests fr
     inner join public.profiles p on p.user_id = fr.to_user_id
+    left join public.user_progression up on up.user_id = p.user_id
     where fr.from_user_id = v_me
       and fr.status = 'pending'
     order by fr.created_at desc

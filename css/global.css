@@ -157,3 +157,172 @@ html {
     box-shadow: none !important;
     color: #475569 !important;
 }
+
+/* ── Player level avatar (photo + XP ring + level badge) ── */
+.player-level-avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    vertical-align: middle;
+    color: #cbd5e1;
+    --pla-size: 2.75rem;
+    --pla-photo: 72.7%;
+    --pla-stroke: 2.5;
+    --pla-badge-min: 1.1rem;
+    --pla-badge-h: 1.1rem;
+    --pla-badge-px: 0.25rem;
+    --pla-badge-font: 9px;
+    --pla-initial-font: 0.75rem;
+    --pla-bot-font: 1.1rem;
+    width: var(--pla-size);
+    height: var(--pla-size);
+}
+
+.player-level-avatar--xs {
+    --pla-size: 1.75rem;
+    --pla-stroke: 3;
+    --pla-badge-min: 0.85rem;
+    --pla-badge-h: 0.85rem;
+    --pla-badge-px: 0.15rem;
+    --pla-badge-font: 7px;
+    --pla-initial-font: 0.55rem;
+    --pla-bot-font: 0.7rem;
+}
+
+.player-level-avatar--sm {
+    --pla-size: 2.25rem;
+    --pla-stroke: 2.75;
+    --pla-badge-min: 0.95rem;
+    --pla-badge-h: 0.95rem;
+    --pla-badge-px: 0.2rem;
+    --pla-badge-font: 8px;
+    --pla-initial-font: 0.65rem;
+    --pla-bot-font: 0.9rem;
+}
+
+.player-level-avatar--md {
+    --pla-size: 2.75rem;
+}
+
+.player-level-avatar--lg {
+    --pla-size: 3.5rem;
+    --pla-badge-min: 1.25rem;
+    --pla-badge-h: 1.25rem;
+    --pla-badge-px: 0.3rem;
+    --pla-badge-font: 10px;
+    --pla-initial-font: 0.95rem;
+    --pla-bot-font: 1.35rem;
+}
+
+.player-level-avatar--xl {
+    --pla-size: 4rem;
+    --pla-badge-min: 1.35rem;
+    --pla-badge-h: 1.35rem;
+    --pla-badge-px: 0.35rem;
+    --pla-badge-font: 11px;
+    --pla-initial-font: 1.05rem;
+    --pla-bot-font: 1.5rem;
+}
+
+.player-level-avatar--host {
+    --pla-size: 8rem;
+    --pla-photo: 78%;
+    --pla-stroke: 1.6;
+    --pla-badge-min: 1.75rem;
+    --pla-badge-h: 1.75rem;
+    --pla-badge-px: 0.5rem;
+    --pla-badge-font: 14px;
+    --pla-initial-font: 2rem;
+    --pla-bot-font: 2.5rem;
+}
+
+@media (min-width: 768px) {
+    .player-level-avatar--host {
+        --pla-size: 8.5rem;
+    }
+}
+
+.player-level-avatar__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+
+.player-level-avatar__track {
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: var(--pla-stroke);
+    transition: opacity 0.3s ease;
+}
+
+.player-level-avatar__progress {
+    stroke: rgb(var(--theme-primary-rgb, 0, 208, 255));
+    stroke-width: var(--pla-stroke);
+    transition: stroke-dashoffset 0.7s ease-out, opacity 0.3s ease;
+}
+
+.player-level-avatar__photo {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--pla-photo);
+    height: var(--pla-photo);
+    border-radius: 9999px;
+    overflow: hidden;
+    background: rgba(26, 29, 35, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.player-level-avatar__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.player-level-avatar__initial {
+    font-weight: 900;
+    font-size: var(--pla-initial-font);
+    line-height: 1;
+    color: rgb(var(--theme-primary-rgb, 0, 208, 255));
+    font-family: Inter, sans-serif;
+}
+
+.player-level-avatar__bot {
+    font-size: var(--pla-bot-font) !important;
+    line-height: 1;
+    color: rgb(var(--theme-primary-rgb, 0, 208, 255));
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.player-level-avatar__level {
+    position: absolute;
+    bottom: -0.15rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    min-width: var(--pla-badge-min);
+    height: var(--pla-badge-h);
+    padding: 0 var(--pla-badge-px);
+    border-radius: 9999px;
+    background: rgb(var(--theme-primary-rgb, 0, 208, 255));
+    color: #0e1013;
+    font-size: var(--pla-badge-font);
+    font-weight: 900;
+    line-height: var(--pla-badge-h);
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    font-family: Inter, sans-serif;
+}
+
+.player-level-avatar.is-dimmed {
+    opacity: 0.9;
+}

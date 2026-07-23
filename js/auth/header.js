@@ -124,7 +124,33 @@
 
         setText('shell-user-name', name);
         setText('shell-user-tier', tier);
-        setText('shell-user-avatar', initialFor(name));
+
+        var shellAvatar = document.getElementById('shell-user-avatar');
+        if (shellAvatar && window.usertypoPlayerAvatar) {
+            if (isSignedIn) {
+                shellAvatar.outerHTML = window.usertypoPlayerAvatar.render({
+                    id: 'shell-user-avatar',
+                    avatarUrl: photo,
+                    name: name,
+                    level: progression && progression.level || 1,
+                    percentToNext: progression && progression.percentToNext || 0,
+                    size: 'sm',
+                    showLevel: true,
+                    className: 'shrink-0',
+                });
+            } else {
+                shellAvatar.outerHTML = window.usertypoPlayerAvatar.render({
+                    id: 'shell-user-avatar',
+                    name: 'Guest',
+                    size: 'sm',
+                    showLevel: false,
+                    className: 'shrink-0',
+                    initial: '?',
+                });
+            }
+        } else {
+            setText('shell-user-avatar', initialFor(name));
+        }
 
         var authAction = document.getElementById('shell-auth-action');
         var authIcon = document.getElementById('shell-auth-action-icon');
