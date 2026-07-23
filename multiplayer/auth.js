@@ -88,22 +88,18 @@ function createAuthServices(env, logger) {
         return Array.isArray(result.data) && result.data.length > 0;
     }
 
-    // One lean lookup either direction — used to reject duals / invites.
+    // One lean RPC either direction — used to reject duals.
     async function areBlocked(userId, otherUserId) {
         if (String(userId || '').startsWith('guest_') || String(otherUserId || '').startsWith('guest_')) {
             return false;
         }
         if (!supabase) return false;
-        const result = await supabase
-            .from('user_blocks')
-            .select('blocker_id')
-            .or(
-                `and(blocker_id.eq.${userId},blocked_id.eq.${otherUserId}),` +
-                `and(blocker_id.eq.${otherUserId},blocked_id.eq.${userId})`
-            )
-            .limit(1);
+        const result = await supabase.rpc('_block_exists', {
+            p_a: userId,
+            p_b: otherUserId,
+        });
         if (result.error) throw result.error;
-        return Array.isArray(result.data) && result.data.length > 0;
+        return !!result.data;
     }
 
     return {
