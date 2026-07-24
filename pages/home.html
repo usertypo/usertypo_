@@ -766,12 +766,12 @@
 
                     <div id="test-shortcuts-indicator"
                         class="mt-6 flex justify-center gap-8 opacity-40 text-[10px] font-bold uppercase tracking-widest text-slate-400 zen-element relative z-10">
-                        <span><kbd
+                        <span data-shortcut-tip="tab"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-200">tab</kbd>
                             -
                             restart</span>
 
-                        <span><kbd
+                        <span data-shortcut-tip="esc"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-200">esc</kbd>
                             -
                             quick settings</span>
@@ -1216,7 +1216,13 @@ window.setTimeout = function(handler, timeout) {
         function getTestRule(key) {
             const s = window.usertypo_settings;
             if (key === 'quickRestart') {
-                return (s && s.keyboardLayout && s.keyboardLayout.quickRestart !== undefined) ? s.keyboardLayout.quickRestart : 'Off';
+                if (window.usertypo_settingsApi?.isQuickRestartEnabled) {
+                    return window.usertypo_settingsApi.isQuickRestartEnabled(s);
+                }
+                const v = s?.keyboardLayout?.quickRestart;
+                if (typeof v === 'boolean') return v;
+                if (v === undefined || v === null) return true;
+                return v === 'Tab';
             }
             if (s && s.testRules && s.testRules[key] !== undefined) return s.testRules[key];
             // Fallback defaults
@@ -2089,24 +2095,17 @@ window.setTimeout = function(handler, timeout) {
             }
 
             // ── Quick Restart: Tab ──
-            const quickRestart = getTestRule('quickRestart');
-
             if (e.key === 'Tab') {
-                const isQuickRestartKey = (quickRestart === 'Tab');
-                const isDefaultNav = (quickRestart === 'Off');
-
-                if (isQuickRestartKey || isDefaultNav) {
-                    e.preventDefault();
-                    if (!canSkipStats) return;
-                    const statsView = document.getElementById('stats-view');
-                    if (statsView && !statsView.classList.contains('hidden')) {
-                        showTestView(true);
-                    } else {
-                        restartTest();
-                    }
-                    return;
-                }
                 e.preventDefault();
+                if (!getTestRule('quickRestart')) return;
+                if (!canSkipStats) return;
+                const statsView = document.getElementById('stats-view');
+                if (statsView && !statsView.classList.contains('hidden')) {
+                    showTestView(true);
+                } else {
+                    restartTest();
+                }
+                return;
             }
 
             // â”€â”€ Stats View Enter to Next Test â”€â”€
