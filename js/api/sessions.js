@@ -157,6 +157,181 @@
         return mode + ':' + amount;
     }
 
+    var PACE_HISTORY_KEY = 'usertypo_pace_history_v1';
+    var PACE_HISTORY_MAX = 500;
+
+    function normalizePaceConfig(config) {
+        var cfg = config || {};
+        return {
+            mode: cfg.mode === 'time' ? 'time' : 'words',
+            amount: Math.max(1, Math.round(Number(cfg.amount) || 1)),
+            language: String(cfg.language || currentLanguage() || 'english'),
+            punctuation: !!cfg.punctuation,
+            numbers: !!cfg.numbers,
+        };
+    }
+
+    function matchesPaceConfig(session, config) {
+        if (!session) return false;
+        var cfg = normalizePaceConfig(config);
+        return (session.mode === 'time' ? 'time' : 'words') === cfg.mode
+            && Math.max(1, Math.round(Number(session.amount) || 1)) === cfg.amount
+            && String(session.language || 'english') === cfg.language
+            && !!session.punctuation === cfg.punctuation
+            && !!session.numbers === cfg.numbers;
+    }
+
+    function loadPaceHistory() {
+        try {
+            var raw = window.localStorage.getItem(PACE_HISTORY_KEY);
+            var parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function savePaceHistory(entries) {
+        try {
+            window.localStorage.setItem(
+                PACE_HISTORY_KEY,
+                JSON.stringify((entries || []).slice(0, PACE_HISTORY_MAX))
+            );
+        } catch (e) { /* ignore quota */ }
+    }
+
+    function recordPaceHistory(input) {
+        if (!input || input.failed) return loadPaceHistory();
+        var wpm = Number(input.wpm);
+        if (!isFinite(wpm) || wpm < 1) return loadPaceHistory();
+
+        var entry = Object.assign(normalizePaceConfig(input), {
+            wpm: round2(wpm),
+            created_at: input.created_at || new Date().toISOString(),
+        });
+
+        var list = loadPaceHistory().filter(function (item) {
+            return !(
+                item
+                && item.created_at === entry.created_at
+                && Number(item.wpm) === Number(entry.wpm)
+                && matchesPaceConfig(item, entry)
+            );
+        });
+        list.unshift(entry);
+        savePaceHistory(list);
+        return list;
+    }
+
+    function mergePaceHistoryFromSessions(sessions) {
+        var existing = loadPaceHistory();
+        var byKey = {};
+        existing.forEach(function (item, index) {
+            if (!item) return;
+            byKey[
+                String(item.created_at || '') + '|' +
+                String(item.wpm || '') + '|' +
+                bestKey(item.mode, item.amount)
+            ] = index;
+        });
+
+        (sessions || []).forEach(function (session) {
+            if (!session || session.failed) return;
+            var wpm = Number(session.wpm);
+            if (!isFinite(wpm) || wpm < 1) return;
+            var entry = {
+                mode: session.mode === 'time' ? 'time' : 'words',
+                amount: Math.max(1, Math.round(Number(session.amount) || 1)),
+                language: String(session.language || 'english'),
+                punctuation: !!session.punctuation,
+                numbers: !!session.numbers,
+                wpm: round2(wpm),
+                created_at: session.created_at || new Date().toISOString(),
+            };
+            var key = String(entry.created_at) + '|' + String(entry.wpm) + '|' + bestKey(entry.mode, entry.amount);
+            if (Object.prototype.hasOwnProperty.call(byKey, key)) return;
+            existing.push(entry);
+        });
+
+        existing.sort(function (a, b) {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        savePaceHistory(existing);
+        return existing;
+    }
+
+    function startOfLocalDayMs() {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+    }
+
+    function computePaceTargets(sessions, config) {
+        var matched = (sessions || []).filter(function (session) {
+            if (!session || session.failed) return false;
+            var wpm = Number(session.wpm);
+            if (!isFinite(wpm) || wpm < 1) return false;
+            return matchesPaceConfig(session, config);
+        });
+
+        var average = 0;
+        var pb = 0;
+        var daily = 0;
+        if (!matched.length) {
+            return { average: 0, pb: 0, daily: 0, count: 0 };
+        }
+
+        var sum = 0;
+        var dayStart = startOfLocalDayMs();
+        matched.forEach(function (session) {
+            var wpm = Number(session.wpm);
+            sum += wpm;
+            if (wpm > pb) pb = wpm;
+            var created = new Date(session.created_at || 0).getTime();
+            if (isFinite(created) && created >= dayStart && wpm > daily) {
+                daily = wpm;
+            }
+        });
+
+        average = Math.round(sum / matched.length);
+        pb = Math.round(pb);
+        daily = Math.round(daily);
+
+        return { average: average, pb: pb, daily: daily, count: matched.length };
+    }
+
+    function getPaceTargets(config) {
+        return computePaceTargets(loadPaceHistory(), config);
+    }
+
+    function getPaceCaretWpm(mode, config) {
+        var targetMode = String(mode || '').toLowerCase();
+        var targets = getPaceTargets(config);
+        if (targetMode === 'average') return targets.average || 0;
+        if (targetMode === 'pb') return targets.pb || 0;
+        if (targetMode === 'daily') return targets.daily || 0;
+        return 0;
+    }
+
+    var _paceHydratePromise = null;
+
+    async function hydratePaceHistoryFromServer() {
+        if (_paceHydratePromise) return _paceHydratePromise;
+        _paceHydratePromise = (async function () {
+            try {
+                var result = await fetchAllMySessions();
+                if (result.error || !result.sessions) return loadPaceHistory();
+                return mergePaceHistoryFromSessions(result.sessions);
+            } catch (err) {
+                console.warn('[usertypo sessions] pace history hydrate failed', err);
+                return loadPaceHistory();
+            } finally {
+                _paceHydratePromise = null;
+            }
+        })();
+        return _paceHydratePromise;
+    }
+
     function computeBests(sessions) {
         var bests = {};
         var i;
@@ -462,7 +637,28 @@
         formatAccuracy: formatAccuracy,
         formatRelativeTime: formatRelativeTime,
         formatModeLabel: formatModeLabel,
+        recordPaceHistory: recordPaceHistory,
+        getPaceTargets: getPaceTargets,
+        getPaceCaretWpm: getPaceCaretWpm,
+        hydratePaceHistoryFromServer: hydratePaceHistoryFromServer,
         TIMED_AMOUNTS: TIMED_AMOUNTS,
         WORD_AMOUNTS: WORD_AMOUNTS,
     };
+
+    // Prefetch pace history for signed-in users so Average/PB/Daily work across devices.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
+                window.usertypoAuth.ready().then(function () {
+                    var state = window.usertypoAuth.getState();
+                    if (state && state.isSignedIn) hydratePaceHistoryFromServer();
+                }).catch(function () { /* ignore */ });
+            }
+        });
+    } else if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
+        window.usertypoAuth.ready().then(function () {
+            var state = window.usertypoAuth.getState();
+            if (state && state.isSignedIn) hydratePaceHistoryFromServer();
+        }).catch(function () { /* ignore */ });
+    }
 })();
