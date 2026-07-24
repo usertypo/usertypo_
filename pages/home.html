@@ -1244,20 +1244,15 @@ window.setTimeout = function(handler, timeout) {
         // typedCharsMap[wordIndex] = { charIndex: typedChar, ... }
         let typedCharsMap = {};
 
-        // Difficulty fail overlay
+        // Difficulty fail → show failed stats view (same path as threshold fails)
         function failTest(title, message) {
-            testComplete = true;
-            isTyping = false;
-            clearInterval(updateInterval);
-            const overlay = document.getElementById('difficulty-fail-overlay');
-            document.getElementById('fail-title').innerText = title;
-            document.getElementById('fail-message').innerText = message;
-            overlay.classList.remove('hidden');
+            if (testComplete || isRestarting) return;
+            endTest(message || title || 'Test failed');
         }
 
         function dismissFailAndRestart() {
             const overlay = document.getElementById('difficulty-fail-overlay');
-            overlay.classList.add('hidden');
+            if (overlay) overlay.classList.add('hidden');
             restartTest();
         }
 
@@ -1810,6 +1805,11 @@ window.setTimeout = function(handler, timeout) {
             textContainer.style.opacity = '0';
 
             setTimeout(() => {
+                // Randomize theme when starting a fresh test (if enabled)
+                try {
+                    window.usertypo_settingsApi?.maybeRandomizeTheme?.();
+                } catch (_) { /* ignore */ }
+
                 isTyping = false;
                 testComplete = false;
                 startTime = null;
@@ -2255,6 +2255,15 @@ window.setTimeout = function(handler, timeout) {
                     }
                 }
 
+                // â”€â”€ Expert difficulty: submitting an incorrect word fails the test â”€â”€
+                if (getTestRule('difficulty') === 'Expert' && !isCurrentWordCorrectForPace()) {
+                    failTest(
+                        'Expert Mode Failed',
+                        'Incorrect word submitted. In Expert mode, every word must be correct.'
+                    );
+                    return;
+                }
+
 
 
                 // â”€â”€ Advanced telemetry: record word completion â”€â”€
@@ -2426,22 +2435,35 @@ window.setTimeout = function(handler, timeout) {
                             charEl.appendChild(belowEl);
                         }
 
+                        // Error classification
+                        let errorType = 'mistype';
+                        if (ksInterval < avgInterKeyInterval * 0.7 && keystrokeTimes.length > 3) {
+                            errorType = 'overshoot';
+                        } else if (currentCharIndex < currentWord.length - 1) {
+                            const nextExpected = currentWord[currentCharIndex + 1];
+                            if (e.key === nextExpected) errorType = 'reversal';
+                        }
+                        errorMarkers.push({
+                            time: errSec, type: errorType,
+                            wordIndex: currentWordIndex, charIndex: currentCharIndex,
+                            typed: e.key, expected: expectedChar, word: currentWord
+                        });
+
+                        // â”€â”€ Master difficulty: any incorrect letter fails the test â”€â”€
+                        if (getTestRule('difficulty') === 'Master') {
+                            currentCharIndex++;
+                            updateLineLayout();
+                            updateCaretPosition();
+                            updateStats();
+                            failTest(
+                                'Master Mode Failed',
+                                'Incorrect letter typed. In Master mode, every keystroke must be correct.'
+                            );
+                            return;
+                        }
+
                         // â”€â”€ Stop on Error: Letter â”€â”€ don't advance, user must backspace and retype
                         if (getTestRule('stopOnError') === 'Letter') {
-                            // Show the error but don't advance currentCharIndex
-                            // Error classification
-                            let errorType = 'mistype';
-                            if (ksInterval < avgInterKeyInterval * 0.7 && keystrokeTimes.length > 3) {
-                                errorType = 'overshoot';
-                            } else if (currentCharIndex < currentWord.length - 1) {
-                                const nextExpected = currentWord[currentCharIndex + 1];
-                                if (e.key === nextExpected) errorType = 'reversal';
-                            }
-                            errorMarkers.push({
-                                time: errSec, type: errorType,
-                                wordIndex: currentWordIndex, charIndex: currentCharIndex,
-                                typed: e.key, expected: expectedChar, word: currentWord
-                            });
                             // Reset the char to untyped (don't advance)
                             charEl.className = 'char text-slate-500 transition-all duration-150';
                             updateLineLayout();
@@ -2449,26 +2471,6 @@ window.setTimeout = function(handler, timeout) {
                             updateStats();
                             return;
                         }
-
-                        // Error classification
-                        let errorType = 'mistype';
-                        if (ksInterval < avgInterKeyInterval * 0.7 && keystrokeTimes.length > 3) {
-                            errorType = 'overshoot';
-                        } else if (currentCharIndex < currentWord.length - 1) {
-                            const nextExpected = currentWord[currentCharIndex + 1];
-                            if (e.key === nextExpected) {
-                                errorType = 'reversal';
-                            }
-                        }
-                        errorMarkers.push({
-                            time: errSec,
-                            type: errorType,
-                            wordIndex: currentWordIndex,
-                            charIndex: currentCharIndex,
-                            typed: e.key,
-                            expected: expectedChar,
-                            word: currentWord
-                        });
                     }
                 } else {
                     if (currentCharIndex >= currentWord.length + 15) return;
@@ -2490,7 +2492,18 @@ window.setTimeout = function(handler, timeout) {
                         word: currentWord
                     });
 
-
+                    // â”€â”€ Master difficulty: extra characters also fail â”€â”€
+                    if (getTestRule('difficulty') === 'Master') {
+                        currentCharIndex++;
+                        updateLineLayout();
+                        updateCaretPosition();
+                        updateStats();
+                        failTest(
+                            'Master Mode Failed',
+                            'Incorrect letter typed. In Master mode, every keystroke must be correct.'
+                        );
+                        return;
+                    }
                 }
                 currentCharIndex++;
 
@@ -3298,11 +3311,6 @@ window.setTimeout = function(handler, timeout) {
             const testView = document.getElementById('test-view');
             const statsView = document.getElementById('stats-view');
 
-            // Randomize theme after each completed test (if enabled)
-            try {
-                window.usertypo_settingsApi?.maybeRandomizeTheme?.();
-            } catch (_) { /* ignore */ }
-
             // Hide test view immediately
             testView.classList.add('hidden', 'opacity-0', 'pointer-events-none');
             testView.classList.remove('flex-1', 'flex');
@@ -3487,7 +3495,10 @@ window.setTimeout = function(handler, timeout) {
             caret.classList.add('animate-breath');
 
             if (shouldRestart) {
-                // Next Test: generate brand new words
+                // Next Test: randomize theme (if enabled), then generate brand new words
+                try {
+                    window.usertypo_settingsApi?.maybeRandomizeTheme?.();
+                } catch (_) { /* ignore */ }
                 generatedWords = [];
                 const initialGenCount = testMode === 'time' ? 60 : testAmount;
                 for (let i = 0; i < initialGenCount; i++) {
