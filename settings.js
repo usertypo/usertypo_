@@ -60,6 +60,7 @@ const DEFAULTS = {
         keymapLegend: 'Lowercase',
         quickRestart: 'Tab',
         quickRestartCustomKey: '',
+        quickSettings: true, // Esc opens quick settings search
     },
     resultsAndGraphs: {
         decimalPrecision: false,
@@ -2910,11 +2911,15 @@ function _reapplyAllSettings() {
         applyKeymapDisplay(settings);
     }
 
-    // Only restart when on a typing page — never on settings or other routes
+    // Only restart when on a typing page — never on settings or other routes.
+    // Do not randomize theme here: changing a setting must not shuffle themes;
+    // Randomize Theme only applies on intentional next-test / restart.
     const path = (location.pathname || '').replace(/\/+$/, '') || '/';
     const onTypingPage = path === '/' || path === '/room' || path === '/dual';
     if (onTypingPage && !isTestSessionActive() && typeof window.restartTest === 'function') {
-        try { window.restartTest(); } catch (e) { /* typing DOM may not be mounted yet */ }
+        try {
+            window.restartTest({ randomizeTheme: false });
+        } catch (e) { /* typing DOM may not be mounted yet */ }
     }
 }
 

@@ -479,7 +479,9 @@
                 prepareHomeTypingView();
                 if (typeof window.restartTest === 'function') {
                     setTimeout(function () {
-                        try { window.restartTest(); } catch (e) { console.warn('restartTest', e); }
+                        try {
+                            window.restartTest({ randomizeTheme: false });
+                        } catch (e) { console.warn('restartTest', e); }
                     }, 0);
                 }
             }
