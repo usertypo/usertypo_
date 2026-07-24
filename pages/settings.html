@@ -1368,8 +1368,8 @@
                                                                 Sets a ghost caret that moves at a target speed for the
                                                                 current mode. Average uses your all-time average WPM,
                                                                 PB uses your personal best, Last uses your most recent
-                                                                test speed, Custom lets you set any WPM, and Daily uses
-                                                                your best WPM today.
+                                                                test speed, Daily uses your best WPM today, and Custom
+                                                                lets you set any WPM above 0.
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1382,8 +1382,20 @@
                                                         <button class="opt-btn" onclick="selectOpt(this)">PB</button>
                                                         <button class="opt-btn" onclick="selectOpt(this)">Last</button>
                                                         <button class="opt-btn"
-                                                            onclick="selectOpt(this)">Custom</button>
-                                                        <button class="opt-btn" onclick="selectOpt(this)">Daily</button>
+                                                            onclick="selectOpt(this)">Daily</button>
+                                                        <div class="relative custom-popover-wrapper">
+                                                            <button class="opt-btn"
+                                                                onclick="toggleCustomPopover(this)">Custom</button>
+                                                            <div
+                                                                class="custom-popover absolute top-full right-0 mt-2 w-48 p-3 rounded-xl opacity-0 pointer-events-none transition-all border border-primary/20 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-3 z-50">
+                                                                <input type="number"
+                                                                    class="w-full bg-slate-950 border border-slate-700/50 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-primary text-center"
+                                                                    placeholder="WPM..." min="1" step="1">
+                                                                <button
+                                                                    class="w-full bg-primary/10 hover:bg-primary/20 text-primary py-1.5 rounded-lg font-bold text-sm transition-colors"
+                                                                    onclick="applyCustomPopover(this, 'cursor.paceCaretCustomSpeed')">Apply</button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col gap-2 relative">

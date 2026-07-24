@@ -2749,7 +2749,7 @@ function restoreCustomButtonValues() {
 
         container.querySelectorAll('.custom-popover-wrapper > .opt-btn').forEach(triggerBtn => {
             const btnLabel = triggerBtn.textContent.trim();
-            if (btnLabel === 'Custom') {
+            if (btnLabel === 'Custom' || triggerBtn.getAttribute('data-original-text') === 'Custom') {
                 triggerBtn.setAttribute('data-original-text', 'Custom');
                 triggerBtn.textContent = saved;
                 container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
@@ -2757,6 +2757,30 @@ function restoreCustomButtonValues() {
             }
         });
     });
+
+    restorePaceCaretCustomButton(settings);
+}
+
+function restorePaceCaretCustomButton(settings) {
+    const mode = String(settings?.cursor?.paceCaretMode || '').toLowerCase();
+    if (mode !== 'custom') return;
+
+    const container = document.querySelector('[data-setting="cursor.paceCaretMode"]');
+    if (!container) return;
+
+    const triggerBtn = container.querySelector('.custom-popover-wrapper > .opt-btn');
+    if (!triggerBtn) return;
+
+    const speed = Number(settings.cursor.paceCaretCustomSpeed);
+    if (!triggerBtn.hasAttribute('data-original-text')) {
+        triggerBtn.setAttribute('data-original-text', 'Custom');
+    }
+    if (isFinite(speed) && speed > 0) {
+        triggerBtn.textContent = String(Math.round(speed) === speed ? Math.round(speed) : speed);
+    }
+
+    container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+    triggerBtn.classList.add('active');
 }
 
 /** Wire settings page controls after DOM is present (standalone load or SPA navigation). */
@@ -3190,10 +3214,31 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
         return;
     }
 
+    const settings = loadSettings();
+    let displayVal = val;
     let finalVal = isFlex ? 'Flex:' + val : val;
 
-    const settings = loadSettings();
-    setByPath(settings, path, finalVal);
+    if (path === 'cursor.paceCaretCustomSpeed') {
+        const num = parseFloat(val);
+        if (!isFinite(num) || num <= 0) {
+            if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                window.usertypoNotifications.showToast('wpm can only be above 0', 'error');
+            } else if (typeof window.triggerSave === 'function') {
+                window.triggerSave();
+            } else {
+                try { window.alert('wpm can only be above 0'); } catch (e) { /* ignore */ }
+            }
+            if (input) input.focus();
+            return;
+        }
+        finalVal = num;
+        displayVal = String(Math.round(num) === num ? Math.round(num) : num);
+        setByPath(settings, 'cursor.paceCaretCustomSpeed', finalVal);
+        setByPath(settings, 'cursor.paceCaretMode', 'custom');
+    } else {
+        setByPath(settings, path, finalVal);
+    }
+
     saveSettings(settings);
     applyAllSettings(settings);
     if (typeof triggerSave === 'function') triggerSave();
@@ -3215,10 +3260,10 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
             optBtn.classList.add('active');
             // Save original text so we can restore it later
             if (!optBtn.hasAttribute('data-original-text')) {
-                optBtn.setAttribute('data-original-text', optBtn.textContent.trim());
+                optBtn.setAttribute('data-original-text', 'Custom');
             }
             // Show the custom number on the button
-            optBtn.textContent = val;
+            optBtn.textContent = displayVal;
         }
     }
 
