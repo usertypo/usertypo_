@@ -3489,7 +3489,7 @@
                                                                         How it works
                                                                     </div>
                                                                     Enables keyboard shortcuts for quick actions like
-                                                                    restarting (Tab), opening command line (Esc), and
+                                                                    restarting (Tab), opening quick settings (Esc), and
                                                                     more.
                                                                 </div>
                                                             </div>
@@ -3537,8 +3537,8 @@
                                                     class="setting-toggle-row flex items-center justify-between gap-4 py-1">
                                                     <div class="flex flex-col flex-1 min-w-0 justify-center">
                                                         <div class="flex items-center gap-2">
-                                                            <p class="text-sm font-semibold text-slate-200">Single List
-                                                                Command Line</p>
+                                                            <p class="text-sm font-semibold text-slate-200">Quick
+                                                                Settings</p>
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
@@ -3551,15 +3551,17 @@
                                                                             class="material-symbols-outlined text-[14px]">info</span>
                                                                         How it works
                                                                     </div>
-                                                                    Displays all command line options in a single flat
-                                                                    list instead of categorized groups.
+                                                                    When enabled, press Esc to open the quick settings
+                                                                    search bar and change settings without leaving the
+                                                                    page. Turn off to disable the Esc shortcut.
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <p class="text-xs text-slate-500">Show commands in a flat list
+                                                        <p class="text-xs text-slate-500">Open quick settings with Esc
                                                         </p>
                                                     </div>
-                                                    <div class="toggle-track" onclick="toggleSwitch(this)">
+                                                    <div class="toggle-track on" data-setting="keyboardLayout.quickSettings"
+                                                        onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>
                                                 </div>

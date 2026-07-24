@@ -768,8 +768,20 @@
         return false;
     }
 
+    function isQuickSettingsEnabled() {
+        try {
+            const settings = window.usertypo_settingsApi?.loadSettings?.()
+                || JSON.parse(localStorage.getItem('usertypo_settings') || '{}');
+            // Default on when unset
+            return settings?.keyboardLayout?.quickSettings !== false;
+        } catch {
+            return true;
+        }
+    }
+
     function openOverlay() {
         if (!isShortcutContextAllowed()) return;
+        if (!isQuickSettingsEnabled()) return;
         injectOverlay();
         updateOverlayPosition();
         isOpen = true;
@@ -837,6 +849,7 @@
         if (active?.isContentEditable) return;
         if (isBlockedByOtherModal()) return;
         if (!isShortcutContextAllowed()) return;
+        if (!isQuickSettingsEnabled()) return;
 
         e.preventDefault();
         e.stopImmediatePropagation();

@@ -564,7 +564,7 @@ if (typeof document !== 'undefined') {
                 const testActive = typeof window.usertypo_testRuntime?.isActive === 'function'
                     && window.usertypo_testRuntime.isActive();
                 if (!opts.skipRestart && !testActive && typeof window.restartTest === 'function') {
-                    window.restartTest();
+                    window.restartTest({ randomizeTheme: false });
                 }
             });
             
