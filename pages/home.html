@@ -3925,8 +3925,9 @@ window.setTimeout = function(handler, timeout) {
             const maxX = Math.max(wBase.length, testDurationSec, 0.001);
             const times = [0];
             for (let i = 0; i < wBase.length; i++) times.push(i + 1);
-            const wData = [wBase[0], ...wBase];
-            const rData = [rBase[0], ...rBase];
+            const startFromZero = !!(window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero;
+            const wData = [startFromZero ? 0 : wBase[0], ...wBase];
+            const rData = [startFromZero ? 0 : rBase[0], ...rBase];
             if (maxX > wBase.length) {
                 times.push(maxX);
                 wData.push(wBase[wBase.length - 1]);
@@ -4743,8 +4744,9 @@ window.setTimeout = function(handler, timeout) {
             for (let i = 0; i < wBase.length; i++) times.push(i + 1);
             if (maxX > wBase.length) times.push(maxX);
 
-            const wData = [wBase[0], ...wBase];
-            const rData = [rBase[0], ...rBase];
+            const startFromZero = !!(window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero;
+            const wData = [startFromZero ? 0 : wBase[0], ...wBase];
+            const rData = [startFromZero ? 0 : rBase[0], ...rBase];
             if (maxX > wBase.length) {
                 wData.push(wBase[wBase.length - 1]);
                 rData.push(rBase[rBase.length - 1]);
@@ -4768,8 +4770,8 @@ window.setTimeout = function(handler, timeout) {
             const gH = H - PAD.top - PAD.bottom;
 
             const rhythm = computeRhythmBands(rBase);
-            const rUpper = [rhythm.upper[0], ...rhythm.upper];
-            const rLower = [rhythm.lower[0], ...rhythm.lower];
+            const rUpper = [startFromZero ? 0 : rhythm.upper[0], ...rhythm.upper];
+            const rLower = [startFromZero ? 0 : rhythm.lower[0], ...rhythm.lower];
             if (maxX > wBase.length) {
                 rUpper.push(rhythm.upper[rhythm.upper.length - 1]);
                 rLower.push(rhythm.lower[rhythm.lower.length - 1]);
