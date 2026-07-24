@@ -3054,7 +3054,6 @@ window.setTimeout = function(handler, timeout) {
             const wpm = Math.max(0, Math.round(exactWpm));
             const rawWpm = Math.max(0, Math.round(exactRawWpm));
             setLastTestWpm(wpm);
-            recordLocalPaceResult(exactWpm, failedReason);
             resetPaceCaret();
             const acc = totalKeystrokes > 0 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100) : 0;
 
@@ -3111,6 +3110,8 @@ window.setTimeout = function(handler, timeout) {
                     failedReason = `Test failed accuracy less than ${minAccVal}`;
                 }
             }
+
+            recordLocalPaceResult(exactWpm, failedReason);
 
             if (failedReason) {
                 wpmDisplay = '--';
