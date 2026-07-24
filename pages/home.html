@@ -1246,8 +1246,20 @@ window.setTimeout = function(handler, timeout) {
 
         // Difficulty fail → show failed stats view (same path as threshold fails)
         function failTest(title, message) {
-            if (testComplete || isRestarting) return;
-            endTest(message || title || 'Test failed');
+            if (isRestarting) return;
+            const reason = message || title || 'Test failed';
+            // Finish the current key handler first, then open stats.
+            if (testComplete) return;
+            testComplete = true;
+            isTyping = false;
+            clearInterval(updateInterval);
+            setTimeout(function () {
+                try {
+                    endTest(reason);
+                } catch (err) {
+                    console.error('[usertypo] difficulty fail endTest error', err);
+                }
+            }, 0);
         }
 
         function dismissFailAndRestart() {
@@ -2454,7 +2466,6 @@ window.setTimeout = function(handler, timeout) {
                             currentCharIndex++;
                             updateLineLayout();
                             updateCaretPosition();
-                            updateStats();
                             failTest(
                                 'Master Mode Failed',
                                 'Incorrect letter typed. In Master mode, every keystroke must be correct.'
@@ -2497,7 +2508,6 @@ window.setTimeout = function(handler, timeout) {
                         currentCharIndex++;
                         updateLineLayout();
                         updateCaretPosition();
-                        updateStats();
                         failTest(
                             'Master Mode Failed',
                             'Incorrect letter typed. In Master mode, every keystroke must be correct.'
@@ -3139,25 +3149,33 @@ window.setTimeout = function(handler, timeout) {
                 rawHistory = [];
                 window.testFailedThreshold = true;
 
-                // Show notification
-                const toast = document.getElementById('save-toast');
-                if (toast) {
-                    document.getElementById('toast-msg').textContent = failedReason;
-                    document.getElementById('toast-icon').textContent = 'error';
-                    document.getElementById('toast-icon').className = 'material-symbols-outlined text-error text-[18px] shrink-0';
-                    const toastActions = document.getElementById('save-toast-actions');
-                    if (toastActions) toastActions.classList.add('hidden');
-                    toast.classList.add('visible');
-                    toast.style.opacity = '1';
-                    toast.style.pointerEvents = 'auto';
-                    setTimeout(() => {
-                        toast.classList.remove('visible');
-                        toast.style.opacity = '0';
-                        toast.style.pointerEvents = 'none';
+                // Show failure notification (save-toast is a stack, not a single toast element)
+                if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                    window.usertypoNotifications.showToast(failedReason, 'error');
+                } else {
+                    const toastMsg = document.getElementById('toast-msg');
+                    const toastIcon = document.getElementById('toast-icon');
+                    const toast = document.getElementById('save-toast');
+                    if (toastMsg && toast) {
+                        toastMsg.textContent = failedReason;
+                        if (toastIcon) {
+                            toastIcon.textContent = 'error';
+                            toastIcon.className = 'material-symbols-outlined text-error text-[18px] shrink-0';
+                        }
+                        const toastActions = document.getElementById('save-toast-actions');
+                        if (toastActions) toastActions.classList.add('hidden');
+                        toast.classList.add('visible');
+                        toast.style.opacity = '1';
+                        toast.style.pointerEvents = 'auto';
                         setTimeout(() => {
-                            document.getElementById('toast-icon').className = 'material-symbols-outlined text-primary text-[18px] shrink-0';
-                        }, 350);
-                    }, 3500);
+                            toast.classList.remove('visible');
+                            toast.style.opacity = '0';
+                            toast.style.pointerEvents = 'none';
+                            if (toastIcon) {
+                                toastIcon.className = 'material-symbols-outlined text-primary text-[18px] shrink-0';
+                            }
+                        }, 3500);
+                    }
                 }
             }
 
