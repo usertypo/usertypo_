@@ -58,7 +58,8 @@ const DEFAULTS = {
         keymapStyle: 'Staggered', // Staggered | Alice | Matrix | Split
         keymapLayout: 'QWERTY',
         keymapLegend: 'Lowercase',
-        quickRestart: 'Tab',
+        keyboardShortcuts: true, // master switch for app keyboard shortcuts
+        quickRestart: true,      // Tab restarts the test when shortcuts are on
         quickRestartCustomKey: '',
         quickSettings: true, // Esc opens quick settings search
     },
@@ -164,6 +165,14 @@ function loadSettings() {
         }
         delete settings.testRules.quickRestart;
         delete settings.testRules.quickRestartCustomKey;
+    }
+
+    // Migrate quickRestart string options (Off/Tab/Custom) → boolean toggle
+    if (settings.keyboardLayout && typeof settings.keyboardLayout.quickRestart === 'string') {
+        settings.keyboardLayout.quickRestart = settings.keyboardLayout.quickRestart === 'Tab';
+    }
+    if (settings.keyboardLayout && settings.keyboardLayout.keyboardShortcuts === undefined) {
+        settings.keyboardLayout.keyboardShortcuts = true;
     }
 
     // Look & Feel migrations
@@ -2442,10 +2451,51 @@ function applyKeyboardLayoutSettings(settings) {
     if (!document.body) return;
 
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
-    document.body.setAttribute('data-quick-restart', kl.quickRestart || 'Tab');
+    const shortcutsOn = kl.keyboardShortcuts !== false;
+    const quickRestartOn = kl.quickRestart !== false;
+    document.body.setAttribute('data-keyboard-shortcuts', shortcutsOn ? 'on' : 'off');
+    document.body.setAttribute('data-quick-restart', quickRestartOn ? 'on' : 'off');
+
+    document.querySelectorAll('[data-shortcut-tip="tab"]').forEach((el) => {
+        el.classList.toggle('hidden', !(shortcutsOn && quickRestartOn));
+    });
+    document.querySelectorAll('[data-shortcut-tip="esc"]').forEach((el) => {
+        const quickSettingsOn = kl.quickSettings !== false;
+        el.classList.toggle('hidden', !(shortcutsOn && quickSettingsOn));
+    });
 
     applyKeymapDisplay(settings);
 }
+
+/** Master switch: when false, app keyboard shortcuts must not run. */
+function areKeyboardShortcutsEnabled(settings) {
+    if (!settings) {
+        settings = window.usertypo_settings || loadSettings();
+    }
+    return settings?.keyboardLayout?.keyboardShortcuts !== false;
+}
+
+/** Tab quick-restart toggle (independent of other shortcuts when master is on). */
+function isQuickRestartEnabled(settings) {
+    if (!settings) {
+        settings = window.usertypo_settings || loadSettings();
+    }
+    const v = settings?.keyboardLayout?.quickRestart;
+    if (typeof v === 'boolean') return v;
+    if (v === undefined || v === null) return true;
+    return v === 'Tab';
+}
+
+/**
+ * When Keyboard Shortcuts is off, block Tab / Enter / \\ app shortcuts site-wide.
+ * Escape is left alone so open overlays/modals can still dismiss; opens are gated separately.
+ */
+document.addEventListener('keydown', (e) => {
+    if (areKeyboardShortcutsEnabled()) return;
+    if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== '\\') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+}, true);
 
 /**
  * Apply live feed / timer display settings on index and room pages.
@@ -3327,6 +3377,8 @@ window.usertypo_settingsApi = {
     toggleFooterMute,
     selectColorTheme,
     maybeRandomizeTheme,
+    areKeyboardShortcutsEnabled,
+    isQuickRestartEnabled,
     resolveThemePalette,
     getThemeDisplayName,
     isThemeLight,

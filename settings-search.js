@@ -770,6 +770,10 @@
 
     function isQuickSettingsEnabled() {
         try {
+            if (window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                && !window.usertypo_settingsApi.areKeyboardShortcutsEnabled()) {
+                return false;
+            }
             const settings = window.usertypo_settingsApi?.loadSettings?.()
                 || JSON.parse(localStorage.getItem('usertypo_settings') || '{}');
             // Default on when unset
