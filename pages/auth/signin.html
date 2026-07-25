@@ -896,11 +896,28 @@ window.__spaPageInit = function() {
         }
     }
 
+    async function handleGoogleSignUp() {
+        if (authBusy || !window.usertypoAuth) return;
+        showError(authError, '');
+        showError(signupError, '');
+        setAuthBusy(true);
+        try {
+            if (typeof window.usertypoAuth.signUpWithGoogle === 'function') {
+                await window.usertypoAuth.signUpWithGoogle();
+            } else {
+                await window.usertypoAuth.signInWithGoogle();
+            }
+        } catch (err) {
+            showError(signupError, window.usertypoAuth.formatError(err));
+            setAuthBusy(false);
+        }
+    }
+
     if (btnSignIn) btnSignIn.addEventListener('click', handleSignIn, { signal: __pageSignal });
     if (btnSignUp) btnSignUp.addEventListener('click', handleSignUp, { signal: __pageSignal });
     if (btnVerify) btnVerify.addEventListener('click', handleVerifyEmail, { signal: __pageSignal });
     if (btnSignInGoogle) btnSignInGoogle.addEventListener('click', handleGoogleSignIn, { signal: __pageSignal });
-    if (btnSignUpGoogle) btnSignUpGoogle.addEventListener('click', handleGoogleSignIn, { signal: __pageSignal });
+    if (btnSignUpGoogle) btnSignUpGoogle.addEventListener('click', handleGoogleSignUp, { signal: __pageSignal });
 
     document.getElementById('si-password')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') handleSignIn();

@@ -22,13 +22,63 @@
     .sso-callback-error {
         color: #ff6b6b;
         font-size: 0.85rem;
+        max-width: 28rem;
+    }
+    .sso-continue-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 18rem;
+        text-align: left;
+    }
+    .sso-continue-form label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: #94a3b8;
+    }
+    .sso-continue-form input {
+        width: 100%;
+        border-radius: 0.85rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.04);
+        color: #f8fafc;
+        padding: 0.7rem 0.9rem;
+        font-size: 0.9rem;
+        outline: none;
+    }
+    .sso-continue-form input:focus {
+        border-color: rgba(0, 208, 255, 0.55);
+        box-shadow: 0 0 0 1px rgba(0, 208, 255, 0.25);
+    }
+    .sso-continue-form button {
+        margin-top: 0.25rem;
+        border: 1px solid rgba(0, 208, 255, 0.45);
+        background: rgba(0, 208, 255, 0.15);
+        color: #7ddfff;
+        border-radius: 0.85rem;
+        padding: 0.7rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+    }
+    .sso-continue-form button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
 </style>
 
 <main class="sso-callback-wrap">
-    <div class="sso-callback-title">Finishing sign-in...</div>
+    <div class="sso-callback-title" id="sso-callback-title">Finishing sign-in...</div>
     <p class="sso-callback-msg" id="sso-callback-msg">Please wait while we connect your account.</p>
     <p class="sso-callback-error hidden" id="sso-callback-error"></p>
+    <form id="sso-continue-form" class="sso-continue-form hidden">
+        <label for="sso-username">Choose a username</label>
+        <input id="sso-username" name="username" type="text" autocomplete="username" maxlength="32" />
+        <button type="submit" id="sso-continue-submit">Continue</button>
+    </form>
     <div id="clerk-captcha"></div>
 </main>
 
@@ -36,14 +86,39 @@
 const __pageAbort = new AbortController();
 
 window.__spaPageInit = function () {
+    var titleEl = document.getElementById('sso-callback-title');
     var msgEl = document.getElementById('sso-callback-msg');
     var errEl = document.getElementById('sso-callback-error');
+    var formEl = document.getElementById('sso-continue-form');
+    var usernameEl = document.getElementById('sso-username');
+    var submitEl = document.getElementById('sso-continue-submit');
 
     function showError(text) {
+        if (titleEl) titleEl.textContent = 'Sign-in incomplete';
         if (msgEl) msgEl.textContent = 'We could not finish signing you in.';
         if (errEl) {
             errEl.textContent = text;
             errEl.classList.remove('hidden');
+        }
+    }
+
+    function goTo(path) {
+        if (window.navigateTo) window.navigateTo(path || '/');
+        else window.location.href = path || '/';
+    }
+
+    function showUsernameForm(suggested) {
+        if (titleEl) titleEl.textContent = 'Almost done';
+        if (msgEl) msgEl.textContent = 'Pick a username to finish creating your account.';
+        if (errEl) {
+            errEl.textContent = '';
+            errEl.classList.add('hidden');
+        }
+        if (formEl) formEl.classList.remove('hidden');
+        if (usernameEl) {
+            usernameEl.value = suggested || '';
+            usernameEl.focus();
+            usernameEl.select();
         }
     }
 
@@ -53,16 +128,53 @@ window.__spaPageInit = function () {
     }
 
     window.usertypoAuth.handleSsoCallback()
-        .then(function () {
-            if (window.navigateTo) {
-                window.navigateTo('/');
-            } else {
-                window.location.href = '/';
+        .then(function (result) {
+            if (result && result.status === 'complete') {
+                goTo(result.redirectTo || '/');
+                return;
             }
+            if (result && result.status === 'needs_username') {
+                showUsernameForm(result.suggestedUsername || '');
+                return;
+            }
+            showError('Google sign-in did not complete. Please try again.');
         })
         .catch(function (err) {
             showError(window.usertypoAuth.formatError(err));
         });
+
+    if (formEl) {
+        formEl.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (!window.usertypoAuth || typeof window.usertypoAuth.finishOAuthUsername !== 'function') {
+                showError('Auth helpers are unavailable.');
+                return;
+            }
+            var username = (usernameEl && usernameEl.value || '').trim();
+            if (username.length < 4) {
+                showError('Username must be at least 4 characters.');
+                return;
+            }
+            if (submitEl) submitEl.disabled = true;
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.classList.add('hidden');
+            }
+            if (msgEl) msgEl.textContent = 'Creating your account…';
+
+            window.usertypoAuth.finishOAuthUsername(username)
+                .then(function (result) {
+                    goTo((result && result.redirectTo) || '/');
+                })
+                .catch(function (err) {
+                    if (submitEl) submitEl.disabled = false;
+                    showError(window.usertypoAuth.formatError(err));
+                    if (formEl) formEl.classList.remove('hidden');
+                    if (titleEl) titleEl.textContent = 'Almost done';
+                    if (msgEl) msgEl.textContent = 'Pick a username to finish creating your account.';
+                });
+        }, { signal: __pageAbort.signal });
+    }
 };
 
 window.__spaPageCleanup = function () {
