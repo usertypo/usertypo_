@@ -231,7 +231,9 @@
     function sanitizeUsername(raw) {
         var base = String(raw || '')
             .toLowerCase()
+            .replace(/\s+/g, '_')
             .replace(/[^a-z0-9_]/g, '')
+            .replace(/_+/g, '_')
             .replace(/^_+|_+$/g, '')
             .slice(0, 20);
         while (base.length < 4) {
@@ -252,13 +254,24 @@
         return '';
     }
 
+    function googleNameFromSignUp(signUp) {
+        if (!signUp) return '';
+        if (signUp.fullName) return String(signUp.fullName).trim();
+        var parts = [signUp.firstName, signUp.lastName]
+            .map(function (part) { return part ? String(part).trim() : ''; })
+            .filter(Boolean);
+        if (parts.length) return parts.join(' ');
+        return '';
+    }
+
     function suggestUsernameFromSignUp(signUp) {
+        // Prefer the Google/Gmail display name; email local-part is only a fallback.
+        var fromName = googleNameFromSignUp(signUp);
+        if (fromName) return sanitizeUsername(fromName);
+
         var email = emailFromSignUp(signUp);
         var fromEmail = email ? email.split('@')[0] : '';
-        var fromName = [signUp && signUp.firstName, signUp && signUp.lastName]
-            .filter(Boolean)
-            .join('');
-        return sanitizeUsername(fromEmail || fromName || ('user' + Date.now().toString(36)));
+        return sanitizeUsername(fromEmail || ('user' + Date.now().toString(36)));
     }
 
     function isUsernameTakenError(err) {
