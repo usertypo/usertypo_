@@ -172,7 +172,7 @@ begin
     p.user_id,
     p.username,
     p.display_name,
-    p.avatar_url,
+    public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
     public._relationship_with_user(p.user_id) as relationship,
     coalesce(up.level, 1) as level,
     case
@@ -436,7 +436,7 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url,
+      public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
       f.created_at as friends_since,
       coalesce(up.level, 1) as level,
       case
@@ -460,7 +460,7 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url,
+      public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
       coalesce(up.level, 1) as level,
       case
         when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
@@ -484,7 +484,7 @@ begin
       p.user_id,
       p.username,
       p.display_name,
-      p.avatar_url,
+      public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
       coalesce(up.level, 1) as level,
       case
         when public.xp_needed_for_level(coalesce(up.level, 1)) > 0

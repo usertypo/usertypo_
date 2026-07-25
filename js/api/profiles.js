@@ -20,7 +20,10 @@
     }
 
     function pickAvatar(user) {
-        return (user && user.imageUrl) || null;
+        // Real photos only: Google/OAuth profile pics and uploaded images set hasImage=true.
+        // Clerk's generated colorful silhouette (no Gmail pic) has hasImage=false → use default icon.
+        if (!user || user.hasImage !== true) return null;
+        return user.imageUrl || null;
     }
 
     function userFingerprint(user) {
@@ -31,6 +34,7 @@
             user.username || '',
             user.fullName || '',
             user.firstName || '',
+            user.hasImage ? '1' : '0',
             user.imageUrl || '',
             email || '',
         ].join('|');
@@ -155,9 +159,14 @@
             var displayName = user.fullName || username;
 
             if (existing.data) {
+                var nextAvatar = avatarUrl || null;
+                // Drop Clerk-generated defaults previously mirrored into the row.
+                if (!avatarUrl && existing.data.avatar_url) {
+                    nextAvatar = null;
+                }
                 var needsUpdate =
                     (username && existing.data.username !== username) ||
-                    (avatarUrl && existing.data.avatar_url !== avatarUrl) ||
+                    (existing.data.avatar_url || null) !== (nextAvatar || null) ||
                     (displayName && existing.data.display_name !== displayName);
 
                 if (!needsUpdate) {
@@ -173,7 +182,7 @@
                     .update({
                         username: username || existing.data.username,
                         display_name: displayName || existing.data.display_name,
-                        avatar_url: avatarUrl || existing.data.avatar_url,
+                        avatar_url: nextAvatar,
                     })
                     .eq('user_id', user.id)
                     .select('*')
@@ -303,6 +312,28 @@
         return { profile: profile };
     }
 
+    async function updateMyAvatar(file) {
+        var user = await requireSignedInUser();
+        if (!file) throw new Error('missing_file');
+        var maxBytes = 5 * 1024 * 1024;
+        if (file.size > maxBytes) throw new Error('file_too_large');
+        var type = String(file.type || '').toLowerCase();
+        if (type && type.indexOf('image/') !== 0) throw new Error('invalid_file_type');
+
+        if (typeof user.setProfileImage !== 'function') {
+            throw new Error('avatar_upload_unavailable');
+        }
+        await user.setProfileImage({ file: file });
+        if (typeof user.reload === 'function') {
+            await user.reload();
+        }
+        var refreshed = window.usertypoAuth && window.usertypoAuth.getState
+            ? (window.usertypoAuth.getState().user || user)
+            : user;
+        var profile = await ensureMyProfile(refreshed, { force: true });
+        return { profile: profile, imageUrl: pickAvatar(refreshed) };
+    }
+
     function bindAuthSync() {
         if (!window.usertypoAuth) return;
 
@@ -362,6 +393,7 @@
         setAllowFriendRequests: setAllowFriendRequests,
         setProfileVisibility: setProfileVisibility,
         setUsername: setUsername,
+        updateMyAvatar: updateMyAvatar,
         clearCache: clearProfileCache,
     };
 })();

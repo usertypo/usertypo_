@@ -102,11 +102,44 @@ function createAuthServices(env, logger) {
         return !!result.data;
     }
 
+    // True when blockerId has blocked blockedId (one-way — hides blocker avatar from blocked).
+    async function hasBlocked(blockerId, blockedId) {
+        if (String(blockerId || '').startsWith('guest_') || String(blockedId || '').startsWith('guest_')) {
+            return false;
+        }
+        if (!supabase) return false;
+        const result = await supabase
+            .from('user_blocks')
+            .select('blocker_id')
+            .eq('blocker_id', blockerId)
+            .eq('blocked_id', blockedId)
+            .limit(1);
+        if (result.error) throw result.error;
+        return Array.isArray(result.data) && result.data.length > 0;
+    }
+
+    // Owners among ownerIds who have blocked viewerId.
+    async function blockersOf(viewerId, ownerIds) {
+        const ids = (ownerIds || []).filter(Boolean);
+        if (!ids.length || String(viewerId || '').startsWith('guest_') || !supabase) {
+            return new Set();
+        }
+        const result = await supabase
+            .from('user_blocks')
+            .select('blocker_id')
+            .eq('blocked_id', viewerId)
+            .in('blocker_id', ids);
+        if (result.error) throw result.error;
+        return new Set((result.data || []).map((row) => row.blocker_id));
+    }
+
     return {
         authenticateSocket,
         getProfile,
         areFriends,
         areBlocked,
+        hasBlocked,
+        blockersOf,
         hasSupabaseServiceRole: !!supabase,
     };
 }

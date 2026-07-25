@@ -467,10 +467,14 @@
                             class="transition-[stroke-dashoffset] duration-700 ease-out"
                             style="stroke-dasharray: 113.097; stroke-dashoffset: 113.097;"></circle>
                     </svg>
-                    <span class="relative z-[1] flex items-center justify-center w-[72.7%] h-[72.7%] rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)]">
+                    <span id="profile-avatar-wrap" class="relative z-[1] flex items-center justify-center w-[72.7%] h-[72.7%] rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] cursor-pointer group/avatar" role="button" tabindex="0" title="Change profile photo" aria-label="Change profile photo">
                         <img id="profile-avatar" alt="Your profile photo" class="w-full h-full object-cover"
-                            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Crect fill='%231a1d23' width='160' height='160'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' fill='%2394a3b8' font-size='48' font-family='monospace'%3E%3F%3C/text%3E%3C/svg%3E" />
+                            src="" />
+                        <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                            <span class="material-symbols-outlined text-white text-[28px]">photo_camera</span>
+                        </span>
                     </span>
+                    <input id="profile-avatar-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />
                     <span id="profile-level-badge"
                         class="absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.75rem] h-7 px-2 rounded-full bg-primary text-background-dark text-sm font-black leading-7 text-center shadow-md">1</span>
                 </div>
@@ -1127,10 +1131,15 @@ if ('scrollRestoration' in history) {
                 var nameEl = document.getElementById('profile-username');
                 var avatarEl = document.getElementById('profile-avatar');
 
+                function defaultAvatar() {
+                    return (window.usertypoPlayerAvatar && window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL)
+                        || '';
+                }
+
                 function apply(name, avatarUrl) {
                     if (nameEl) nameEl.textContent = name || 'Player';
-                    if (avatarEl && avatarUrl) {
-                        avatarEl.src = avatarUrl;
+                    if (avatarEl) {
+                        avatarEl.src = avatarUrl || defaultAvatar();
                         avatarEl.alt = (name || 'Player') + ' profile photo';
                     }
                 }
@@ -1152,7 +1161,7 @@ if ('scrollRestoration' in history) {
 
                     var user = state.user;
                     var fallbackName = user.username || user.fullName || user.firstName || 'Player';
-                    var fallbackAvatar = user.imageUrl || null;
+                    var fallbackAvatar = (user.hasImage === true && user.imageUrl) ? user.imageUrl : null;
                     apply(fallbackName, fallbackAvatar);
 
                     if (window.usertypoProfiles && typeof window.usertypoProfiles.ensureMyProfile === 'function') {
@@ -1169,6 +1178,72 @@ if ('scrollRestoration' in history) {
                     console.error('[usertypo userstats] profile load failed', err);
                     apply('Player', null);
                 }
+            }
+
+            function bindProfileAvatarUpload() {
+                var wrap = document.getElementById('profile-avatar-wrap');
+                var input = document.getElementById('profile-avatar-input');
+                if (!wrap || !input || wrap.dataset.bound === '1') return;
+                wrap.dataset.bound = '1';
+                var uploading = false;
+
+                function openPicker() {
+                    if (uploading) return;
+                    input.value = '';
+                    input.click();
+                }
+
+                wrap.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openPicker();
+                });
+                wrap.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openPicker();
+                    }
+                });
+
+                input.addEventListener('change', async function () {
+                    var file = input.files && input.files[0];
+                    if (!file || uploading) return;
+                    if (!window.usertypoProfiles || typeof window.usertypoProfiles.updateMyAvatar !== 'function') {
+                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                            window.usertypoNotifications.showToast('Photo upload unavailable.', 'error');
+                        }
+                        return;
+                    }
+                    uploading = true;
+                    wrap.classList.add('opacity-60', 'pointer-events-none');
+                    try {
+                        var result = await window.usertypoProfiles.updateMyAvatar(file);
+                        var avatarEl = document.getElementById('profile-avatar');
+                        var url = (result && result.profile && result.profile.avatar_url)
+                            || (result && result.imageUrl)
+                            || '';
+                        if (avatarEl && url) {
+                            avatarEl.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+                        } else if (avatarEl && window.usertypoPlayerAvatar) {
+                            avatarEl.src = window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL;
+                        }
+                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                            window.usertypoNotifications.showToast('Profile photo updated.', 'photo_camera');
+                        }
+                    } catch (err) {
+                        var code = err && err.message ? String(err.message) : '';
+                        var msg = 'Could not update photo.';
+                        if (code === 'file_too_large') msg = 'Image must be 5MB or smaller.';
+                        else if (code === 'invalid_file_type') msg = 'Please choose a PNG, JPEG, WebP, or GIF.';
+                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                            window.usertypoNotifications.showToast(msg, 'error');
+                        }
+                        console.warn('[usertypo userstats] avatar upload failed', err);
+                    } finally {
+                        uploading = false;
+                        wrap.classList.remove('opacity-60', 'pointer-events-none');
+                    }
+                });
             }
 
             async function fillProfileProgression() {
@@ -1214,11 +1289,15 @@ if ('scrollRestoration' in history) {
                 }
             }
 
+            bindProfileAvatarUpload();
             fillProfileIdentity().then(function () {
                 loadUserStats();
                 loadUserRank();
             });
 
+            window.addEventListener('usertypo:profile-synced', function () {
+                fillProfileIdentity();
+            });
             window.addEventListener('usertypo:progression-updated', function () {
                 fillProfileProgression();
             });

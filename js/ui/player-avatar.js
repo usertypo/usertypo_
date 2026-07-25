@@ -5,6 +5,17 @@
 (function () {
     var CIRCUMFERENCE = 2 * Math.PI * 18; // r=18 in 40×40 viewBox
 
+    // Minimal person silhouette — replaces Clerk colorful defaults / letter initials.
+    var DEFAULT_AVATAR_URL =
+        "data:image/svg+xml," +
+        encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">' +
+                '<circle cx="32" cy="32" r="32" fill="#1a1d23"/>' +
+                '<circle cx="32" cy="24" r="10" fill="#64748b"/>' +
+                '<path d="M12 54c0-11 9-18 20-18s20 7 20 18" fill="#64748b"/>' +
+            '</svg>'
+        );
+
     function escapeHtml(value) {
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;')
@@ -37,6 +48,11 @@
 
     function ringOffset(percent) {
         return CIRCUMFERENCE * (1 - clampPercent(percent) / 100);
+    }
+
+    function resolveAvatarUrl(url) {
+        var trimmed = String(url || '').trim();
+        return trimmed || DEFAULT_AVATAR_URL;
     }
 
     function pickProgress(source) {
@@ -80,8 +96,7 @@
         var progress = pickProgress(opts);
         var showLevel = opts.showLevel !== false && !opts.isBot;
         var name = opts.name || (opts.isBot ? 'Bot' : 'Player');
-        var initial = opts.initial || initialFor(name);
-        var avatarUrl = opts.avatarUrl || '';
+        var avatarUrl = resolveAvatarUrl(opts.avatarUrl);
         var userId = opts.userId || opts.user_id || '';
         if (opts.isBot || (userId && String(userId).indexOf('guest_') === 0)) userId = '';
         var clickable = !!userId && opts.clickable !== false;
@@ -96,11 +111,9 @@
         var photoInner;
         if (opts.isBot) {
             photoInner = '<span class="material-symbols-outlined player-level-avatar__bot" aria-hidden="true">smart_toy</span>';
-        } else if (avatarUrl) {
+        } else {
             photoInner = '<img class="player-level-avatar__img" src="' + escapeAttr(avatarUrl) +
                 '" alt="' + escapeAttr(name) + '" loading="lazy" decoding="async" />';
-        } else {
-            photoInner = '<span class="player-level-avatar__initial">' + escapeHtml(initial) + '</span>';
         }
 
         return '<span' + idAttr + userAttr +
@@ -144,6 +157,9 @@
 
     window.usertypoPlayerAvatar = {
         CIRCUMFERENCE: CIRCUMFERENCE,
+        DEFAULT_AVATAR_URL: DEFAULT_AVATAR_URL,
+        defaultAvatarUrl: function () { return DEFAULT_AVATAR_URL; },
+        resolveAvatarUrl: resolveAvatarUrl,
         ringOffset: ringOffset,
         pickProgress: pickProgress,
         render: render,

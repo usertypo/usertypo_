@@ -33,6 +33,26 @@ as $$
   );
 $$;
 
+-- Hide avatar URL when the profile owner has blocked the viewer.
+create or replace function public._visible_avatar_url(p_owner text, p_url text)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when p_url is null or btrim(p_url) = '' then null
+    when exists (
+      select 1 from public.user_blocks ub
+      where ub.blocker_id = p_owner
+        and ub.blocked_id = (auth.jwt() ->> 'sub')
+    ) then null
+    else p_url
+  end;
+$$;
+
+revoke all on function public._visible_avatar_url(text, text) from public;
 create or replace function public.block_user(p_user_id text)
 returns void
 language plpgsql
@@ -99,6 +119,7 @@ end;
 $$;
 
 revoke all on function public._block_exists(text, text) from public;
+revoke all on function public._visible_avatar_url(text, text) from public;
 revoke all on function public.block_user(text) from public;
 revoke all on function public.unblock_user(text) from public;
 grant execute on function public.block_user(text) to authenticated;
@@ -107,3 +128,20 @@ grant execute on function public.unblock_user(text) to authenticated;
 grant execute on function public._block_exists(text, text) to service_role;
 grant select on table public.user_blocks to service_role;
 grant select on table public.user_blocks to authenticated;
+
+-- Lean: which of these users have blocked the caller (for Redis leaderboard avatar strip).
+create or replace function public.ids_who_blocked_me(p_ids text[])
+returns text[]
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(array_agg(ub.blocker_id), '{}'::text[])
+  from public.user_blocks ub
+  where ub.blocked_id = (auth.jwt() ->> 'sub')
+    and ub.blocker_id = any (coalesce(p_ids, '{}'::text[]));
+$$;
+
+revoke all on function public.ids_who_blocked_me(text[]) from public;
+grant execute on function public.ids_who_blocked_me(text[]) to authenticated;

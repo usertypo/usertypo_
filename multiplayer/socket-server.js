@@ -200,6 +200,44 @@ function createMultiplayerServer(httpServer, options) {
         };
     }
 
+    async function maskPayloadForViewer(payload, viewerId) {
+        if (!payload || !viewerId) return payload;
+        const players = Array.isArray(payload.players) ? payload.players : [];
+        const ownerIds = players.map((p) => p.userId).filter((id) => id && id !== viewerId);
+        if (!ownerIds.length) return payload;
+        let blockers;
+        try {
+            blockers = await auth.blockersOf(viewerId, ownerIds);
+        } catch (error) {
+            logger.warn('[multiplayer] blockersOf failed:', error && error.message);
+            return payload;
+        }
+        if (!blockers || !blockers.size) return payload;
+        return Object.assign({}, payload, {
+            players: players.map((player) => (
+                blockers.has(player.userId)
+                    ? Object.assign({}, player, { avatarUrl: '' })
+                    : player
+            )),
+        });
+    }
+
+    async function emitRoomState(room, reason) {
+        const base = publicRoomPayload(room, reason || (room.type === 'custom' ? 'custom' : room.type));
+        const viewers = Array.from(room.allowedUserIds || []);
+        await Promise.all(viewers.map(async (viewerId) => {
+            emitToUser(viewerId, 'room:state', await maskPayloadForViewer(base, viewerId));
+        }));
+    }
+
+    async function emitDualReady(room, reason) {
+        const base = publicRoomPayload(room, reason);
+        const viewers = Array.from(room.allowedUserIds || []);
+        await Promise.all(viewers.map(async (viewerId) => {
+            emitToUser(viewerId, 'duel:ready', await maskPayloadForViewer(base, viewerId));
+        }));
+    }
+
     const ROOM_BOT_NAMES = Object.freeze([
         'TypeBot', 'KeyClaw', 'NeonType', 'SwiftKeys', 'PixelPace',
         'GlyphRunner', 'DashType', 'OrbitKeys', 'FluxType', 'NovaTap',
@@ -237,8 +275,7 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function notifyMatchReady(room, reason) {
-        const payload = publicRoomPayload(room, reason);
-        room.allowedUserIds.forEach((userId) => emitToUser(userId, 'duel:ready', payload));
+        void emitDualReady(room, reason);
     }
 
     function removeListing(listingId) {
@@ -648,9 +685,11 @@ function createMultiplayerServer(httpServer, options) {
         Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
         remainingCustomPlayers(room).forEach(resetPlayerForLobby);
         touchRoomActivity(room);
+        void emitRoomState(room, 'custom');
+        // returned-to-lobby can share the same masked per-viewer emit via room:state listeners;
+        // also send a dedicated event with a base payload (avatars may be visible briefly — state follows).
         const payload = publicRoomPayload(room, 'custom');
         io.to(roomChannel(room.id)).emit('room:returned-to-lobby', payload);
-        io.to(roomChannel(room.id)).emit('room:state', payload);
     }
 
     function maybeReturnCustomRoomToLobby(room) {
@@ -871,7 +910,7 @@ function createMultiplayerServer(httpServer, options) {
             room.players.delete(userId);
             room.allowedUserIds.delete(userId);
             Array.from(room.players.values()).forEach((item, index) => { item.index = index; });
-            io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+            void emitRoomState(room, 'custom');
             touchRoomActivity(room);
             disposeCustomRoomIfNoHumans(room);
             return;
@@ -1037,11 +1076,15 @@ function createMultiplayerServer(httpServer, options) {
                 }, LIMITS.inviteTtlMs);
                 invites.set(invite.id, invite);
                 const from = profiles.get(userId) || { name: 'Player', avatarUrl: '' };
+                let fromAvatarUrl = from.avatarUrl || '';
+                try {
+                    if (fromAvatarUrl && await auth.hasBlocked(userId, toUserId)) fromAvatarUrl = '';
+                } catch (_) { /* keep avatar */ }
                 emitToUser(toUserId, 'duel:incoming', {
                     inviteId: invite.id,
                     fromUserId: userId,
                     fromName: from.name,
-                    fromAvatarUrl: from.avatarUrl,
+                    fromAvatarUrl,
                     config,
                     createdAt: invite.createdAt,
                 });
@@ -1171,7 +1214,7 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('match:join', (roomId, ack) => {
+        socket.on('match:join', async (roomId, ack) => {
             const room = rooms.get(String(roomId || ''));
             if (!room || !room.allowedUserIds.has(userId)) {
                 safeAck(ack, { ok: false, error: 'room_unavailable' });
@@ -1191,7 +1234,7 @@ function createMultiplayerServer(httpServer, options) {
                 userToRoom.set(userId, room.id);
                 safeAck(ack, {
                     ok: true,
-                    room: publicRoomPayload(room, room.type),
+                    room: await maskPayloadForViewer(publicRoomPayload(room, room.type), userId),
                     state: room.state,
                     countdown: room.state === 'countdown'
                         ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
@@ -1219,7 +1262,7 @@ function createMultiplayerServer(httpServer, options) {
             userToRoom.set(userId, room.id);
             safeAck(ack, {
                 ok: true,
-                room: publicRoomPayload(room, room.type),
+                room: await maskPayloadForViewer(publicRoomPayload(room, room.type), userId),
                 state: 'waiting',
                 countdown: null,
                 race: null,
@@ -1230,13 +1273,13 @@ function createMultiplayerServer(httpServer, options) {
                 room.players.size,
             ]);
             if (room.type === 'custom') {
-                io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                void emitRoomState(room, 'custom');
                 touchRoomActivity(room);
             }
             if (room.type !== 'custom' && requiredPlayersJoined(room)) startCountdown(room);
         });
 
-        socket.on('match:resume', (roomId, ack) => {
+        socket.on('match:resume', async (roomId, ack) => {
             const room = rooms.get(String(roomId || ''));
             const player = room && room.players.get(userId);
             if (!room || !player || !room.allowedUserIds.has(userId)
@@ -1251,7 +1294,7 @@ function createMultiplayerServer(httpServer, options) {
             userToRoom.set(userId, room.id);
             safeAck(ack, {
                 ok: true,
-                room: publicRoomPayload(room, room.type),
+                room: await maskPayloadForViewer(publicRoomPayload(room, room.type), userId),
                 state: room.state,
                 countdown: room.state === 'countdown'
                     ? Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000))
@@ -1478,7 +1521,7 @@ function createMultiplayerServer(httpServer, options) {
                     userToRoom.set(userId, room.id);
                 }
             }
-            io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+            void emitRoomState(room, 'custom');
             touchRoomActivity(room);
             safeAck(ack, { ok: true, roomId: room.id });
         });
@@ -1529,7 +1572,7 @@ function createMultiplayerServer(httpServer, options) {
                 if (targetUserId === 'bot') {
                     if (!room.bot) throw new Error('bot_not_found');
                     room.bot = null;
-                    io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                    void emitRoomState(room, 'custom');
                     touchRoomActivity(room);
                     disposeCustomRoomIfNoHumans(room);
                     safeAck(ack, { ok: true });
@@ -1559,7 +1602,7 @@ function createMultiplayerServer(httpServer, options) {
             }
             player.ready = true;
             touchRoomActivity(room);
-            io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+            void emitRoomState(room, 'custom');
             safeAck(ack, { ok: true });
             if (userId === room.hostUserId) {
                 room.players.forEach((item, uid) => {
@@ -1604,7 +1647,7 @@ function createMultiplayerServer(httpServer, options) {
                 if (occupiedSlots(room) >= room.maxPlayers) throw new Error('room_full');
                 room.bot = createCustomRoomBot(room);
                 touchRoomActivity(room);
-                io.to(roomChannel(room.id)).emit('room:state', publicRoomPayload(room, 'custom'));
+                void emitRoomState(room, 'custom');
                 safeAck(ack, { ok: true, bot: publicRoomPayload(room, 'custom').bot });
             } catch (error) {
                 safeAck(ack, { ok: false, error: error.message || 'add_bot_failed' });
