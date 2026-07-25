@@ -788,16 +788,23 @@
                 </div>
             </main>
 
-            <footer id="test-view-footer" class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 zen-element">
-                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
-                    title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
-                </button>
-                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[14px]">palette</span>
-                    <span>Themes and Languages</span>
-                    <button type="button" data-footer-picker
-                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+            <footer id="test-view-footer" class="px-8 py-4 flex justify-between items-center gap-3 relative z-20 zen-element">
+                <div class="flex items-center gap-2">
+                    <a href="/privacy" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Privacy Policy</a>
+                    <span class="text-[10px] text-slate-700 font-mono">·</span>
+                    <a href="/terms" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Terms</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
+                        title="Mute sounds" aria-label="Mute sounds">
+                        <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                    </button>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+                        <span class="material-symbols-outlined text-[14px]">palette</span>
+                        <span>Themes and Languages</span>
+                        <button type="button" data-footer-picker
+                            class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                    </div>
                 </div>
             </footer>
         </div> <!-- End TEST VIEW -->
@@ -1074,17 +1081,24 @@
             </main>
 
             <footer
-                class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 mt-auto opacity-0 stats-animate-card [animation-delay:900ms]"
+                class="px-8 py-4 flex justify-between items-center gap-3 relative z-20 mt-auto opacity-0 stats-animate-card [animation-delay:900ms]"
                 id="stats-footer">
-                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
-                    title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
-                </button>
-                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[14px]">palette</span>
-                    <span>Themes and Languages</span>
-                    <button type="button" data-footer-picker
-                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                <div class="flex items-center gap-2">
+                    <a href="/privacy" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Privacy Policy</a>
+                    <span class="text-[10px] text-slate-700 font-mono">·</span>
+                    <a href="/terms" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Terms</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
+                        title="Mute sounds" aria-label="Mute sounds">
+                        <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                    </button>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+                        <span class="material-symbols-outlined text-[14px]">palette</span>
+                        <span>Themes and Languages</span>
+                        <button type="button" data-footer-picker
+                            class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                    </div>
                 </div>
             </footer>
         </div> <!-- End STATS VIEW -->
@@ -1719,21 +1733,30 @@ window.setTimeout = function(handler, timeout) {
         function openCustomPrompt() {
             const modal = document.getElementById('custom-prompt-modal');
             const box = document.getElementById('custom-prompt-box');
+            const input = document.getElementById('custom-prompt-input');
+            if (!modal || !box || !input) return;
+
             document.getElementById('custom-prompt-title').innerText = testMode === 'time' ? 'Custom Time (seconds)' : 'Custom Word Count';
-            document.getElementById('custom-prompt-input').value = '';
+            input.value = '';
 
             modal.classList.remove('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-95');
-            box.classList.add('scale-100');
-            setTimeout(() => document.getElementById('custom-prompt-input').focus(), 100);
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            modal.setAttribute('aria-hidden', 'false');
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+            setTimeout(() => input.focus(), 50);
         }
 
         function closeCustomPrompt() {
             const modal = document.getElementById('custom-prompt-modal');
             const box = document.getElementById('custom-prompt-box');
+            if (!modal || !box) return;
+
             modal.classList.add('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.setAttribute('aria-hidden', 'true');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
         }
 
         function openNotifications() {
@@ -5155,6 +5178,8 @@ window.setTimeout = function(handler, timeout) {
         window.toggleAdaptRefine = toggleAdaptRefine;
         window.setTestAmountValue = setTestAmountValue;
         window.openCustomPrompt = openCustomPrompt;
+        window.closeCustomPrompt = closeCustomPrompt;
+        window.applyCustomPrompt = applyCustomPrompt;
         window.dismissFailAndRestart = dismissFailAndRestart;
         window.toggleGraphInfo = toggleGraphInfo;
         window.showTestView = showTestView;

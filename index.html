@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- SPA Shell: For direct URL access / refresh on any route, configure the server to serve this file for all paths. See _redirects. -->
 <html lang="en">
 
@@ -81,7 +81,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
     <link href="css/test-activity.css?v=4" rel="stylesheet" />
-    <link href="css/global.css?v=6" rel="stylesheet" />
+    <link href="css/global.css?v=7" rel="stylesheet" />
 
     <script>
         tailwind.config = {
@@ -946,16 +946,23 @@
                 Loading usertypo_…
             </div>
         </div>
-        <footer id="spa-shell-footer" class="px-8 py-4 flex justify-end items-center relative z-20 zen-element shrink-0 hidden">
-            <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-3"
-                title="Mute sounds" aria-label="Mute sounds">
-                <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
-            </button>
-            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                <span class="material-symbols-outlined text-[14px]">palette</span>
-                <span>Themes and Languages</span>
-                <button type="button" data-footer-picker
-                    class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+        <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
+            <div class="flex items-center gap-3 text-[10px] text-slate-600 font-mono">
+                <a href="/privacy" data-spa-link class="hover:text-primary transition-colors">Privacy Policy</a>
+                <span class="text-slate-700">·</span>
+                <a href="/terms" data-spa-link class="hover:text-primary transition-colors">Terms</a>
+            </div>
+            <div class="flex items-center">
+                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-3"
+                    title="Mute sounds" aria-label="Mute sounds">
+                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                </button>
+                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                    <span>Themes and Languages</span>
+                    <button type="button" data-footer-picker
+                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                </div>
             </div>
         </footer>
     </div>
@@ -997,9 +1004,14 @@
         </div>
     </div>
 
+    <!-- Custom amount prompt (no page dim/blur) -->
     <div id="custom-prompt-modal"
-        class="fixed inset-0 z-[250] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 bg-background/80 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-sm rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] transform scale-95 transition-transform duration-300 flex flex-col gap-4 border border-white/10"
+        class="opacity-0 pointer-events-none"
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="custom-prompt-title">
+        <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-sm rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-95 opacity-0 relative flex flex-col gap-4 border border-white/10"
             id="custom-prompt-box">
             <div class="text-primary font-mono text-sm font-bold flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">build</span>
@@ -1009,10 +1021,10 @@
                 class="bg-black/30 border border-white/10 rounded-lg p-3 text-white font-mono outline-none focus:border-primary transition-colors text-sm w-full"
                 placeholder="Enter number..." onkeydown="if(event.key === 'Enter') applyCustomPrompt()" />
             <div class="flex justify-end gap-3 mt-2 font-mono text-xs">
-                <button
+                <button type="button"
                     class="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-colors uppercase font-bold tracking-widest"
                     onclick="closeCustomPrompt()">Cancel</button>
-                <button
+                <button type="button"
                     class="px-4 py-2 rounded-lg bg-primary text-background-dark font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]"
                     onclick="applyCustomPrompt()">Apply</button>
             </div>
@@ -1222,9 +1234,9 @@
     <script src="languages.js"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
-    <script src="settings.js?v=11"></script>
+    <script src="settings.js?v=12"></script>
     <script src="footer-picker.js"></script>
-    <script src="settings-search.js?v=3"></script>
+    <script src="settings-search.js?v=4"></script>
     <!-- Config + auth + data API (before router) -->
     <script src="js/config/public.js"></script>
     <script src="js/auth/clerk.js"></script>
@@ -1248,10 +1260,10 @@
     <script src="js/api/notifications.js?v=5"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/api/multiplayer.js?v=19"></script>
-    <script src="js/pages/dual-race.js?v=20"></script>
-    <script src="js/pages/room-race.js?v=29"></script>
+    <script src="js/pages/dual-race.js?v=21"></script>
+    <script src="js/pages/room-race.js?v=30"></script>
     <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=60"></script>
+    <script src="js/page-fragments.js?v=62"></script>
     <script src="js/router.js?v=7"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
@@ -1352,8 +1364,13 @@
             var box = document.getElementById('custom-prompt-box');
             if (!modal || !box) return;
             modal.classList.add('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.setAttribute('aria-hidden', 'true');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+        };
+        window.applyCustomPrompt = window.applyCustomPrompt || function() {
+            if (typeof window.closeCustomPrompt === 'function') window.closeCustomPrompt();
         };
     })();
     </script>

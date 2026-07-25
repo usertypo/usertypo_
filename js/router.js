@@ -20,6 +20,8 @@
         '/dual': { page: 'pages/dual.html', title: 'Dual Match | usertypo_', navId: null, compact: true, typingLayout: true, hideShellHeader: true, hideShellFooter: true },
         '/leaderboards': { page: 'pages/leaderboards.html', title: 'Leaderboards | usertypo_', navId: 'nav-leaderboards', compact: false },
         '/userstats': { page: 'pages/userstats.html', title: 'User Stats | usertypo_', navId: 'nav-userstats', compact: false },
+        '/privacy': { page: 'pages/privacy.html', title: 'Privacy Policy | usertypo_', navId: null, compact: false },
+        '/terms': { page: 'pages/terms.html', title: 'Terms and Conditions | usertypo_', navId: null, compact: false },
     };
 
     const htmlRouteMap = {
@@ -31,6 +33,8 @@
         'dual.html': '/dual',
         'leaderboards.html': '/leaderboards',
         'userstats.html': '/userstats',
+        'privacy.html': '/privacy',
+        'terms.html': '/terms',
     };
 
     let isNavigating = false;
@@ -172,8 +176,15 @@
 
         var cp = document.getElementById('custom-prompt-modal');
         var cpb = document.getElementById('custom-prompt-box');
-        if (cp) cp.classList.add('opacity-0', 'pointer-events-none');
-        if (cpb) cpb.classList.remove('scale-100');
+        if (cp) {
+            cp.classList.add('opacity-0', 'pointer-events-none');
+            cp.classList.remove('opacity-100', 'pointer-events-auto');
+            cp.setAttribute('aria-hidden', 'true');
+        }
+        if (cpb) {
+            cpb.classList.add('scale-95', 'opacity-0');
+            cpb.classList.remove('scale-100', 'opacity-100');
+        }
 
         document.querySelectorAll('script[data-spa-page-script]').forEach(function (s) {
             s.remove();

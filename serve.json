@@ -9,7 +9,9 @@
     { "source": "/room", "destination": "/index.html" },
     { "source": "/dual", "destination": "/index.html" },
     { "source": "/leaderboards", "destination": "/index.html" },
-    { "source": "/userstats", "destination": "/index.html" }
+    { "source": "/userstats", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/terms", "destination": "/index.html" }
   ],
   "directoryListing": false
 }

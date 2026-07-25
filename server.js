@@ -139,7 +139,7 @@ app.get('/join/:code', (req, res, next) => {
 
 const SPA_ROUTES = new Set([
     '/', '/index.html', '/settings', '/signin', '/sso-callback', '/friends',
-    '/room', '/dual', '/leaderboards', '/userstats',
+    '/room', '/dual', '/leaderboards', '/userstats', '/privacy', '/terms',
 ]);
 
 app.use((req, res, next) => {

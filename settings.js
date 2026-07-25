@@ -2457,11 +2457,11 @@ function applyKeyboardLayoutSettings(settings) {
     document.body.setAttribute('data-quick-restart', quickRestartOn ? 'on' : 'off');
 
     document.querySelectorAll('[data-shortcut-tip="tab"]').forEach((el) => {
-        el.classList.toggle('hidden', !(shortcutsOn && quickRestartOn));
+        el.classList.toggle('hidden', !quickRestartOn);
     });
     document.querySelectorAll('[data-shortcut-tip="esc"]').forEach((el) => {
         const quickSettingsOn = kl.quickSettings !== false;
-        el.classList.toggle('hidden', !(shortcutsOn && quickSettingsOn));
+        el.classList.toggle('hidden', !quickSettingsOn);
     });
 
     applyKeymapDisplay(settings);
@@ -2475,7 +2475,7 @@ function areKeyboardShortcutsEnabled(settings) {
     return settings?.keyboardLayout?.keyboardShortcuts !== false;
 }
 
-/** Tab quick-restart toggle (independent of other shortcuts when master is on). */
+/** Tab quick-restart toggle (independent of the Keyboard Shortcuts master switch). */
 function isQuickRestartEnabled(settings) {
     if (!settings) {
         settings = window.usertypo_settings || loadSettings();
@@ -2487,12 +2487,12 @@ function isQuickRestartEnabled(settings) {
 }
 
 /**
- * When Keyboard Shortcuts is off, block Tab / Enter / \\ app shortcuts site-wide.
- * Escape is left alone so open overlays/modals can still dismiss; opens are gated separately.
+ * When Keyboard Shortcuts is off, block Enter / \\ app shortcuts site-wide.
+ * Tab quick-restart and Esc quick settings are controlled by their own toggles.
  */
 document.addEventListener('keydown', (e) => {
     if (areKeyboardShortcutsEnabled()) return;
-    if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== '\\') return;
+    if (e.key !== 'Enter' && e.key !== '\\') return;
     e.preventDefault();
     e.stopImmediatePropagation();
 }, true);

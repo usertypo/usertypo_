@@ -1846,6 +1846,10 @@ window.__spaPageInit = function() {
                 // next modal synchronously would otherwise submit on the same keypress.
                 if (isModalVisible(roomsChoiceModal)) {
                     if (e.key === 'Tab') {
+                        if (window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                            && !window.usertypo_settingsApi.areKeyboardShortcutsEnabled()) {
+                            return;
+                        }
                         e.preventDefault();
                         e.stopImmediatePropagation();
                         roomsChoiceKeyboardTarget = 'create';
@@ -2343,6 +2347,10 @@ window.__spaPageInit = function() {
                 if (!isModalVisible(findMatchModal)) return;
                 if (!findMatchChoice?.classList.contains('hidden')) {
                     if (e.key === 'Tab') {
+                        if (window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                            && !window.usertypo_settingsApi.areKeyboardShortcutsEnabled()) {
+                            return;
+                        }
                         e.preventDefault();
                         dualChoiceKeyboardTarget = 'create';
                         createPublicDualBtn?.focus();

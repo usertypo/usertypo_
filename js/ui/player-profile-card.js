@@ -329,6 +329,17 @@
         } catch (e) { /* ignore */ }
     }
 
+    function notifyBlockedByUser() {
+        var message = 'This player has blocked you.';
+        if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+            window.usertypoNotifications.showToast(message, 'block');
+            return;
+        }
+        try {
+            window.alert(message);
+        } catch (e) { /* ignore */ }
+    }
+
     async function open(userId) {
         if (!ensureDom()) return;
         var id = String(userId || '').trim();
@@ -345,6 +356,10 @@
         try {
             var card = await window.usertypoPublicProfile.getCard(id, { force: true });
             if (!card || card.error) {
+                if (card && card.error === 'blocked_by_user') {
+                    notifyBlockedByUser();
+                    return;
+                }
                 if (card && card.error === 'profile_not_allowed') {
                     notifyProfileDenied();
                     return;
