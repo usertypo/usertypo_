@@ -4,7 +4,6 @@
 alter table public.profiles
   add column if not exists show_on_leaderboard boolean not null default true;
 
-drop function if exists public.get_my_leaderboard_rank(text, integer, text);
 drop function if exists public.get_leaderboard(text, integer, text, integer);
 
 create or replace function public.get_leaderboard(
@@ -93,7 +92,7 @@ as $$
     r.rank,
     r.user_id,
     coalesce(p.username, p.display_name, 'Player') as username,
-    p.avatar_url,
+    public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
     r.wpm,
     r.raw_wpm,
     r.accuracy,

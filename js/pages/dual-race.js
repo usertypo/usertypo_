@@ -502,7 +502,7 @@
                     ? window.usertypoProgression.getCached()
                     : null;
                 var photo = (profile && profile.avatar_url)
-                    || (authState && authState.user && authState.user.imageUrl)
+                    || (authState && authState.user && authState.user.hasImage === true && authState.user.imageUrl)
                     || '';
                 avatarEl.outerHTML = window.usertypoPlayerAvatar.render({
                     id: 'dual-stats-user-avatar',

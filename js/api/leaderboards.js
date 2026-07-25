@@ -153,6 +153,33 @@
         };
     }
 
+    async function blankBlockedAvatars(entries) {
+        if (!entries || !entries.length) return entries;
+        if (!window.usertypoAuth || !window.usertypoDb) return entries;
+        try {
+            var state = window.usertypoAuth.getState && window.usertypoAuth.getState();
+            if (!state || !state.isSignedIn) return entries;
+            var ids = [];
+            var seen = Object.create(null);
+            entries.forEach(function (entry) {
+                var id = entry && entry.userId;
+                if (!id || seen[id]) return;
+                seen[id] = true;
+                ids.push(id);
+            });
+            if (!ids.length) return entries;
+            var client = await getClient();
+            var result = await client.rpc('ids_who_blocked_me', { p_ids: ids });
+            if (result.error || !Array.isArray(result.data) || !result.data.length) return entries;
+            var blockedBy = Object.create(null);
+            result.data.forEach(function (id) { blockedBy[id] = true; });
+            entries.forEach(function (entry) {
+                if (entry && entry.userId && blockedBy[entry.userId]) entry.avatarUrl = null;
+            });
+        } catch (e) { /* ignore — keep avatars */ }
+        return entries;
+    }
+
     async function getClient() {
         if (!window.usertypoDb) {
             throw new Error('usertypoDb is not loaded');
@@ -242,6 +269,7 @@
         if (result.error) throw result.error;
 
         var entries = (result.data || []).map(mapEntry);
+        await blankBlockedAvatars(entries);
         if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
             await window.usertypoProgression.attachToList(entries, 'userId');
         }
@@ -307,6 +335,7 @@
 
             if (redisResult.ok && redisResult.data && Array.isArray(redisResult.data.entries)) {
                 var entries = redisResult.data.entries.map(mapEntry);
+                await blankBlockedAvatars(entries);
                 if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
                     await window.usertypoProgression.attachToList(entries, 'userId');
                 }

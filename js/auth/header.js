@@ -25,7 +25,15 @@
 
     function avatarUrl(user, profile) {
         if (profile && profile.avatar_url) return profile.avatar_url;
-        if (user && user.imageUrl) return user.imageUrl;
+        // Only use Clerk URL when the user actually uploaded / OAuth-provided a real image.
+        if (user && user.hasImage === true && user.imageUrl) return user.imageUrl;
+        return null;
+    }
+
+    function defaultAvatarUrl() {
+        if (window.usertypoPlayerAvatar && window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL) {
+            return window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL;
+        }
         return null;
     }
 
@@ -43,12 +51,13 @@
         ring.style.strokeDashoffset = String(offset);
     }
 
-    function setAccountAvatar(url, name) {
+    function setAccountAvatar(url, name, useDefault) {
         var img = document.getElementById('header-account-avatar');
         var icon = document.getElementById('header-account-icon');
+        var resolved = url || (useDefault === false ? null : defaultAvatarUrl());
         if (img) {
-            if (url) {
-                img.src = url;
+            if (resolved) {
+                img.src = resolved;
                 img.alt = (name || 'Profile') + ' avatar';
                 img.classList.remove('hidden');
                 if (icon) icon.classList.add('hidden');
@@ -211,7 +220,7 @@
                 accountBtn.setAttribute('aria-label', 'Sign in');
             }
             if (accountIcon) accountIcon.textContent = 'login';
-            setAccountAvatar(null, null);
+            setAccountAvatar(null, null, false);
             setAccountLevel(1, false);
             setXpRingPercent(0);
             if (userStatsLink) userStatsLink.setAttribute('href', '/signin');
