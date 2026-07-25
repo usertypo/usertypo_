@@ -19,9 +19,19 @@
             form_param_format_invalid: 'That value is not valid.',
             form_username_invalid_length: 'Username must be between 3 and 32 characters.',
             verification_required: 'Enter the verification code sent to your new email.',
+            verification_cancelled: 'Account deletion cancelled — identity verification was not completed.',
+            session_reverification_required: 'Verify your identity to delete your account, then try again.',
         };
         if (friendly[code]) {
             return { error: err, code: code, message: friendly[code] };
+        }
+        if (window.usertypoAuth && typeof window.usertypoAuth.isReverificationError === 'function'
+            && window.usertypoAuth.isReverificationError(err)) {
+            return {
+                error: err,
+                code: 'session_reverification_required',
+                message: friendly.session_reverification_required,
+            };
         }
         if (window.usertypoAuth && typeof window.usertypoAuth.formatError === 'function') {
             return { error: err, code: code, message: window.usertypoAuth.formatError(err) };
@@ -264,8 +274,34 @@
         return result.data || { ok: true };
     }
 
+    async function deleteClerkUser(user) {
+        if (!user || typeof user.delete !== 'function') {
+            throw new Error('delete_self_disabled');
+        }
+        if (user.deleteSelfEnabled === false) {
+            throw new Error('delete_self_disabled');
+        }
+        await user.delete();
+    }
+
     async function deleteAccount() {
         var state = await requireAuth();
+        var user = state.user;
+        if (!user || typeof user.delete !== 'function') {
+            throw new Error('delete_self_disabled');
+        }
+        if (user.deleteSelfEnabled === false) {
+            throw new Error('delete_self_disabled');
+        }
+
+        // Clerk blocks user.delete() unless credentials were verified recently.
+        // Reverify *before* wiping app data so a cancelled/failed check leaves the account intact.
+        if (window.usertypoAuth && typeof window.usertypoAuth.ensureReverified === 'function') {
+            await window.usertypoAuth.ensureReverified('multi_factor');
+            state = window.usertypoAuth.getState();
+            user = state.user;
+        }
+
         var client = await window.usertypoDb.getClient();
 
         await purgeLeaderboards();
@@ -280,15 +316,24 @@
             window.localStorage.removeItem('usertypo:profile-cache:v1');
         } catch (e) { /* ignore */ }
 
-        var user = state.user;
-        if (!user || typeof user.delete !== 'function') {
-            throw new Error('delete_self_disabled');
-        }
-        if (user.deleteSelfEnabled === false) {
-            throw new Error('delete_self_disabled');
+        state = window.usertypoAuth.getState();
+        user = state.user;
+
+        try {
+            await deleteClerkUser(user);
+        } catch (err) {
+            if (window.usertypoAuth
+                && typeof window.usertypoAuth.isReverificationError === 'function'
+                && window.usertypoAuth.isReverificationError(err)
+                && typeof window.usertypoAuth.ensureReverified === 'function') {
+                await window.usertypoAuth.ensureReverified('multi_factor');
+                state = window.usertypoAuth.getState();
+                await deleteClerkUser(state.user);
+            } else {
+                throw err;
+            }
         }
 
-        await user.delete();
         return { ok: true };
     }
 

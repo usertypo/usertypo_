@@ -313,6 +313,93 @@
         notify(getState());
     }
 
+    function isReverificationError(err) {
+        if (!err) return false;
+        var code = '';
+        var longMessage = '';
+        if (err.errors && err.errors.length) {
+            code = String(err.errors[0].code || '');
+            longMessage = String(err.errors[0].longMessage || err.errors[0].message || '');
+        }
+        var message = String(err.message || '');
+        return (
+            code === 'session_reverification_required'
+            || code === 'reverification_required'
+            || /reverification/i.test(code)
+            || /additional verification/i.test(message)
+            || /additional verification/i.test(longMessage)
+        );
+    }
+
+    /**
+     * Clerk requires recent credential proof for sensitive actions (e.g. account delete).
+     * Opens Clerk's verification modal when the current session is stale.
+     * @param {'first_factor'|'second_factor'|'multi_factor'} [level]
+     */
+    async function ensureReverified(level) {
+        await readyPromise;
+        var clerk = getClerk();
+        var session = clerk && clerk.session;
+        if (!clerk || !session) {
+            throw new Error('guest');
+        }
+
+        var verificationLevel = level || 'first_factor';
+        var authCheck = {
+            reverification: (verificationLevel === 'second_factor' || verificationLevel === 'multi_factor')
+                ? 'strict_mfa'
+                : 'strict',
+        };
+
+        if (typeof session.checkAuthorization === 'function') {
+            try {
+                if (session.checkAuthorization(authCheck)) {
+                    return true;
+                }
+            } catch (e) { /* fall through to modal */ }
+        }
+
+        var ages = session.factorVerificationAge;
+        if (
+            Array.isArray(ages)
+            && typeof ages[0] === 'number'
+            && ages[0] >= 0
+            && ages[0] < 10
+            && verificationLevel === 'first_factor'
+        ) {
+            return true;
+        }
+
+        var openModal = null;
+        if (typeof clerk.__internal_openReverification === 'function') {
+            openModal = clerk.__internal_openReverification.bind(clerk);
+        } else if (typeof clerk.__experimental_openUserVerification === 'function') {
+            openModal = clerk.__experimental_openUserVerification.bind(clerk);
+        }
+
+        if (!openModal) {
+            throw new Error('session_reverification_required');
+        }
+
+        return new Promise(function (resolve, reject) {
+            var settled = false;
+            openModal({
+                level: verificationLevel,
+                afterVerification: function () {
+                    if (settled) return;
+                    settled = true;
+                    notify(getState());
+                    resolve(true);
+                },
+                afterVerificationCancelled: function () {
+                    if (settled) return;
+                    settled = true;
+                    reject(new Error('verification_cancelled'));
+                },
+            });
+        });
+    }
+
     readyPromise = initClerk().catch(function (err) {
         console.error('[usertypo auth] Failed to start Clerk:', err);
         throw err;
@@ -335,6 +422,8 @@
             };
         },
         formatError: formatError,
+        isReverificationError: isReverificationError,
+        ensureReverified: ensureReverified,
         signInWithPassword: signInWithPassword,
         signUpWithPassword: signUpWithPassword,
         verifyEmailCode: verifyEmailCode,
