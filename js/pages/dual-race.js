@@ -1555,6 +1555,10 @@
 
                 var leaveBtn = document.getElementById('leave-dual-btn');
                 if (event.key === 'Tab') {
+                    if (window.usertypo_settingsApi?.areKeyboardShortcutsEnabled
+                        && !window.usertypo_settingsApi.areKeyboardShortcutsEnabled()) {
+                        return;
+                    }
                     event.preventDefault();
                     leaveBtn?.focus();
                     return;

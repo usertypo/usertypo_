@@ -35,6 +35,15 @@ begin
 
   -- Own profile is always visible.
   if v_profile.user_id <> v_me then
+    -- Target blocked the viewer → hide profile.
+    if exists (
+      select 1 from public.user_blocks ub
+      where ub.blocker_id = v_profile.user_id
+        and ub.blocked_id = v_me
+    ) then
+      return jsonb_build_object('error', 'blocked_by_user');
+    end if;
+
     v_visibility := coalesce(nullif(trim(v_profile.profile_visibility), ''), 'public');
 
     if v_visibility = 'private' then

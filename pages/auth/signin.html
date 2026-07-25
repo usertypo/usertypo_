@@ -398,8 +398,8 @@
             transition: color .2s, text-shadow .2s;
         }
         .white-link:hover { color: #fff; text-shadow: 0 0 12px rgba(255,255,255,.6); }
-        .white-link.accent { color: #00d0ff; }
-        .white-link.accent:hover { text-shadow: 0 0 14px rgba(0,208,255,.8); }
+        .white-link.accent { color: var(--theme-primary, #00d0ff); }
+        .white-link.accent:hover { color: var(--theme-text, #fff); text-shadow: none; }
 
         .bottom-note { font-size: .75rem; color: #475569; text-align: center; }
 
@@ -542,6 +542,11 @@
                             No account? <button class="white-link accent" id="go-to-signup"
                                 style="margin-left:.15rem;">Sign Up</button>
                         </p>
+                        <p class="bottom-note" style="margin-top:-0.5rem;">
+                            <a href="/privacy" data-spa-link class="white-link">Privacy Policy</a>
+                            <span style="margin:0 .35rem;color:#334155;">·</span>
+                            <a href="/terms" data-spa-link class="white-link">Terms</a>
+                        </p>
                     </div>
 
                     <!-- Sign-Up panel (hidden initially) -->
@@ -596,6 +601,12 @@
                             </button>
                         </div>
                         <p class="bottom-note">
+                            By creating an account you agree to our
+                            <a href="/privacy" data-spa-link class="white-link accent">Privacy Policy</a>
+                            and
+                            <a href="/terms" data-spa-link class="white-link accent">Terms</a>.
+                        </p>
+                        <p class="bottom-note" style="margin-top:-0.5rem;">
                             Already have an account? <button class="white-link accent" id="go-to-signin"
                                 style="margin-left:.15rem;">Sign In</button>
                         </p>
@@ -608,7 +619,12 @@
     </main>
 
     <!-- Footer (matching testpage) -->
-    <footer class="px-8 py-4 flex justify-end items-center relative z-20 zen-element shrink-0">
+    <footer class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 gap-4">
+        <div class="flex items-center gap-2">
+            <a href="/privacy" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Privacy Policy</a>
+            <span class="text-[10px] text-slate-700 font-mono">·</span>
+            <a href="/terms" data-spa-link class="text-[10px] text-slate-600 font-mono hover:text-primary transition-colors">Terms</a>
+        </div>
         <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
             <span class="material-symbols-outlined text-[14px]">palette</span>
             <span>Themes and Languages</span>

@@ -1,0 +1,611 @@
+<style type="text/tailwindcss">
+        .privacy-page {
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            min-width: 0;
+        }
+        .privacy-page h1,
+        .privacy-page h2 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+        }
+        .privacy-prose h2,
+        .privacy-prose section {
+            scroll-margin-top: 5rem;
+        }
+        .privacy-page a.privacy-link {
+            color: var(--theme-primary) !important;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .privacy-page a.privacy-link:hover {
+            color: var(--theme-text) !important;
+        }
+        .privacy-toc a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        .privacy-toc a:hover {
+            color: var(--theme-primary);
+        }
+        .privacy-table {
+            width: 100%;
+            min-width: 36rem;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        .privacy-table th,
+        .privacy-table td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .privacy-table th {
+            background: rgba(var(--theme-primary-rgb), 0.08);
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+        .privacy-table td {
+            color: #cbd5e1;
+        }
+        @media (max-width: 640px) {
+            .privacy-table {
+                font-size: 0.8125rem;
+            }
+            .privacy-table th,
+            .privacy-table td {
+                padding: 0.6rem 0.75rem;
+            }
+            .privacy-toc ol {
+                grid-template-columns: 1fr;
+            }
+        }
+</style>
+
+<main class="privacy-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
+    <div class="w-full max-w-5xl mx-auto py-6 sm:py-10 min-w-0">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Legal</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">Privacy Policy</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mb-2">
+            <span class="text-slate-500">Last updated:</span> July 25, 2026
+            <span class="text-slate-600 mx-2">·</span>
+            <span class="text-slate-500">Effective:</span> July 25, 2026
+        </p>
+        <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
+            This Privacy Policy explains how <strong class="text-slate-200 font-semibold">usertypo_</strong>
+            (“we,” “us,” or “our”) collects, uses, and shares information when you use
+            <a class="privacy-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">usertypo.com</a>
+            and related services (the “Service”).
+            Questions: <a class="privacy-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+        </p>
+
+        <nav class="privacy-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
+            <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
+            <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm list-decimal list-inside">
+                <li><a href="#introduction" data-privacy-toc>Introduction</a></li>
+                <li><a href="#information-we-collect" data-privacy-toc>Information We Collect</a></li>
+                <li><a href="#how-we-use" data-privacy-toc>How We Use Your Information</a></li>
+                <li><a href="#how-we-share" data-privacy-toc>How We Share Your Information</a></li>
+                <li><a href="#cookies" data-privacy-toc>Cookies &amp; Similar Technologies</a></li>
+                <li><a href="#adsense" data-privacy-toc>Google AdSense</a></li>
+                <li><a href="#your-rights" data-privacy-toc>Your Rights</a></li>
+                <li><a href="#retention" data-privacy-toc>Data Retention</a></li>
+                <li><a href="#security" data-privacy-toc>Data Security</a></li>
+                <li><a href="#children" data-privacy-toc>Children’s Privacy</a></li>
+                <li><a href="#transfers" data-privacy-toc>International Data Transfers</a></li>
+                <li><a href="#changes" data-privacy-toc>Changes to This Policy</a></li>
+                <li><a href="#contact" data-privacy-toc>Contact Us</a></li>
+            </ol>
+        </nav>
+
+        <article class="privacy-prose space-y-10 sm:space-y-12 text-sm sm:text-[15px] leading-relaxed text-slate-300 min-w-0">
+
+            <section id="introduction">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">1. Introduction</h2>
+                <p class="mb-3">
+                    usertypo_ is a free online typing test platform. We operate the Service from India.
+                    For privacy purposes, usertypo_ is the data controller of personal data processed
+                    through the Service.
+                </p>
+                <p>
+                    This policy applies to information collected through our website, accounts,
+                    multiplayer features, leaderboards, and related communications. By using the Service,
+                    you acknowledge this Privacy Policy. If you do not agree, please do not use the Service.
+                </p>
+            </section>
+
+            <section id="information-we-collect">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">2. Information We Collect</h2>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.1 Account information (via Clerk)</h3>
+                <p class="mb-2">When you create or sign in to an account, we collect:</p>
+                <ul class="list-disc pl-5 space-y-1 mb-3">
+                    <li>Email address</li>
+                    <li>Username / display name</li>
+                    <li>Profile picture / avatar URL (if provided)</li>
+                    <li>Authentication method (email and password, or Google sign-in)</li>
+                    <li>Data provided by Google if you choose “Continue with Google”</li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Passwords are handled by our authentication provider, Clerk. We do not see or store
+                    your password in plain text.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.2 Typing and progress data (Supabase)</h3>
+                <p class="mb-2">If you are signed in, we store:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Typing session results (WPM, raw WPM, accuracy, consistency, errors, character counts)</li>
+                    <li>Test configuration (mode, duration/word count, language, punctuation, numbers)</li>
+                    <li>Personal best markers and failed-test metadata</li>
+                    <li>Session diagnostics (error patterns and key-level timing summaries; limited history)</li>
+                    <li>XP, level, streaks, daily XP, and related XP event history</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.3 Social and profile data</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Friends list and friend requests</li>
+                    <li>Online presence / last-seen timestamp</li>
+                    <li>Notifications (for example, friend requests and acceptances)</li>
+                    <li>Blocked users</li>
+                    <li>Privacy settings such as profile visibility, friend-request preference, and leaderboard visibility</li>
+                    <li>Public profile information (username, avatar, and stats you choose to make visible)</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.4 Leaderboard data (publicly visible)</h3>
+                <p>
+                    Username, avatar, WPM, accuracy, and consistency appear on public leaderboards
+                    when you are opted in.
+                    You can opt out using the <strong class="text-slate-200">show on leaderboard</strong>
+                    setting in your account settings.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.5 Multiplayer data</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Room participation and race results</li>
+                    <li>Real-time typing progress during races (used to run the race; not stored permanently as keystroke streams)</li>
+                    <li>Connection metadata needed to operate multiplayer sessions</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.6 Local device data</h3>
+                <p>
+                    We store preferences and settings in your browser (for example, via localStorage),
+                    such as theme and typing preferences. This data stays on your device unless you
+                    clear site data in your browser.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.7 Automatically collected technical data</h3>
+                <p class="mb-2">
+                    We do not run a separate first-party analytics product that tracks pages visited or
+                    time spent. However, when you use the Service, our hosting, security, authentication,
+                    advertising, and content-delivery partners automatically receive technical data
+                    such as:
+                </p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>IP address</li>
+                    <li>Browser type and version (user agent)</li>
+                    <li>Device and connection information</li>
+                    <li>Request logs and approximate location derived from IP (by providers)</li>
+                    <li>Cookies and similar technologies (see Sections 5 and 6)</li>
+                </ul>
+            </section>
+
+            <section id="how-we-use">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">3. How We Use Your Information</h2>
+                <p class="mb-2">We use information to:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Provide and operate the typing test experience</li>
+                    <li>Save your settings, scores, progress, and diagnostics</li>
+                    <li>Power leaderboards, public profiles, friends, and notifications</li>
+                    <li>Enable multiplayer racing and prevent abuse (including anti-cheat WPM limits)</li>
+                    <li>Authenticate accounts and keep the Service secure</li>
+                    <li>Improve the website and fix issues</li>
+                    <li>Display advertisements (including Google AdSense)</li>
+                    <li>Respond to privacy and support requests</li>
+                    <li>Comply with legal obligations</li>
+                </ul>
+            </section>
+
+            <section id="how-we-share">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">4. How We Share Your Information</h2>
+                <p class="mb-4">
+                    We do <strong class="text-slate-100">not sell</strong> your personal data.
+                </p>
+                <p class="mb-4">
+                    Some information is visible to other users by design (leaderboard entries, public
+                    profile details, multiplayer race presence). You can control leaderboard visibility
+                    in settings.
+                </p>
+                <p class="mb-3">
+                    We share information with service providers who process data on our behalf to run
+                    the Service:
+                </p>
+                <div class="overflow-x-auto -mx-1 px-1 rounded-xl border border-white/10 mb-4 max-w-full">
+                    <table class="privacy-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>What they receive</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Clerk</td>
+                                <td>Email, username, avatar, login method, session data</td>
+                                <td>User authentication</td>
+                            </tr>
+                            <tr>
+                                <td>Google (sign-in)</td>
+                                <td>Account identifiers you authorize during Google OAuth</td>
+                                <td>Optional Google authentication</td>
+                            </tr>
+                            <tr>
+                                <td>Supabase</td>
+                                <td>Account-linked app data described in Section 2</td>
+                                <td>Database and backend storage</td>
+                            </tr>
+                            <tr>
+                                <td>Upstash Redis</td>
+                                <td>Leaderboard scores and related cache keys</td>
+                                <td>Performance caching</td>
+                            </tr>
+                            <tr>
+                                <td>Cloudflare</td>
+                                <td>IP address, request metadata, security/CDN logs</td>
+                                <td>Website hosting, CDN, and network security</td>
+                            </tr>
+                            <tr>
+                                <td>Multiplayer realtime infrastructure</td>
+                                <td>Connection metadata, room/race participation data</td>
+                                <td>WebSocket multiplayer races and validation</td>
+                            </tr>
+                            <tr>
+                                <td>Google AdSense</td>
+                                <td>Cookies, device/browser data, browsing signals used for ads</td>
+                                <td>Ad serving</td>
+                            </tr>
+                            <tr>
+                                <td>Google Fonts / similar CDNs</td>
+                                <td>IP address and request data when assets load</td>
+                                <td>Font and front-end asset delivery</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-sm text-slate-400 mb-3">
+                    Each provider processes data under its own privacy policy. Useful links:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li><a class="privacy-link" href="https://clerk.com/legal/privacy" target="_blank" rel="noopener noreferrer">Clerk Privacy Policy</a></li>
+                    <li><a class="privacy-link" href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Supabase Privacy Policy</a></li>
+                    <li><a class="privacy-link" href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare Privacy Policy</a></li>
+                    <li><a class="privacy-link" href="https://upstash.com/trust/privacy.pdf" target="_blank" rel="noopener noreferrer">Upstash Privacy Policy</a></li>
+                    <li><a class="privacy-link" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a></li>
+                </ul>
+                <p class="mt-4">
+                    We may also disclose information if required by law, to protect rights and safety,
+                    or in connection with a merger, acquisition, or similar transaction (with notice
+                    where required).
+                </p>
+            </section>
+
+            <section id="cookies">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">5. Cookies &amp; Similar Technologies</h2>
+                <p class="mb-3">
+                    This section is our Cookie Policy. We and our partners use cookies and similar
+                    technologies as follows:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-4">
+                    <li>
+                        <strong class="text-slate-200">Essential:</strong> session and authentication
+                        cookies required to keep you signed in (via Clerk) and to operate core features.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Functional:</strong> preferences stored in your
+                        browser (including localStorage), such as theme and typing settings.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Advertising:</strong> Google AdSense and
+                        third-party vendors use cookies (including advertising cookies) to serve and
+                        personalize ads.
+                    </li>
+                </ul>
+                <p class="mb-3">
+                    You can manage personalized ads through
+                    <a class="privacy-link" href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
+                    You can also block or delete cookies in your browser settings. Disabling essential
+                    cookies may break login and other core features.
+                </p>
+            </section>
+
+            <section id="adsense">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Google AdSense</h2>
+                <p class="mb-3">
+                    We use Google AdSense to display advertisements on the Service. Google, as a
+                    third-party vendor, uses cookies to serve ads based on a user’s prior visits to
+                    this and other websites.
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-4">
+                    <li>
+                        Google’s use of advertising cookies enables it and its partners to serve ads
+                        based on your visits to this site and/or other sites on the Internet.
+                    </li>
+                    <li>
+                        Users may opt out of personalized advertising by visiting
+                        <a class="privacy-link" href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
+                    </li>
+                    <li>
+                        Third-party vendors and ad networks may also use cookies to serve ads on this site.
+                    </li>
+                </ul>
+                <p>
+                    For more information, see
+                    <a class="privacy-link" href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google’s Advertising Privacy page</a>
+                    and
+                    <a class="privacy-link" href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">How Google uses information from sites that use its services</a>.
+                </p>
+            </section>
+
+            <section id="your-rights">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Your Rights</h2>
+                <h3 class="text-base font-semibold text-slate-200 mt-2 mb-2">For all users</h3>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Access information associated with your account</li>
+                    <li>Export your data (where available in Settings)</li>
+                    <li>Delete your account and associated app data</li>
+                    <li>Opt out of public leaderboards</li>
+                    <li>Update username, email, and privacy settings</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-2 mb-2">EU/EEA users (GDPR)</h3>
+                <p class="mb-2">Where applicable, you may also have the right to:</p>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Data portability</li>
+                    <li>Rectification of inaccurate data</li>
+                    <li>Restriction of processing</li>
+                    <li>Object to certain processing</li>
+                    <li>Lodge a complaint with a supervisory authority</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-2 mb-2">California users (CCPA/CPRA)</h3>
+                <p class="mb-2">Where applicable, California residents may have the right to:</p>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Know what personal information is collected</li>
+                    <li>Request deletion of personal information</li>
+                    <li>Opt out of the “sale” or “sharing” of personal information (we do not sell personal information)</li>
+                    <li>Non-discrimination for exercising privacy rights</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-2 mb-2">India</h3>
+                <p>
+                    Because we operate from India, you may contact us about privacy requests under
+                    applicable Indian law, including the Digital Personal Data Protection Act, 2023,
+                    where it applies. Email
+                    <a class="privacy-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+                </p>
+            </section>
+
+            <section id="retention">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. Data Retention</h2>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><strong class="text-slate-200">Account data:</strong> kept while your account remains active.</li>
+                    <li><strong class="text-slate-200">Typing sessions and progress:</strong> kept while your account exists.</li>
+                    <li><strong class="text-slate-200">Session diagnostics:</strong> we retain the most recent 50 diagnostics per user; older diagnostics are automatically deleted.</li>
+                    <li><strong class="text-slate-200">After account deletion:</strong> associated app data in our database is deleted (including cascade deletes of related records). Cached leaderboard entries are removed. Authentication records are deleted through Clerk. Some residual copies may remain briefly in backups or logs until those systems rotate.</li>
+                </ul>
+            </section>
+
+            <section id="security">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. Data Security</h2>
+                <ul class="list-disc pl-5 space-y-2 mb-3">
+                    <li>Data in transit is protected with HTTPS/TLS</li>
+                    <li>Passwords are managed by Clerk; we do not store plaintext passwords</li>
+                    <li>Row Level Security (RLS) is enabled on our Supabase tables</li>
+                    <li>Server-side secrets are not exposed to the browser</li>
+                </ul>
+                <p>
+                    No method of transmission or storage is 100% secure. We work to protect your
+                    information, but we cannot guarantee absolute security.
+                </p>
+            </section>
+
+            <section id="children">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. Children’s Privacy</h2>
+                <p class="mb-3">
+                    The Service is intended for users age <strong class="text-slate-100">13 and older</strong>.
+                    We do not knowingly collect personal information from children under 13.
+                </p>
+                <p>
+                    If we learn that a child under 13 has created an account, we will delete it.
+                    Parents or guardians may contact
+                    <a class="privacy-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>
+                    to request deletion.
+                </p>
+            </section>
+
+            <section id="transfers">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">11. International Data Transfers</h2>
+                <p class="mb-3">
+                    We are based in India. Your information may be processed in other countries where
+                    our service providers operate. For example, our database provider (Supabase) stores
+                    data in the European Union (Stockholm region), while providers such as Clerk,
+                    Google, Cloudflare, and Upstash may process data in the United States or other
+                    locations.
+                </p>
+                <p>
+                    By using the Service, you understand that your information may be transferred to
+                    and processed in countries that may have different data-protection laws than your
+                    own. Where required, we rely on appropriate safeguards offered by our providers
+                    (such as standard contractual clauses) and contractual commitments with those providers.
+                </p>
+            </section>
+
+            <section id="changes">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">12. Changes to This Policy</h2>
+                <p>
+                    We may update this Privacy Policy from time to time. The “Last updated” date at
+                    the top will change when we do. Continued use of the Service after an update means
+                    you accept the revised policy. For material changes, we may provide additional notice
+                    where appropriate.
+                </p>
+            </section>
+
+            <section id="contact">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">13. Contact Us</h2>
+                <p class="mb-3">
+                    For privacy questions, data access, export, or deletion requests:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Email: <a class="privacy-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a></li>
+                    <li>Website: <a class="privacy-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">https://usertypo.com</a></li>
+                    <li>In-app: Settings → account tools for export and account deletion (when signed in)</li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Operator: usertypo_ · Location: India
+                </p>
+            </section>
+
+        </article>
+    </div>
+</main>
+
+<script>
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+
+window.__spaPageInit = function () {
+    window.scrollTo(0, 0);
+
+    document.querySelectorAll('[data-privacy-toc]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var href = link.getAttribute('href') || '';
+            var id = href.charAt(0) === '#' ? href.slice(1) : '';
+            var target = id ? document.getElementById(id) : null;
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (history.replaceState) {
+                history.replaceState({ spa: true, path: '/privacy', search: '' }, '', '/privacy#' + id);
+            }
+        }, { signal: __pageSignal });
+    });
+
+    const pageTrack = document.getElementById('page-scroll-track');
+    const pageThumb = document.getElementById('page-scroll-thumb');
+    if (!pageTrack || !pageThumb) return;
+
+    pageTrack.style.display = 'block';
+    pageTrack.style.visibility = '';
+
+    let isDragging = false;
+    let startY;
+    let startScrollTop;
+    var bodyEl = document.getElementById('app-body') || document.body;
+
+    function getScrollMetrics() {
+        var winH = window.innerHeight;
+        var docH = Math.max(
+            bodyEl.scrollHeight || 0,
+            document.documentElement.scrollHeight || 0,
+            document.documentElement.offsetHeight || 0
+        );
+        var scrollTop = Math.max(
+            window.scrollY || 0,
+            bodyEl.scrollTop || 0,
+            document.documentElement.scrollTop || 0
+        );
+        return {
+            docH: docH,
+            winH: winH,
+            scrollTop: scrollTop,
+            scrollable: Math.max(0, docH - winH),
+        };
+    }
+
+    function scrollToY(y) {
+        var top = Math.max(0, y);
+        window.scrollTo(0, top);
+        bodyEl.scrollTop = top;
+        document.documentElement.scrollTop = top;
+    }
+
+    function updatePageScrollbar() {
+        var m = getScrollMetrics();
+        if (m.scrollable <= 0) {
+            pageTrack.style.visibility = 'hidden';
+            return;
+        }
+        pageTrack.style.visibility = 'visible';
+        pageTrack.style.display = 'block';
+        var pct = Math.min(1, Math.max(0, m.scrollTop / m.scrollable));
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = Math.max(trackH * (m.winH / m.docH), 40);
+        pageThumb.style.height = thumbH + 'px';
+        pageThumb.style.top = (pct * (trackH - thumbH)) + 'px';
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (isDragging || window.innerWidth - e.clientX < 40) {
+            pageTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        } else {
+            pageTrack.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        }
+    }, { signal: __pageSignal });
+
+    window.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    bodyEl.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    window.addEventListener('resize', updatePageScrollbar, { signal: __pageSignal });
+
+    pageThumb.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startScrollTop = getScrollMetrics().scrollTop;
+        document.body.style.userSelect = 'none';
+        pageThumb.classList.add('bg-primary');
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+        var m = getScrollMetrics();
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = pageThumb.clientHeight || 40;
+        var maxThumbTop = Math.max(1, trackH - thumbH);
+        var deltaY = e.clientY - startY;
+        scrollToY(startScrollTop + (deltaY / maxThumbTop) * m.scrollable);
+        updatePageScrollbar();
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mouseup', function () {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        pageThumb.classList.remove('bg-primary');
+    }, { signal: __pageSignal });
+
+    var mainEl = document.querySelector('.privacy-page');
+    if (mainEl && typeof ResizeObserver === 'function') {
+        var ro = new ResizeObserver(function () { updatePageScrollbar(); });
+        ro.observe(mainEl);
+        __pageAbort.signal.addEventListener('abort', function () { ro.disconnect(); }, { once: true });
+    }
+
+    requestAnimationFrame(function () {
+        updatePageScrollbar();
+        setTimeout(updatePageScrollbar, 100);
+        setTimeout(updatePageScrollbar, 400);
+    });
+};
+
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function () {
+    __pageAbort.abort();
+    document.body.style.userSelect = '';
+    if (typeof __prevSpaCleanup === 'function') __prevSpaCleanup();
+};
+</script>
