@@ -92,10 +92,8 @@
         if (!clerk || !sessionId) {
             throw new Error('Could not activate session.');
         }
-        await clerk.setActive({
-            session: sessionId,
-            redirectUrl: config.afterSignInUrl || '/',
-        });
+        // Do not pass redirectUrl — callers navigate after auth completes.
+        await clerk.setActive({ session: sessionId });
         notify(getState());
     }
 
@@ -121,8 +119,8 @@
             signUpUrl: config.signUpUrl,
             afterSignInUrl: config.afterSignInUrl,
             afterSignUpUrl: config.afterSignUpUrl,
-            signInForceRedirectUrl: config.afterSignInUrl || '/',
-            signUpForceRedirectUrl: config.afterSignUpUrl || '/',
+            // Use fallback (not force) so incomplete OAuth sign-ups can continue
+            // instead of being hard-redirected home without an active session.
             signInFallbackRedirectUrl: config.afterSignInUrl || '/',
             signUpFallbackRedirectUrl: config.afterSignUpUrl || '/',
         };
@@ -230,33 +228,171 @@
         };
     }
 
-    async function signInWithGoogle() {
+    function sanitizeUsername(raw) {
+        var base = String(raw || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 20);
+        while (base.length < 4) {
+            base += String(Math.floor(Math.random() * 10));
+        }
+        return base.slice(0, 32);
+    }
+
+    function emailFromSignUp(signUp) {
+        if (!signUp) return '';
+        if (signUp.emailAddress) return String(signUp.emailAddress);
+        var list = signUp.emailAddresses;
+        if (Array.isArray(list) && list.length) {
+            var first = list[0];
+            if (typeof first === 'string') return first;
+            if (first && first.emailAddress) return String(first.emailAddress);
+        }
+        return '';
+    }
+
+    function suggestUsernameFromSignUp(signUp) {
+        var email = emailFromSignUp(signUp);
+        var fromEmail = email ? email.split('@')[0] : '';
+        var fromName = [signUp && signUp.firstName, signUp && signUp.lastName]
+            .filter(Boolean)
+            .join('');
+        return sanitizeUsername(fromEmail || fromName || ('user' + Date.now().toString(36)));
+    }
+
+    function isUsernameTakenError(err) {
+        var text = formatError(err).toLowerCase();
+        var code = '';
+        if (err && err.errors && err.errors[0]) {
+            code = String(err.errors[0].code || '').toLowerCase();
+        }
+        return (
+            code === 'form_identifier_exists'
+            || code === 'form_username_exists'
+            || /already (been )?taken|already exists|is taken|username.*exists/i.test(text)
+        );
+    }
+
+    /**
+     * New Google users often land in missing_requirements (username / legal_accepted).
+     * Fill what we can so OAuth completes like other sites.
+     */
+    async function completePendingOAuthSignUp(preferredUsername) {
+        var clerk = getClerk();
+        var signUp = clerk && clerk.client && clerk.client.signUp;
+        if (!signUp || !signUp.status) {
+            return { status: 'none' };
+        }
+
+        if (signUp.status === 'complete' && signUp.createdSessionId) {
+            await activateSession(signUp.createdSessionId);
+            return { status: 'complete' };
+        }
+
+        if (signUp.status !== 'missing_requirements') {
+            return {
+                status: signUp.status,
+                missingFields: signUp.missingFields || [],
+            };
+        }
+
+        var attempts = 0;
+        var usernameSeed = preferredUsername
+            ? sanitizeUsername(preferredUsername)
+            : suggestUsernameFromSignUp(signUp);
+
+        while (attempts < 8) {
+            var missing = signUp.missingFields || [];
+            if (!missing.length) break;
+
+            var updates = {};
+            if (missing.indexOf('legal_accepted') !== -1) {
+                updates.legalAccepted = true;
+            }
+            if (missing.indexOf('username') !== -1) {
+                updates.username = attempts === 0
+                    ? usernameSeed
+                    : sanitizeUsername(usernameSeed.slice(0, 12) + Math.floor(Math.random() * 9000 + 1000));
+            }
+            if (missing.indexOf('first_name') !== -1) {
+                updates.firstName = signUp.firstName || 'Player';
+            }
+            if (missing.indexOf('last_name') !== -1) {
+                updates.lastName = signUp.lastName || 'User';
+            }
+
+            if (!Object.keys(updates).length) {
+                return {
+                    status: 'missing_requirements',
+                    missingFields: missing,
+                    suggestedUsername: usernameSeed,
+                };
+            }
+
+            try {
+                signUp = await signUp.update(updates);
+                if (signUp.status === 'complete' && signUp.createdSessionId) {
+                    await activateSession(signUp.createdSessionId);
+                    return { status: 'complete' };
+                }
+                attempts += 1;
+            } catch (err) {
+                if (updates.username && isUsernameTakenError(err)) {
+                    attempts += 1;
+                    continue;
+                }
+                throw err;
+            }
+        }
+
+        if (signUp.status === 'complete' && signUp.createdSessionId) {
+            await activateSession(signUp.createdSessionId);
+            return { status: 'complete' };
+        }
+
+        return {
+            status: 'missing_requirements',
+            missingFields: signUp.missingFields || [],
+            suggestedUsername: usernameSeed,
+        };
+    }
+
+    async function startGoogleOAuth(mode) {
         await readyPromise;
         var clerk = getClerk();
-        if (!clerk || !clerk.client || !clerk.client.signIn) {
+        if (!clerk || !clerk.client) {
             throw new Error('Clerk is not ready yet.');
         }
 
         var callbackUrl = window.location.origin + (config.ssoCallbackUrl || '/sso-callback');
-        var completeUrl = window.location.origin + (config.afterSignInUrl || '/');
+        var completeUrl = window.location.origin + (
+            mode === 'signup'
+                ? (config.afterSignUpUrl || config.afterSignInUrl || '/')
+                : (config.afterSignInUrl || '/')
+        );
 
-        if (typeof clerk.client.signIn.authenticateWithRedirect === 'function') {
-            await clerk.client.signIn.authenticateWithRedirect({
-                strategy: 'oauth_google',
-                redirectUrl: callbackUrl,
-                redirectUrlComplete: completeUrl,
-            });
+        var params = {
+            strategy: 'oauth_google',
+            redirectUrl: callbackUrl,
+            redirectUrlComplete: completeUrl,
+        };
+
+        if (mode === 'signup' && clerk.client.signUp
+            && typeof clerk.client.signUp.authenticateWithRedirect === 'function') {
+            await clerk.client.signUp.authenticateWithRedirect(params);
             return;
         }
 
-        if (typeof clerk.client.signIn.create === 'function') {
+        if (clerk.client.signIn && typeof clerk.client.signIn.authenticateWithRedirect === 'function') {
+            await clerk.client.signIn.authenticateWithRedirect(params);
+            return;
+        }
+
+        if (clerk.client.signIn && typeof clerk.client.signIn.create === 'function') {
             var signIn = await clerk.client.signIn.create({});
             if (signIn && typeof signIn.authenticateWithRedirect === 'function') {
-                await signIn.authenticateWithRedirect({
-                    strategy: 'oauth_google',
-                    redirectUrl: callbackUrl,
-                    redirectUrlComplete: completeUrl,
-                });
+                await signIn.authenticateWithRedirect(params);
                 return;
             }
         }
@@ -266,6 +402,14 @@
         );
     }
 
+    async function signInWithGoogle() {
+        return startGoogleOAuth('signin');
+    }
+
+    async function signUpWithGoogle() {
+        return startGoogleOAuth('signup');
+    }
+
     async function handleSsoCallback() {
         await readyPromise;
         var clerk = getClerk();
@@ -273,36 +417,57 @@
             throw new Error('Clerk redirect handler is not available.');
         }
 
-        var home = window.location.origin + (config.afterSignInUrl || '/');
+        var homePath = config.afterSignInUrl || '/';
+        var continuePath = config.ssoCallbackUrl || '/sso-callback';
+
+        // Swallow Clerk's navigate callback — we decide where to go after the
+        // pending OAuth sign-up is fully completed (username / legal, etc.).
         await clerk.handleRedirectCallback({
             signInUrl: window.location.origin + (config.signInUrl || '/signin'),
             signUpUrl: window.location.origin + (config.signUpUrl || '/signin'),
-            afterSignInUrl: home,
-            afterSignUpUrl: home,
-            signInForceRedirectUrl: home,
-            signUpForceRedirectUrl: home,
-            continueSignUpUrl: window.location.origin + (config.signInUrl || '/signin'),
-        }, function (to) {
-            var path = to;
-            try {
-                if (String(to).indexOf('http') === 0) {
-                    var u = new URL(to);
-                    if (u.origin === window.location.origin) {
-                        path = u.pathname + u.search + u.hash;
-                    } else {
-                        window.location.href = to;
-                        return;
-                    }
-                }
-            } catch (e) { /* use as-is */ }
+            afterSignInUrl: homePath,
+            afterSignUpUrl: homePath,
+            signInFallbackRedirectUrl: homePath,
+            signUpFallbackRedirectUrl: homePath,
+            continueSignUpUrl: continuePath,
+            transferable: true,
+        }, function () { /* handled below */ });
 
-            if (window.navigateTo) {
-                window.navigateTo(path || '/');
-            } else {
-                window.location.href = path || '/';
-            }
-        });
         notify(getState());
+        if (getState().isSignedIn) {
+            return { status: 'complete', redirectTo: homePath };
+        }
+
+        var finished = await completePendingOAuthSignUp();
+        notify(getState());
+
+        if (finished.status === 'complete' || getState().isSignedIn) {
+            return { status: 'complete', redirectTo: homePath };
+        }
+
+        if (finished.status === 'missing_requirements') {
+            return {
+                status: 'needs_username',
+                missingFields: finished.missingFields || [],
+                suggestedUsername: finished.suggestedUsername || '',
+            };
+        }
+
+        throw new Error('Google sign-in did not complete. Please try again from the sign-in page.');
+    }
+
+    async function finishOAuthUsername(username) {
+        await readyPromise;
+        var name = sanitizeUsername(username);
+        if (name.length < 4) {
+            throw new Error('Username must be at least 4 characters.');
+        }
+        var finished = await completePendingOAuthSignUp(name);
+        notify(getState());
+        if (finished.status === 'complete' || getState().isSignedIn) {
+            return { status: 'complete', redirectTo: config.afterSignInUrl || '/' };
+        }
+        throw new Error('Could not finish creating your account. Try a different username.');
     }
 
     async function signOut() {
@@ -428,7 +593,9 @@
         signUpWithPassword: signUpWithPassword,
         verifyEmailCode: verifyEmailCode,
         signInWithGoogle: signInWithGoogle,
+        signUpWithGoogle: signUpWithGoogle,
         handleSsoCallback: handleSsoCallback,
+        finishOAuthUsername: finishOAuthUsername,
         signOut: signOut,
     };
 })();
