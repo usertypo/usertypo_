@@ -121,7 +121,7 @@
 
         if (mode === MODE.DELETE_ACCOUNT) {
             if (title) title.textContent = 'Delete Account';
-            if (message) message.textContent = 'This permanently deletes your usertypo_ account and all associated data. This cannot be undone.';
+            if (message) message.textContent = 'This permanently deletes your usertypo_ account and all associated data. You will need to verify your identity. This cannot be undone.';
             if (icon) icon.textContent = 'person_remove';
             if (ok) {
                 ok.textContent = 'Delete';
@@ -234,7 +234,13 @@
         }
 
         setBusy(true);
-        setStatus(mode === MODE.EXPORT ? 'Preparing download…' : 'Working…');
+        setStatus(
+            mode === MODE.EXPORT
+                ? 'Preparing download…'
+                : mode === MODE.DELETE_ACCOUNT
+                    ? 'Verify your identity to continue…'
+                    : 'Working…'
+        );
 
         try {
             if (mode === MODE.EXPORT) await runExport();
