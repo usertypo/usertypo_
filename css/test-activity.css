@@ -297,7 +297,7 @@
     bottom: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    /* Same open #expanding-bubble material (reinforced in settings.js) */
+    box-sizing: border-box;
     background: var(--theme-menu-bg) !important;
     background-color: var(--theme-menu-bg) !important;
     background-image: none !important;

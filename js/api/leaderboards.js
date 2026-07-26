@@ -298,8 +298,13 @@
 
         if (result.error) throw result.error;
 
-        var row = (result.data && result.data[0]) || null;
-        if (!row) {
+        var row = null;
+        if (Array.isArray(result.data)) {
+            row = result.data[0] || null;
+        } else if (result.data && typeof result.data === 'object') {
+            row = result.data;
+        }
+        if (!row || row.rank == null) {
             return {
                 rank: null,
                 wpm: null,
@@ -310,7 +315,7 @@
         }
 
         return {
-            rank: row.rank == null ? null : Number(row.rank),
+            rank: Number(row.rank),
             wpm: row.wpm == null ? null : Number(row.wpm),
             accuracy: row.accuracy == null ? null : Number(row.accuracy),
             totalPlayers: row.total_players == null ? 0 : Number(row.total_players),
@@ -355,6 +360,44 @@
         return getLeaderboardFromPostgres({ mode: mode, amount: amount, timeframe: timeframe, limit: limit });
     }
 
+    /**
+     * Resolve rank by scanning the same top list the leaderboards page renders.
+     * More reliable than the dedicated rank endpoint when Redis/Postgres disagree.
+     */
+    async function findMyRankOnBoard(options) {
+        var mode = normalizeMode(options && options.mode);
+        var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
+        var timeframe = normalizeTimeframe(options && options.timeframe);
+        var myId = null;
+        if (window.usertypoAuth) {
+            var state = window.usertypoAuth.getState();
+            if (state && state.isSignedIn && state.user) {
+                myId = state.user.id || state.user.userId || null;
+            }
+        }
+        if (!myId) return null;
+
+        var board = await getLeaderboard({
+            mode: mode,
+            amount: amount,
+            timeframe: timeframe,
+            limit: 100,
+        });
+        var entries = (board && board.entries) || [];
+        var mine = entries.find(function (entry) {
+            return entry && String(entry.userId) === String(myId);
+        });
+        if (!mine || mine.rank == null) return null;
+
+        return {
+            rank: Number(mine.rank),
+            wpm: mine.wpm == null ? null : Number(mine.wpm),
+            accuracy: mine.accuracy == null ? null : Number(mine.accuracy),
+            totalPlayers: Math.max(entries.length, Number(mine.rank) || 0),
+            source: (board && board.source) || 'board-scan',
+        };
+    }
+
     async function getMyRank(options) {
         if (!window.usertypoAuth) {
             return { error: 'auth_missing' };
@@ -370,6 +413,17 @@
         var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
         var timeframe = normalizeTimeframe(options && options.timeframe);
 
+        // 1) Same source as /leaderboards page — if you're visible there, we find you here.
+        try {
+            var fromBoard = await findMyRankOnBoard({ mode: mode, amount: amount, timeframe: timeframe });
+            if (fromBoard && fromBoard.rank != null && fromBoard.rank > 0) {
+                return fromBoard;
+            }
+        } catch (err) {
+            console.warn('[usertypo leaderboards] board-scan rank failed', err);
+        }
+
+        // 2) Dedicated Redis rank endpoint
         try {
             var redisResult = await callLeaderboardFunction({
                 action: 'rank',
@@ -380,8 +434,6 @@
 
             if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
                 var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
-                // Only trust Redis when it actually returns a rank. A null rank often means
-                // the member is missing from Redis while still present in Postgres.
                 if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
                     return {
                         rank: redisRank,
@@ -396,6 +448,7 @@
             console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
         }
 
+        // 3) Postgres RPC
         try {
             var pg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
             if (pg && pg.rank != null && isFinite(Number(pg.rank)) && Number(pg.rank) > 0) {
@@ -403,28 +456,6 @@
             }
         } catch (err) {
             console.warn('[usertypo leaderboards] postgres rank failed', err);
-        }
-
-        // Last resort: find self in the public top list for this board.
-        try {
-            var board = await getLeaderboard({ mode: mode, amount: amount, timeframe: timeframe, limit: 100 });
-            var myId = state.user && (state.user.id || state.user.userId);
-            if (myId && board && Array.isArray(board.entries)) {
-                var mine = board.entries.find(function (entry) {
-                    return entry && String(entry.userId) === String(myId);
-                });
-                if (mine && mine.rank != null) {
-                    return {
-                        rank: Number(mine.rank),
-                        wpm: mine.wpm == null ? null : Number(mine.wpm),
-                        accuracy: mine.accuracy == null ? null : Number(mine.accuracy),
-                        totalPlayers: board.entries.length,
-                        source: board.source || 'top-scan',
-                    };
-                }
-            }
-        } catch (err) {
-            console.warn('[usertypo leaderboards] top-scan rank failed', err);
         }
 
         return {
