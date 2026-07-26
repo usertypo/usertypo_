@@ -9,7 +9,7 @@
     <base href="/" />
     <script>window.__usertypoBootPath = window.location.pathname;</script>
     <!-- Blocking: apply saved/OS theme before any CSS paints (prevents usertypo_ blue FOUC) -->
-    <script src="js/boot-theme.js?v=1"></script>
+    <script src="js/boot-theme.js?v=2"></script>
     <link rel="preload" href="/logo-assets/typ_.png" as="image" />
     <link rel="preload" href="/logo-assets/user.png" as="image" />
     <link rel="preload" href="/logo-assets/o.png" as="image" />
@@ -84,14 +84,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
     <link href="css/test-activity.css?v=4" rel="stylesheet" />
-    <link href="css/global.css?v=9" rel="stylesheet" />
+    <link href="css/global.css?v=11" rel="stylesheet" />
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'on-primary': '#004a5d',
+                        'on-primary': '#000000',
                         'on-surface-variant': '#aaabb0',
                         'on-surface': '#f3f3f9',
                         'surface-container-highest': '#23262c',
@@ -99,14 +99,15 @@
                         'surface-container': '#171a1e',
                         'tertiary-container': '#ff3333',
                         tertiary: '#ff7166',
-                        primary: '#00d0ff',
-                        'primary-dark': '#0090b0',
-                        'primary-light': '#33d9ff',
-                        background: '#121418',
-                        'background-dark': '#0e1013',
+                        /* Solid hex only — CSS vars break Tailwind opacity modifiers (@apply bg-surface/40, bg-primary/20, …) */
+                        primary: '#ffffff',
+                        'primary-dark': '#cccccc',
+                        'primary-light': '#dddddd',
+                        background: '#000000',
+                        'background-dark': '#000000',
                         surface: '#1a1d23',
                         'surface-light': '#252932',
-                        error: '#ff3333',
+                        error: '#ff4444',
                     },
                     fontFamily: {
                         display: ['Space Grotesk'],
@@ -999,7 +1000,7 @@
                 title="Sign in" aria-label="Sign in">
                 <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 40 40" aria-hidden="true">
                     <circle id="header-account-xp-track" cx="20" cy="20" r="18" fill="none"
-                        stroke="rgba(255,255,255,0.12)" stroke-width="2.5" class="opacity-0 transition-opacity"></circle>
+                        stroke="var(--theme-ring-track, rgba(255,255,255,0.12))" stroke-width="2.5" class="opacity-0 transition-opacity"></circle>
                     <circle id="header-account-xp-ring" cx="20" cy="20" r="18" fill="none"
                         stroke="rgb(var(--theme-primary-rgb))" stroke-width="2.5" stroke-linecap="round"
                         class="opacity-0 transition-[stroke-dashoffset,opacity] duration-700 ease-out"
@@ -1011,7 +1012,7 @@
                         class="material-symbols-outlined text-[18px] text-primary group-hover:text-white transition-colors">person</span>
                 </span>
                 <span id="header-account-level"
-                    class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-background-dark text-[9px] font-black leading-[1.1rem] text-center shadow-md">1</span>
+                    class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-on-primary text-[9px] font-black leading-[1.1rem] text-center shadow-md">1</span>
             </a>
         </div>
     </header>
@@ -1019,25 +1020,25 @@
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
-            <div class="flex items-center gap-3 text-[10px] text-slate-600 font-mono">
-                <a href="/privacy" data-spa-link class="hover:text-primary transition-colors">Privacy Policy</a>
-                <span class="text-slate-700">·</span>
-                <a href="/terms" data-spa-link class="hover:text-primary transition-colors">Terms</a>
-                <span class="text-slate-700">·</span>
+            <div class="flex items-center gap-3 text-[9px] text-slate-600 font-mono">
                 <button type="button" id="footer-contact-btn" data-open-contact
                     class="footer-contact-btn hover:text-primary transition-colors bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer"
                     aria-haspopup="dialog" aria-controls="contact-modal">Contact</button>
+                <span class="text-slate-700">·</span>
+                <a href="/terms" data-spa-link class="hover:text-primary transition-colors">Terms</a>
+                <span class="text-slate-700">·</span>
+                <a href="/privacy" data-spa-link class="hover:text-primary transition-colors">Privacy</a>
             </div>
             <div class="flex items-center">
-                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-3"
+                <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-2"
                     title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                    <span class="material-symbols-outlined text-[15px]" data-footer-mute-icon>volume_off</span>
                 </button>
-                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                <div class="flex items-center gap-1.5 text-[9px] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[12px]">palette</span>
                     <span>Themes and Languages</span>
                     <button type="button" data-footer-picker
-                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-1.5 py-0 rounded-full text-[8px] leading-4 text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
                 </div>
             </div>
         </footer>
@@ -1400,11 +1401,11 @@
         </div>
     </div>
 
-    <script src="languages.js"></script>
+    <script src="languages.js?v=3"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
-    <script src="settings.js?v=16"></script>
-    <script src="footer-picker.js"></script>
+    <script src="settings.js?v=19"></script>
+    <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Config + auth + data API (before router) -->
     <script src="js/config/public.js"></script>
@@ -1434,8 +1435,8 @@
     <script src="js/pages/dual-race.js?v=21"></script>
     <script src="js/pages/room-race.js?v=30"></script>
     <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=68"></script>
-    <script src="js/router.js?v=11"></script>
+    <script src="js/page-fragments.js?v=74"></script>
+    <script src="js/router.js?v=12"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;

@@ -7,17 +7,27 @@ body::-webkit-scrollbar {
 
 :root {
     --theme-bg: #000000; /* Abyss — overridden by boot-theme.js / settings */
+    --theme-bg-rgb: 0, 0, 0;
     --theme-primary: #ffffff;
+    --theme-primary-rgb: 255, 255, 255;
     --theme-text: #cccccc;
     --theme-text-muted: #777777;
+    --theme-on-primary: #000000;
+    --theme-fg-strong: #ffffff;
+    --theme-ring-track: rgba(255, 255, 255, 0.12);
 }
 
 @media (prefers-color-scheme: light) {
     :root {
         --theme-bg: #ffffff; /* Paper */
+        --theme-bg-rgb: 255, 255, 255;
         --theme-primary: #000000;
+        --theme-primary-rgb: 0, 0, 0;
         --theme-text: #333333;
         --theme-text-muted: #888888;
+        --theme-on-primary: #ffffff;
+        --theme-fg-strong: #333333;
+        --theme-ring-track: rgba(0, 0, 0, 0.16);
     }
 }
 
@@ -26,6 +36,44 @@ body {
     -ms-overflow-style: none !important;
     scrollbar-width: none !important;
     background-color: var(--theme-bg) !important;
+}
+
+/* Smooth theme switches — limited surfaces only (never universal * — breaks modal opacity/transitions) */
+html.theme-animating,
+html.theme-animating body {
+    transition: background-color 500ms ease !important;
+}
+
+html.theme-animating #app-backdrop,
+html.theme-animating #spa-content,
+html.theme-animating #spa-boot-overlay,
+html.theme-animating #spa-page-root,
+html.theme-animating #spa-shell-footer {
+    transition: background-color 500ms ease, color 500ms ease, border-color 500ms ease, box-shadow 500ms ease !important;
+}
+
+html.theme-animating .text-primary,
+html.theme-animating .bg-primary,
+html.theme-animating .border-primary,
+html.theme-animating .header-typ-layer,
+html.theme-animating .header-user-layer,
+html.theme-animating .header-typ-wrapper,
+html.theme-animating .header-user-wrapper,
+html.theme-animating #caret::after,
+html.theme-animating #spa-boot-caret::after,
+html.theme-animating .player-level-avatar__progress,
+html.theme-animating .player-level-avatar__track,
+html.theme-animating .player-level-avatar__level,
+html.theme-animating #header-account-xp-ring,
+html.theme-animating #header-account-xp-track,
+html.theme-animating #profile-xp-ring,
+html.theme-animating #profile-xp-track,
+html.theme-animating #word-progress,
+html.theme-animating #wpm-display,
+html.theme-animating #acc-display,
+html.theme-animating #burst-display,
+html.theme-animating #word-progress-bar {
+    transition: background-color 500ms ease, color 500ms ease, border-color 500ms ease, fill 500ms ease, stroke 500ms ease, box-shadow 500ms ease, text-shadow 500ms ease, filter 500ms ease !important;
 }
 
 #app-body {
@@ -266,15 +314,15 @@ html {
 }
 
 .player-level-avatar__track {
-    stroke: rgba(255, 255, 255, 0.12);
+    stroke: var(--theme-ring-track, rgba(255, 255, 255, 0.12));
     stroke-width: var(--pla-stroke);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, stroke 0.5s ease;
 }
 
 .player-level-avatar__progress {
-    stroke: rgb(var(--theme-primary-rgb, 0, 208, 255));
+    stroke: rgb(var(--theme-primary-rgb, 255, 255, 255));
     stroke-width: var(--pla-stroke);
-    transition: stroke-dashoffset 0.7s ease-out, opacity 0.3s ease;
+    transition: stroke-dashoffset 0.7s ease-out, opacity 0.3s ease, stroke 0.5s ease;
 }
 
 .player-level-avatar__photo {
@@ -324,8 +372,8 @@ html {
     height: var(--pla-badge-h);
     padding: 0 var(--pla-badge-px);
     border-radius: 9999px;
-    background: rgb(var(--theme-primary-rgb, 0, 208, 255));
-    color: #0e1013;
+    background: rgb(var(--theme-primary-rgb, 255, 255, 255));
+    color: var(--theme-on-primary, #0e1013);
     font-size: var(--pla-badge-font);
     font-weight: 900;
     line-height: var(--pla-badge-h);
@@ -490,6 +538,15 @@ html {
 .contact-problem-option[aria-selected="true"] {
     background: color-mix(in srgb, rgb(var(--theme-primary-rgb, 0, 208, 255)) 18%, transparent);
     color: rgb(var(--theme-primary-rgb, 0, 208, 255));
+}
+
+.contact-pill-input,
+.contact-pill-textarea {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background-color: rgba(0, 0, 0, 0.35) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .contact-pill-textarea {

@@ -1136,6 +1136,22 @@ function _hexToRGB(hex) {
  *   - "typ_" layer  → accentPrimary (theme's accent color)
  *   - "o" layer     → always red (#ff3344) across all themes
  */
+/** Smoothly animate theme color changes for ~500ms. */
+function beginThemeColorTransition() {
+    const root = document.documentElement;
+    if (!root) return;
+    // Force style recalc so the upcoming color change interpolates from current values
+    root.classList.add('theme-animating');
+    void root.offsetWidth;
+    if (window.__usertypoThemeAnimTimer) {
+        clearTimeout(window.__usertypoThemeAnimTimer);
+    }
+    window.__usertypoThemeAnimTimer = setTimeout(() => {
+        root.classList.remove('theme-animating');
+        window.__usertypoThemeAnimTimer = null;
+    }, 500);
+}
+
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
@@ -1154,6 +1170,13 @@ function applyThemeSettings(settings) {
     const errorRGB = _hexToRGB(p.error);
     const textPriRGB = _hexToRGB(p.textPrimary);
     const bgMainRGB = _hexToRGB(p.bgMain);
+    const themeIsLight = getHexLuminance(p.bgMain) > 0.55;
+    // High-contrast foreground for live stats / progress on light & dark surfaces
+    const fgStrong = themeIsLight
+        ? (getHexLuminance(p.textPrimary) < 0.45 ? p.textPrimary : '#222222')
+        : (getHexLuminance(p.textPrimary) > 0.6 ? p.textPrimary : '#ffffff');
+    const ringTrack = themeIsLight ? 'rgba(0, 0, 0, 0.16)' : 'rgba(255, 255, 255, 0.12)';
+    const panelBorder = themeIsLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.08)';
 
     // Logo: typ_ = accentPrimary (main), user = textPrimary (secondary)
     const logoTypColor = p.accentPrimary;
@@ -1169,6 +1192,11 @@ function applyThemeSettings(settings) {
         return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     })();
     const onPrimary = _accentLum > 0.55 ? _darkenColor(p.accentPrimary, 65) : '#ffffff';
+
+    // Animate color shifts (skip only when boot CSS has not painted yet)
+    if (document.getElementById('usertypo-boot-theme') || document.getElementById('usertypo-theme-css')) {
+        beginThemeColorTransition();
+    }
 
     // Escape a Tailwind arbitrary-value class for use inside a CSS stylesheet string
     const _escTw = (cls) => cls
@@ -1240,6 +1268,7 @@ function applyThemeSettings(settings) {
             --theme-primary-dark: ${accentDark};
             --theme-primary-light: ${accentLight};
             --theme-bg: ${p.bgMain};
+            --theme-bg-rgb: ${bgMainRGB};
             --theme-bg-secondary: ${p.bgSecondary};
             --theme-bg-secondary-rgb: ${bgSecRGB};
             --theme-menu-bg: rgba(${bgSecRGB}, 0.4);
@@ -1247,6 +1276,11 @@ function applyThemeSettings(settings) {
             --theme-text-muted: ${p.textMuted};
             --theme-error: ${p.error};
             --theme-error-rgb: ${errorRGB};
+            --theme-on-primary: ${onPrimary};
+            --theme-fg-strong: ${fgStrong};
+            --theme-ring-track: ${ringTrack};
+            --theme-is-light: ${themeIsLight ? '1' : '0'};
+            --theme-panel-border: ${panelBorder};
         }
 
         /* ── Dynamic Font Family ── */
@@ -1395,7 +1429,8 @@ function applyThemeSettings(settings) {
             background-color: transparent !important;
         }
         #spa-content,
-        #app-backdrop {
+        #app-backdrop,
+        #spa-boot-overlay {
             background-color: ${p.bgMain} !important;
         }
         [style*="background-color: #020016"],
@@ -1405,6 +1440,60 @@ function applyThemeSettings(settings) {
         /* Radial glow overlay */
         div[style*="radial-gradient"] { background: radial-gradient(ellipse 70% 55% at 50% 38%, rgba(${accentRGB}, 0.05) 0%, transparent 72%) !important; }
 
+        /* ── Live typing chrome — readable on light themes (Paper, Matcha, …) ── */
+        #word-progress,
+        #room-word-progress,
+        #wpm-display,
+        #acc-display,
+        #burst-display,
+        #bot-wpm-display,
+        #room-wpm-display,
+        #room-acc-display,
+        #room-burst-display {
+            color: ${fgStrong} !important;
+            text-shadow: 0 0 8px rgba(${_hexToRGB(fgStrong)}, ${themeIsLight ? '0.15' : '0.45'}) !important;
+        }
+        #word-progress-bar-container,
+        #room-word-progress-bar-container {
+            background-color: ${themeIsLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.1)'} !important;
+        }
+        #word-progress-bar,
+        #room-word-progress-bar {
+            background-color: ${p.accentPrimary} !important;
+            box-shadow: 0 0 10px rgba(${accentRGB}, ${themeIsLight ? '0.35' : '0.8'}) !important;
+        }
+
+        /* ── Level / XP rings — visible track + contrast badge text ── */
+        .player-level-avatar__track,
+        #header-account-xp-track,
+        #profile-xp-track {
+            stroke: ${ringTrack} !important;
+        }
+        .player-level-avatar__progress,
+        #header-account-xp-ring,
+        #profile-xp-ring {
+            stroke: ${p.accentPrimary} !important;
+        }
+        .player-level-avatar__level,
+        #header-account-level,
+        #profile-level-badge {
+            background-color: ${p.accentPrimary} !important;
+            color: ${onPrimary} !important;
+        }
+        .player-level-avatar__photo {
+            border-color: ${panelBorder} !important;
+            background: ${themeIsLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(26, 29, 35, 0.85)'} !important;
+        }
+
+        #profile-xp-track,
+        #profile-xp-ring {
+            stroke-width: 2 !important;
+        }
+        #header-account-xp-track,
+        #header-account-xp-ring {
+            stroke-width: 2.75 !important;
+        }
+
         /* ── Glass panels — flat translucent (no light→dark gradient) ── */
         .glass-panel,
         .glass-card,
@@ -1413,6 +1502,32 @@ function applyThemeSettings(settings) {
             background: var(--theme-menu-bg) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
+        }
+        /* Modal / floating boxes need stronger fill so page content doesn't bleed through */
+        #contact-box,
+        #system-confirm-box,
+        #custom-prompt-box,
+        #player-profile-box,
+        #avatar-editor-box {
+            background: rgba(${bgSecRGB}, 0.92) !important;
+            background-image: none !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-color: ${panelBorder} !important;
+        }
+        /* Contact fields — beat Tailwind forms plugin white defaults */
+        #contact-modal .contact-pill-input,
+        #contact-modal .contact-pill-textarea,
+        #contact-modal input[type="text"],
+        #contact-modal input[type="email"],
+        #contact-modal textarea {
+            background-color: ${themeIsLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.35)'} !important;
+            color: ${themeIsLight ? '#222222' : '#ffffff'} !important;
+            border-color: ${panelBorder} !important;
+        }
+        #contact-modal .contact-pill-input::placeholder,
+        #contact-modal .contact-pill-textarea::placeholder {
+            color: ${p.textMuted} !important;
         }
 
         /* Settings surfaces — same flat glass as menu sidebar */
@@ -1430,8 +1545,8 @@ function applyThemeSettings(settings) {
         .opt-btn:not(.active):not(.highlighted) {
             background: rgba(${bgSecRGB}, 0.4) !important;
             background-image: none !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            border-color: ${panelBorder} !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, ${themeIsLight ? '0.06' : '0.1'}) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
@@ -1446,8 +1561,8 @@ function applyThemeSettings(settings) {
         .footer-picker-list-item:not(.is-active) {
             background: rgba(${bgSecRGB}, 0.4) !important;
             background-image: none !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            border-color: ${panelBorder} !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, ${themeIsLight ? '0.06' : '0.1'}) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
@@ -1880,15 +1995,74 @@ function applyThemeSettings(settings) {
         tag = document.createElement('style');
         tag.id = 'usertypo-theme-css';
     }
-    // Always append to end of head to override inline page styles
+    // Always append to end of head to override inline page styles + boot theme
     if (document.head) document.head.appendChild(tag);
 
     tag.textContent = css;
+
+    // Keep boot-theme in sync with CSS variables only (no hardcoded bg hex),
+    // so live theme switches update backgrounds without a full refresh.
+    const bootTag = document.getElementById('usertypo-boot-theme');
+    if (bootTag) {
+        bootTag.textContent = [
+            ':root{',
+            `--theme-primary:${p.accentPrimary};`,
+            `--theme-primary-rgb:${accentRGB};`,
+            `--theme-primary-hover:${p.accentHover};`,
+            `--theme-bg:${p.bgMain};`,
+            `--theme-bg-rgb:${bgMainRGB};`,
+            `--theme-bg-secondary:${p.bgSecondary};`,
+            `--theme-bg-secondary-rgb:${bgSecRGB};`,
+            `--theme-menu-bg:rgba(${bgSecRGB}, 0.4);`,
+            `--theme-text:${p.textPrimary};`,
+            `--theme-text-muted:${p.textMuted};`,
+            `--theme-error:${p.error};`,
+            `--theme-error-rgb:${errorRGB};`,
+            `--theme-on-primary:${onPrimary};`,
+            `--theme-fg-strong:${fgStrong};`,
+            `--theme-ring-track:${ringTrack};`,
+            `--theme-is-light:${themeIsLight ? '1' : '0'};`,
+            '}',
+            'html,body{background-color:var(--theme-bg) !important;}',
+            '#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}',
+            '.text-primary{color:var(--theme-primary) !important;}',
+            '.bg-primary{background-color:var(--theme-primary) !important;}',
+            '.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}',
+            '.bg-surface{background-color:var(--theme-bg-secondary) !important;}',
+            '#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}'
+        ].join('');
+    }
+
+    // Drive root-level vars + clear any stale inline bg so switches apply instantly
+    try {
+        const root = document.documentElement;
+        root.style.setProperty('--theme-primary', p.accentPrimary);
+        root.style.setProperty('--theme-primary-rgb', accentRGB);
+        root.style.setProperty('--theme-primary-hover', p.accentHover);
+        root.style.setProperty('--theme-bg', p.bgMain);
+        root.style.setProperty('--theme-bg-rgb', bgMainRGB);
+        root.style.setProperty('--theme-bg-secondary', p.bgSecondary);
+        root.style.setProperty('--theme-bg-secondary-rgb', bgSecRGB);
+        root.style.setProperty('--theme-text', p.textPrimary);
+        root.style.setProperty('--theme-text-muted', p.textMuted);
+        root.style.setProperty('--theme-error', p.error);
+        root.style.setProperty('--theme-error-rgb', errorRGB);
+        root.style.setProperty('--theme-on-primary', onPrimary);
+        root.style.setProperty('--theme-fg-strong', fgStrong);
+        root.style.setProperty('--theme-ring-track', ringTrack);
+        root.style.backgroundColor = p.bgMain;
+        if (document.body) document.body.style.backgroundColor = p.bgMain;
+        const backdrop = document.getElementById('app-backdrop');
+        if (backdrop) backdrop.style.backgroundColor = p.bgMain;
+        const spaContent = document.getElementById('spa-content');
+        if (spaContent) spaContent.style.backgroundColor = p.bgMain;
+    } catch { /* ignore */ }
 
     // Expose live accent for page scripts (copy flash, widgets, etc.)
     try {
         window.usertypo_themeAccent = p.accentPrimary;
         window.usertypo_themeAccentRGB = accentRGB;
+        window.usertypo_themeIsLight = themeIsLight;
     } catch { /* ignore */ }
 }
 
@@ -2328,6 +2502,10 @@ function applySoundscapeSettings(settings) {
  */
 function getLanguageDisplayName(langFile) {
     const file = langFile || 'english';
+    if (typeof getSettingsPageLanguages === 'function') {
+        const found = getSettingsPageLanguages().find(l => l.file === file);
+        if (found) return found.name;
+    }
     if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
         const found = ALL_LANGUAGES.find(l => l.file === file);
         if (found) return found.name;
@@ -3447,6 +3625,7 @@ window.usertypo_settingsApi = {
     isCustomThemeName,
     syncCustomThemeEditor,
     commitCustomTheme,
+    syncColorThemeSelectLabel,
     getLanguageDisplayName,
     isDualPage,
     isRoomPage,

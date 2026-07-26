@@ -46,12 +46,8 @@
     }
 
     function getThemeNames() {
-        const names = Object.keys(getPalettes());
-        const settings = loadSettings();
-        const presets = Array.isArray(settings.lookFeel?.customPresets)
-            ? settings.lookFeel.customPresets.map((_, i) => `custom:${i}`)
-            : [];
-        return [...names, ...presets];
+        // Built-in themes only — custom presets live in the Custom tab
+        return Object.keys(getPalettes());
     }
 
     function getThemeLabel(themeName) {
@@ -69,16 +65,27 @@
     }
 
     function getLanguages() {
+        if (typeof window.getSettingsPageLanguages === 'function') {
+            return window.getSettingsPageLanguages();
+        }
         if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
             return ALL_LANGUAGES;
         }
         return [];
     }
 
+    function getCustomPresets() {
+        const settings = loadSettings();
+        return Array.isArray(settings.lookFeel?.customPresets)
+            ? settings.lookFeel.customPresets
+            : [];
+    }
+
     function getLanguageDisplayName(langFile) {
         const api = getSettingsApi();
         if (api.getLanguageDisplayName) return api.getLanguageDisplayName(langFile);
-        return langFile;
+        const found = getLanguages().find(l => l.file === langFile);
+        return found ? found.name : langFile;
     }
 
     function sleep(ms) {
@@ -86,9 +93,12 @@
     }
 
     function injectStyles() {
-        if (document.getElementById('footer-picker-css')) return;
-        const style = document.createElement('style');
-        style.id = 'footer-picker-css';
+        let style = document.getElementById('footer-picker-css');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'footer-picker-css';
+            document.head.appendChild(style);
+        }
         style.textContent = `
             .footer-picker-overlay {
                 position: fixed;
@@ -96,10 +106,11 @@
                 z-index: 220;
                 pointer-events: none;
                 background: transparent;
+                visibility: hidden;
             }
             .footer-picker-overlay.is-open {
                 pointer-events: auto;
-                background: transparent;
+                visibility: visible;
             }
             #footer-picker-box {
                 position: fixed;
@@ -113,26 +124,27 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                pointer-events: auto;
+                pointer-events: none;
                 opacity: 0;
                 transition: opacity 0.2s ease, transform 0.2s ease;
             }
             .footer-picker-overlay.is-open #footer-picker-box {
                 opacity: 1;
                 transform: translateX(-50%) scale(1);
+                pointer-events: auto;
             }
             .footer-picker-body {
-                padding: 1.35rem 1.35rem 1.5rem;
+                padding: 1.1rem 1.1rem 1rem;
                 display: flex;
                 flex-direction: column;
-                gap: 1.35rem;
+                gap: 0.45rem;
                 min-height: 0;
                 flex: 1;
             }
             .footer-picker-viewport {
                 display: flex;
                 flex-direction: column;
-                gap: 1.25rem;
+                gap: 0.5rem;
                 min-height: 0;
                 flex: 1;
                 opacity: 1;
@@ -144,8 +156,18 @@
             .footer-picker-search-wrap {
                 display: flex;
                 flex-direction: column;
-                gap: 0.65rem;
+                gap: 0.3rem;
                 flex-shrink: 0;
+            }
+            .footer-picker-top-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.5rem;
+                min-height: 1.25rem;
+            }
+            .footer-picker-top-bar[hidden] {
+                display: none !important;
             }
             .footer-picker-back {
                 display: flex;
@@ -161,10 +183,28 @@
                 width: fit-content;
             }
             .footer-picker-back:hover { color: #fff; }
-            .footer-picker-back[hidden] { display: none !important; }
             .footer-picker-back .material-symbols-outlined { font-size: 1rem; }
+            .footer-picker-close-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 1.6rem;
+                height: 1.6rem;
+                border: none;
+                background: transparent;
+                color: #64748b;
+                cursor: pointer;
+                padding: 0;
+                margin-left: auto;
+                border-radius: 9999px;
+            }
+            .footer-picker-close-btn:hover { color: #fff; }
+            .footer-picker-close-btn .material-symbols-outlined { font-size: 1rem; }
             .footer-picker-search-row {
                 position: relative;
+            }
+            .footer-picker-search-row[hidden] {
+                display: none !important;
             }
             .footer-picker-search {
                 width: 100%;
@@ -206,7 +246,15 @@
                 letter-spacing: 0.14em;
                 text-transform: uppercase;
                 color: #64748b;
-                margin-bottom: 0.75rem;
+                margin: 0 0 0.75rem;
+            }
+            .footer-picker-themes-block {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .footer-picker-themes-block > .footer-picker-section-title {
+                margin-bottom: 0;
             }
             .footer-picker-theme-row {
                 display: grid;
@@ -370,12 +418,20 @@
                 flex-shrink: 0;
                 margin: 0.15rem 0;
             }
+            .footer-picker-list-title {
+                font-size: 0.62rem;
+                font-weight: 700;
+                color: #94a3b8;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                margin: 0 0 0.2rem;
+            }
             .footer-picker-list-scroll {
                 overflow-y: auto;
                 min-height: 0;
                 max-height: min(15rem, calc(100vh - 18rem));
                 padding-right: 0.2rem;
-                margin-top: 0.5rem;
+                margin-top: 0;
             }
             .footer-picker-list-scroll::-webkit-scrollbar { width: 4px; }
             .footer-picker-list-scroll::-webkit-scrollbar-thumb {
@@ -410,21 +466,37 @@
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
                 box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.2);
             }
-            .footer-picker-list-title {
-                font-size: 0.62rem;
-                font-weight: 700;
-                color: #94a3b8;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-            }
             .footer-picker-empty {
                 font-size: 0.62rem;
                 color: #64748b;
                 text-align: center;
-                padding: 1.25rem 0;
+                padding: 1.25rem 0.5rem;
+                line-height: 1.55;
+            }
+            .footer-picker-empty a,
+            .footer-picker-settings-link {
+                color: var(--theme-primary, #00d0ff);
+                text-decoration: underline;
+                text-underline-offset: 2px;
+                cursor: pointer;
+                font-weight: 700;
+                background: none;
+                border: none;
+                padding: 0;
+                font: inherit;
+            }
+            .footer-picker-empty a:hover,
+            .footer-picker-settings-link:hover {
+                filter: brightness(1.15);
+            }
+            .footer-picker-search-results {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                min-height: 0;
+                flex: 1;
             }
         `;
-        document.head.appendChild(style);
     }
 
     function buildIndexPreview(themeName) {
@@ -468,20 +540,30 @@
     }
 
     function injectModal() {
-        if (document.getElementById('footer-picker-overlay')) return;
-        const overlay = document.createElement('div');
-        overlay.id = 'footer-picker-overlay';
-        overlay.className = 'footer-picker-overlay';
+        let overlay = document.getElementById('footer-picker-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'footer-picker-overlay';
+            overlay.className = 'footer-picker-overlay';
+            document.body.appendChild(overlay);
+        }
+
+        // Always refresh markup so layout fixes apply after code updates
         overlay.innerHTML = `
             <div id="footer-picker-box" class="glass-panel bg-surface/85 !backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Themes and Languages">
                 <div class="footer-picker-body">
                     <div class="footer-picker-search-wrap" id="footer-picker-search-wrap">
-                        <button type="button" class="footer-picker-back" id="footer-picker-back" hidden aria-label="Back">
-                            <span class="material-symbols-outlined">arrow_back</span>
-                            <span>Back</span>
-                        </button>
-                        <div class="footer-picker-search-row">
-                            <input type="text" class="footer-picker-search glass-panel bg-surface/85 !backdrop-blur-sm" id="footer-picker-search" placeholder="Search..." autocomplete="off" />
+                        <div class="footer-picker-top-bar" id="footer-picker-top-bar" hidden>
+                            <button type="button" class="footer-picker-back" id="footer-picker-back" aria-label="Back">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                                <span>Back</span>
+                            </button>
+                            <button type="button" class="footer-picker-close-btn" id="footer-picker-close" aria-label="Close">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div class="footer-picker-search-row" id="footer-picker-search-row">
+                            <input type="text" class="footer-picker-search glass-panel bg-surface/85 !backdrop-blur-sm" id="footer-picker-search" placeholder="Search themes & languages..." autocomplete="off" />
                             <span class="footer-picker-end-icon" id="footer-picker-end-icon" aria-hidden="true">
                                 <span class="material-symbols-outlined">search</span>
                             </span>
@@ -491,72 +573,72 @@
                 </div>
             </div>
         `;
-        document.body.appendChild(overlay);
 
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closePicker();
-        });
+        if (!overlay.dataset.fpWired) {
+            overlay.dataset.fpWired = '1';
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closePicker();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && isOpen) closePicker();
+            });
+            window.addEventListener('resize', () => {
+                if (isOpen) positionPickerBox();
+            });
+        }
 
         const box = document.getElementById('footer-picker-box');
-        if (box) {
+        if (box && !box.dataset.fpWired) {
+            box.dataset.fpWired = '1';
             box.addEventListener('click', (e) => e.stopPropagation());
         }
 
         const back = document.getElementById('footer-picker-back');
-        const endIcon = document.getElementById('footer-picker-end-icon');
+        const closeBtn = document.getElementById('footer-picker-close');
         const input = document.getElementById('footer-picker-search');
 
-        back.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            goBack();
-        });
-
-        endIcon.addEventListener('click', (e) => {
-            if (!endIcon.classList.contains('is-close')) return;
-            e.preventDefault();
-            e.stopPropagation();
-            closePicker();
-        });
-
-        input.addEventListener('input', () => {
-            searchQuery = input.value;
-            renderViewContent(currentView);
-        });
-        ['keydown', 'keyup', 'keypress'].forEach((type) => {
-            input.addEventListener(type, (e) => e.stopPropagation());
-        });
-        input.addEventListener('mousedown', (e) => e.stopPropagation());
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && isOpen) closePicker();
-        });
-
-        window.addEventListener('resize', () => {
-            if (isOpen) positionPickerBox();
-        });
+        if (back) {
+            back.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goBack();
+            };
+        }
+        if (closeBtn) {
+            closeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closePicker();
+            };
+        }
+        if (input) {
+            input.oninput = () => {
+                searchQuery = input.value;
+                renderViewContent(currentView);
+            };
+            ['keydown', 'keyup', 'keypress'].forEach((type) => {
+                input.addEventListener(type, (e) => e.stopPropagation());
+            });
+            input.addEventListener('mousedown', (e) => e.stopPropagation());
+        }
     }
 
     function updateSearchChrome() {
         const isSub = currentView !== VIEW_HOME;
-        const back = document.getElementById('footer-picker-back');
-        const endIcon = document.getElementById('footer-picker-end-icon');
+        const topBar = document.getElementById('footer-picker-top-bar');
+        const searchRow = document.getElementById('footer-picker-search-row');
         const input = document.getElementById('footer-picker-search');
 
-        if (back) back.hidden = !isSub;
-        if (endIcon) {
+        if (topBar) topBar.hidden = !isSub;
+        if (searchRow) searchRow.hidden = isSub;
+
+        if (input) {
             if (isSub) {
-                endIcon.className = 'footer-picker-end-icon is-close';
-                endIcon.setAttribute('aria-label', 'Close');
-                endIcon.innerHTML = '<span class="material-symbols-outlined">close</span>';
-            } else {
-                endIcon.className = 'footer-picker-end-icon';
-                endIcon.removeAttribute('aria-label');
-                endIcon.innerHTML = '<span class="material-symbols-outlined">search</span>';
+                searchQuery = '';
+                input.value = '';
+            } else if (document.activeElement !== input) {
+                input.placeholder = 'Search themes & languages...';
             }
-        }
-        if (input && !isSub && document.activeElement !== input) {
-            input.placeholder = 'Search...';
         }
     }
 
@@ -565,11 +647,126 @@
         transitionToView(VIEW_HOME);
     }
 
+    function matchesQuery(text, q) {
+        if (!q) return true;
+        return String(text || '').toLowerCase().includes(q);
+    }
+
+    function renderListGrid(itemsHtml) {
+        return `
+            <div class="footer-picker-list-scroll">
+                ${itemsHtml
+                    ? `<div class="footer-picker-list-grid">${itemsHtml}</div>`
+                    : `<p class="footer-picker-empty">No results</p>`}
+            </div>
+        `;
+    }
+
+    function renderHomeSearchResults(q) {
+        const viewport = document.getElementById('footer-picker-viewport');
+        if (!viewport) return;
+        const ql = q.toLowerCase().trim();
+        const currentTheme = loadSettings().lookFeel?.colorTheme || getPreferredDefaultThemeSafe();
+        const currentLang = loadSettings().languageContent?.testLanguage || 'english';
+
+        const darkHits = getDarkThemes().filter(n =>
+            matchesQuery(n, ql) || matchesQuery(getThemeLabel(n), ql));
+        const lightHits = getLightThemes().filter(n =>
+            matchesQuery(n, ql) || matchesQuery(getThemeLabel(n), ql));
+        const themeHits = [...darkHits, ...lightHits];
+
+        const presets = getCustomPresets();
+        const customHits = presets
+            .map((p, i) => ({
+                id: `custom:${i}`,
+                label: p.name || `Custom ${i + 1}`,
+                mode: p.mode || 'Dark',
+            }))
+            .filter(item => matchesQuery(item.label, ql) || matchesQuery(item.mode, ql));
+
+        const langHits = getLanguages().filter(l =>
+            matchesQuery(l.name, ql) || matchesQuery(l.file, ql));
+
+        const themeHtml = themeHits.map(name => `
+            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${name === currentTheme ? ' is-active' : ''}" data-theme="${escapeAttr(name)}">${escapeHtml(getThemeLabel(name))}</button>
+        `).join('');
+
+        const customHtml = customHits.map(item => `
+            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${item.id === currentTheme ? ' is-active' : ''}" data-theme="${escapeAttr(item.id)}">${escapeHtml(item.label)}</button>
+        `).join('');
+
+        const langHtml = langHits.map(l => `
+            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${l.file === currentLang ? ' is-active' : ''}" data-lang="${escapeAttr(l.file)}">${escapeHtml(l.name)}</button>
+        `).join('');
+
+        const hasAny = themeHits.length || customHits.length || langHits.length;
+
+        viewport.innerHTML = `
+            <div class="footer-picker-search-results">
+                ${!hasAny ? `<p class="footer-picker-empty">No themes or languages match “${escapeHtml(q)}”</p>` : ''}
+                ${themeHits.length ? `
+                    <div>
+                        <p class="footer-picker-list-title">Themes</p>
+                        ${renderListGrid(themeHtml)}
+                    </div>
+                ` : ''}
+                ${customHits.length ? `
+                    <div>
+                        <p class="footer-picker-list-title">Custom Themes</p>
+                        ${renderListGrid(customHtml)}
+                    </div>
+                ` : ''}
+                ${langHits.length ? `
+                    <div>
+                        <p class="footer-picker-list-title">Languages</p>
+                        ${renderListGrid(langHtml)}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        viewport.querySelectorAll('[data-theme]').forEach(btn => {
+            btn.addEventListener('click', () => selectTheme(btn.dataset.theme));
+        });
+        viewport.querySelectorAll('[data-lang]').forEach(btn => {
+            btn.addEventListener('click', () => selectLanguage(btn.dataset.lang));
+        });
+    }
+
+    function getPreferredDefaultThemeSafe() {
+        const api = getSettingsApi();
+        if (api.getPreferredDefaultTheme) return api.getPreferredDefaultTheme();
+        try {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return DEFAULT_LIGHT;
+            }
+        } catch (e) { /* ignore */ }
+        return DEFAULT_DARK;
+    }
+
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+        return escapeHtml(str).replace(/'/g, '&#39;');
+    }
+
     function renderHome() {
         const viewport = document.getElementById('footer-picker-viewport');
         if (!viewport) return;
+
+        if (searchQuery.trim()) {
+            renderHomeSearchResults(searchQuery);
+            return;
+        }
+
         viewport.innerHTML = `
-            <div>
+            <div class="footer-picker-themes-block">
                 <p class="footer-picker-section-title">Themes</p>
                 <div class="footer-picker-theme-row">
                     <button type="button" class="footer-picker-theme-preview glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="${VIEW_DARK}">
@@ -583,11 +780,11 @@
                         <span class="footer-picker-preview-sub">${DEFAULT_LIGHT}</span>
                     </button>
                 </div>
+                <button type="button" class="footer-picker-pill glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="custom-themes">
+                    <span>Custom Theme</span>
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </button>
             </div>
-            <button type="button" class="footer-picker-pill glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="custom-themes">
-                <span>Custom Theme</span>
-                <span class="material-symbols-outlined">chevron_right</span>
-            </button>
             <div class="footer-picker-divider"></div>
             <div>
                 <p class="footer-picker-section-title">Languages</p>
@@ -610,22 +807,16 @@
         const viewport = document.getElementById('footer-picker-viewport');
         if (!viewport) return;
         const themes = kind === 'light' ? getLightThemes() : getDarkThemes();
-        const q = searchQuery.toLowerCase().trim();
-        const filtered = themes.filter(name => !q || name.toLowerCase().includes(q));
-        const current = loadSettings().lookFeel?.colorTheme || 'usertypo_';
+        const current = loadSettings().lookFeel?.colorTheme || getPreferredDefaultThemeSafe();
         const title = kind === 'light' ? 'Light Themes' : 'Dark Themes';
+
+        const itemsHtml = themes.map(name => `
+            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${name === current ? ' is-active' : ''}" data-theme="${escapeAttr(name)}">${escapeHtml(getThemeLabel(name))}</button>
+        `).join('');
 
         viewport.innerHTML = `
             <p class="footer-picker-list-title">${title}</p>
-            <div class="footer-picker-list-scroll">
-                ${filtered.length ? `
-                    <div class="footer-picker-list-grid">
-                        ${filtered.map(name => `
-                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${name === current ? ' is-active' : ''}" data-theme="${name}">${getThemeLabel(name)}</button>
-                        `).join('')}
-                    </div>
-                ` : `<p class="footer-picker-empty">No themes found</p>`}
-            </div>
+            ${renderListGrid(itemsHtml)}
         `;
 
         viewport.querySelectorAll('[data-theme]').forEach(btn => {
@@ -637,24 +828,17 @@
         const viewport = document.getElementById('footer-picker-viewport');
         if (!viewport) return;
         const langs = getLanguages();
-        const q = searchQuery.toLowerCase().trim();
-        const filtered = langs.filter(l => {
-            if (!q) return true;
-            return l.name.toLowerCase().includes(q) || l.file.toLowerCase().includes(q);
-        });
         const current = loadSettings().languageContent?.testLanguage || 'english';
+
+        const itemsHtml = langs.map(l => `
+            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${l.file === current ? ' is-active' : ''}" data-lang="${escapeAttr(l.file)}">${escapeHtml(l.name)}</button>
+        `).join('');
 
         viewport.innerHTML = `
             <p class="footer-picker-list-title">Test Languages</p>
-            <div class="footer-picker-list-scroll">
-                ${filtered.length ? `
-                    <div class="footer-picker-list-grid">
-                        ${filtered.map(l => `
-                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${l.file === current ? ' is-active' : ''}" data-lang="${l.file}">${l.name}</button>
-                        `).join('')}
-                    </div>
-                ` : `<p class="footer-picker-empty">${langs.length ? 'No languages found' : 'Language list unavailable'}</p>`}
-            </div>
+            ${langs.length
+                ? renderListGrid(itemsHtml)
+                : `<p class="footer-picker-empty">Language list unavailable</p>`}
         `;
 
         viewport.querySelectorAll('[data-lang]').forEach(btn => {
@@ -668,57 +852,81 @@
         });
     }
 
+    function openCustomThemeSettings() {
+        closePicker();
+        try {
+            sessionStorage.setItem('usertypo_settings_open', JSON.stringify({
+                category: 'look-feel',
+                subSetting: 'Theme',
+                nestedSub: 'Custom Theme',
+            }));
+        } catch (e) { /* ignore */ }
+
+        // Already on settings — open panels directly
+        if (document.getElementById('settings-container')
+            && typeof window.navigateToSetting === 'function') {
+            try {
+                window.navigateToSetting('look-feel', 'Theme');
+                window.setTimeout(function () {
+                    try {
+                        var nested = document.querySelector(
+                            '.settings-panel-card:not(#panel-card) [data-sub-title="Custom Theme"] .sub-card-header'
+                        );
+                        if (nested && typeof window.openSubSetting === 'function') {
+                            window.openSubSetting(nested);
+                        }
+                    } catch (err) { /* ignore */ }
+                }, 200);
+                return;
+            } catch (e) { /* fall through to navigate */ }
+        }
+
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo('/settings');
+            return;
+        }
+        window.location.assign('/settings');
+    }
+
     function renderCustomThemes() {
         const viewport = document.getElementById('footer-picker-viewport');
         if (!viewport) return;
         const settings = loadSettings();
-        const presets = Array.isArray(settings.lookFeel?.customPresets)
-            ? settings.lookFeel.customPresets
-            : [];
-        const current = settings.lookFeel?.colorTheme || 'usertypo_';
-        const live = settings.lookFeel?.customTheme;
-        const q = searchQuery.toLowerCase().trim();
+        const presets = getCustomPresets();
+        const current = settings.lookFeel?.colorTheme || getPreferredDefaultThemeSafe();
 
-        const items = [];
-        if (live) {
-            items.push({
-                id: 'custom',
-                label: 'Current Custom',
-                mode: live.mode || 'Dark',
-                main: live.mainColor || '#00d0ff',
-                secondary: live.secondaryColor || '#1a1d23',
-            });
+        if (!presets.length) {
+            viewport.innerHTML = `
+                <p class="footer-picker-list-title">Custom Themes</p>
+                <p class="footer-picker-empty">
+                    No custom themes created. You can create one on
+                    <button type="button" class="footer-picker-settings-link" data-open-custom-theme>Settings</button>
+                </p>
+            `;
+            const link = viewport.querySelector('[data-open-custom-theme]');
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openCustomThemeSettings();
+                });
+            }
+            return;
         }
-        presets.forEach((p, i) => {
-            items.push({
-                id: `custom:${i}`,
-                label: p.name || `Custom ${i + 1}`,
-                mode: p.mode || 'Dark',
-                main: p.mainColor || '#00d0ff',
-                secondary: p.secondaryColor || '#1a1d23',
-            });
-        });
 
-        const filtered = items.filter((item) => {
-            if (!q) return true;
-            return item.label.toLowerCase().includes(q)
-                || String(item.mode).toLowerCase().includes(q)
-                || String(item.main).toLowerCase().includes(q);
-        });
+        const itemsHtml = presets.map((p, i) => {
+            const id = `custom:${i}`;
+            const label = p.name || `Custom ${i + 1}`;
+            return `
+                <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${id === current ? ' is-active' : ''}" data-theme="${escapeAttr(id)}" title="${escapeAttr((p.mode || 'Dark') + ' · ' + (p.mainColor || ''))}">
+                    ${escapeHtml(label)}
+                </button>
+            `;
+        }).join('');
 
         viewport.innerHTML = `
             <p class="footer-picker-list-title">Custom Themes</p>
-            <div class="footer-picker-list-scroll">
-                ${filtered.length ? `
-                    <div class="footer-picker-list-grid">
-                        ${filtered.map((item) => `
-                            <button type="button" class="footer-picker-list-item glass-panel bg-surface/85 !backdrop-blur-sm${item.id === current ? ' is-active' : ''}" data-theme="${item.id}" title="${item.mode} · ${item.main}">
-                                ${item.label}
-                            </button>
-                        `).join('')}
-                    </div>
-                ` : `<p class="footer-picker-empty">${items.length ? 'No themes found' : 'Save a custom theme in Settings → Look & Feel'}</p>`}
-            </div>
+            ${renderListGrid(itemsHtml)}
         `;
 
         viewport.querySelectorAll('[data-theme]').forEach(btn => {
@@ -771,6 +979,10 @@
                 if (api.applyAllSettings) api.applyAllSettings(settings);
             }
         }
+        // Keep settings page theme buttons / labels in sync when that page is open
+        if (api.syncColorThemeSelectLabel) {
+            try { api.syncColorThemeSelectLabel(loadSettings()); } catch (e) { /* ignore */ }
+        }
         renderViewContent(currentView);
     }
 
@@ -794,14 +1006,15 @@
         const api = getSettingsApi();
         if (api.applyFooterSettings) api.applyFooterSettings();
 
+        // Sync Settings → Test Language UI if that page is mounted
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('data-lang-file') === langFile);
         });
-        const card = document.querySelector('[data-sub-title="Test Language"]');
-        if (card) {
+        const displayName = getLanguageDisplayName(langFile);
+        document.querySelectorAll('[data-sub-title="Test Language"]').forEach((card) => {
             const label = card.querySelector('.setting-select .truncate');
-            if (label) label.textContent = getLanguageDisplayName(langFile);
-        }
+            if (label) label.textContent = displayName;
+        });
 
         renderViewContent(currentView);
     }
@@ -821,6 +1034,7 @@
         renderView(VIEW_HOME);
         positionPickerBox();
         overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
         const input = document.getElementById('footer-picker-search');
         if (input) setTimeout(() => input.focus(), 80);
     }
@@ -828,10 +1042,20 @@
     function closePicker() {
         isOpen = false;
         const overlay = document.getElementById('footer-picker-overlay');
-        if (overlay) overlay.classList.remove('is-open');
+        if (overlay) {
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        // Drop focus from any control inside the closed picker
+        const active = document.activeElement;
+        if (active && overlay && overlay.contains(active) && typeof active.blur === 'function') {
+            active.blur();
+        }
         currentView = VIEW_HOME;
         searchQuery = '';
         isTransitioning = false;
+        const input = document.getElementById('footer-picker-search');
+        if (input) input.value = '';
     }
 
     function initFooterPicker() {

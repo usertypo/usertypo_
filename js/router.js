@@ -218,9 +218,9 @@
                         var runPageScript = new Function(old.textContent);
                         runPageScript();
                     } catch (e) {
+                        // Keep the page visible; a single bad inline script should not
+                        // wipe the route with "Failed to load page".
                         console.error('SPA page script error (' + (path || 'unknown') + '):', e);
-                        reject(e);
-                        return;
                     }
                     resolve();
                 });
