@@ -222,35 +222,7 @@ function createMultiplayerServer(httpServer, options) {
         });
     }
 
-    function syncPlayerFromProfile(player) {
-        if (!player || !player.userId) return;
-        const profile = profiles.get(player.userId);
-        if (!profile) return;
-        if (profile.name) player.name = profile.name;
-        if (profile.avatarUrl != null) player.avatarUrl = profile.avatarUrl;
-        if (profile.level != null) player.level = profile.level;
-        if (profile.percentToNext != null) player.percentToNext = profile.percentToNext;
-    }
-
-    async function refreshProfile(userId) {
-        try {
-            const profile = await auth.getProfile(userId);
-            profiles.set(userId, profile);
-            return profile;
-        } catch (error) {
-            logger.warn('[multiplayer] profile refresh failed:', error && error.message);
-            return profiles.get(userId) || {
-                userId,
-                name: 'Player',
-                avatarUrl: '',
-                level: 1,
-                percentToNext: 0,
-            };
-        }
-    }
-
     async function emitRoomState(room, reason) {
-        Array.from(room.players.values()).forEach(syncPlayerFromProfile);
         const base = publicRoomPayload(room, reason || (room.type === 'custom' ? 'custom' : room.type));
         const viewers = Array.from(room.allowedUserIds || []);
         await Promise.all(viewers.map(async (viewerId) => {
@@ -458,6 +430,29 @@ function createMultiplayerServer(httpServer, options) {
         return Math.max(0, Math.min(100, Math.round(kogasa)));
     }
 
+    function computeRoomConsistencyFromSnapshots(snapshots) {
+        if (!Array.isArray(snapshots) || snapshots.length < 2) return 100;
+        const rawWpms = [];
+        let lastSnapshot = snapshots[0];
+        for (let i = 1; i < snapshots.length; i += 1) {
+            const dtMs = snapshots[i][3] - lastSnapshot[3];
+            if (dtMs < 950 && i !== snapshots.length - 1) continue;
+            const deltaKeystrokes = snapshots[i][2] - lastSnapshot[2];
+            const dtMin = dtMs / 60000;
+            if (dtMin > 0) {
+                rawWpms.push(Math.max(0, (deltaKeystrokes / 5) / dtMin));
+            }
+            lastSnapshot = snapshots[i];
+        }
+        if (rawWpms.length < 2) return 100;
+        const mean = rawWpms.reduce((a, b) => a + b, 0) / rawWpms.length;
+        if (mean <= 0) return 100;
+        const stdDev = Math.sqrt(rawWpms.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawWpms.length);
+        const cov = stdDev / mean;
+        const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+        return Math.max(0, Math.min(100, Math.round(kogasa)));
+    }
+
     function raceDisplaySeconds(room, participant) {
         if (participant && participant.finalStats && participant.finalStats.displaySeconds != null) {
             return participant.finalStats.displaySeconds;
@@ -497,7 +492,7 @@ function createMultiplayerServer(httpServer, options) {
             validChars,
             rawChars,
             Math.max(0, Math.round(exactRawWpm)),
-            computeConsistencyFromSnapshots(player.snapshots),
+            room.type === 'custom' ? computeRoomConsistencyFromSnapshots(player.snapshots) : computeConsistencyFromSnapshots(player.snapshots),
             displaySeconds,
             errorsMade,
             extraChars,
@@ -535,7 +530,7 @@ function createMultiplayerServer(httpServer, options) {
                 botValidChars,
                 botRawChars,
                 Math.max(0, Math.round((botRawChars / 5) / botElapsedMinutes)),
-                computeConsistencyFromSnapshots(room.bot.snapshots),
+                room.type === 'custom' ? computeRoomConsistencyFromSnapshots(room.bot.snapshots) : computeConsistencyFromSnapshots(room.bot.snapshots),
                 botDisplaySeconds,
                 botErrors,
                 0,
@@ -688,7 +683,6 @@ function createMultiplayerServer(httpServer, options) {
         player.rawChars = 0;
         player.finalStats = null;
         player.lastSnapshotAt = 0;
-        player.snapshots = [];
         player.anomalyStrikes = 0;
         player.finishedAt = null;
         player.leftMidGame = false;
@@ -1492,14 +1486,13 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:create', async (payload, ack) => {
+        socket.on('room:create', (payload, ack) => {
             try {
                 // Abandon any stuck/previous membership so browser-back leftovers
                 // cannot permanently block creating a new room.
                 if (userToRoom.has(userId)) {
                     leaveRace(userId, true);
                 }
-                await refreshProfile(userId);
                 const config = normalizeConfig(payload && payload.config);
                 const maxPlayers = clampInteger(payload && payload.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
                 let roomCode;
@@ -1517,72 +1510,50 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:join-code', async (code, ack) => {
-            try {
-                const roomCodeValue = String(code || '').trim();
-                const existingRoomId = userToRoom.get(userId);
-                if (existingRoomId) {
-                    const existing = rooms.get(existingRoomId);
-                    if (existing && existing.type === 'custom' && existing.roomCode === roomCodeValue) {
-                        safeAck(ack, { ok: true, roomId: existing.id });
-                        return;
-                    }
-                    // Leave stale/other membership so join isn't permanently blocked.
-                    leaveRace(userId, true);
-                }
-                const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
-                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
-                    safeAck(ack, { ok: false, error: 'room_not_found' });
+        socket.on('room:join-code', (code, ack) => {
+            const roomCodeValue = String(code || '').trim();
+            const existingRoomId = userToRoom.get(userId);
+            if (existingRoomId) {
+                const existing = rooms.get(existingRoomId);
+                if (existing && existing.type === 'custom' && existing.roomCode === roomCodeValue) {
+                    safeAck(ack, { ok: true, roomId: existing.id });
                     return;
                 }
-                if (!room.players.has(userId)) {
+                // Leave stale/other membership so join isn't permanently blocked.
+                leaveRace(userId, true);
+            }
+            const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
+            if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                safeAck(ack, { ok: false, error: 'room_not_found' });
+                return;
+            }
+            if (!room.players.has(userId)) {
+                if (occupiedSlots(room) >= room.maxPlayers) {
+                    safeAck(ack, { ok: false, error: 'room_full' });
+                    return;
+                }
+                room.allowedUserIds.add(userId);
+                room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profiles.get(userId)));
+                userToRoom.set(userId, room.id);
+            } else {
+                const existingPlayer = room.players.get(userId);
+                if (!existingPlayer || existingPlayer.status === 'left') {
                     if (occupiedSlots(room) >= room.maxPlayers) {
                         safeAck(ack, { ok: false, error: 'room_full' });
                         return;
                     }
-                    const profile = await refreshProfile(userId);
                     room.allowedUserIds.add(userId);
-                    room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profile));
+                    room.players.set(userId, createPlayer(
+                        userId,
+                        existingPlayer ? existingPlayer.index : nextPlayerIndex(room),
+                        profiles.get(userId),
+                    ));
                     userToRoom.set(userId, room.id);
-                } else {
-                    const existingPlayer = room.players.get(userId);
-                    if (!existingPlayer || existingPlayer.status === 'left') {
-                        if (occupiedSlots(room) >= room.maxPlayers) {
-                            safeAck(ack, { ok: false, error: 'room_full' });
-                            return;
-                        }
-                        const profile = await refreshProfile(userId);
-                        room.allowedUserIds.add(userId);
-                        room.players.set(userId, createPlayer(
-                            userId,
-                            existingPlayer ? existingPlayer.index : nextPlayerIndex(room),
-                            profile,
-                        ));
-                        userToRoom.set(userId, room.id);
-                    } else {
-                        // Already seated — refresh level/name before broadcasting.
-                        const profile = await refreshProfile(userId);
-                        if (profile) {
-                            existingPlayer.name = profile.name || existingPlayer.name;
-                            existingPlayer.avatarUrl = profile.avatarUrl || existingPlayer.avatarUrl;
-                            existingPlayer.level = profile.level != null ? profile.level : existingPlayer.level;
-                            existingPlayer.percentToNext = profile.percentToNext != null
-                                ? profile.percentToNext
-                                : existingPlayer.percentToNext;
-                        }
-                    }
                 }
-                // Ensure every seated player has fresh progression for the lobby broadcast.
-                await Promise.all(Array.from(room.players.keys()).map(async (uid) => {
-                    await refreshProfile(uid);
-                    syncPlayerFromProfile(room.players.get(uid));
-                }));
-                touchRoomActivity(room);
-                void emitRoomState(room, 'custom');
-                safeAck(ack, { ok: true, roomId: room.id });
-            } catch (error) {
-                safeAck(ack, { ok: false, error: error.message || 'join_failed' });
             }
+            void emitRoomState(room, 'custom');
+            touchRoomActivity(room);
+            safeAck(ack, { ok: true, roomId: room.id });
         });
 
         socket.on('room:invite', async (payload, ack) => {
