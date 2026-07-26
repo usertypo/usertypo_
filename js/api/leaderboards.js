@@ -389,9 +389,6 @@
         var mine = entries.find(function (entry) {
             return entry && String(entry.userId) === String(myId);
         });
-        // #region agent log
-        if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R1',location:'leaderboards.js:findMyRankOnBoard',message:'board scan inside api',data:{mode:mode,amount:amount,timeframe:timeframe,myIdPrefix:String(myId).slice(0,8),entryCount:entries.length,source:board&&board.source,found:!!(mine&&mine.rank!=null),rank:mine&&mine.rank,idMatchAny:entries.some(function(e){return e&&String(e.userId)===String(myId);}),sampleIdPrefixes:entries.slice(0,8).map(function(e){return e&&e.userId?String(e.userId).slice(0,8):'?';})},timestamp:Date.now()});
-        // #endregion
         if (!mine || mine.rank == null) return null;
 
         return {
