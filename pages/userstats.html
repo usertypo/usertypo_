@@ -1323,16 +1323,6 @@ if ('scrollRestoration' in history) {
             fillProfileIdentity().then(function () {
                 loadUserStats();
                 loadUserRank();
-                // #region agent log
-                setTimeout(function () {
-                    var tip = document.querySelector('.usertypo-menu-pill-tip');
-                    var bubble = document.getElementById('expanding-bubble');
-                    var tipCs = tip ? getComputedStyle(tip) : null;
-                    var bubCs = bubble ? getComputedStyle(bubble) : null;
-                    var cssVar = getComputedStyle(document.documentElement).getPropertyValue('--theme-menu-bg').trim();
-                    if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'P1',location:'userstats.html:styleCompare',message:'tip vs menu computed styles',data:{hasTip:!!tip,hasBubble:!!bubble,cssVar:cssVar,tipBg:tipCs&&tipCs.backgroundColor,tipBgImage:tipCs&&tipCs.backgroundImage,tipBorder:tipCs&&tipCs.border,tipShadow:tipCs&&tipCs.boxShadow,tipBlur:tipCs&&tipCs.backdropFilter,bubbleBg:bubCs&&bubCs.backgroundColor,bubbleBgImage:bubCs&&bubCs.backgroundImage,bubbleBorder:bubCs&&bubCs.border,bubbleShadow:bubCs&&bubCs.boxShadow,bubbleBlur:bubCs&&bubCs.backdropFilter,bubbleClasses:bubble&&bubble.className},timestamp:Date.now()});
-                }, 800);
-                // #endregion
             });
 
             window.addEventListener('usertypo:profile-synced', function () {
@@ -1604,10 +1594,6 @@ if ('scrollRestoration' in history) {
                 var tooltip = document.getElementById('stat-rank-tooltip');
                 var rankContext = { mode: 'time', amount: 30, timeframe: 'alltime' };
 
-                // #region agent log
-                if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R3',location:'userstats.html:loadUserRank:entry',message:'loadUserRank entered',data:{hasDisplay:!!display,hasTooltip:!!tooltip,hasApi:!!(window.usertypoLeaderboards&&window.usertypoLeaderboards.getMyRank)},timestamp:Date.now()});
-                // #endregion
-
                 if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
                     if (display) display.textContent = '—';
                     if (tooltip) tooltip.textContent = 'Global rank unavailable';
@@ -1621,22 +1607,13 @@ if ('scrollRestoration' in history) {
                     await window.usertypoAuth.ready();
                     var state = window.usertypoAuth.getState();
                     if (!state.isSignedIn) {
-                        // #region agent log
-                        if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R3',location:'userstats.html:loadUserRank:guest',message:'not signed in',data:{},timestamp:Date.now()});
-                        // #endregion
                         window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, rankContext);
                         return;
                     }
 
                     var myId = state.user && state.user.id;
                     var result = await window.usertypoLeaderboards.getMyRank(rankContext);
-                    // #region agent log
-                    if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R1',location:'userstats.html:loadUserRank:result',message:'getMyRank returned',data:{myIdPrefix:myId?String(myId).slice(0,8):null,rank:result&&result.rank,source:result&&result.source,error:result&&result.error,totalPlayers:result&&result.totalPlayers,wpm:result&&result.wpm,displayBefore:display&&display.textContent},timestamp:Date.now()});
-                    // #endregion
                     window.usertypoLeaderboards.renderRankStat(display, tooltip, result, rankContext);
-                    // #region agent log
-                    if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R4',location:'userstats.html:loadUserRank:afterRender',message:'after renderRankStat',data:{displayText:display&&display.textContent,tooltipText:tooltip&&tooltip.textContent},timestamp:Date.now()});
-                    // #endregion
 
                     // If still empty, force one more board scan (same list as /leaderboards).
                     if (!result || result.rank == null) {
@@ -1650,9 +1627,6 @@ if ('scrollRestoration' in history) {
                             var mine = (board.entries || []).find(function (entry) {
                                 return entry && myId && String(entry.userId) === String(myId);
                             });
-                            // #region agent log
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R1',location:'userstats.html:loadUserRank:boardScan',message:'manual board scan',data:{entryCount:(board.entries||[]).length,boardSource:board.source,found:!!mine,foundRank:mine&&mine.rank,sampleIds:(board.entries||[]).slice(0,5).map(function(e){return e&&e.userId?String(e.userId).slice(0,8):null;}),myIdPrefix:myId?String(myId).slice(0,8):null},timestamp:Date.now()});
-                            // #endregion
                             if (mine && mine.rank != null) {
                                 window.usertypoLeaderboards.renderRankStat(display, tooltip, {
                                     rank: mine.rank,
@@ -1664,9 +1638,6 @@ if ('scrollRestoration' in history) {
                         }
                     }
                 } catch (err) {
-                    // #region agent log
-                    if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R2',location:'userstats.html:loadUserRank:catch',message:'rank load threw',data:{err:String(err&&err.message||err)},timestamp:Date.now()});
-                    // #endregion
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';
                     if (tooltip) tooltip.textContent = 'Could not load global rank';
@@ -2391,19 +2362,11 @@ if ('scrollRestoration' in history) {
                         const r = next.getBoundingClientRect();
                         const ov = overlapY(r);
                         const threshold = swapThreshold(r);
-                        // #region agent log
-                        if (ov > 0) {
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D1',location:'userstats.html:onMove:down',message:'down overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),H:Math.round(H),neighborH:Math.round(r.height),willSwap:ov>=threshold,nextId:next.dataset&&next.dataset.cardId,dragHasTransform:!!dragCard.style.transform,nextHasTransform:!!next.style.transform,nextAnimCount:typeof next.getAnimations==='function'?next.getAnimations().length: -1},timestamp:Date.now()});
-                        }
-                        // #endregion
                         if (ov >= threshold) {
                             const firstRects = captureCardRects();
                             next.after(dragCard);
                             lastInsertBefore = dragCard.nextElementSibling;
                             animateCardsFrom(firstRects);
-                            // #region agent log
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D2',location:'userstats.html:onMove:swappedDown',message:'swapped down',data:{order:[...sortContainer.querySelectorAll('.sortable-card')].map(function(c){return c.dataset.cardId;})},timestamp:Date.now()});
-                            // #endregion
                             return;
                         }
                     }
@@ -2414,11 +2377,6 @@ if ('scrollRestoration' in history) {
                         const r = prev.getBoundingClientRect();
                         const ov = overlapY(r);
                         const threshold = swapThreshold(r);
-                        // #region agent log
-                        if (ov > 0) {
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D1',location:'userstats.html:onMove:up',message:'up overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),neighborH:Math.round(r.height),willSwap:ov>=threshold,prevId:prev.dataset&&prev.dataset.cardId},timestamp:Date.now()});
-                        }
-                        // #endregion
                         if (ov >= threshold) {
                             const firstRects = captureCardRects();
                             sortContainer.insertBefore(dragCard, prev);

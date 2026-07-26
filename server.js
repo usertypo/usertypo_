@@ -52,20 +52,6 @@ app.get('/health-check', (_req, res) => {
     res.status(200).type('text/plain').send('200 OK');
 });
 
-// Debug-mode ingest (writes to workspace log for local Cursor debugging)
-app.post('/api/__agent_debug', express.json({ limit: '128kb' }), (req, res) => {
-    try {
-        const payload = req.body && typeof req.body === 'object' ? req.body : { raw: req.body };
-        payload.timestamp = payload.timestamp || Date.now();
-        payload.sessionId = payload.sessionId || '8b0b5b';
-        const logPath = path.join(ROOT, '..', 'debug-8b0b5b.log');
-        fs.appendFileSync(logPath, JSON.stringify(payload) + '\n', 'utf8');
-    } catch (err) {
-        console.warn('[agent-debug] write failed', err && err.message);
-    }
-    res.status(204).end();
-});
-
 const CONTACT_TO = process.env.CONTACT_TO_EMAIL || 'contactusertypo@gmail.com';
 const CONTACT_ALLOWED_PROBLEMS = new Set([
     'Report a User',
