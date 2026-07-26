@@ -151,6 +151,29 @@
         return state;
     }
 
+    function markAuthWelcome(kind) {
+        if (typeof window.usertypoSetAuthWelcome === 'function') {
+            window.usertypoSetAuthWelcome(kind);
+            return;
+        }
+        try {
+            if (kind === 'new' || kind === 'back') {
+                sessionStorage.setItem('usertypo_auth_welcome', kind);
+                window.__usertypoPendingWelcome = kind;
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function inferWelcomeKindFromUser(user) {
+        try {
+            if (!user || !user.createdAt) return 'back';
+            var created = new Date(user.createdAt).getTime();
+            if (!isFinite(created)) return 'back';
+            if (Date.now() - created < 15 * 60 * 1000) return 'new';
+        } catch (e) { /* ignore */ }
+        return 'back';
+    }
+
     async function signInWithPassword(identifier, password) {
         await readyPromise;
         var clerk = getClerk();
@@ -165,6 +188,7 @@
 
         if (signIn.status === 'complete') {
             await activateSession(signIn.createdSessionId);
+            markAuthWelcome('back');
             return { status: 'complete' };
         }
 
@@ -195,6 +219,7 @@
         if (signUp.status === 'complete') {
             await activateSession(signUp.createdSessionId);
             pendingSignUp = null;
+            markAuthWelcome('new');
             return { status: 'complete' };
         }
 
@@ -219,6 +244,7 @@
         if (result.status === 'complete') {
             await activateSession(result.createdSessionId);
             pendingSignUp = null;
+            markAuthWelcome('new');
             return { status: 'complete' };
         }
 
@@ -300,6 +326,7 @@
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
+            markAuthWelcome('new');
             return { status: 'complete' };
         }
 
@@ -347,6 +374,7 @@
                 signUp = await signUp.update(updates);
                 if (signUp.status === 'complete' && signUp.createdSessionId) {
                     await activateSession(signUp.createdSessionId);
+                    markAuthWelcome('new');
                     return { status: 'complete' };
                 }
                 attempts += 1;
@@ -361,6 +389,7 @@
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
+            markAuthWelcome('new');
             return { status: 'complete' };
         }
 
@@ -448,6 +477,7 @@
 
         notify(getState());
         if (getState().isSignedIn) {
+            markAuthWelcome(inferWelcomeKindFromUser(getState().user));
             return { status: 'complete', redirectTo: homePath };
         }
 
@@ -455,6 +485,9 @@
         notify(getState());
 
         if (finished.status === 'complete' || getState().isSignedIn) {
+            markAuthWelcome(
+                finished.status === 'complete' ? 'new' : inferWelcomeKindFromUser(getState().user)
+            );
             return { status: 'complete', redirectTo: homePath };
         }
 
@@ -478,6 +511,7 @@
         var finished = await completePendingOAuthSignUp(name);
         notify(getState());
         if (finished.status === 'complete' || getState().isSignedIn) {
+            markAuthWelcome('new');
             return { status: 'complete', redirectTo: config.afterSignInUrl || '/' };
         }
         throw new Error('Could not finish creating your account. Try a different username.');

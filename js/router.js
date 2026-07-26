@@ -471,7 +471,7 @@
                 welcomePhrase = window.usertypoTakeAuthWelcomePhrase();
             }
             if (welcomePhrase && typeof window.usertypoPlayBootTyping === 'function') {
-                await window.usertypoPlayBootTyping(welcomePhrase, container);
+                await window.usertypoPlayBootTyping(welcomePhrase);
             }
 
             var parsed = parseFragment(html);

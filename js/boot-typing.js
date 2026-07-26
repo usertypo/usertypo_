@@ -1,17 +1,18 @@
 /**
- * Boot / welcome typing screen — same caret + colors as the home typing test.
- * 60 WPM, smooth caret, lowercase phrases only.
+ * Boot / welcome typing — fixed centered overlay, 70 WPM.
+ * Caret moves smoothly on X only (no width morph / vertical slide).
  *
  * Public:
- *   usertypoAwaitBootTyping()           — initial splash promise
- *   usertypoPlayBootTyping(text, mount) — play a phrase into a mount element
- *   usertypoSetAuthWelcome(kind)        — 'new' | 'back' before navigating home
- *   usertypoTakeAuthWelcomePhrase()     — consume pending welcome phrase (once)
+ *   usertypoAwaitBootTyping()
+ *   usertypoPlayBootTyping(text)
+ *   usertypoSetAuthWelcome(kind)        — 'new' | 'back'
+ *   usertypoTakeAuthWelcomePhrase()
  */
 (function () {
-    var WPM = 60;
-    var CHAR_MS = Math.round(60000 / (WPM * 5)); // 200ms at 60 WPM
-    var BREATH_MS = 900;
+    var WPM = 70;
+    var CHAR_MS = Math.round(60000 / (WPM * 5)); // ~171ms
+    var MOVE_MS = Math.min(140, Math.max(80, CHAR_MS - 30));
+    var BREATH_MS = 700;
     var AUTH_WELCOME_KEY = 'usertypo_auth_welcome';
 
     var PHRASES = {
@@ -25,12 +26,12 @@
         resolveReady = resolve;
     });
     var initialFinished = false;
-    var playChain = Promise.resolve();
+    var playLock = Promise.resolve();
 
     function markInitialReady() {
         if (initialFinished) return;
         initialFinished = true;
-        resolveReady();
+        try { resolveReady(); } catch (e) { /* ignore */ }
     }
 
     window.usertypoAwaitBootTyping = function () {
@@ -38,11 +39,9 @@
     };
 
     window.usertypoSetAuthWelcome = function (kind) {
-        try {
-            if (kind === 'new' || kind === 'back') {
-                sessionStorage.setItem(AUTH_WELCOME_KEY, kind);
-            }
-        } catch (e) { /* ignore */ }
+        if (kind !== 'new' && kind !== 'back') return;
+        try { sessionStorage.setItem(AUTH_WELCOME_KEY, kind); } catch (e) { /* ignore */ }
+        window.__usertypoPendingWelcome = kind;
     };
 
     window.usertypoTakeAuthWelcomePhrase = function () {
@@ -51,17 +50,24 @@
             kind = sessionStorage.getItem(AUTH_WELCOME_KEY);
             sessionStorage.removeItem(AUTH_WELCOME_KEY);
         } catch (e) { /* ignore */ }
+        if (!kind && window.__usertypoPendingWelcome) {
+            kind = window.__usertypoPendingWelcome;
+        }
+        window.__usertypoPendingWelcome = null;
         if (kind === 'new') return PHRASES.new;
         if (kind === 'back') return PHRASES.back;
         return null;
     };
 
-    function peekAuthWelcomeKind() {
-        try {
-            return sessionStorage.getItem(AUTH_WELCOME_KEY);
-        } catch (e) {
-            return null;
+    function peekWelcomeKind() {
+        if (window.__usertypoPendingWelcome === 'new' || window.__usertypoPendingWelcome === 'back') {
+            return window.__usertypoPendingWelcome;
         }
+        try {
+            var k = sessionStorage.getItem(AUTH_WELCOME_KEY);
+            if (k === 'new' || k === 'back') return k;
+        } catch (e) { /* ignore */ }
+        return null;
     }
 
     function getCaretStyle() {
@@ -72,12 +78,43 @@
         if (!document.body) return;
         if (active) document.body.setAttribute('data-boot-typing', '1');
         else document.body.removeAttribute('data-boot-typing');
-        if (active && typeof window.usertypoRevealLogos === 'function') {
+        if (typeof window.usertypoRevealLogos === 'function') {
             window.usertypoRevealLogos(document);
         }
         document.querySelectorAll('.header-logo-container').forEach(function (logo) {
             logo.classList.add('logo-assets-ready');
         });
+    }
+
+    function ensureOverlay() {
+        var overlay = document.getElementById('spa-boot-overlay');
+        if (overlay) return overlay;
+        overlay = document.createElement('div');
+        overlay.id = 'spa-boot-overlay';
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    function buildInner(phrase) {
+        var text = String(phrase || PHRASES.loading).toLowerCase();
+        var charsHtml = '';
+        for (var i = 0; i < text.length; i++) {
+            var ch = text.charAt(i);
+            var display = ch === ' ' ? '&nbsp;' : ch.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+            charsHtml +=
+                '<span class="char text-slate-500' + (ch === ' ' ? ' boot-char-space' : '') +
+                '" data-boot-char="' + i + '">' + display + '</span>';
+        }
+        return (
+            '<div id="spa-boot-typing" class="spa-boot-typing-inner" aria-live="polite" aria-label="' +
+            text.replace(/"/g, '&quot;') + '">' +
+            '<div class="spa-boot-line font-mono">' +
+            '<div id="spa-boot-text" class="spa-boot-text">' +
+            '<span id="spa-boot-caret" class="text-primary" aria-hidden="true"></span>' +
+            '<div class="word">' + charsHtml + '</div>' +
+            '</div></div></div>'
+        );
     }
 
     function positionCaret(caret, container, chars, index, isAfter, instant) {
@@ -86,59 +123,36 @@
         var target = chars[charIndex];
         if (!target) return;
 
-        var rect = target.getBoundingClientRect();
-        var containerRect = container.getBoundingClientRect();
-        var left = rect.left - containerRect.left;
-        var top = rect.top - containerRect.top;
-        if (isAfter) left += rect.width;
+        var left = target.offsetLeft;
+        if (isAfter) left += target.offsetWidth;
 
-        if (instant) {
-            caret.style.transition = 'none';
-        }
-
-        caret.style.transform = 'translate3d(' + left + 'px, ' + top + 'px, 0)';
+        // Width updates instantly — only X translate is eased (no stretchy slide)
         if (getCaretStyle() === 'line') {
             caret.style.width = '2.5px';
         } else {
-            caret.style.width = rect.width + 'px';
+            caret.style.width = target.offsetWidth + 'px';
         }
 
         if (instant) {
+            caret.style.transition = 'none';
+            caret.style.transform = 'translate3d(' + left + 'px, 0, 0)';
             void caret.offsetWidth;
-            caret.style.removeProperty('transition');
+            caret.style.transition = 'transform ' + MOVE_MS + 'ms cubic-bezier(0.2, 0, 0.2, 1)';
+        } else {
+            caret.style.transition = 'transform ' + MOVE_MS + 'ms cubic-bezier(0.2, 0, 0.2, 1)';
+            caret.style.transform = 'translate3d(' + left + 'px, 0, 0)';
         }
     }
 
     function paintTyped(charEl) {
-        charEl.className = 'char transition-all duration-150 text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]';
+        charEl.classList.remove('text-slate-500');
+        charEl.classList.add('text-primary', 'is-typed');
     }
 
-    function buildMarkup(phrase) {
-        var text = String(phrase || PHRASES.loading).toLowerCase();
-        var charsHtml = '';
-        for (var i = 0; i < text.length; i++) {
-            var ch = text.charAt(i);
-            var display = ch === ' ' ? '&nbsp;' : ch.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            var spaceClass = ch === ' ' ? ' boot-char-space' : '';
-            charsHtml +=
-                '<span class="char text-slate-500 transition-all duration-150' + spaceClass +
-                '" data-boot-char="' + i + '">' + display + '</span>';
-        }
-        return (
-            '<div id="spa-boot-typing" class="flex-1 flex items-center justify-center select-none" aria-live="polite" aria-label="' +
-            text.replace(/"/g, '&quot;') + '">' +
-            '<div class="font-mono text-[24px] md:text-[30px] leading-[1.5] relative">' +
-            '<div id="spa-boot-text" class="relative inline-block whitespace-pre">' +
-            '<span id="spa-boot-caret" class="text-primary drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]" aria-hidden="true"></span>' +
-            '<div class="word inline-block whitespace-pre">' + charsHtml + '</div>' +
-            '</div></div></div>'
-        );
-    }
-
-    function runTypingAnimation(root) {
+    function runTypingAnimation(overlay) {
         return new Promise(function (resolve) {
-            var container = root.querySelector('#spa-boot-text') || document.getElementById('spa-boot-text');
-            var caret = root.querySelector('#spa-boot-caret') || document.getElementById('spa-boot-caret');
+            var container = overlay.querySelector('#spa-boot-text');
+            var caret = overlay.querySelector('#spa-boot-caret');
             if (!container || !caret) {
                 resolve();
                 return;
@@ -151,134 +165,113 @@
             }
 
             caret.classList.remove('animate-breath');
-            positionCaret(caret, container, chars, 0, false, true);
+            // Double rAF so layout is settled before first place
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    positionCaret(caret, container, chars, 0, false, true);
 
-            var i = 0;
+                    var i = 0;
 
-            function finish() {
-                positionCaret(caret, container, chars, chars.length - 1, true, false);
-                caret.classList.add('animate-breath');
-                setTimeout(resolve, BREATH_MS);
-            }
+                    function finish() {
+                        positionCaret(caret, container, chars, chars.length - 1, true, false);
+                        caret.classList.add('animate-breath');
+                        setTimeout(resolve, BREATH_MS);
+                    }
 
-            function step() {
-                if (!document.body || !document.body.contains(caret)) {
-                    resolve();
-                    return;
-                }
-                if (i >= chars.length) {
-                    finish();
-                    return;
-                }
-                paintTyped(chars[i]);
-                i += 1;
-                if (i < chars.length) {
-                    positionCaret(caret, container, chars, i, false, false);
+                    function step() {
+                        if (!document.body.contains(caret)) {
+                            resolve();
+                            return;
+                        }
+                        if (i >= chars.length) {
+                            finish();
+                            return;
+                        }
+                        paintTyped(chars[i]);
+                        i += 1;
+                        if (i < chars.length) {
+                            positionCaret(caret, container, chars, i, false, false);
+                            setTimeout(step, CHAR_MS);
+                        } else {
+                            finish();
+                        }
+                    }
+
                     setTimeout(step, CHAR_MS);
-                } else {
-                    finish();
-                }
-            }
-
-            setTimeout(step, CHAR_MS);
-        });
-    }
-
-    /**
-     * Play a typing phrase into mount (defaults to #spa-page-root).
-     * Replaces mount contents with the typing UI until finished.
-     */
-    window.usertypoPlayBootTyping = function (phrase, mount) {
-        var text = String(phrase || PHRASES.loading).toLowerCase();
-        playChain = playChain.then(function () {
-            return new Promise(function (resolve) {
-                var target = mount || document.getElementById('spa-page-root');
-                if (!target) {
-                    resolve();
-                    return;
-                }
-                setBootChrome(true);
-                target.innerHTML = buildMarkup(text);
-                var root = target.querySelector('#spa-boot-typing') || target;
-
-                var fontsReady = (document.fonts && document.fonts.ready)
-                    ? document.fonts.ready.catch(function () {})
-                    : Promise.resolve();
-
-                fontsReady.then(function () {
-                    return runTypingAnimation(root);
-                }).then(function () {
-                    setBootChrome(false);
-                    resolve();
-                }).catch(function () {
-                    setBootChrome(false);
-                    resolve();
                 });
             });
         });
-        return playChain;
+    }
+
+    function showOverlay(phrase) {
+        var overlay = ensureOverlay();
+        overlay.hidden = false;
+        overlay.innerHTML = buildInner(phrase);
+        overlay.classList.add('is-visible');
+        setBootChrome(true);
+        return overlay;
+    }
+
+    function hideOverlay() {
+        var overlay = document.getElementById('spa-boot-overlay');
+        if (overlay) {
+            overlay.classList.remove('is-visible');
+            overlay.hidden = true;
+            overlay.innerHTML = '';
+        }
+        setBootChrome(false);
+    }
+
+    window.usertypoPlayBootTyping = function (phrase) {
+        var text = String(phrase || PHRASES.loading).toLowerCase();
+        playLock = playLock.then(function () {
+            var overlay = showOverlay(text);
+            return runTypingAnimation(overlay).then(function () {
+                hideOverlay();
+            }).catch(function () {
+                hideOverlay();
+            });
+        });
+        return playLock;
     };
 
-    function resolveInitialPhrase() {
-        var kind = peekAuthWelcomeKind();
-        if (kind === 'new' || kind === 'back') {
-            return window.usertypoTakeAuthWelcomePhrase() || PHRASES.loading;
-        }
-        return PHRASES.loading;
-    }
-
-    function hydrateExistingBoot(phrase) {
-        var root = document.getElementById('spa-boot-typing');
-        var container = document.getElementById('spa-boot-text');
-        if (!root || !container) return false;
-        var word = container.querySelector('.word');
-        var caret = document.getElementById('spa-boot-caret');
-        if (!word || !caret) return false;
-
-        var text = String(phrase || PHRASES.loading).toLowerCase();
-        root.setAttribute('aria-label', text);
-        word.innerHTML = '';
-        for (var i = 0; i < text.length; i++) {
-            var ch = text.charAt(i);
-            var span = document.createElement('span');
-            span.className = 'char text-slate-500 transition-all duration-150' + (ch === ' ' ? ' boot-char-space' : '');
-            span.setAttribute('data-boot-char', String(i));
-            span.innerHTML = ch === ' ' ? '&nbsp;' : ch;
-            word.appendChild(span);
-        }
-        return true;
-    }
-
     function startInitial() {
-        setBootChrome(true);
-        var phrase = resolveInitialPhrase();
-
-        if (!hydrateExistingBoot(phrase)) {
-            var mount = document.getElementById('spa-page-root');
-            if (mount) mount.innerHTML = buildMarkup(phrase);
+        var kind = peekWelcomeKind();
+        var phrase = PHRASES.loading;
+        if (kind === 'new' || kind === 'back') {
+            phrase = window.usertypoTakeAuthWelcomePhrase() || PHRASES.loading;
         }
 
-        var root = document.getElementById('spa-boot-typing') || document.getElementById('spa-page-root');
-        var fontsReady = (document.fonts && document.fonts.ready)
-            ? document.fonts.ready.catch(function () {})
-            : Promise.resolve();
+        // Prefer existing overlay markup in the document if present
+        var overlay = document.getElementById('spa-boot-overlay');
+        if (!overlay) {
+            overlay = showOverlay(phrase);
+        } else {
+            overlay.hidden = false;
+            overlay.classList.add('is-visible');
+            overlay.innerHTML = buildInner(phrase);
+            setBootChrome(true);
+        }
 
-        fontsReady.then(function () {
-            return runTypingAnimation(root || document);
-        }).then(function () {
-            setBootChrome(false);
+        // Clear any leftover placeholder inside spa-page-root
+        var pageRoot = document.getElementById('spa-page-root');
+        if (pageRoot) {
+            var legacy = pageRoot.querySelector('#spa-boot-typing');
+            if (legacy) legacy.remove();
+        }
+
+        runTypingAnimation(overlay).then(function () {
+            hideOverlay();
             markInitialReady();
         }).catch(function () {
-            setBootChrome(false);
+            hideOverlay();
             markInitialReady();
         });
     }
 
-    if (document.getElementById('spa-boot-typing') || document.getElementById('spa-page-root')) {
+    if (document.body) {
         startInitial();
-    } else if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', startInitial);
     } else {
-        startInitial();
+        document.addEventListener('DOMContentLoaded', startInitial);
     }
 })();
