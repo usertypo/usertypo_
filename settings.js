@@ -1535,7 +1535,8 @@ function applyThemeSettings(settings) {
         .glass-panel,
         .glass-card,
         #sidebar-menu,
-        #expanding-bubble {
+        #expanding-bubble,
+        #usertypo-cookie-banner .usertypo-cookie-banner__inner {
             background: var(--theme-menu-bg) !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
@@ -2100,6 +2101,23 @@ function applyThemeSettings(settings) {
         window.usertypo_themeAccent = p.accentPrimary;
         window.usertypo_themeAccentRGB = accentRGB;
         window.usertypo_themeIsLight = themeIsLight;
+    } catch { /* ignore */ }
+
+    // Compact theme boot cookie for first-paint (read by js/boot-theme.js)
+    try {
+        if (window.usertypoCookies && typeof window.usertypoCookies.writeThemeBoot === 'function') {
+            window.usertypoCookies.writeThemeBoot({
+                name: themeName,
+                bgMain: p.bgMain,
+                bgSecondary: p.bgSecondary,
+                textPrimary: p.textPrimary,
+                textMuted: p.textMuted,
+                accentPrimary: p.accentPrimary,
+                accentHover: p.accentHover,
+                error: p.error,
+                isLight: themeIsLight,
+            });
+        }
     } catch { /* ignore */ }
 }
 

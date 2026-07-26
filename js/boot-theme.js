@@ -1,8 +1,7 @@
 /**
  * Blocking early theme boot — runs before CSS paints.
- * Always starts with Abyss (dark OS) / Paper (light OS) so the site never
- * flashes the Tailwind default cyan/blue before settings.js applies the
- * user's saved theme.
+ * Prefers the usertypo_theme_boot cookie (saved palette) so the first paint
+ * matches the user's theme; falls back to Abyss (dark OS) / Paper (light OS).
  * Keep Abyss/Paper palette keys in sync with settings.js THEME_PALETTES.
  */
 (function () {
@@ -45,9 +44,46 @@
         ].join(', ');
     }
 
-    var name = preferredDefault();
-    var p = name === 'Paper' ? PAPER : ABYSS;
-    var isLight = name === 'Paper';
+    function readThemeBootCookie() {
+        try {
+            var parts = String(document.cookie || '').split(';');
+            for (var i = 0; i < parts.length; i++) {
+                var part = parts[i].trim();
+                if (part.indexOf('usertypo_theme_boot=') !== 0) continue;
+                var raw = decodeURIComponent(part.slice('usertypo_theme_boot='.length));
+                var data = JSON.parse(raw);
+                if (!data || !data.bg || !data.ap) return null;
+                return {
+                    name: data.n || 'saved',
+                    bgMain: data.bg,
+                    bgSecondary: data.bs || data.bg,
+                    textPrimary: data.tp || '#cccccc',
+                    textMuted: data.tm || '#777777',
+                    accentPrimary: data.ap,
+                    accentHover: data.ah || data.ap,
+                    error: data.er || '#ff4444',
+                    isLight: !!data.l
+                };
+            }
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    var saved = readThemeBootCookie();
+    var name;
+    var p;
+    var isLight;
+
+    if (saved) {
+        name = saved.name || 'saved';
+        p = saved;
+        isLight = !!saved.isLight;
+    } else {
+        name = preferredDefault();
+        p = name === 'Paper' ? PAPER : ABYSS;
+        isLight = name === 'Paper';
+    }
+
     var accentRGB = hexToRgb(p.accentPrimary);
     var bgSecRGB = hexToRgb(p.bgSecondary);
     var errorRGB = hexToRgb(p.error);

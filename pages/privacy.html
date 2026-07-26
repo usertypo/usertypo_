@@ -69,7 +69,7 @@
         <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Legal</p>
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">Privacy Policy</h1>
         <p class="text-xs sm:text-sm text-slate-400 mb-2">
-            <span class="text-slate-500">Last updated:</span> July 25, 2026
+            <span class="text-slate-500">Last updated:</span> July 26, 2026
             <span class="text-slate-600 mx-2">·</span>
             <span class="text-slate-500">Effective:</span> July 25, 2026
         </p>
@@ -177,18 +177,23 @@
 
                 <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.7 Automatically collected technical data</h3>
                 <p class="mb-2">
-                    We do not run a separate first-party analytics product that tracks pages visited or
-                    time spent. However, when you use the Service, our hosting, security, authentication,
-                    advertising, and content-delivery partners automatically receive technical data
+                    When you use the Service, our hosting, security, authentication, advertising,
+                    analytics, and content-delivery partners automatically receive technical data
                     such as:
                 </p>
-                <ul class="list-disc pl-5 space-y-1">
+                <ul class="list-disc pl-5 space-y-1 mb-3">
                     <li>IP address</li>
                     <li>Browser type and version (user agent)</li>
                     <li>Device and connection information</li>
                     <li>Request logs and approximate location derived from IP (by providers)</li>
                     <li>Cookies and similar technologies (see Sections 5 and 6)</li>
                 </ul>
+                <p class="mb-2">
+                    We use <strong class="text-slate-200">Google Analytics 4 (GA4)</strong>
+                    to measure page visits, unique users, and related usage metrics when you choose
+                    <strong class="text-slate-200">Accept all</strong> in the cookie banner.
+                    If you choose <strong class="text-slate-200">Essential only</strong>, GA4 is not loaded.
+                </p>
             </section>
 
             <section id="how-we-use">
@@ -201,7 +206,8 @@
                     <li>Enable multiplayer racing and prevent abuse (including anti-cheat WPM limits)</li>
                     <li>Authenticate accounts and keep the Service secure</li>
                     <li>Improve the website and fix issues</li>
-                    <li>Display advertisements (including third-party ads)</li>
+                    <li>Measure site usage with analytics (Google Analytics 4) when analytics cookies are accepted</li>
+                    <li>Display advertisements (including Monetag)</li>
                     <li>Respond to privacy and support requests</li>
                     <li>Comply with legal obligations</li>
                 </ul>
@@ -253,7 +259,7 @@
                             </tr>
                             <tr>
                                 <td>Cloudflare</td>
-                                <td>IP address, request metadata, security/CDN logs</td>
+                                <td>IP address, request metadata, security/CDN logs; may set cookies such as <code class="text-slate-300">__cf_bm</code> / <code class="text-slate-300">cf_clearance</code> when proxied through Cloudflare</td>
                                 <td>Website hosting, CDN, and network security</td>
                             </tr>
                             <tr>
@@ -262,9 +268,14 @@
                                 <td>WebSocket multiplayer races and validation</td>
                             </tr>
                             <tr>
-                                <td>Third-party ads</td>
+                                <td>Google Analytics 4</td>
+                                <td>Page views, usage metrics, device/browser signals (when Accept all is chosen)</td>
+                                <td>Site analytics</td>
+                            </tr>
+                            <tr>
+                                <td>Monetag</td>
                                 <td>Cookies, device/browser data, browsing signals used for ads</td>
-                                <td>Ad serving</td>
+                                <td>Ad serving and monetization</td>
                             </tr>
                             <tr>
                                 <td>Google Fonts / similar CDNs</td>
@@ -283,6 +294,7 @@
                     <li><a class="privacy-link" href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare Privacy Policy</a></li>
                     <li><a class="privacy-link" href="https://upstash.com/trust/privacy.pdf" target="_blank" rel="noopener noreferrer">Upstash Privacy Policy</a></li>
                     <li><a class="privacy-link" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a></li>
+                    <li><a class="privacy-link" href="https://monetag.com/privacy/" target="_blank" rel="noopener noreferrer">Monetag Privacy Policy</a></li>
                 </ul>
                 <p class="mt-4">
                     We may also disclose information if required by law, to protect rights and safety,
@@ -300,49 +312,73 @@
                 <ul class="list-disc pl-5 space-y-2 mb-4">
                     <li>
                         <strong class="text-slate-200">Essential:</strong> session and authentication
-                        cookies required to keep you signed in (via Clerk) and to operate core features.
+                        cookies required to keep you signed in (via Clerk); your cookie-choice cookie
+                        (<code class="text-slate-300">usertypo_consent</code>); a compact theme boot
+                        cookie (<code class="text-slate-300">usertypo_theme_boot</code>); and, when the
+                        Service is served through Cloudflare, security/CDN cookies Cloudflare may set
+                        (for example <code class="text-slate-300">__cf_bm</code> or
+                        <code class="text-slate-300">cf_clearance</code>) to protect the site and
+                        deliver content. These are required for core operation.
                     </li>
                     <li>
-                        <strong class="text-slate-200">Functional:</strong> preferences stored in your
-                        browser (including localStorage), such as theme and typing settings.
+                        <strong class="text-slate-200">Functional:</strong> full typing preferences
+                        stored in your browser via localStorage (theme details, caret, sound, language,
+                        and related settings). This is separate from cookies and stays on your device.
                     </li>
                     <li>
-                        <strong class="text-slate-200">Advertising:</strong> third-party ad vendors
-                        use cookies (including advertising cookies) to serve and personalize ads.
+                        <strong class="text-slate-200">Analytics:</strong> if you choose
+                        <strong class="text-slate-200">Accept all</strong>, Google Analytics 4 may set
+                        cookies such as <code class="text-slate-300">_ga</code> to measure visits and
+                        active users. Choosing <strong class="text-slate-200">Essential only</strong>
+                        turns analytics off and GA4 is not loaded.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Advertising:</strong> Monetag and its partners
+                        may use cookies and similar technologies to serve ads that help keep the
+                        Service free.
                     </li>
                 </ul>
                 <p class="mb-3">
-                    You can manage personalized ads through your browser settings and the advertising
-                    preference tools offered by third-party ad networks. You can also block or delete
-                    cookies in your browser settings. Disabling essential cookies may break login and
+                    On first visit you can choose <strong class="text-slate-200">Accept all</strong> or
+                    <strong class="text-slate-200">Essential only</strong>. You can reopen the banner
+                    anytime via
+                    <button type="button" data-cookie-settings class="privacy-link bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer underline underline-offset-2">Cookie settings</button>,
+                    or block cookies in your browser. Blocking essential cookies may break login and
                     other core features.
+                </p>
+                <p class="mb-3 text-sm text-slate-400">
+                    Note: Cloudflare cookies are set by Cloudflare’s network when the site is hosted
+                    or proxied through Cloudflare. We document them here; they are not created by
+                    first-party JavaScript in this app.
                 </p>
             </section>
 
             <section id="third-party-ads">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Third-Party Ads</h2>
                 <p class="mb-3">
-                    We use third-party ads to display advertisements on the Service. Third-party ad
-                    vendors may use cookies to serve ads based on a user’s prior visits to this and
-                    other websites.
+                    We use <strong class="text-slate-200">Monetag</strong> to display advertisements on
+                    the Service. Monetag and its partners may use cookies to serve ads based on a user’s
+                    prior visits to this and other websites.
                 </p>
                 <ul class="list-disc pl-5 space-y-2 mb-4">
                     <li>
-                        Third-party advertising cookies may enable ad vendors and their partners to
-                        serve ads based on your visits to this site and/or other sites on the Internet.
+                        Advertising cookies may enable Monetag and its partners to serve ads based on
+                        your visits to this site and/or other sites on the Internet.
                     </li>
                     <li>
-                        Users may opt out of personalized advertising through browser controls and the
-                        preference tools provided by third-party ad networks.
+                        Users may limit ads through browser controls and preference tools provided by
+                        ad networks (for example Monetag’s
+                        <a class="privacy-link" href="https://monetag.com/opt-out/" target="_blank" rel="noopener noreferrer">opt-out</a>
+                        page), which can reduce but may not eliminate all ads.
                     </li>
                     <li>
-                        Multiple third-party vendors and ad networks may use cookies to serve ads on
-                        this site.
+                        Monetag’s publisher statistics measure ad impressions and revenue, which differ
+                        from site visit analytics in Google Analytics.
                     </li>
                 </ul>
                 <p>
-                    For more information about how advertising partners may use data, review the privacy
-                    policies of the ad networks that appear on the Service.
+                    For more information about how Monetag may use data, review the
+                    <a class="privacy-link" href="https://monetag.com/privacy/" target="_blank" rel="noopener noreferrer">Monetag Privacy Policy</a>.
                 </p>
             </section>
 

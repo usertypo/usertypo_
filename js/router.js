@@ -530,6 +530,10 @@
                 window.usertypoMarkAssetBootSuccessful();
             }
 
+            if (window.usertypoAnalytics && typeof window.usertypoAnalytics.trackPageView === 'function') {
+                try { window.usertypoAnalytics.trackPageView(); } catch (e) { /* ignore */ }
+            }
+
             // Let the first paint of page content settle behind the overlay
             await new Promise(function (resolve) {
                 requestAnimationFrame(function () {
