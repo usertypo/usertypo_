@@ -271,6 +271,73 @@ function selectLangOpt(btn) {
 
 window.selectLangOpt = selectLangOpt;
 
+/**
+ * Languages exactly as listed on the Settings → Test Language panel.
+ * Parsed from the settings page fragment (or live DOM) so names/files stay in sync.
+ */
+let __settingsPageLangCache = null;
+function getSettingsPageLanguages() {
+    if (__settingsPageLangCache && __settingsPageLangCache.length) {
+        return __settingsPageLangCache;
+    }
+
+    const collected = [];
+    const seen = new Set();
+
+    function pushLang(file, name, category) {
+        const f = String(file || '').trim();
+        const n = String(name || '').trim();
+        if (!f || !n || seen.has(f)) return;
+        seen.add(f);
+        collected.push({
+            file: f,
+            name: n,
+            category: category || (f.startsWith('code_') ? 'code' : 'natural'),
+        });
+    }
+
+    // Prefer live settings DOM when available
+    const liveBtns = document.querySelectorAll('.lang-btn[data-lang-file]');
+    if (liveBtns.length) {
+        liveBtns.forEach((btn) => {
+            const group = btn.closest('.lang-group');
+            let category = 'natural';
+            if (group) {
+                const header = group.querySelector('span');
+                const ht = (header && header.textContent) || '';
+                if (/code/i.test(ht)) category = 'code';
+            }
+            pushLang(btn.getAttribute('data-lang-file'), btn.textContent, category);
+        });
+    }
+
+    // Fallback: parse embedded settings page fragment
+    if (!collected.length) {
+        const html = window.__USERTYPO_PAGE_FRAGMENTS__
+            && window.__USERTYPO_PAGE_FRAGMENTS__['pages/settings.html'];
+        if (typeof html === 'string' && html) {
+            const re = /data-lang-file="([^"]+)"[^>]*>\s*([^<]+?)\s*</g;
+            let m;
+            while ((m = re.exec(html)) !== null) {
+                pushLang(m[1], m[2]);
+            }
+        }
+    }
+
+    if (collected.length) {
+        __settingsPageLangCache = collected;
+        return collected;
+    }
+
+    // Last resort
+    if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
+        return ALL_LANGUAGES;
+    }
+    return [];
+}
+
+window.getSettingsPageLanguages = getSettingsPageLanguages;
+
 // Auto-load the saved language on page load (for index.html)
 if (typeof document !== 'undefined') {
     window._initLang = (opts = {}) => {

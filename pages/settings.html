@@ -4395,38 +4395,6 @@ window.__spaPageInit = function() {
                 return text.replace(regex, '<span class="search-highlight">$1</span>');
             }
 
-            function navigateToSetting(categoryId, subSetting) {
-                // Open the category
-                const navCard = document.querySelector(`.setting-card[data-category="${categoryId}"]`);
-                if (navCard) {
-                    const btn = navCard.querySelector('.setting-card-header');
-                    // Only open if not already active to avoid toggling it off
-                    if (btn && activeCategory !== categoryId) {
-                        openCategory(btn);
-                    }
-
-                    // If there's a sub-setting, open it after a brief delay for the panel to load
-                    if (subSetting) {
-                        setTimeout(() => {
-                            const panelContent = document.querySelector(`.category-content[data-panel="${categoryId}"]`);
-                            if (panelContent) {
-                                const subCards = panelContent.querySelectorAll('.sub-setting-card');
-                                for (const sc of subCards) {
-                                    if (sc.dataset.subTitle === subSetting) {
-                                        const subBtn = sc.querySelector('.sub-card-header');
-                                        if (subBtn) openSubSetting(subBtn);
-                                        break;
-                                    }
-                                }
-                            }
-                        }, 150);
-                    } else {
-                        // If navigating to the main category, ensure sub-settings are closed
-                        closeSubSetting();
-                    }
-                }
-            }
-
             searchInput.addEventListener('input', () => {
                 const rawQ = searchInput.value.trim();
                 const q = norm(rawQ).toLowerCase();
@@ -5282,6 +5250,33 @@ window.__spaPageInit = function() {
             triggerSave();
         }
 
+        function navigateToSetting(categoryId, subSetting) {
+            const navCard = document.querySelector(`.setting-card[data-category="${categoryId}"]`);
+            if (!navCard) return;
+            const btn = navCard.querySelector('.setting-card-header');
+            // Only open if not already active to avoid toggling it off
+            if (btn && activeCategory !== categoryId) {
+                openCategory(btn);
+            }
+
+            if (subSetting) {
+                setTimeout(() => {
+                    const panelContent = document.querySelector(`.category-content[data-panel="${categoryId}"]`);
+                    if (!panelContent) return;
+                    const subCards = panelContent.querySelectorAll('.sub-setting-card');
+                    for (const sc of subCards) {
+                        if (sc.dataset.subTitle === subSetting) {
+                            const subBtn = sc.querySelector('.sub-card-header');
+                            if (subBtn) openSubSetting(subBtn);
+                            break;
+                        }
+                    }
+                }, 150);
+            } else {
+                closeSubSetting();
+            }
+        }
+
         // SPA: expose handlers used by inline onclick attributes
         window.openCategory = openCategory;
         window.openSubSetting = openSubSetting;
@@ -5293,6 +5288,53 @@ window.__spaPageInit = function() {
         window.toggleLeaderboardVisibility = toggleLeaderboardVisibility;
         window.toggleFriendRequestsSetting = toggleFriendRequestsSetting;
         window.selectProfileVisibility = selectProfileVisibility;
+        window.navigateToSetting = navigateToSetting;
+
+        // Deep-link from footer picker (e.g. Custom Theme) or ?open=custom-theme
+        (function consumeSettingsDeepLink() {
+            function openNestedCustomTheme() {
+                setTimeout(function () {
+                    try {
+                        var nested = document.querySelector(
+                            '.settings-panel-card:not(#panel-card) [data-sub-title="Custom Theme"] .sub-card-header'
+                        );
+                        if (nested) openSubSetting(nested);
+                    } catch (e) { /* ignore */ }
+                }, 280);
+            }
+            function openSpec(spec) {
+                if (!spec || !spec.category) return;
+                setTimeout(function () {
+                    try {
+                        navigateToSetting(spec.category, spec.subSetting || '');
+                        if (spec.nestedSub === 'Custom Theme') {
+                            openNestedCustomTheme();
+                        }
+                    } catch (e) { /* ignore */ }
+                }, 80);
+            }
+            try {
+                var raw = sessionStorage.getItem('usertypo_settings_open');
+                if (raw) {
+                    sessionStorage.removeItem('usertypo_settings_open');
+                    var parsed = JSON.parse(raw);
+                    // Normalize older deep-links that targeted Custom Theme directly
+                    if (parsed && parsed.subSetting === 'Custom Theme' && !parsed.nestedSub) {
+                        parsed.subSetting = 'Theme';
+                        parsed.nestedSub = 'Custom Theme';
+                    }
+                    openSpec(parsed);
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                var open = (params.get('open') || '').toLowerCase();
+                if (open === 'custom-theme' || open === 'custom') {
+                    openSpec({ category: 'look-feel', subSetting: 'Theme', nestedSub: 'Custom Theme' });
+                }
+            } catch (e) { /* ignore */ }
+        })();
 
         loadIdentitySocialSettings({ force: true });
         window.addEventListener('usertypo:profile-synced', function () {
