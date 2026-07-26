@@ -465,6 +465,15 @@
             var html = await htmlPromise;
             await bootPromise;
 
+            // Post-auth welcome typing (new account vs returning) before home content
+            var welcomePhrase = null;
+            if (path === '/' && typeof window.usertypoTakeAuthWelcomePhrase === 'function') {
+                welcomePhrase = window.usertypoTakeAuthWelcomePhrase();
+            }
+            if (welcomePhrase && typeof window.usertypoPlayBootTyping === 'function') {
+                await window.usertypoPlayBootTyping(welcomePhrase, container);
+            }
+
             var parsed = parseFragment(html);
             injectPageStyles(parsed.styles, path);
             container.innerHTML = parsed.content;
