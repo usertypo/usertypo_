@@ -11,6 +11,7 @@
     <link rel="preload" href="/logo-assets/typ_.png" as="image" />
     <link rel="preload" href="/logo-assets/user.png" as="image" />
     <link rel="preload" href="/logo-assets/o.png" as="image" />
+    <link rel="preload" href="/js/boot-typing.js?v=1" as="script" />
     <script>
         (function installAssetRecovery() {
             const retryKey = 'usertypo_asset_retry_count';
@@ -280,7 +281,8 @@
         }
 
         /* --- CARET WITH SLOW OPACITY FADE INCLUDED --- */
-        #caret {
+        #caret,
+        #spa-boot-caret {
             position: absolute;
             transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), width 0.2s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.5s ease-in-out;
             will-change: transform, width, opacity;
@@ -291,7 +293,8 @@
             height: 1.2em; 
         }
 
-        #caret::after {
+        #caret::after,
+        #spa-boot-caret::after {
             content: '';
             position: absolute;
             bottom: -2.5px;
@@ -942,9 +945,17 @@
 
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0">
-            <div class="flex-1 flex items-center justify-center text-slate-500 text-sm font-mono">
-                Loading usertypo_…
+            <div id="spa-boot-typing" class="flex-1 flex items-center justify-center select-none" aria-live="polite" aria-label="Loading">
+                <div class="font-mono text-[24px] md:text-[30px] leading-[1.5] relative">
+                    <div id="spa-boot-text" class="relative inline-block">
+                        <span id="spa-boot-caret" class="text-primary drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]" aria-hidden="true"></span>
+                        <div class="word inline-block whitespace-nowrap">
+                            <span class="char text-slate-500 transition-all duration-150" data-boot-char="0">L</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="1">o</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="2">a</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="3">d</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="4">i</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="5">n</span><span class="char text-slate-500 transition-all duration-150" data-boot-char="6">g</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <script src="js/boot-typing.js?v=1"></script>
         </div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
             <div class="flex items-center gap-3 text-[10px] text-slate-600 font-mono">
@@ -1234,7 +1245,7 @@
     <script src="languages.js"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
-    <script src="settings.js?v=12"></script>
+    <script src="settings.js?v=13"></script>
     <script src="footer-picker.js"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Config + auth + data API (before router) -->
@@ -1265,7 +1276,7 @@
     <script src="js/pages/room-race.js?v=30"></script>
     <script src="dual.js?v=9"></script>
     <script src="js/page-fragments.js?v=63"></script>
-    <script src="js/router.js?v=7"></script>
+    <script src="js/router.js?v=8"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;
