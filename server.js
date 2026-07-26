@@ -117,22 +117,107 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             return;
         }
 
+        const web3Key = String(process.env.WEB3FORMS_ACCESS_KEY || '').trim();
+        const resendKey = String(process.env.RESEND_API_KEY || '').trim();
+
+        // Preferred: Web3Forms (simple access key emailed to you).
+        if (web3Key) {
+            const upstream = await fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    access_key: web3Key,
+                    subject: problem,
+                    from_name: 'usertypo_ Contact',
+                    name,
+                    email,
+                    replyto: email,
+                    problem,
+                    message: description,
+                }),
+            });
+            let upstreamBody = null;
+            try { upstreamBody = await upstream.json(); } catch { upstreamBody = null; }
+            if (!upstream.ok || !upstreamBody || upstreamBody.success !== true) {
+                const message = (upstreamBody && (upstreamBody.message || upstreamBody.error))
+                    || 'Could not deliver your message right now.';
+                res.status(502).json({ error: String(message) });
+                return;
+            }
+            res.status(200).json({ ok: true });
+            return;
+        }
+
+        // Optional: Resend API.
+        if (resendKey) {
+            const from = String(process.env.RESEND_FROM_EMAIL || 'usertypo_ <onboarding@resend.dev>').trim();
+            const upstream = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + resendKey,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    from,
+                    to: [CONTACT_TO],
+                    subject: problem,
+                    reply_to: email,
+                    text: [
+                        'Name: ' + name,
+                        'Email: ' + email,
+                        'Problem: ' + problem,
+                        '',
+                        description,
+                    ].join('\n'),
+                }),
+            });
+            let upstreamBody = null;
+            try { upstreamBody = await upstream.json(); } catch { upstreamBody = null; }
+            if (!upstream.ok) {
+                const message = (upstreamBody && (upstreamBody.message || upstreamBody.error || upstreamBody.name))
+                    || 'Could not deliver your message right now.';
+                res.status(502).json({ error: String(message) });
+                return;
+            }
+            res.status(200).json({ ok: true });
+            return;
+        }
+
+        // Default: FormSubmit (requires one-time Activate Form email click).
+        const origin = String(
+            req.headers.origin
+            || process.env.RENDER_EXTERNAL_URL
+            || process.env.SELF_PING_URL
+            || ''
+        ).replace(/\/+$/, '');
+        const formHeaders = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        };
+        if (origin) {
+            formHeaders.Origin = origin;
+            formHeaders.Referer = origin + '/';
+        }
+
         const payload = {
             name,
             email,
             problem,
+            message: description,
             description,
             _replyto: email,
             _subject: problem,
             _template: 'table',
+            _captcha: 'false',
         };
 
         const upstream = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONTACT_TO), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
+            headers: formHeaders,
             body: JSON.stringify(payload),
         });
 
@@ -143,10 +228,22 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             upstreamBody = null;
         }
 
-        if (!upstream.ok) {
-            const message = (upstreamBody && (upstreamBody.message || upstreamBody.error))
-                || 'Could not deliver your message right now.';
-            res.status(502).json({ error: String(message) });
+        const upstreamSuccess = upstreamBody
+            && (upstreamBody.success === true || upstreamBody.success === 'true');
+        const upstreamMessage = String(
+            (upstreamBody && (upstreamBody.message || upstreamBody.error)) || ''
+        );
+
+        if (!upstream.ok || !upstreamSuccess) {
+            const needsActivation = /activat/i.test(upstreamMessage);
+            const message = needsActivation
+                ? 'Almost ready: check the inbox (and Spam) for contactusertypo@gmail.com, open the FormSubmit email, and click “Activate Form”. Then send again.'
+                : (upstreamMessage || 'Could not deliver your message right now.');
+            console.warn('[contact] FormSubmit rejected submission', {
+                status: upstream.status,
+                body: upstreamBody,
+            });
+            res.status(needsActivation ? 409 : 502).json({ error: message, needsActivation: !!needsActivation });
             return;
         }
 
