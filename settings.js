@@ -645,17 +645,17 @@ function isCustomThemeName(themeName) {
 
 function resolveThemePalette(settings, themeName) {
     if (!settings) settings = loadSettings();
-    const name = themeName || settings.lookFeel?.colorTheme || 'usertypo_';
+    const name = themeName || settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     if (isCustomThemeName(name)) {
         return buildCustomPalette(getCustomThemeConfig(settings, name));
     }
-    return THEME_PALETTES[name] || THEME_PALETTES['usertypo_'];
+    return THEME_PALETTES[name] || THEME_PALETTES[getPreferredDefaultTheme()] || THEME_PALETTES['Abyss'];
 }
 
 function getThemeDisplayName(themeName, settings) {
     if (!settings) settings = loadSettings();
     if (isCustomThemeName(themeName || settings.lookFeel?.colorTheme)) return 'custom';
-    return themeName || settings.lookFeel?.colorTheme || 'usertypo_';
+    return themeName || settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
 }
 
 function isThemeLight(themeName, settings) {
@@ -984,7 +984,7 @@ function deleteCustomThemePreset(index) {
 
 function syncColorThemeSelectLabel(settings) {
     if (!settings) settings = loadSettings();
-    const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     const label = getThemeDisplayName(themeName, settings);
 
     document.querySelectorAll('[data-setting="lookFeel.colorTheme"]').forEach((container) => {
@@ -1138,7 +1138,7 @@ function _hexToRGB(hex) {
  */
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
-    const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     const p = resolveThemePalette(settings, themeName);
 
     // ── Font Family ──
@@ -2218,7 +2218,7 @@ function applyCursorSettings(settings) {
     }
     if (document.head) document.head.appendChild(styleEl);
 
-    const _themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const _themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     const _palette = resolveThemePalette(settings, _themeName);
     const _caretAccent = _palette.accentPrimary;
     const _caretRGB = _hexToRGB(_caretAccent);
@@ -2293,7 +2293,7 @@ function getLanguageDisplayName(langFile) {
 function applyFooterSettings(settings) {
     if (!settings) settings = loadSettings();
 
-    const themeName = settings.lookFeel?.colorTheme || 'usertypo_';
+    const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     const themeLabel = getThemeDisplayName(themeName, settings);
     const langFile = settings.languageContent?.testLanguage || 'english';
     const langName = getLanguageDisplayName(langFile);
@@ -2493,10 +2493,17 @@ function isQuickRestartEnabled(settings) {
 /**
  * When Keyboard Shortcuts is off, block Enter / \\ app shortcuts site-wide.
  * Tab quick-restart and Esc quick settings are controlled by their own toggles.
+ * Form fields and the contact dialog still need Enter for typing / submit.
  */
 document.addEventListener('keydown', (e) => {
     if (areKeyboardShortcutsEnabled()) return;
     if (e.key !== 'Enter' && e.key !== '\\') return;
+    const target = e.target;
+    if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return;
+        if (typeof target.closest === 'function' && target.closest('#contact-modal, #configure-dual-modal, form')) return;
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
 }, true);
