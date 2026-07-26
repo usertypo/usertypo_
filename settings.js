@@ -1958,16 +1958,16 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
     const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
-    // Include boot loading caret so splash typing matches the user's caret style
-    const sel = '#caret, #spa-boot-caret';
-    const after = '#caret::after, #spa-boot-caret::after';
+    // Boot caret: same look, but transform-only transition (no width morph / slide)
+    const bootTransition = `transform ${dur} ${ease}`;
 
     let css = '';
+    let boot = '';
 
     switch (style) {
         case 'line':
             css = `
-                ${sel} {
+                #caret {
                     transition: ${transition} !important;
                     width: 2.5px !important;
                     background-color: ${accentHex};
@@ -1975,32 +1975,73 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
                     border-radius: 2px;
                     box-shadow: 0 0 8px rgba(${accentRGB},0.6);
                 }
-                ${after} { display: none !important; }
+                #caret::after { display: none !important; }
+            `;
+            boot = `
+                #spa-boot-caret {
+                    transition: ${bootTransition} !important;
+                    width: 2.5px !important;
+                    background-color: ${accentHex};
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: 0 0 8px rgba(${accentRGB},0.6);
+                }
+                #spa-boot-caret::after { display: none !important; }
             `;
             break;
 
         case 'block':
             css = `
-                ${sel} {
+                #caret {
                     transition: ${transition} !important;
                     background-color: rgba(${accentRGB},0.25);
                     border: none !important;
                     border-radius: 2px;
                     box-shadow: none;
                 }
-                ${after} { display: none !important; }
+                #caret::after { display: none !important; }
+            `;
+            boot = `
+                #spa-boot-caret {
+                    transition: ${bootTransition} !important;
+                    background-color: rgba(${accentRGB},0.25);
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                #spa-boot-caret::after { display: none !important; }
             `;
             break;
 
         case 'underscore':
             css = `
-                ${sel} {
+                #caret {
                     transition: ${transition} !important;
                     background-color: transparent;
                     border: none !important;
                     box-shadow: none;
                 }
-                ${after} {
+                #caret::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${accentHex};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${accentRGB},0.5);
+                }
+            `;
+            boot = `
+                #spa-boot-caret {
+                    transition: ${bootTransition} !important;
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                #spa-boot-caret::after {
                     content: '' !important;
                     display: block !important;
                     position: absolute;
@@ -2017,19 +2058,29 @@ function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
 
         case 'outline':
             css = `
-                ${sel} {
+                #caret {
                     transition: ${transition} !important;
                     background-color: transparent;
                     border: 2px solid rgba(${accentRGB},0.6) !important;
                     border-radius: 3px;
                     box-shadow: 0 0 6px rgba(${accentRGB},0.25);
                 }
-                ${after} { display: none !important; }
+                #caret::after { display: none !important; }
+            `;
+            boot = `
+                #spa-boot-caret {
+                    transition: ${bootTransition} !important;
+                    background-color: transparent;
+                    border: 2px solid rgba(${accentRGB},0.6) !important;
+                    border-radius: 3px;
+                    box-shadow: 0 0 6px rgba(${accentRGB},0.25);
+                }
+                #spa-boot-caret::after { display: none !important; }
             `;
             break;
     }
 
-    return css;
+    return css + boot;
 }
 
 /**
