@@ -5,16 +5,9 @@
 // All available languages with metadata
 const ALL_LANGUAGES = [
     { file: "arabic", name: "Arabic", category: "natural" },
-    { file: "arabic_10k", name: "Arabic 10k", category: "natural" },
     { file: "arabic_egypt", name: "Arabic Egypt", category: "natural" },
     { file: "arabic_egypt_1k", name: "Arabic Egypt 1k", category: "natural" },
     { file: "arabic_morocco", name: "Arabic Morocco", category: "natural" },
-    { file: "chinese_simplified", name: "Chinese Simplified", category: "natural" },
-    { file: "chinese_simplified_10k", name: "Chinese Simplified 10k", category: "natural" },
-    { file: "chinese_simplified_1k", name: "Chinese Simplified 1k", category: "natural" },
-    { file: "chinese_simplified_50k", name: "Chinese Simplified 50k", category: "natural" },
-    { file: "chinese_simplified_5k", name: "Chinese Simplified 5k", category: "natural" },
-    { file: "chinese_traditional", name: "Chinese Traditional", category: "natural" },
     { file: "dutch", name: "Dutch", category: "natural" },
     { file: "dutch_10k", name: "Dutch 10k", category: "natural" },
     { file: "dutch_1k", name: "Dutch 1k", category: "natural" },
@@ -41,14 +34,11 @@ const ALL_LANGUAGES = [
     { file: "german_1k", name: "German 1k", category: "natural" },
     { file: "german_250k", name: "German 250k", category: "natural" },
     { file: "greek", name: "Greek", category: "natural" },
-    { file: "greek_10k", name: "Greek 10k", category: "natural" },
     { file: "greek_1k", name: "Greek 1k", category: "natural" },
     { file: "greek_25k", name: "Greek 25k", category: "natural" },
-    { file: "greek_5k", name: "Greek 5k", category: "natural" },
     { file: "hindi", name: "Hindi", category: "natural" },
     { file: "hindi_1k", name: "Hindi 1k", category: "natural" },
     { file: "indonesian", name: "Indonesian", category: "natural" },
-    { file: "indonesian_10k", name: "Indonesian 10k", category: "natural" },
     { file: "indonesian_1k", name: "Indonesian 1k", category: "natural" },
     { file: "italian", name: "Italian", category: "natural" },
     { file: "italian_1k", name: "Italian 1k", category: "natural" },
@@ -61,14 +51,11 @@ const ALL_LANGUAGES = [
     { file: "japanese_romaji_1k", name: "Japanese Romaji 1k", category: "natural" },
     { file: "korean", name: "Korean", category: "natural" },
     { file: "korean_1k", name: "Korean 1k", category: "natural" },
-    { file: "korean_5k", name: "Korean 5k", category: "natural" },
     { file: "russian", name: "Russian", category: "natural" },
-    { file: "russian_10k", name: "Russian 10k", category: "natural" },
     { file: "russian_1k", name: "Russian 1k", category: "natural" },
     { file: "russian_25k", name: "Russian 25k", category: "natural" },
     { file: "russian_375k", name: "Russian 375k", category: "natural" },
     { file: "russian_50k", name: "Russian 50k", category: "natural" },
-    { file: "russian_5k", name: "Russian 5k", category: "natural" },
     { file: "russian_abbreviations", name: "Russian Abbreviations", category: "natural" },
     { file: "russian_contractions", name: "Russian Contractions", category: "natural" },
     { file: "russian_contractions_1k", name: "Russian Contractions 1k", category: "natural" },
@@ -154,7 +141,6 @@ async function loadLanguage(filename) {
     if (!filename || filename === 'Off') return wordList;
 
     // Normalize: UI buttons use _Xk naming but actual files use _XT naming
-    filename = filename.replace(/_(\d+)k$/i, '_$1T');
 
     // Check cache first
     if (_langCache[filename]) {
