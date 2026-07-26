@@ -1,10 +1,11 @@
 /**
  * Boot / welcome typing — fixed centered overlay, 70 WPM.
- * Caret moves smoothly on X only (no width morph / vertical slide).
+ * Overlay stays visible (breathing caret) until usertypoDismissBootOverlay().
  *
  * Public:
- *   usertypoAwaitBootTyping()
- *   usertypoPlayBootTyping(text)
+ *   usertypoAwaitBootTyping()           — resolves when typing animation finishes
+ *   usertypoPlayBootTyping(text)        — play phrase; keeps overlay up
+ *   usertypoDismissBootOverlay()        — hide overlay when page is ready
  *   usertypoSetAuthWelcome(kind)        — 'new' | 'back'
  *   usertypoTakeAuthWelcomePhrase()
  */
@@ -12,7 +13,6 @@
     var WPM = 70;
     var CHAR_MS = Math.round(60000 / (WPM * 5)); // ~171ms
     var MOVE_MS = Math.min(140, Math.max(80, CHAR_MS - 30));
-    var BREATH_MS = 700;
     var AUTH_WELCOME_KEY = 'usertypo_auth_welcome';
 
     var PHRASES = {
@@ -21,21 +21,22 @@
         back: 'welcome back!'
     };
 
-    var resolveReady;
-    var readyPromise = new Promise(function (resolve) {
-        resolveReady = resolve;
+    var resolveTypingDone;
+    var typingDonePromise = new Promise(function (resolve) {
+        resolveTypingDone = resolve;
     });
-    var initialFinished = false;
+    var typingMarked = false;
     var playLock = Promise.resolve();
+    var overlayVisible = false;
 
-    function markInitialReady() {
-        if (initialFinished) return;
-        initialFinished = true;
-        try { resolveReady(); } catch (e) { /* ignore */ }
+    function markTypingDone() {
+        if (typingMarked) return;
+        typingMarked = true;
+        try { resolveTypingDone(); } catch (e) { /* ignore */ }
     }
 
     window.usertypoAwaitBootTyping = function () {
-        return readyPromise;
+        return typingDonePromise;
     };
 
     window.usertypoSetAuthWelcome = function (kind) {
@@ -70,6 +71,12 @@
         return null;
     }
 
+    function normalizePath(pathname) {
+        var p = String(pathname || '/').split('?')[0];
+        p = p.replace(/\/+$/, '') || '/';
+        return p;
+    }
+
     function getCaretStyle() {
         return (document.body && document.body.getAttribute('data-caret-style')) || 'underscore';
     }
@@ -91,7 +98,6 @@
         if (overlay) return overlay;
         overlay = document.createElement('div');
         overlay.id = 'spa-boot-overlay';
-        overlay.setAttribute('aria-hidden', 'false');
         document.body.appendChild(overlay);
         return overlay;
     }
@@ -126,7 +132,6 @@
         var left = target.offsetLeft;
         if (isAfter) left += target.offsetWidth;
 
-        // Width updates instantly — only X translate is eased (no stretchy slide)
         if (getCaretStyle() === 'line') {
             caret.style.width = '2.5px';
         } else {
@@ -165,7 +170,6 @@
             }
 
             caret.classList.remove('animate-breath');
-            // Double rAF so layout is settled before first place
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
                     positionCaret(caret, container, chars, 0, false, true);
@@ -175,7 +179,8 @@
                     function finish() {
                         positionCaret(caret, container, chars, chars.length - 1, true, false);
                         caret.classList.add('animate-breath');
-                        setTimeout(resolve, BREATH_MS);
+                        // Stay visible with breathing caret — caller dismisses when page is ready
+                        resolve();
                     }
 
                     function step() {
@@ -206,8 +211,11 @@
     function showOverlay(phrase) {
         var overlay = ensureOverlay();
         overlay.hidden = false;
+        overlay.removeAttribute('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
         overlay.innerHTML = buildInner(phrase);
         overlay.classList.add('is-visible');
+        overlayVisible = true;
         setBootChrome(true);
         return overlay;
     }
@@ -217,43 +225,63 @@
         if (overlay) {
             overlay.classList.remove('is-visible');
             overlay.hidden = true;
+            overlay.setAttribute('aria-hidden', 'true');
             overlay.innerHTML = '';
         }
+        overlayVisible = false;
         setBootChrome(false);
     }
 
+    window.usertypoDismissBootOverlay = function () {
+        hideOverlay();
+        markTypingDone();
+    };
+
+    window.usertypoIsBootOverlayVisible = function () {
+        return overlayVisible;
+    };
+
+    /**
+     * Play a phrase on the overlay. Overlay stays up afterward (breathing)
+     * until usertypoDismissBootOverlay().
+     */
     window.usertypoPlayBootTyping = function (phrase) {
         var text = String(phrase || PHRASES.loading).toLowerCase();
         playLock = playLock.then(function () {
             var overlay = showOverlay(text);
-            return runTypingAnimation(overlay).then(function () {
-                hideOverlay();
-            }).catch(function () {
-                hideOverlay();
-            });
+            return runTypingAnimation(overlay).catch(function () { /* keep overlay */ });
         });
         return playLock;
     };
 
-    function startInitial() {
+    function resolveInitialPhrase() {
         var kind = peekWelcomeKind();
-        var phrase = PHRASES.loading;
         if (kind === 'new' || kind === 'back') {
-            phrase = window.usertypoTakeAuthWelcomePhrase() || PHRASES.loading;
+            return window.usertypoTakeAuthWelcomePhrase() || PHRASES.loading;
         }
+        // Guest (or any cold load) of the homepage → welcome to usertypo
+        var bootPath = normalizePath(window.__usertypoBootPath || (location && location.pathname) || '/');
+        if (bootPath === '/') {
+            return PHRASES.new;
+        }
+        return PHRASES.loading;
+    }
 
-        // Prefer existing overlay markup in the document if present
+    function startInitial() {
+        var phrase = resolveInitialPhrase();
         var overlay = document.getElementById('spa-boot-overlay');
         if (!overlay) {
             overlay = showOverlay(phrase);
         } else {
             overlay.hidden = false;
-            overlay.classList.add('is-visible');
+            overlay.removeAttribute('hidden');
+            overlay.setAttribute('aria-hidden', 'false');
             overlay.innerHTML = buildInner(phrase);
+            overlay.classList.add('is-visible');
+            overlayVisible = true;
             setBootChrome(true);
         }
 
-        // Clear any leftover placeholder inside spa-page-root
         var pageRoot = document.getElementById('spa-page-root');
         if (pageRoot) {
             var legacy = pageRoot.querySelector('#spa-boot-typing');
@@ -261,11 +289,10 @@
         }
 
         runTypingAnimation(overlay).then(function () {
-            hideOverlay();
-            markInitialReady();
+            // Typing finished — page may still be loading behind the overlay
+            markTypingDone();
         }).catch(function () {
-            hideOverlay();
-            markInitialReady();
+            markTypingDone();
         });
     }
 

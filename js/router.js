@@ -455,23 +455,25 @@
 
         try {
             var htmlPromise = loadPageHtml(routeConfig.page);
-            var bootPromise = (window.__usertypoBootAwaited)
-                ? Promise.resolve()
-                : (typeof window.usertypoAwaitBootTyping === 'function'
-                    ? window.usertypoAwaitBootTyping()
-                    : Promise.resolve());
+            var isFirstBoot = !window.__usertypoBootAwaited;
+            var bootTypingPromise = isFirstBoot && typeof window.usertypoAwaitBootTyping === 'function'
+                ? window.usertypoAwaitBootTyping()
+                : Promise.resolve();
             window.__usertypoBootAwaited = true;
 
             var html = await htmlPromise;
-            await bootPromise;
 
-            // Post-auth welcome typing (new account vs returning) before home content
+            // Post-auth welcome (new / back) — overlay stays until page ready
             var welcomePhrase = null;
             if (path === '/' && typeof window.usertypoTakeAuthWelcomePhrase === 'function') {
                 welcomePhrase = window.usertypoTakeAuthWelcomePhrase();
             }
             if (welcomePhrase && typeof window.usertypoPlayBootTyping === 'function') {
-                await window.usertypoPlayBootTyping(welcomePhrase);
+                // Play welcome while page assets continue; wait for typing to finish before reveal
+                var welcomeTyping = window.usertypoPlayBootTyping(welcomePhrase);
+                await Promise.all([bootTypingPromise, welcomeTyping]);
+            } else {
+                await bootTypingPromise;
             }
 
             var parsed = parseFragment(html);
@@ -507,11 +509,9 @@
             if (path === '/') {
                 prepareHomeTypingView();
                 if (typeof window.restartTest === 'function') {
-                    setTimeout(function () {
-                        try {
-                            window.restartTest({ randomizeTheme: false });
-                        } catch (e) { console.warn('restartTest', e); }
-                    }, 0);
+                    try {
+                        window.restartTest({ randomizeTheme: false });
+                    } catch (e) { console.warn('restartTest', e); }
                 }
             }
 
@@ -529,9 +529,23 @@
             if (typeof window.usertypoMarkAssetBootSuccessful === 'function') {
                 window.usertypoMarkAssetBootSuccessful();
             }
+
+            // Let the first paint of page content settle behind the overlay
+            await new Promise(function (resolve) {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(resolve);
+                });
+            });
+            if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.ready; } catch (e) { /* ignore */ }
+            }
         } catch (err) {
             console.error('SPA load failed:', err);
             container.innerHTML = '<div class="p-12 text-red-400">Failed to load page.</div>';
+        } finally {
+            if (typeof window.usertypoDismissBootOverlay === 'function') {
+                window.usertypoDismissBootOverlay();
+            }
         }
 
         isNavigating = false;
