@@ -379,19 +379,61 @@
             }, true);
 
             if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
-                return {
-                    rank: redisResult.data.rank == null ? null : Number(redisResult.data.rank),
-                    wpm: redisResult.data.wpm == null ? null : Number(redisResult.data.wpm),
-                    accuracy: redisResult.data.accuracy == null ? null : Number(redisResult.data.accuracy),
-                    totalPlayers: redisResult.data.totalPlayers == null ? 0 : Number(redisResult.data.totalPlayers),
-                    source: 'redis',
-                };
+                var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
+                // Only trust Redis when it actually returns a rank. A null rank often means
+                // the member is missing from Redis while still present in Postgres.
+                if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
+                    return {
+                        rank: redisRank,
+                        wpm: redisResult.data.wpm == null ? null : Number(redisResult.data.wpm),
+                        accuracy: redisResult.data.accuracy == null ? null : Number(redisResult.data.accuracy),
+                        totalPlayers: redisResult.data.totalPlayers == null ? 0 : Number(redisResult.data.totalPlayers),
+                        source: 'redis',
+                    };
+                }
             }
         } catch (err) {
             console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
         }
 
-        return getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
+        try {
+            var pg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
+            if (pg && pg.rank != null && isFinite(Number(pg.rank)) && Number(pg.rank) > 0) {
+                return pg;
+            }
+        } catch (err) {
+            console.warn('[usertypo leaderboards] postgres rank failed', err);
+        }
+
+        // Last resort: find self in the public top list for this board.
+        try {
+            var board = await getLeaderboard({ mode: mode, amount: amount, timeframe: timeframe, limit: 100 });
+            var myId = state.user && (state.user.id || state.user.userId);
+            if (myId && board && Array.isArray(board.entries)) {
+                var mine = board.entries.find(function (entry) {
+                    return entry && String(entry.userId) === String(myId);
+                });
+                if (mine && mine.rank != null) {
+                    return {
+                        rank: Number(mine.rank),
+                        wpm: mine.wpm == null ? null : Number(mine.wpm),
+                        accuracy: mine.accuracy == null ? null : Number(mine.accuracy),
+                        totalPlayers: board.entries.length,
+                        source: board.source || 'top-scan',
+                    };
+                }
+            }
+        } catch (err) {
+            console.warn('[usertypo leaderboards] top-scan rank failed', err);
+        }
+
+        return {
+            rank: null,
+            wpm: null,
+            accuracy: null,
+            totalPlayers: 0,
+            source: 'none',
+        };
     }
 
     /**

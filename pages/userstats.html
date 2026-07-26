@@ -284,7 +284,7 @@
             transform: scaleY(1.025);
         }
 
-        /* Shared tip — exact #expanding-bubble.glass-panel open-menu recipe */
+        /* Shared tip — forced to open #expanding-bubble material (also reinforced in settings.js) */
         .usertypo-menu-pill-tip {
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 999px !important;
@@ -294,7 +294,7 @@
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            color: var(--theme-text, #f3f3f9);
+            color: var(--theme-text, #f3f3f9) !important;
             font-family: "Roboto Mono", monospace;
             pointer-events: none;
             white-space: nowrap;
@@ -308,14 +308,14 @@
             transform: translateX(-50%) translateY(0.25rem);
             padding: 0.4rem 0.7rem;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            border-radius: 999px;
+            border-radius: 999px !important;
             background: var(--theme-menu-bg) !important;
             background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            color: var(--theme-text, #f3f3f9);
+            color: var(--theme-text, #f3f3f9) !important;
             font-family: "Roboto Mono", monospace;
             font-size: 0.65rem;
             white-space: nowrap;
@@ -2152,7 +2152,7 @@ if ('scrollRestoration' in history) {
                 let lastInsertBefore = null;
                 const LERP = 0.13;              // smoothing factor (0=no follow, 1=instant)
                 const SCROLL_ZONE = 80, SCROLL_SPEED = 13;
-                const SLIDE_MS = 520;
+                const SLIDE_MS = 900;
 
                 function captureCardRects() {
                     const map = new Map();
@@ -2171,7 +2171,6 @@ if ('scrollRestoration' in history) {
                         const dy = first.top - last.top;
                         if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
 
-                        // Cancel in-flight slides so motion composites smoothly
                         if (typeof el.getAnimations === 'function') {
                             el.getAnimations().forEach(function (anim) { anim.cancel(); });
                         }
@@ -2184,7 +2183,7 @@ if ('scrollRestoration' in history) {
                             ],
                             {
                                 duration: SLIDE_MS,
-                                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                                 fill: 'both',
                             }
                         ).finished.then(function () {
@@ -2293,57 +2292,43 @@ if ('scrollRestoration' in history) {
                     targetY = e.clientY - offY;
                     autoScroll(e.clientY);
 
-                    if (!dragClone || !dragCard) return;
+                    if (!dragCard) return;
 
-                    // Use the floating clone's projected rect (cursor-driven target),
-                    // and swap once half of that card overlaps a sibling.
-                    const cloneH = dragClone.offsetHeight || dragCard.offsetHeight || 1;
-                    const cloneW = dragClone.offsetWidth || dragCard.offsetWidth || 1;
-                    const dragRect = {
-                        top: targetY,
-                        bottom: targetY + cloneH,
-                        left: targetX,
-                        right: targetX + cloneW,
-                        height: cloneH,
-                        midY: targetY + cloneH / 2,
-                    };
+                    const cloneH = (dragClone && dragClone.offsetHeight) || dragCard.offsetHeight || 1;
+                    // Midpoint of the dragged card — crosses a sibling midpoint when
+                    // roughly half of the dragged card sits on top of that sibling.
+                    const dragMid = targetY + cloneH / 2;
 
-                    const sortables = [...sortContainer.querySelectorAll(
-                        '.sortable-card:not(.is-dragging):not(.card-static)'
-                    )];
+                    function isMovable(el) {
+                        return el && el.classList.contains('sortable-card')
+                            && !el.classList.contains('card-static')
+                            && !el.classList.contains('is-dragging');
+                    }
 
-                    let bestSib = null;
-                    let bestOverlap = 0;
-                    for (const sib of sortables) {
-                        const r = sib.getBoundingClientRect();
-                        const overlap = Math.max(0, Math.min(dragRect.bottom, r.bottom) - Math.max(dragRect.top, r.top));
-                        if (overlap > bestOverlap) {
-                            bestOverlap = overlap;
-                            bestSib = sib;
+                    const next = dragCard.nextElementSibling;
+                    if (isMovable(next)) {
+                        const r = next.getBoundingClientRect();
+                        const sibMid = r.top + r.height / 2;
+                        if (dragMid > sibMid) {
+                            const firstRects = captureCardRects();
+                            next.after(dragCard);
+                            lastInsertBefore = dragCard.nextElementSibling;
+                            animateCardsFrom(firstRects);
+                            return;
                         }
                     }
 
-                    if (!bestSib || bestOverlap < dragRect.height * 0.5) return;
-
-                    const sibRect = bestSib.getBoundingClientRect();
-                    const insertBefore = dragRect.midY < sibRect.top + sibRect.height / 2;
-                    if (insertBefore) {
-                        if (dragCard.nextElementSibling === bestSib) return;
-                    } else if (dragCard.previousElementSibling === bestSib) {
-                        return;
+                    const prev = dragCard.previousElementSibling;
+                    if (isMovable(prev)) {
+                        const r = prev.getBoundingClientRect();
+                        const sibMid = r.top + r.height / 2;
+                        if (dragMid < sibMid) {
+                            const firstRects = captureCardRects();
+                            sortContainer.insertBefore(dragCard, prev);
+                            lastInsertBefore = dragCard.nextElementSibling;
+                            animateCardsFrom(firstRects);
+                        }
                     }
-
-                    const nextRef = insertBefore ? bestSib : bestSib.nextElementSibling;
-                    if (lastInsertBefore === nextRef) return;
-
-                    const firstRects = captureCardRects();
-                    if (insertBefore) {
-                        sortContainer.insertBefore(dragCard, bestSib);
-                    } else {
-                        bestSib.after(dragCard);
-                    }
-                    lastInsertBefore = dragCard.nextElementSibling;
-                    animateCardsFrom(firstRects);
                 }
 
                 // Ã¢â€â‚¬Ã¢â€â‚¬ Mouse up / drop Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
