@@ -38,6 +38,7 @@
         var progressByIndex = {};
         var ROOM_PROGRESS_INTERVAL_MS = 500;
         var finished = false;
+        var lobbyEnrichSeq = 0;
         var isHost = false;
         var returnLobbyAgreed = 0;
         var returnLobbyNeeded = 0;
@@ -495,9 +496,6 @@
         }
 
         function openHostModal() {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'E',location:'room-race.js:openHostModal',message:'openHostModal reached',data:{hasModal:!!hostModal},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             refreshDomRefs();
             if (!hostModal) return;
             renderHostModalList();
@@ -558,17 +556,11 @@
                 : null;
             if (ready && ready.userId) selfUserId = ready.userId;
             isHost = !!(room && room.hostUserId && selfUserId && room.hostUserId === selfUserId);
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'D',location:'room-race.js:startMatch',message:'startMatch attempt',data:{force:!!force,isHost:!!isHost,selfUserId:String(selfUserId||''),hostUserId:room&&room.hostUserId||'',roomState:room&&room.state||'',clientState:state},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             if (!isHost || !roomId) return;
             try {
                 await window.usertypoMultiplayer.startRoom(roomId, !!force);
                 closeStartConfirmModal();
             } catch (error) {
-                // #region agent log
-                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'D',location:'room-race.js:startMatch:error',message:'startMatch failed',data:{error:String(error&&error.message||error||''),isHost:!!isHost,selfUserId:String(selfUserId||''),hostUserId:room&&room.hostUserId||'',roomState:room&&room.state||''},timestamp:Date.now()})}).catch(function(){});
-                // #endregion
                 var message = String(error && error.message || '');
                 if (!force && /not ready/i.test(message)) {
                     openStartConfirmModal();
@@ -1093,10 +1085,30 @@
 
         function renderLobby(nextRoom) {
             if (!nextRoom || nextRoom.roomId !== roomId) return;
+            var prevLevels = {};
+            (room && room.players || []).forEach(function (player) {
+                if (!player || !player.userId) return;
+                if (player.level != null && Number(player.level) > 1) {
+                    prevLevels[player.userId] = {
+                        level: player.level,
+                        percentToNext: player.percentToNext,
+                        xpIntoLevel: player.xpIntoLevel,
+                    };
+                }
+            });
             room = nextRoom;
             config = room.config;
             roomCode = room.roomCode || roomCode;
             isHost = room.hostUserId === selfUserId;
+            (room.players || []).forEach(function (player) {
+                var prev = prevLevels[player.userId];
+                if (!prev) return;
+                if (player.level == null || Number(player.level) <= 1) {
+                    player.level = prev.level;
+                    player.percentToNext = prev.percentToNext;
+                    if (prev.xpIntoLevel != null) player.xpIntoLevel = prev.xpIntoLevel;
+                }
+            });
             var title = document.getElementById('lobby-room-name');
             var id = document.getElementById('lobby-room-id');
             var inviteId = document.getElementById('invite-panel-room-id');
@@ -1117,8 +1129,10 @@
             ].filter(Boolean).join(' · ');
 
             paintLobbyPlayers();
+            var enrichSeq = ++lobbyEnrichSeq;
             enrichRoomPlayerLevels().then(function (changed) {
-                if (changed && room && room.roomId === roomId) paintLobbyPlayers();
+                if (!changed || enrichSeq !== lobbyEnrichSeq || !room || room.roomId !== roomId) return;
+                paintLobbyPlayers();
             }).catch(function () { /* ignore */ });
         }
 
@@ -1174,12 +1188,9 @@
             if (!window.usertypoProgression || typeof window.usertypoProgression.attachToList !== 'function') {
                 return false;
             }
-            // Always refresh — server used to send placeholder level 1 which skipped enrichment.
-            await window.usertypoProgression.attachToList(room.players, 'userId', { force: true });
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'E',location:'room-race.js:enrichRoomPlayerLevels',message:'levels enriched',data:{players:(room.players||[]).slice(0,8).map(function(p){return{id:String(p.userId||'').slice(0,12),level:p.level,pct:p.percentToNext};})},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
-            return true;
+            var target = room;
+            await window.usertypoProgression.attachToList(target.players, 'userId', { force: true });
+            return room === target;
         }
 
         function stopRaceTimers() {

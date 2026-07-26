@@ -103,9 +103,6 @@
             dispatch('connected', { socketId: activeSocket.id });
         });
         activeSocket.on('disconnect', function (reason) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'A',location:'multiplayer.js:disconnect',message:'socket disconnect',data:{reason:String(reason||''),activeRoomId:activeRoomId||''},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             readyState = null;
             dispatch('disconnected', { reason: reason });
         });
@@ -119,9 +116,6 @@
             dispatch('listings', listings.slice());
             if (activeRoomId) {
                 activeSocket.emit('match:resume', activeRoomId, function (response) {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'B',location:'multiplayer.js:match-resume',message:'match resume ack',data:{activeRoomId:activeRoomId||'',ok:!!(response&&response.ok),state:response&&response.state||'',hasResults:!!(response&&response.results)},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
                     if (!response || response.ok === false) {
                         if (response && response.error === 'room_unavailable') activeRoomId = '';
                         return;
@@ -470,9 +464,6 @@
     }
 
     function leaveRace(roomId) {
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'C',location:'multiplayer.js:leaveRace',message:'leaveRace called',data:{roomId:String(roomId||''),socketConnected:!!(socket&&socket.connected),prevActiveRoomId:activeRoomId||''},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         activeRoomId = '';
         if (!socket || !socket.connected) {
             // Queue so reconnect can clear server membership (avoids "already in a match").
@@ -537,9 +528,6 @@
                 : (authState.isSignedIn && authState.user && authState.user.id
                     ? String(authState.user.id)
                     : 'guest');
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'A',location:'multiplayer.js:auth.onChange',message:'auth onChange',data:{identity:identity||'',last:lastAuthIdentity||'',willReconnect:!!(identity&&identity!==lastAuthIdentity),hadSocket:!!socket},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             // Clerk fires on token refresh — only tear down when identity actually changes.
             if (!identity || identity === lastAuthIdentity) return;
             lastAuthIdentity = identity;
