@@ -127,13 +127,6 @@
         resizeDescription();
     }
 
-    function setBackgroundInert(isInert) {
-        var appBody = document.getElementById('app-body');
-        if (!appBody) return;
-        if (isInert) appBody.setAttribute('inert', '');
-        else appBody.removeAttribute('inert');
-    }
-
     function setOpen(open) {
         var modal = $('contact-modal');
         var box = $('contact-box');
@@ -146,7 +139,8 @@
             box.classList.add('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'false');
             document.body.dataset.contactOpen = '1';
-            setBackgroundInert(true);
+            // Clear a stuck inert from older builds (inert on #app-body locks the modal too).
+            document.body.removeAttribute('inert');
             closeProblemMenu();
             window.setTimeout(function () {
                 var name = $('contact-name');
@@ -161,7 +155,7 @@
             box.classList.remove('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'true');
             delete document.body.dataset.contactOpen;
-            setBackgroundInert(false);
+            document.body.removeAttribute('inert');
             setBusy(false);
             setStatus('');
         }
