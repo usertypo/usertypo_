@@ -50,24 +50,48 @@ function createAuthServices(env, logger) {
         }
     }
 
+    function xpNeededForLevel(level) {
+        const L = Math.max(1, Math.floor(Number(level) || 1));
+        return Math.max(1, Math.floor(100 * (L ** 1.45)));
+    }
+
+    function percentToNext(xpInto, xpToNext) {
+        const into = Math.max(0, Number(xpInto) || 0);
+        const need = Math.max(1, Number(xpToNext) || 1);
+        return Math.max(0, Math.min(100, Math.round((into / need) * 1000) / 10));
+    }
+
     async function getProfile(userId) {
         if (String(userId || '').startsWith('guest_')) {
-            return { userId, name: 'Guest', avatarUrl: '' };
+            return { userId, name: 'Guest', avatarUrl: '', level: 1, percentToNext: 0 };
         }
         if (!supabase) {
-            return { userId, name: 'Player', avatarUrl: '' };
+            return { userId, name: 'Player', avatarUrl: '', level: 1, percentToNext: 0 };
         }
-        const result = await supabase
-            .from('profiles')
-            .select('user_id,username,display_name,avatar_url')
-            .eq('user_id', userId)
-            .maybeSingle();
-        if (result.error) throw result.error;
-        const row = result.data || {};
+        const [profileResult, progResult] = await Promise.all([
+            supabase
+                .from('profiles')
+                .select('user_id,username,display_name,avatar_url')
+                .eq('user_id', userId)
+                .maybeSingle(),
+            supabase
+                .from('user_progression')
+                .select('level, xp_into_level')
+                .eq('user_id', userId)
+                .maybeSingle(),
+        ]);
+        if (profileResult.error) throw profileResult.error;
+        const row = profileResult.data || {};
+        const prog = (!progResult.error && progResult.data) ? progResult.data : null;
+        const level = Math.max(1, Math.floor(Number(prog && prog.level) || 1));
+        const xpInto = Math.max(0, Math.floor(Number(prog && prog.xp_into_level) || 0));
+        const xpToNext = xpNeededForLevel(level);
         return {
             userId,
             name: row.display_name || row.username || 'Player',
             avatarUrl: row.avatar_url || '',
+            level,
+            percentToNext: percentToNext(xpInto, xpToNext),
         };
     }
 

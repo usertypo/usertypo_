@@ -104,7 +104,9 @@
         if (clickable) extraClass += ' player-level-avatar--clickable';
         var title = opts.title != null ? opts.title : name;
         var idAttr = opts.id ? ' id="' + escapeAttr(opts.id) + '"' : '';
-        var userAttr = userId ? ' data-user-id="' + escapeAttr(userId) + '"' : '';
+        // Only attach data-user-id when clickable — otherwise the profile-card
+        // capture handler steals clicks from host/leaderboard parents.
+        var userAttr = clickable ? ' data-user-id="' + escapeAttr(userId) + '"' : '';
         var offset = ringOffset(showLevel ? progress.percentToNext : 0);
         var ringOpacity = showLevel ? '' : ' opacity-0';
 

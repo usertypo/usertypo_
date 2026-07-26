@@ -115,13 +115,13 @@
                 '</div>';
         }
 
-        function playerAvatarHtml(player, size, extraClass) {
+        function playerAvatarHtml(player, size, extraClass, options) {
             if (window.usertypoPlayerAvatar) {
-                return window.usertypoPlayerAvatar.fromPlayer(player, {
+                return window.usertypoPlayerAvatar.fromPlayer(player, Object.assign({
                     size: size || 'md',
                     className: extraClass || '',
                     showLevel: !player.isBot && !(player.userId && String(player.userId).indexOf('guest_') === 0),
-                });
+                }, options || {}));
             }
             if (player.isBot) return botAvatarHtml(extraClass || 'w-9 h-9', 18);
             if (player.avatarUrl) {
@@ -495,6 +495,9 @@
         }
 
         function openHostModal() {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'E',location:'room-race.js:openHostModal',message:'openHostModal reached',data:{hasModal:!!hostModal},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             refreshDomRefs();
             if (!hostModal) return;
             renderHostModalList();
@@ -550,11 +553,22 @@
         }
 
         async function startMatch(force) {
+            var ready = window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState
+                ? window.usertypoMultiplayer.getReadyState()
+                : null;
+            if (ready && ready.userId) selfUserId = ready.userId;
+            isHost = !!(room && room.hostUserId && selfUserId && room.hostUserId === selfUserId);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'D',location:'room-race.js:startMatch',message:'startMatch attempt',data:{force:!!force,isHost:!!isHost,selfUserId:String(selfUserId||''),hostUserId:room&&room.hostUserId||'',roomState:room&&room.state||'',clientState:state},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (!isHost || !roomId) return;
             try {
                 await window.usertypoMultiplayer.startRoom(roomId, !!force);
                 closeStartConfirmModal();
             } catch (error) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'D',location:'room-race.js:startMatch:error',message:'startMatch failed',data:{error:String(error&&error.message||error||''),isHost:!!isHost,selfUserId:String(selfUserId||''),hostUserId:room&&room.hostUserId||'',roomState:room&&room.state||''},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 var message = String(error && error.message || '');
                 if (!force && /not ready/i.test(message)) {
                     openStartConfirmModal();
@@ -1116,7 +1130,7 @@
             var hostAvatarSlot = document.getElementById('lobby-host-avatar-slot')
                 || document.querySelector('#lobby-host .lobby-host-avatar');
             if (hostAvatarSlot && host) {
-                hostAvatarSlot.innerHTML = playerAvatarHtml(host, 'host', 'lobby-host-level-avatar');
+                hostAvatarSlot.innerHTML = playerAvatarHtml(host, 'host', 'lobby-host-level-avatar', { clickable: false });
                 hostAvatarSlot.classList.remove('opacity-0');
             }
             if (hostWrap) hostWrap.classList.toggle('is-ready', !!(host && host.ready));
@@ -1160,13 +1174,11 @@
             if (!window.usertypoProgression || typeof window.usertypoProgression.attachToList !== 'function') {
                 return false;
             }
-            var needed = room.players.some(function (player) {
-                return player && player.userId && !player.isBot
-                    && String(player.userId).indexOf('guest_') !== 0
-                    && (player.level == null || player.percentToNext == null);
-            });
-            if (!needed) return false;
-            await window.usertypoProgression.attachToList(room.players, 'userId');
+            // Always refresh — server used to send placeholder level 1 which skipped enrichment.
+            await window.usertypoProgression.attachToList(room.players, 'userId', { force: true });
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'E',location:'room-race.js:enrichRoomPlayerLevels',message:'levels enriched',data:{players:(room.players||[]).slice(0,8).map(function(p){return{id:String(p.userId||'').slice(0,12),level:p.level,pct:p.percentToNext};})},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return true;
         }
 
@@ -1652,7 +1664,7 @@
             leaderboard.innerHTML = rows.map(function (row, index) {
                 var avatar = row.isBot
                     ? botAvatarHtml('lb-avatar', 16)
-                    : playerAvatarHtml(row, 'sm', 'lb-level-avatar');
+                    : playerAvatarHtml(row, 'sm', 'lb-level-avatar', { clickable: false });
                 return '<div class="lb-pill player-pill' + (row.index === selfIndex ? ' me' : '') +
                     '" data-player-index="' + row.index + '">' +
                     '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
@@ -1882,7 +1894,23 @@
         }
 
         function renderResults(payload) {
-            if (!Array.isArray(payload) || payload[0] !== roomId) return;
+            var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
+            if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
+            if (state === 'finished' && finished) {
+                if (testView) {
+                    testView.classList.add('hidden');
+                    testView.style.display = 'none';
+                }
+                if (lobbyView) {
+                    lobbyView.classList.add('hidden');
+                    lobbyView.style.display = 'none';
+                }
+                statsView.classList.remove('hidden', 'opacity-0');
+                statsView.style.display = 'flex';
+                statsView.classList.add('flex');
+                showStatsView();
+                return;
+            }
             finished = true;
             state = 'finished';
             selfReturnLobby = false;
