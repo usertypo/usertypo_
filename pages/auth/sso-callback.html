@@ -102,9 +102,25 @@ window.__spaPageInit = function () {
         }
     }
 
-    function goTo(path) {
+    function goTo(path, welcomeKind) {
+        if (welcomeKind && typeof window.usertypoSetAuthWelcome === 'function') {
+            window.usertypoSetAuthWelcome(welcomeKind);
+        }
         if (window.navigateTo) window.navigateTo(path || '/');
         else window.location.href = path || '/';
+    }
+
+    function inferWelcomeKind() {
+        try {
+            var state = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
+            var user = state && state.user;
+            if (!user || !user.createdAt) return 'back';
+            var created = new Date(user.createdAt).getTime();
+            if (!isFinite(created)) return 'back';
+            // Brand-new accounts (created in the last 15 minutes) get the first-login welcome.
+            if (Date.now() - created < 15 * 60 * 1000) return 'new';
+        } catch (e) { /* ignore */ }
+        return 'back';
     }
 
     function showUsernameForm(suggested) {
@@ -130,7 +146,7 @@ window.__spaPageInit = function () {
     window.usertypoAuth.handleSsoCallback()
         .then(function (result) {
             if (result && result.status === 'complete') {
-                goTo(result.redirectTo || '/');
+                goTo(result.redirectTo || '/', inferWelcomeKind());
                 return;
             }
             if (result && result.status === 'needs_username') {
@@ -164,7 +180,7 @@ window.__spaPageInit = function () {
 
             window.usertypoAuth.finishOAuthUsername(username)
                 .then(function (result) {
-                    goTo((result && result.redirectTo) || '/');
+                    goTo((result && result.redirectTo) || '/', 'new');
                 })
                 .catch(function (err) {
                     if (submitEl) submitEl.disabled = false;
