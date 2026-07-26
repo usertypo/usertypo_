@@ -387,6 +387,9 @@
         var mine = entries.find(function (entry) {
             return entry && String(entry.userId) === String(myId);
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8b0b5b'},body:JSON.stringify({sessionId:'8b0b5b',runId:'pre',hypothesisId:'R1',location:'leaderboards.js:findMyRankOnBoard',message:'board scan inside api',data:{mode:mode,amount:amount,timeframe:timeframe,myIdPrefix:String(myId).slice(0,8),entryCount:entries.length,source:board&&board.source,found:!!(mine&&mine.rank!=null),rank:mine&&mine.rank,idMatchAny:entries.some(function(e){return e&&String(e.userId)===String(myId);}),sampleIdPrefixes:entries.slice(0,8).map(function(e){return e&&e.userId?String(e.userId).slice(0,8):'?';})},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         if (!mine || mine.rank == null) return null;
 
         return {
