@@ -243,6 +243,16 @@
             white-space: nowrap; 
         }
 
+        /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
+        body.typing-rtl #text-container,
+        body.typing-rtl #typing-area {
+            direction: rtl;
+        }
+        body.typing-rtl #text-container .word {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+        }
+
         /* --- FIXED DYNAMIC CONFIG BAR --- */
         #config-bar.is-open > div {
             width: 12rem !important;
@@ -1932,15 +1942,22 @@ window.setTimeout = function(handler, timeout) {
                     textContainer.style.opacity = '1';
 
                     // --- KEYMAP RENDER ---
-                    const s = window.usertypo_settings || {};
+                    const s = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
                     const kl = s.keyboardLayout || {};
                     const keymapContainer = document.getElementById('dynamic-keymap-container');
                     if (kl.keymapMode && kl.keymapMode !== 'Off') {
                         keymapContainer.classList.remove('hidden');
                         setTimeout(() => keymapContainer.classList.remove('opacity-0'), 10);
                         if (typeof window.renderKeymap === 'function') {
-                            window.renderKeymap(useNumbers, usePunctuation);
+                            const langFile = s.languageContent?.testLanguage
+                                || (typeof currentLanguageFile !== 'undefined' ? currentLanguageFile : 'english');
+                            window.renderKeymap(useNumbers, usePunctuation, langFile);
                             updateKeymapHighlight();
+                        }
+                        if (typeof window.usertypo_settingsApi?.syncTypingScrollForKeymap === 'function') {
+                            window.usertypo_settingsApi.syncTypingScrollForKeymap(true);
+                        } else if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                            window.usertypo_unlockStatsScroll();
                         }
                         // Center the entire test section (pill â†’ text â†’ keymap â†’ shortcuts) in viewport
                         setTimeout(() => {
@@ -1956,6 +1973,9 @@ window.setTimeout = function(handler, timeout) {
                     } else {
                         keymapContainer.classList.add('opacity-0');
                         setTimeout(() => keymapContainer.classList.add('hidden'), 300);
+                        if (typeof window.usertypo_settingsApi?.syncTypingScrollForKeymap === 'function') {
+                            window.usertypo_settingsApi.syncTypingScrollForKeymap(false);
+                        }
                     }
 
                     setTimeout(() => { isRestarting = false; }, 300);
@@ -1979,6 +1999,12 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function renderText() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection(
+                    (window.usertypo_settings?.languageContent?.testLanguage)
+                    || (typeof currentLanguageFile !== 'undefined' ? currentLanguageFile : 'english')
+                );
+            }
             const wordsToRemove = textContainer.querySelectorAll('.word');
             wordsToRemove.forEach(w => w.remove());
 
@@ -2063,15 +2089,15 @@ window.setTimeout = function(handler, timeout) {
             if (tapeMode === 'word' || tapeMode === 'letter') {
                 const containerWidth = typingArea.clientWidth;
                 const centerOffset = containerWidth / 2;
+                const containerRect = textContainer.getBoundingClientRect();
+                const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
 
                 if (tapeMode === 'word') {
-                    // Center the current word
-                    const wordOffsetLeft = currentWordEl.offsetLeft;
-                    const wordWidth = currentWordEl.offsetWidth;
-                    const translateX = centerOffset - wordOffsetLeft - (wordWidth / 2);
+                    const wordRect = currentWordEl.getBoundingClientRect();
+                    const wordLeft = wordRect.left - containerRect.left;
+                    const translateX = centerOffset - wordLeft - (wordRect.width / 2);
                     textContainer.style.transform = `translateX(${translateX}px)`;
                 } else if (tapeMode === 'letter') {
-                    // Center the current character
                     let targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
                     let isAfter = false;
 
@@ -2083,12 +2109,12 @@ window.setTimeout = function(handler, timeout) {
                         targetEl = currentWordEl;
                     }
 
-                    let targetOffsetLeft = targetEl.offsetLeft;
-                    if (isAfter) {
-                        targetOffsetLeft += targetEl.offsetWidth;
-                    }
+                    const targetRect = targetEl.getBoundingClientRect();
+                    const targetLeft = (typeof window.getCaretOffsetLeft === 'function')
+                        ? window.getCaretOffsetLeft(targetRect, containerRect, isAfter, isRtl)
+                        : (targetRect.left - containerRect.left + (isAfter ? targetRect.width : 0));
 
-                    const translateX = centerOffset - targetOffsetLeft;
+                    const translateX = centerOffset - targetLeft;
                     textContainer.style.transform = `translateX(${translateX}px)`;
                 }
                 return;
@@ -2632,13 +2658,12 @@ window.setTimeout = function(handler, timeout) {
 
             const rect = targetEl.getBoundingClientRect();
             const containerRect = textContainer.getBoundingClientRect();
+            const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
 
-            let left = rect.left - containerRect.left;
+            let left = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(rect, containerRect, isAfter, isRtl)
+                : (rect.left - containerRect.left + (isAfter ? rect.width : 0));
             let top = rect.top - containerRect.top;
-
-            if (isAfter) {
-                left += rect.width;
-            }
 
             caret.style.transform = `translate3d(${left}px, ${top}px, 0)`;
             caret.style.width = `${rect.width}px`;
@@ -2864,10 +2889,12 @@ window.setTimeout = function(handler, timeout) {
 
             const rect = targetEl.getBoundingClientRect();
             const containerRect = textContainer.getBoundingClientRect();
+            const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
 
-            let left = rect.left - containerRect.left;
+            let left = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(rect, containerRect, isAfter, isRtl)
+                : (rect.left - containerRect.left + (isAfter ? rect.width : 0));
             let top = rect.top - containerRect.top;
-            if (isAfter) left += rect.width;
 
             if (!animate) {
                 paceCaretEl.style.transition = 'none';
@@ -2960,15 +2987,19 @@ window.setTimeout = function(handler, timeout) {
 
             // Handle Dynamic Legend
             if (kl.keymapLegend === 'Dynamic') {
-                const isShiftExpected = generatedWords[currentWordIndex] && generatedWords[currentWordIndex][currentCharIndex] && generatedWords[currentWordIndex][currentCharIndex].match(/[A-Z]/);
+                const isShiftExpected = generatedWords[currentWordIndex] && generatedWords[currentWordIndex][currentCharIndex] && /[A-Z\u0400-\u04FF\u0370-\u03FF]/.test(generatedWords[currentWordIndex][currentCharIndex]);
                 const isShiftPressed = (pressedKey === 'Shift' && isKeyDown) || window.event?.shiftKey;
 
                 const isUpper = kl.keymapMode === 'Next' ? isShiftExpected : isShiftPressed;
 
                 keys.forEach(k => {
                     const mainTextEl = k.querySelector('.keymap-main-text');
-                    if (mainTextEl && mainTextEl.innerText.length === 1) {
+                    if (mainTextEl && mainTextEl.innerText.length >= 1) {
                         mainTextEl.innerText = isUpper ? mainTextEl.innerText.toUpperCase() : mainTextEl.innerText.toLowerCase();
+                    }
+                    const qwertyEl = k.querySelector('.keymap-qwerty-text');
+                    if (qwertyEl && qwertyEl.innerText.length === 1) {
+                        qwertyEl.innerText = isUpper ? qwertyEl.innerText.toUpperCase() : qwertyEl.innerText.toLowerCase();
                     }
                 });
             }
@@ -3446,9 +3477,16 @@ window.setTimeout = function(handler, timeout) {
             const testView = document.getElementById('test-view');
             const statsView = document.getElementById('stats-view');
 
-            // Restore locked viewport for typing view
+            // Restore locked viewport for typing view, then unlock again if keymap is on
             if (typeof window.usertypo_lockTypingScroll === 'function') {
                 window.usertypo_lockTypingScroll();
+            }
+            const klOn = window.usertypo_settings?.keyboardLayout?.keymapMode
+                && window.usertypo_settings.keyboardLayout.keymapMode !== 'Off';
+            if (typeof window.usertypo_settingsApi?.syncTypingScrollForKeymap === 'function') {
+                window.usertypo_settingsApi.syncTypingScrollForKeymap(!!klOn);
+            } else if (klOn && typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
             }
 
             // Scroll back to top

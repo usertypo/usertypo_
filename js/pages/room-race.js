@@ -1265,6 +1265,9 @@
         }
 
         function renderText() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection();
+            }
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             wordOffsets = [];
             var runningOffset = 0;
@@ -1317,6 +1320,7 @@
             if (!currentWord || !typingArea.clientWidth) return;
             var center = typingArea.clientWidth / 2;
             var containerRect = textContainer.getBoundingClientRect();
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             if (getTapeMode() === 'word') {
                 var wordRect = currentWord.getBoundingClientRect();
                 textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
@@ -1330,7 +1334,9 @@
             }
             if (!target) target = currentWord;
             var targetRect = target.getBoundingClientRect();
-            var targetLeft = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var targetLeft = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
+                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
             textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
         }
 
@@ -1365,8 +1371,11 @@
             if (!target) target = wordElement;
             var targetRect = target.getBoundingClientRect();
             var containerRect = textContainer.getBoundingClientRect();
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             element.style.display = 'block';
-            var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var left = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
+                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
             var top = targetRect.top - containerRect.top;
             var caretWidth = targetRect.width;
             if (!caretWidth) {
