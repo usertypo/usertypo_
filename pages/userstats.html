@@ -284,8 +284,9 @@
             transform: scaleY(1.025);
         }
 
-        /* Shared tip — forced to open #expanding-bubble material (also reinforced in settings.js) */
+        /* Shared tip — identical open-menu material as #expanding-bubble (no glass-panel gradient) */
         .usertypo-menu-pill-tip {
+            box-sizing: border-box;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 999px !important;
             background: var(--theme-menu-bg) !important;
@@ -294,7 +295,7 @@
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            color: var(--theme-text, #f3f3f9) !important;
+            color: var(--theme-text) !important;
             font-family: "Roboto Mono", monospace;
             pointer-events: none;
             white-space: nowrap;
@@ -307,6 +308,7 @@
             bottom: calc(var(--bar-height) + 0.5rem);
             transform: translateX(-50%) translateY(0.25rem);
             padding: 0.4rem 0.7rem;
+            box-sizing: border-box;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 999px !important;
             background: var(--theme-menu-bg) !important;
@@ -315,7 +317,7 @@
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            color: var(--theme-text, #f3f3f9) !important;
+            color: var(--theme-text) !important;
             font-family: "Roboto Mono", monospace;
             font-size: 0.65rem;
             white-space: nowrap;
@@ -561,28 +563,28 @@
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                         <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-tests-tooltip">0 Tests Taken</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                         <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-time-tooltip">0 Seconds of Typing</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                         <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-words-tooltip">0 Words Typed</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                         <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-rank-tooltip">Loading global rank…</span>
                         </div>
                     </div>
@@ -978,7 +980,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="hotspot-float-tip" class="usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm" aria-hidden="true"></div>
+                <div id="hotspot-float-tip" class="usertypo-menu-pill-tip" aria-hidden="true"></div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
             <div class="col-span-12 glass-panel p-6 rounded-xl opacity-0 animate-fade-in-up [animation-delay:350ms]">
@@ -1590,13 +1592,16 @@ if ('scrollRestoration' in history) {
             async function loadUserRank() {
                 var display = document.getElementById('stat-rank-display');
                 var tooltip = document.getElementById('stat-rank-tooltip');
+                var rankContext = { mode: 'time', amount: 30, timeframe: 'alltime' };
+
                 if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
                     if (display) display.textContent = '—';
                     if (tooltip) tooltip.textContent = 'Global rank unavailable';
                     return;
                 }
 
-                var rankContext = { mode: 'time', amount: 30, timeframe: 'alltime' };
+                if (display) display.textContent = '…';
+                if (tooltip) tooltip.textContent = 'Loading all-time timed 30s rank…';
 
                 try {
                     await window.usertypoAuth.ready();
@@ -1608,6 +1613,30 @@ if ('scrollRestoration' in history) {
 
                     var result = await window.usertypoLeaderboards.getMyRank(rankContext);
                     window.usertypoLeaderboards.renderRankStat(display, tooltip, result, rankContext);
+
+                    // If still empty, force one more board scan (same list as /leaderboards).
+                    if (!result || result.rank == null) {
+                        if (typeof window.usertypoLeaderboards.getLeaderboard === 'function') {
+                            var board = await window.usertypoLeaderboards.getLeaderboard({
+                                mode: 'time',
+                                amount: 30,
+                                timeframe: 'alltime',
+                                limit: 100,
+                            });
+                            var myId = state.user && state.user.id;
+                            var mine = (board.entries || []).find(function (entry) {
+                                return entry && myId && String(entry.userId) === String(myId);
+                            });
+                            if (mine && mine.rank != null) {
+                                window.usertypoLeaderboards.renderRankStat(display, tooltip, {
+                                    rank: mine.rank,
+                                    wpm: mine.wpm,
+                                    accuracy: mine.accuracy,
+                                    totalPlayers: Math.max((board.entries || []).length, Number(mine.rank) || 0),
+                                }, rankContext);
+                            }
+                        }
+                    }
                 } catch (err) {
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';
@@ -2150,9 +2179,11 @@ if ('scrollRestoration' in history) {
                 let currentX = 0, currentY = 0; // current lerp position
                 let offX = 0, offY = 0;
                 let lastInsertBefore = null;
+                let lastDragY = null;
                 const LERP = 0.13;              // smoothing factor (0=no follow, 1=instant)
                 const SCROLL_ZONE = 80, SCROLL_SPEED = 13;
-                const SLIDE_MS = 900;
+                const SLIDE_MS = 380;
+                const OVERLAP_RATIO = 0.5;      // swap when half the dragged card overlaps a neighbor
 
                 function captureCardRects() {
                     const map = new Map();
@@ -2183,7 +2214,7 @@ if ('scrollRestoration' in history) {
                             ],
                             {
                                 duration: SLIDE_MS,
-                                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                                easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
                                 fill: 'both',
                             }
                         ).finished.then(function () {
@@ -2253,6 +2284,7 @@ if ('scrollRestoration' in history) {
                 function startDrag(card, startX, startY) {
                     dragCard = card;
                     lastInsertBefore = null;
+                    lastDragY = null;
                     const rect = card.getBoundingClientRect();
                     offX = startX - rect.left;
                     offY = startY - rect.top;
@@ -2294,22 +2326,35 @@ if ('scrollRestoration' in history) {
 
                     if (!dragCard) return;
 
-                    const cloneH = (dragClone && dragClone.offsetHeight) || dragCard.offsetHeight || 1;
-                    // Midpoint of the dragged card — crosses a sibling midpoint when
-                    // roughly half of the dragged card sits on top of that sibling.
-                    const dragMid = targetY + cloneH / 2;
+                    const H = (dragClone && dragClone.offsetHeight) || dragCard.offsetHeight || 1;
+                    const dragTop = targetY;
+                    const dragBottom = targetY + H;
+                    const threshold = H * OVERLAP_RATIO;
+
+                    // Direction from pointer movement — required so a post-swap overlap
+                    // doesn't immediately bounce the card back.
+                    const originTop = dragCard.getBoundingClientRect().top;
+                    const dy = lastDragY == null ? (targetY - originTop) : (targetY - lastDragY);
+                    lastDragY = targetY;
+                    const movingDown = dy > 0.5;
+                    const movingUp = dy < -0.5;
+                    if (!movingDown && !movingUp) return;
 
                     function isMovable(el) {
                         return el && el.classList.contains('sortable-card')
                             && !el.classList.contains('card-static')
-                            && !el.classList.contains('is-dragging');
+                            && el !== dragCard;
                     }
 
+                    function overlapY(r) {
+                        return Math.max(0, Math.min(dragBottom, r.bottom) - Math.max(dragTop, r.top));
+                    }
+
+                    // Swap DOWN when half the dragged card covers the next card.
                     const next = dragCard.nextElementSibling;
-                    if (isMovable(next)) {
+                    if (movingDown && isMovable(next)) {
                         const r = next.getBoundingClientRect();
-                        const sibMid = r.top + r.height / 2;
-                        if (dragMid > sibMid) {
+                        if (overlapY(r) >= threshold) {
                             const firstRects = captureCardRects();
                             next.after(dragCard);
                             lastInsertBefore = dragCard.nextElementSibling;
@@ -2318,11 +2363,11 @@ if ('scrollRestoration' in history) {
                         }
                     }
 
+                    // Swap UP when half the dragged card covers the previous card.
                     const prev = dragCard.previousElementSibling;
-                    if (isMovable(prev)) {
+                    if (movingUp && isMovable(prev)) {
                         const r = prev.getBoundingClientRect();
-                        const sibMid = r.top + r.height / 2;
-                        if (dragMid < sibMid) {
+                        if (overlapY(r) >= threshold) {
                             const firstRects = captureCardRects();
                             sortContainer.insertBefore(dragCard, prev);
                             lastInsertBefore = dragCard.nextElementSibling;

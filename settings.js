@@ -1534,7 +1534,6 @@ function applyThemeSettings(settings) {
         /* ── Glass panels — flat translucent (no light→dark gradient) ── */
         .glass-panel,
         .glass-card,
-        .usertypo-menu-pill-tip,
         #sidebar-menu,
         #expanding-bubble,
         #usertypo-cookie-banner .usertypo-cookie-banner__inner {
@@ -1543,10 +1542,14 @@ function applyThemeSettings(settings) {
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
         }
-        /* Hover pills — same open-menu chrome as #expanding-bubble.is-open */
+        /*
+         * Hover pills share the EXACT open-menu chrome as #expanding-bubble.is-open:
+         * theme-menu-bg fill, 4px blur, 0.05 border, 20/50 shadow.
+         */
         .usertypo-menu-pill-tip,
         .score-distribution-column::after,
-        .testActivity .activity div[aria-label]:hover::after {
+        .testActivity .activity div[aria-label]:hover::after,
+        #expanding-bubble.is-open {
             background: var(--theme-menu-bg) !important;
             background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
@@ -1555,10 +1558,6 @@ function applyThemeSettings(settings) {
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
             color: ${p.textPrimary} !important;
-        }
-        #expanding-bubble.is-open {
-            border-color: rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
         }
         /* Modal / floating boxes need stronger fill so page content doesn't bleed through */
         #contact-box,
