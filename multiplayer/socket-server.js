@@ -688,6 +688,7 @@ function createMultiplayerServer(httpServer, options) {
         player.rawChars = 0;
         player.finalStats = null;
         player.lastSnapshotAt = 0;
+        player.snapshots = [];
         player.anomalyStrikes = 0;
         player.finishedAt = null;
         player.leftMidGame = false;
