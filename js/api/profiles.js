@@ -334,6 +334,22 @@
         return { profile: profile, imageUrl: pickAvatar(refreshed) };
     }
 
+    async function removeMyAvatar() {
+        var user = await requireSignedInUser();
+        if (typeof user.setProfileImage !== 'function') {
+            throw new Error('avatar_upload_unavailable');
+        }
+        await user.setProfileImage({ file: null });
+        if (typeof user.reload === 'function') {
+            await user.reload();
+        }
+        var refreshed = window.usertypoAuth && window.usertypoAuth.getState
+            ? (window.usertypoAuth.getState().user || user)
+            : user;
+        var profile = await ensureMyProfile(refreshed, { force: true });
+        return { profile: profile, imageUrl: null };
+    }
+
     function bindAuthSync() {
         if (!window.usertypoAuth) return;
 
@@ -394,6 +410,7 @@
         setProfileVisibility: setProfileVisibility,
         setUsername: setUsername,
         updateMyAvatar: updateMyAvatar,
+        removeMyAvatar: removeMyAvatar,
         clearCache: clearProfileCache,
     };
 })();
