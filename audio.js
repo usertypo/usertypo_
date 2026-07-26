@@ -3,7 +3,10 @@ const SOUND_PACKS = {
     'NK Cream': ['a.wav', 'b.wav', 'c.wav', 'd.wav', 'e.wav', 'f.wav', 'g.wav', 'h.wav', 'i.wav', 'j.wav', 'k.wav', 'l.wav', 'm.wav', 'n.wav', 'o.wav', 'p.wav', 'q.wav', 'r.wav', 's.wav', 't.wav', 'u.wav', 'v.wav', 'w.wav', 'x.wav', 'y.wav', 'z.wav', 'space.wav', 'enter.wav', 'backspace.wav'],
     'Razer Green Blackwidow Elite': ['key1.wav', 'key2.wav', 'key3.wav', 'key4.wav', 'key5.wav', 'key6.wav', 'space1.wav', 'space2.wav', 'ent.wav', 'back.wav'],
     'Steelseries Apex Pro V2': ['key1.wav', 'key3.wav', 'key4.wav', 'space.wav', 'enter.wav'],
-    'Tealios V2 on PBT': ['key1.wav', 'key2.wav', 'key3.wav', 'key4.wav', 'key5.wav', 'key6.wav', 'space.wav', 'ent.wav', 'back.wav']
+    'Tealios V2 on PBT': ['key1.wav', 'key2.wav', 'key3.wav', 'key4.wav', 'key5.wav', 'key6.wav', 'space.wav', 'ent.wav', 'back.wav'],
+    'Gateron Browns - Revolt': ['Gateron Brown.wav'],
+    'Lincoln Typewriter': ['keystroke.wav', 'space.wav', 'backspace.wav', 'shift.wav', 'katching.wav', 'home.wav'],
+    'Typewriter 1.0 Beta': ['1_newalpha.ogg', '2_newnum.ogg', '3_enter.ogg']
 };
 
 let audioBuffers = {};
@@ -29,9 +32,9 @@ window.loadSoundPack = async function loadSoundPack(packName) {
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
             
             // Simple key mapping based on filename
-            let key = file.replace('.wav', '').toLowerCase();
+            let key = file.replace(/\.(wav|ogg)$/i, '').toLowerCase();
             if (key.includes('space')) key = 'space';
-            else if (key.includes('ent')) key = 'enter';
+            else if (key.includes('enter') || key.includes('katching')) key = 'enter';
             else if (key.includes('back')) key = 'backspace';
             else if (key.match(/^[a-z]$/)) key = key;
             else key = 'generic'; // fallback generic key
