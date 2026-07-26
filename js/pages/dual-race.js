@@ -1422,7 +1422,20 @@
         }
 
         function showResults(payload) {
-            if (!Array.isArray(payload) || payload[0] !== roomId) return;
+            var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'B',location:'dual-race.js:showResults',message:'showResults called',data:{payloadRoom:payloadRoom,localRoomId:String(roomId||''),match:payloadRoom===String(roomId||''),state:state,rows:Array.isArray(payload)&&Array.isArray(payload[2])?payload[2].length:0},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+            if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
+            if (state === 'finished' && latestResults) {
+                // Idempotent — resume + live event may both arrive.
+                testView.classList.add('hidden');
+                testView.style.display = 'none';
+                statsView.classList.remove('hidden', 'opacity-0');
+                statsView.classList.add('flex');
+                statsView.style.display = 'flex';
+                return;
+            }
             state = 'finished';
             latestResults = payload;
             clearInterval(updateTimer);
@@ -1620,7 +1633,21 @@
                 if (payload.config) config = payload.config;
                 leaveStatsForRematch();
             });
-            listen('match-resumed', function () {
+            listen('match-resumed', function (event) {
+                var response = event && event.detail || {};
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'B',location:'dual-race.js:match-resumed',message:'dual match-resumed',data:{state:state,resumeState:response.state||'',hasResults:!!response.results},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+                if (response.state === 'finished' && Array.isArray(response.results)) {
+                    showResults([
+                        roomId,
+                        response.finishReason || 'complete',
+                        response.results,
+                        response.opponentLeft ? 1 : 0,
+                        matchReason || (response.room && response.room.reason) || 'public',
+                    ]);
+                    return;
+                }
                 if (state === 'racing' || state === 'waiting-result') hideMessage();
             });
             listen('ready', function () {
@@ -1630,8 +1657,12 @@
                 state = 'finished';
                 showMessage('Race invalid', 'The server rejected implausible progress.');
             });
-            listen('disconnected', function () {
-                if (state === 'racing' || state === 'joining' || state === 'countdown') {
+            listen('disconnected', function (event) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'A',location:'dual-race.js:disconnected',message:'dual disconnected handler',data:{state:state,willShowLost:state==='racing'||state==='joining'||state==='countdown',reason:event&&event.detail&&event.detail.reason||''},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+                // Avoid flashing "Connection lost" between rematches / brief socket blips.
+                if (state === 'racing') {
                     showMessage('Connection lost', 'Trying to reconnect to the multiplayer server.');
                 }
             });

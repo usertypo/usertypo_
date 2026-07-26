@@ -381,41 +381,43 @@
         return out;
     }
 
-    function needsPublicProgress(row, idKey) {
+    function needsPublicProgress(row, idKey, force) {
         if (!row || !row[idKey]) return false;
         if (String(row[idKey]).indexOf('guest_') === 0) return false;
         if (row.isBot || row.is_bot) return false;
+        if (force) return true;
         return row.level == null || (row.percentToNext == null && row.percent_to_next == null);
     }
 
-    function applyPublicProgress(row, prog) {
+    function applyPublicProgress(row, prog, force) {
         if (!row || !prog) return;
-        if (row.level == null) row.level = prog.level;
-        if (row.percentToNext == null && row.percent_to_next == null) {
+        if (force || row.level == null) row.level = prog.level;
+        if (force || (row.percentToNext == null && row.percent_to_next == null)) {
             row.percentToNext = prog.percentToNext;
         }
-        if (row.xpIntoLevel == null && row.xp_into_level == null) {
+        if (force || (row.xpIntoLevel == null && row.xp_into_level == null)) {
             row.xpIntoLevel = prog.xpIntoLevel;
         }
-        if (row.xpToNext == null && row.xp_to_next == null) {
+        if (force || (row.xpToNext == null && row.xp_to_next == null)) {
             row.xpToNext = prog.xpToNext;
         }
     }
 
     /** Mutate a list of user-like objects with level / percentToNext when missing. */
-    async function attachToList(list, idKey) {
+    async function attachToList(list, idKey, options) {
         var key = idKey || 'userId';
+        var force = !!(options && options.force);
         var rows = Array.isArray(list) ? list : [];
         var missing = [];
         rows.forEach(function (row) {
-            if (needsPublicProgress(row, key)) missing.push(row[key]);
+            if (needsPublicProgress(row, key, force)) missing.push(row[key]);
         });
         if (!missing.length) return rows;
 
         var map = await getPublicBatch(missing);
         rows.forEach(function (row) {
             if (!row || !row[key]) return;
-            applyPublicProgress(row, map[row[key]]);
+            applyPublicProgress(row, map[row[key]], force);
         });
         return rows;
     }

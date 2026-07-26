@@ -12,6 +12,8 @@
     var listings = [];
     var pendingMatches = {};
     var activeRoomId = '';
+    var pendingLeaveRoomId = null;
+    var lastAuthIdentity = null;
 
     function dispatch(name, detail) {
         try {
@@ -101,6 +103,9 @@
             dispatch('connected', { socketId: activeSocket.id });
         });
         activeSocket.on('disconnect', function (reason) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'A',location:'multiplayer.js:disconnect',message:'socket disconnect',data:{reason:String(reason||''),activeRoomId:activeRoomId||''},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             readyState = null;
             dispatch('disconnected', { reason: reason });
         });
@@ -114,11 +119,24 @@
             dispatch('listings', listings.slice());
             if (activeRoomId) {
                 activeSocket.emit('match:resume', activeRoomId, function (response) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'B',location:'multiplayer.js:match-resume',message:'match resume ack',data:{activeRoomId:activeRoomId||'',ok:!!(response&&response.ok),state:response&&response.state||'',hasResults:!!(response&&response.results)},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     if (!response || response.ok === false) {
                         if (response && response.error === 'room_unavailable') activeRoomId = '';
                         return;
                     }
                     dispatch('match-resumed', response);
+                    // Replay finished results after reconnect so dual/room stats can paint.
+                    if (response.state === 'finished' && Array.isArray(response.results)) {
+                        dispatch('race-finished', [
+                            activeRoomId,
+                            response.finishReason || 'complete',
+                            response.results,
+                            response.opponentLeft ? 1 : 0,
+                            (response.room && (response.room.reason || response.room.type)) || '',
+                        ]);
+                    }
                     // Only replay live race-start when the server says the race is still active.
                     // Never invent a new race UI after the room has finished.
                     if (response.race && response.state === 'racing') {
@@ -131,6 +149,15 @@
                         ]);
                     }
                 });
+                if (pendingLeaveRoomId) {
+                    var leaveTarget = pendingLeaveRoomId;
+                    pendingLeaveRoomId = null;
+                    activeSocket.emit('race:leave', leaveTarget, function () { /* best-effort */ });
+                }
+            } else if (pendingLeaveRoomId) {
+                var leaveOnly = pendingLeaveRoomId;
+                pendingLeaveRoomId = null;
+                activeSocket.emit('race:leave', leaveOnly, function () { /* best-effort */ });
             }
         });
         activeSocket.on('multiplayer:error', function (payload) {
@@ -443,8 +470,16 @@
     }
 
     function leaveRace(roomId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'C',location:'multiplayer.js:leaveRace',message:'leaveRace called',data:{roomId:String(roomId||''),socketConnected:!!(socket&&socket.connected),prevActiveRoomId:activeRoomId||''},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         activeRoomId = '';
-        if (!socket || !socket.connected) return Promise.resolve({ ok: true });
+        if (!socket || !socket.connected) {
+            // Queue so reconnect can clear server membership (avoids "already in a match").
+            pendingLeaveRoomId = roomId || pendingLeaveRoomId || '';
+            return Promise.resolve({ ok: true, queued: true });
+        }
+        pendingLeaveRoomId = null;
         return emitAck('race:leave', roomId || '', 2000).catch(function () {
             return { ok: true };
         });
@@ -462,7 +497,13 @@
     }
 
     function joinRoomCode(code) {
-        return emitAck('room:join-code', String(code || ''));
+        return emitAck('room:join-code', String(code || '')).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/already in a match/i.test(message)) throw error;
+            return leaveRace('').then(function () {
+                return emitAck('room:join-code', String(code || ''));
+            });
+        });
     }
 
     function setRoomReady(roomId) {
@@ -490,13 +531,27 @@
     }
 
     if (window.usertypoAuth) {
-        window.usertypoAuth.onChange(function () {
+        window.usertypoAuth.onChange(function (authState) {
+            var identity = !authState || !authState.isLoaded
+                ? null
+                : (authState.isSignedIn && authState.user && authState.user.id
+                    ? String(authState.user.id)
+                    : 'guest');
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95fe41'},body:JSON.stringify({sessionId:'95fe41',runId:'post-fix',hypothesisId:'A',location:'multiplayer.js:auth.onChange',message:'auth onChange',data:{identity:identity||'',last:lastAuthIdentity||'',willReconnect:!!(identity&&identity!==lastAuthIdentity),hadSocket:!!socket},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+            // Clerk fires on token refresh — only tear down when identity actually changes.
+            if (!identity || identity === lastAuthIdentity) return;
+            lastAuthIdentity = identity;
+            if (activeRoomId) {
+                pendingLeaveRoomId = pendingLeaveRoomId || activeRoomId;
+                activeRoomId = '';
+            }
             if (socket) {
                 socket.disconnect();
                 socket = null;
                 readyState = null;
                 pendingMatches = {};
-                activeRoomId = '';
             }
             ensureConnected().catch(function (error) {
                 console.warn('[multiplayer] connect failed:', error && error.message);

@@ -531,6 +531,9 @@ function createMultiplayerServer(httpServer, options) {
             room.type,
         ]);
 
+        // Bots die at finish — humans alone vote rematch / return-to-lobby.
+        if (room.bot) room.bot = null;
+
         if (room.type === 'custom') {
             cancelTimer(room, 'disposeTimer');
             room.returnLobbyVotes = new Set();
@@ -1664,8 +1667,21 @@ function createMultiplayerServer(httpServer, options) {
                 : String(payload || '');
             const force = !!(payload && typeof payload === 'object' && payload.force);
             const room = rooms.get(roomId);
-            if (!room || room.type !== 'custom' || room.hostUserId !== userId || room.state !== 'waiting') {
+            if (!room || room.type !== 'custom') {
+                safeAck(ack, { ok: false, error: 'room_not_found' });
+                return;
+            }
+            if (room.hostUserId !== userId) {
                 safeAck(ack, { ok: false, error: 'forbidden' });
+                return;
+            }
+            // Already starting/racing — treat as success so the host UI does not flash "no permission".
+            if (room.state === 'countdown' || room.state === 'racing') {
+                safeAck(ack, { ok: true, alreadyStarted: true });
+                return;
+            }
+            if (room.state !== 'waiting') {
+                safeAck(ack, { ok: false, error: 'race_not_active' });
                 return;
             }
             const readyPlayers = Array.from(room.players.values()).filter(
