@@ -114,7 +114,9 @@
             return;
         }
         if (!result || result.rank == null) {
-            tooltipEl.textContent = 'Complete a ranked test to appear on the global leaderboard';
+            tooltipEl.textContent = timeframe === 'alltime'
+                ? 'All-time ' + modeLabel + ' rank needs ≥50 completed tests and ≥30 WPM'
+                : 'Complete a ranked ' + modeLabel + ' test to appear on the ' + timeframeLabel + ' leaderboard';
             return;
         }
 
