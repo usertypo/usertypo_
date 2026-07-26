@@ -138,6 +138,16 @@ function loadSettings() {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
     }
 
+    // Sanitize removed languages (e.g. Arabic, Amharic)
+    if (settings.languageContent && settings.languageContent.testLanguage) {
+        if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
+            const valid = ALL_LANGUAGES.some(l => l.file === settings.languageContent.testLanguage);
+            if (!valid) {
+                settings.languageContent.testLanguage = 'english';
+            }
+        }
+    }
+
     if (settings.cursor) {
         // Collapse legacy dual/rooms tape settings into the shared tapeMode.
         if (
