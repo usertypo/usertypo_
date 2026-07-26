@@ -27,6 +27,7 @@
         var completedWords = 0;
         var sequence = 0;
         var totalKeystrokes = 0;
+        var keystrokeTimes = [];
         var errors = 0;
         var lockedAt = null;
         var errorHistory = [];
@@ -998,6 +999,7 @@
             completedWords = 0;
             sequence = 0;
             totalKeystrokes = 0;
+            keystrokeTimes = [];
             errors = 0;
             lockedAt = null;
             errorHistory = [];
@@ -1518,6 +1520,7 @@
             if (lockedAt != null) {
                 if (errorHistory.length >= 20) return;
                 totalKeystrokes += 1;
+                keystrokeTimes.push(Date.now());
                 if (key === ' ' && currentCharIndex >= word.length && words[currentWordIndex + 1]) {
                     errorHistory.push({
                         kind: 'space',
@@ -1541,6 +1544,7 @@
                 return;
             }
             totalKeystrokes += 1;
+            keystrokeTimes.push(Date.now());
             if (key === ' ') {
                 if (currentCharIndex === word.length) {
                     if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
@@ -1811,6 +1815,18 @@
                 ' <span class="text-xs text-slate-500">WPM</span></span></div>';
         }
 
+        function computeConsistencyFromTimes(times) {
+            if (!Array.isArray(times) || times.length < 2) return 100;
+            var intervals = [];
+            for (var i = 1; i < times.length; i += 1) intervals.push(times[i] - times[i - 1]);
+            var mean = intervals.reduce(function (a, b) { return a + b; }, 0) / intervals.length;
+            if (mean <= 0) return 100;
+            var stdDev = Math.sqrt(intervals.map(function (x) { return Math.pow(x - mean, 2); }).reduce(function (a, b) { return a + b; }, 0) / intervals.length);
+            var cov = stdDev / mean;
+            var kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+            return Math.max(0, Math.min(100, Math.round(kogasa)));
+        }
+
         function mapResultRows(results) {
             var profileByIndex = {};
             (room.players || []).forEach(function (player) { profileByIndex[player.index] = player; });
@@ -1825,6 +1841,7 @@
                 var profile = profileByIndex[row[0]] || {};
                 var name = profile.name || row[2] || 'Player';
                 var isBot = !!(profile.isBot || row[1] === 'bot');
+                var isMe = !isBot && (row[1] === selfUserId || Number(row[0]) === selfIndex);
                 return {
                     index: row[0],
                     userId: row[1],
@@ -1836,9 +1853,9 @@
                     isBot: isBot,
                     wpm: Math.round(Number(row[3]) || 0),
                     acc: Math.round((Number(row[4]) || 0) * 10) / 10,
-                    con: Math.round(Number(row[11]) || 0),
+                    con: isMe ? computeConsistencyFromTimes(keystrokeTimes) : Math.round(Number(row[11]) || 0),
                     timeSec: Math.round(Number(row[12]) || 0),
-                    isMe: !isBot && (row[1] === selfUserId || Number(row[0]) === selfIndex),
+                    isMe: isMe,
                 };
             });
         }
