@@ -284,15 +284,16 @@
             transform: scaleY(1.025);
         }
 
-        /* Shared menu-glass pill tip (matches header #expanding-bubble) */
+        /* Shared tip — exact #expanding-bubble.glass-panel open-menu recipe */
         .usertypo-menu-pill-tip {
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 999px !important;
-            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+            background: var(--theme-menu-bg) !important;
+            background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
             color: var(--theme-text, #f3f3f9);
             font-family: "Roboto Mono", monospace;
             pointer-events: none;
@@ -306,13 +307,14 @@
             bottom: calc(var(--bar-height) + 0.5rem);
             transform: translateX(-50%) translateY(0.25rem);
             padding: 0.4rem 0.7rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
             border-radius: 999px;
-            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+            background: var(--theme-menu-bg) !important;
+            background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
             color: var(--theme-text, #f3f3f9);
             font-family: "Roboto Mono", monospace;
             font-size: 0.65rem;
@@ -559,28 +561,28 @@
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                         <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
                             <span id="stat-tests-tooltip">0 Tests Taken</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                         <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
                             <span id="stat-time-tooltip">0 Seconds of Typing</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                         <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
                             <span id="stat-words-tooltip">0 Words Typed</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                         <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
-                        <div class="profile-stat-tip usertypo-menu-pill-tip">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm">
                             <span id="stat-rank-tooltip">Loading global rank…</span>
                         </div>
                     </div>
@@ -976,7 +978,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="hotspot-float-tip" class="usertypo-menu-pill-tip" aria-hidden="true"></div>
+                <div id="hotspot-float-tip" class="usertypo-menu-pill-tip glass-panel bg-surface/85 !backdrop-blur-sm" aria-hidden="true"></div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
             <div class="col-span-12 glass-panel p-6 rounded-xl opacity-0 animate-fade-in-up [animation-delay:350ms]">
@@ -1594,71 +1596,18 @@ if ('scrollRestoration' in history) {
                     return;
                 }
 
+                var rankContext = { mode: 'time', amount: 30, timeframe: 'alltime' };
+
                 try {
                     await window.usertypoAuth.ready();
                     var state = window.usertypoAuth.getState();
                     if (!state.isSignedIn) {
-                        window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, {
-                            mode: 'time',
-                            amount: 30,
-                            timeframe: 'alltime',
-                        });
+                        window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, rankContext);
                         return;
                     }
 
-                    // Prefer the site default board (timed 30s), then fall back across common boards
-                    // so the rank card isn't blank when the user only has scores in another mode.
-                    var boards = [
-                        { mode: 'time', amount: 30 },
-                        { mode: 'time', amount: 60 },
-                        { mode: 'time', amount: 15 },
-                        { mode: 'time', amount: 120 },
-                        { mode: 'words', amount: 25 },
-                        { mode: 'words', amount: 10 },
-                        { mode: 'words', amount: 50 },
-                        { mode: 'words', amount: 100 },
-                    ];
-                    var best = null;
-                    var bestContext = boards[0];
-
-                    for (var i = 0; i < boards.length; i++) {
-                        var ctx = boards[i];
-                        var result = await window.usertypoLeaderboards.getMyRank({
-                            mode: ctx.mode,
-                            amount: ctx.amount,
-                            timeframe: 'alltime',
-                        });
-                        if (result && result.error) {
-                            if (result.error === 'guest' || result.error === 'auth_missing') {
-                                window.usertypoLeaderboards.renderRankStat(display, tooltip, result, {
-                                    mode: ctx.mode,
-                                    amount: ctx.amount,
-                                    timeframe: 'alltime',
-                                });
-                                return;
-                            }
-                            continue;
-                        }
-                        if (result && result.rank != null && isFinite(Number(result.rank)) && Number(result.rank) > 0) {
-                            if (!best || Number(result.rank) < Number(best.rank)) {
-                                best = result;
-                                bestContext = ctx;
-                            }
-                            // First hit on the preferred board is enough
-                            if (i === 0) break;
-                        }
-                    }
-
-                    window.usertypoLeaderboards.renderRankStat(
-                        display,
-                        tooltip,
-                        best || { rank: null, totalPlayers: 0 },
-                        {
-                            mode: bestContext.mode,
-                            amount: bestContext.amount,
-                            timeframe: 'alltime',
-                        }
-                    );
+                    var result = await window.usertypoLeaderboards.getMyRank(rankContext);
+                    window.usertypoLeaderboards.renderRankStat(display, tooltip, result, rankContext);
                 } catch (err) {
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';
@@ -2203,7 +2152,7 @@ if ('scrollRestoration' in history) {
                 let lastInsertBefore = null;
                 const LERP = 0.13;              // smoothing factor (0=no follow, 1=instant)
                 const SCROLL_ZONE = 80, SCROLL_SPEED = 13;
-                const SLIDE_MS = 280;
+                const SLIDE_MS = 520;
 
                 function captureCardRects() {
                     const map = new Map();
@@ -2222,6 +2171,11 @@ if ('scrollRestoration' in history) {
                         const dy = first.top - last.top;
                         if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
 
+                        // Cancel in-flight slides so motion composites smoothly
+                        if (typeof el.getAnimations === 'function') {
+                            el.getAnimations().forEach(function (anim) { anim.cancel(); });
+                        }
+
                         el.classList.add('is-sliding');
                         el.animate(
                             [
@@ -2230,7 +2184,7 @@ if ('scrollRestoration' in history) {
                             ],
                             {
                                 duration: SLIDE_MS,
-                                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
                                 fill: 'both',
                             }
                         ).finished.then(function () {
@@ -2339,35 +2293,57 @@ if ('scrollRestoration' in history) {
                     targetY = e.clientY - offY;
                     autoScroll(e.clientY);
 
-                    // Move the dimmed source card live to the hovered position.
-                    // No separate placeholder — the card itself IS the slot indicator.
+                    if (!dragClone || !dragCard) return;
+
+                    // Use the floating clone's projected rect (cursor-driven target),
+                    // and swap once half of that card overlaps a sibling.
+                    const cloneH = dragClone.offsetHeight || dragCard.offsetHeight || 1;
+                    const cloneW = dragClone.offsetWidth || dragCard.offsetWidth || 1;
+                    const dragRect = {
+                        top: targetY,
+                        bottom: targetY + cloneH,
+                        left: targetX,
+                        right: targetX + cloneW,
+                        height: cloneH,
+                        midY: targetY + cloneH / 2,
+                    };
+
                     const sortables = [...sortContainer.querySelectorAll(
                         '.sortable-card:not(.is-dragging):not(.card-static)'
                     )];
+
+                    let bestSib = null;
+                    let bestOverlap = 0;
                     for (const sib of sortables) {
                         const r = sib.getBoundingClientRect();
-                        if (e.clientY >= r.top && e.clientY <= r.bottom) {
-                            const insertBefore = e.clientY < r.top + r.height / 2;
-                            if (insertBefore) {
-                                if (dragCard.nextElementSibling === sib) break;
-                            } else if (dragCard.previousElementSibling === sib) {
-                                break;
-                            }
-
-                            const nextRef = insertBefore ? sib : sib.nextElementSibling;
-                            if (lastInsertBefore === nextRef) break;
-
-                            const firstRects = captureCardRects();
-                            if (insertBefore) {
-                                sortContainer.insertBefore(dragCard, sib);
-                            } else {
-                                sib.after(dragCard);
-                            }
-                            lastInsertBefore = dragCard.nextElementSibling;
-                            animateCardsFrom(firstRects);
-                            break;
+                        const overlap = Math.max(0, Math.min(dragRect.bottom, r.bottom) - Math.max(dragRect.top, r.top));
+                        if (overlap > bestOverlap) {
+                            bestOverlap = overlap;
+                            bestSib = sib;
                         }
                     }
+
+                    if (!bestSib || bestOverlap < dragRect.height * 0.5) return;
+
+                    const sibRect = bestSib.getBoundingClientRect();
+                    const insertBefore = dragRect.midY < sibRect.top + sibRect.height / 2;
+                    if (insertBefore) {
+                        if (dragCard.nextElementSibling === bestSib) return;
+                    } else if (dragCard.previousElementSibling === bestSib) {
+                        return;
+                    }
+
+                    const nextRef = insertBefore ? bestSib : bestSib.nextElementSibling;
+                    if (lastInsertBefore === nextRef) return;
+
+                    const firstRects = captureCardRects();
+                    if (insertBefore) {
+                        sortContainer.insertBefore(dragCard, bestSib);
+                    } else {
+                        bestSib.after(dragCard);
+                    }
+                    lastInsertBefore = dragCard.nextElementSibling;
+                    animateCardsFrom(firstRects);
                 }
 
                 // Ã¢â€â‚¬Ã¢â€â‚¬ Mouse up / drop Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬

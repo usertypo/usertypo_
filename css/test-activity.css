@@ -297,10 +297,12 @@
     bottom: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+    /* Exact match: #expanding-bubble.glass-panel open menu */
+    background: var(--theme-menu-bg) !important;
+    background-color: var(--theme-menu-bg) !important;
     background-image: none !important;
     color: var(--mt-text-color);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
     border-radius: 999px;
     padding: 0.45rem 0.75rem;
     font-size: 0.75em;
@@ -309,7 +311,7 @@
     pointer-events: none;
     backdrop-filter: blur(4px) !important;
     -webkit-backdrop-filter: blur(4px) !important;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
 }
 
 .testActivity .activity div.tooltip-edge-left[aria-label]:hover::after {

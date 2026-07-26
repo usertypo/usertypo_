@@ -1534,6 +1534,7 @@ function applyThemeSettings(settings) {
         /* ── Glass panels — flat translucent (no light→dark gradient) ── */
         .glass-panel,
         .glass-card,
+        .usertypo-menu-pill-tip,
         #sidebar-menu,
         #expanding-bubble,
         #usertypo-cookie-banner .usertypo-cookie-banner__inner {
