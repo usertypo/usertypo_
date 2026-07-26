@@ -474,7 +474,6 @@
                             <span class="material-symbols-outlined text-white text-[28px]">photo_camera</span>
                         </span>
                     </span>
-                    <input id="profile-avatar-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />
                     <span id="profile-level-badge"
                         class="absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.75rem] h-7 px-2 rounded-full bg-primary text-background-dark text-sm font-black leading-7 text-center shadow-md">1</span>
                 </div>
@@ -1182,66 +1181,28 @@ if ('scrollRestoration' in history) {
 
             function bindProfileAvatarUpload() {
                 var wrap = document.getElementById('profile-avatar-wrap');
-                var input = document.getElementById('profile-avatar-input');
-                if (!wrap || !input || wrap.dataset.bound === '1') return;
+                if (!wrap || wrap.dataset.bound === '1') return;
                 wrap.dataset.bound = '1';
-                var uploading = false;
 
-                function openPicker() {
-                    if (uploading) return;
-                    input.value = '';
-                    input.click();
+                function openMenu() {
+                    if (window.usertypoAvatarEditor && typeof window.usertypoAvatarEditor.open === 'function') {
+                        window.usertypoAvatarEditor.open();
+                        return;
+                    }
+                    if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                        window.usertypoNotifications.showToast('Photo editor unavailable.', 'error');
+                    }
                 }
 
                 wrap.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    openPicker();
+                    openMenu();
                 });
                 wrap.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        openPicker();
-                    }
-                });
-
-                input.addEventListener('change', async function () {
-                    var file = input.files && input.files[0];
-                    if (!file || uploading) return;
-                    if (!window.usertypoProfiles || typeof window.usertypoProfiles.updateMyAvatar !== 'function') {
-                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
-                            window.usertypoNotifications.showToast('Photo upload unavailable.', 'error');
-                        }
-                        return;
-                    }
-                    uploading = true;
-                    wrap.classList.add('opacity-60', 'pointer-events-none');
-                    try {
-                        var result = await window.usertypoProfiles.updateMyAvatar(file);
-                        var avatarEl = document.getElementById('profile-avatar');
-                        var url = (result && result.profile && result.profile.avatar_url)
-                            || (result && result.imageUrl)
-                            || '';
-                        if (avatarEl && url) {
-                            avatarEl.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-                        } else if (avatarEl && window.usertypoPlayerAvatar) {
-                            avatarEl.src = window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL;
-                        }
-                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
-                            window.usertypoNotifications.showToast('Profile photo updated.', 'photo_camera');
-                        }
-                    } catch (err) {
-                        var code = err && err.message ? String(err.message) : '';
-                        var msg = 'Could not update photo.';
-                        if (code === 'file_too_large') msg = 'Image must be 5MB or smaller.';
-                        else if (code === 'invalid_file_type') msg = 'Please choose a PNG, JPEG, WebP, or GIF.';
-                        if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
-                            window.usertypoNotifications.showToast(msg, 'error');
-                        }
-                        console.warn('[usertypo userstats] avatar upload failed', err);
-                    } finally {
-                        uploading = false;
-                        wrap.classList.remove('opacity-60', 'pointer-events-none');
+                        openMenu();
                     }
                 });
             }
