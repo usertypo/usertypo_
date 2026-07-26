@@ -222,7 +222,35 @@ function createMultiplayerServer(httpServer, options) {
         });
     }
 
+    function syncPlayerFromProfile(player) {
+        if (!player || !player.userId) return;
+        const profile = profiles.get(player.userId);
+        if (!profile) return;
+        if (profile.name) player.name = profile.name;
+        if (profile.avatarUrl != null) player.avatarUrl = profile.avatarUrl;
+        if (profile.level != null) player.level = profile.level;
+        if (profile.percentToNext != null) player.percentToNext = profile.percentToNext;
+    }
+
+    async function refreshProfile(userId) {
+        try {
+            const profile = await auth.getProfile(userId);
+            profiles.set(userId, profile);
+            return profile;
+        } catch (error) {
+            logger.warn('[multiplayer] profile refresh failed:', error && error.message);
+            return profiles.get(userId) || {
+                userId,
+                name: 'Player',
+                avatarUrl: '',
+                level: 1,
+                percentToNext: 0,
+            };
+        }
+    }
+
     async function emitRoomState(room, reason) {
+        Array.from(room.players.values()).forEach(syncPlayerFromProfile);
         const base = publicRoomPayload(room, reason || (room.type === 'custom' ? 'custom' : room.type));
         const viewers = Array.from(room.allowedUserIds || []);
         await Promise.all(viewers.map(async (viewerId) => {
@@ -1463,13 +1491,14 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:create', (payload, ack) => {
+        socket.on('room:create', async (payload, ack) => {
             try {
                 // Abandon any stuck/previous membership so browser-back leftovers
                 // cannot permanently block creating a new room.
                 if (userToRoom.has(userId)) {
                     leaveRace(userId, true);
                 }
+                await refreshProfile(userId);
                 const config = normalizeConfig(payload && payload.config);
                 const maxPlayers = clampInteger(payload && payload.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
                 let roomCode;
@@ -1487,50 +1516,72 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:join-code', (code, ack) => {
-            const roomCodeValue = String(code || '').trim();
-            const existingRoomId = userToRoom.get(userId);
-            if (existingRoomId) {
-                const existing = rooms.get(existingRoomId);
-                if (existing && existing.type === 'custom' && existing.roomCode === roomCodeValue) {
-                    safeAck(ack, { ok: true, roomId: existing.id });
+        socket.on('room:join-code', async (code, ack) => {
+            try {
+                const roomCodeValue = String(code || '').trim();
+                const existingRoomId = userToRoom.get(userId);
+                if (existingRoomId) {
+                    const existing = rooms.get(existingRoomId);
+                    if (existing && existing.type === 'custom' && existing.roomCode === roomCodeValue) {
+                        safeAck(ack, { ok: true, roomId: existing.id });
+                        return;
+                    }
+                    // Leave stale/other membership so join isn't permanently blocked.
+                    leaveRace(userId, true);
+                }
+                const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
+                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                    safeAck(ack, { ok: false, error: 'room_not_found' });
                     return;
                 }
-                // Leave stale/other membership so join isn't permanently blocked.
-                leaveRace(userId, true);
-            }
-            const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
-            if (!room || room.type !== 'custom' || room.state !== 'waiting') {
-                safeAck(ack, { ok: false, error: 'room_not_found' });
-                return;
-            }
-            if (!room.players.has(userId)) {
-                if (occupiedSlots(room) >= room.maxPlayers) {
-                    safeAck(ack, { ok: false, error: 'room_full' });
-                    return;
-                }
-                room.allowedUserIds.add(userId);
-                room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profiles.get(userId)));
-                userToRoom.set(userId, room.id);
-            } else {
-                const existingPlayer = room.players.get(userId);
-                if (!existingPlayer || existingPlayer.status === 'left') {
+                if (!room.players.has(userId)) {
                     if (occupiedSlots(room) >= room.maxPlayers) {
                         safeAck(ack, { ok: false, error: 'room_full' });
                         return;
                     }
+                    const profile = await refreshProfile(userId);
                     room.allowedUserIds.add(userId);
-                    room.players.set(userId, createPlayer(
-                        userId,
-                        existingPlayer ? existingPlayer.index : nextPlayerIndex(room),
-                        profiles.get(userId),
-                    ));
+                    room.players.set(userId, createPlayer(userId, nextPlayerIndex(room), profile));
                     userToRoom.set(userId, room.id);
+                } else {
+                    const existingPlayer = room.players.get(userId);
+                    if (!existingPlayer || existingPlayer.status === 'left') {
+                        if (occupiedSlots(room) >= room.maxPlayers) {
+                            safeAck(ack, { ok: false, error: 'room_full' });
+                            return;
+                        }
+                        const profile = await refreshProfile(userId);
+                        room.allowedUserIds.add(userId);
+                        room.players.set(userId, createPlayer(
+                            userId,
+                            existingPlayer ? existingPlayer.index : nextPlayerIndex(room),
+                            profile,
+                        ));
+                        userToRoom.set(userId, room.id);
+                    } else {
+                        // Already seated — refresh level/name before broadcasting.
+                        const profile = await refreshProfile(userId);
+                        if (profile) {
+                            existingPlayer.name = profile.name || existingPlayer.name;
+                            existingPlayer.avatarUrl = profile.avatarUrl || existingPlayer.avatarUrl;
+                            existingPlayer.level = profile.level != null ? profile.level : existingPlayer.level;
+                            existingPlayer.percentToNext = profile.percentToNext != null
+                                ? profile.percentToNext
+                                : existingPlayer.percentToNext;
+                        }
+                    }
                 }
+                // Ensure every seated player has fresh progression for the lobby broadcast.
+                await Promise.all(Array.from(room.players.keys()).map(async (uid) => {
+                    await refreshProfile(uid);
+                    syncPlayerFromProfile(room.players.get(uid));
+                }));
+                touchRoomActivity(room);
+                void emitRoomState(room, 'custom');
+                safeAck(ack, { ok: true, roomId: room.id });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'join_failed' });
             }
-            void emitRoomState(room, 'custom');
-            touchRoomActivity(room);
-            safeAck(ack, { ok: true, roomId: room.id });
         });
 
         socket.on('room:invite', async (payload, ack) => {

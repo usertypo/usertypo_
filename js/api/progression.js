@@ -340,7 +340,8 @@
      * Batch-fetch public level/XP ring data for any players (including strangers).
      * One small RPC (≤50 ids), 2‑minute memory cache, ring % computed client-side.
      */
-    async function getPublicBatch(userIds) {
+    async function getPublicBatch(userIds, options) {
+        var bypassCache = !!(options && options.bypassCache);
         var ids = Array.from(new Set((userIds || []).map(function (id) {
             return String(id || '').trim();
         }).filter(function (id) {
@@ -350,8 +351,9 @@
         var out = {};
         var missing = [];
         ids.forEach(function (id) {
-            var cachedRow = readPublicCache(id);
-            if (cachedRow) {
+            var cachedRow = !bypassCache ? readPublicCache(id) : null;
+            // Never reuse cached level-1 stubs — they stick for 2 minutes and pin strangers at L1.
+            if (cachedRow && !(cachedRow.level <= 1 && !cachedRow.xpIntoLevel && !cachedRow.percentToNext)) {
                 out[id] = cachedRow;
             } else {
                 missing.push(id);
@@ -370,10 +372,7 @@
                     out[userId] = fetched[userId];
                     writePublicCache(userId, fetched[userId]);
                 });
-                // Cache stubs too so missing users aren't re-queried every paint.
-                chunks[c].forEach(function (userId) {
-                    if (!fetched[userId]) writePublicCache(userId, out[userId]);
-                });
+                // Do not cache stubs for misses — retry next paint/enrich.
             }
         } catch (err) {
             console.warn('[usertypo progression] getPublicBatch failed', err);
@@ -386,13 +385,21 @@
         if (String(row[idKey]).indexOf('guest_') === 0) return false;
         if (row.isBot || row.is_bot) return false;
         if (force) return true;
-        return row.level == null || (row.percentToNext == null && row.percent_to_next == null);
+        return row.level == null || Number(row.level) <= 1
+            || (row.percentToNext == null && row.percent_to_next == null);
     }
 
     function applyPublicProgress(row, prog, force) {
         if (!row || !prog) return;
-        if (force || row.level == null) row.level = prog.level;
-        if (force || (row.percentToNext == null && row.percent_to_next == null)) {
+        var incomingLevel = Math.max(1, Math.floor(Number(prog.level) || 1));
+        var existingLevel = Math.max(1, Math.floor(Number(row.level) || 1));
+        var isStub = incomingLevel <= 1
+            && !(Number(prog.percentToNext) > 0)
+            && !(Number(prog.xpIntoLevel) > 0);
+        // Never clobber a known real level with a stub placeholder.
+        if (isStub && existingLevel > 1) return;
+        if (force || row.level == null || Number(row.level) <= 1) row.level = prog.level;
+        if (force || (row.percentToNext == null && row.percent_to_next == null) || Number(row.level) <= 1) {
             row.percentToNext = prog.percentToNext;
         }
         if (force || (row.xpIntoLevel == null && row.xp_into_level == null)) {
@@ -414,7 +421,7 @@
         });
         if (!missing.length) return rows;
 
-        var map = await getPublicBatch(missing);
+        var map = await getPublicBatch(missing, { bypassCache: force });
         rows.forEach(function (row) {
             if (!row || !row[key]) return;
             applyPublicProgress(row, map[row[key]], force);
