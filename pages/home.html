@@ -1230,7 +1230,7 @@ window.setTimeout = function(handler, timeout) {
         let accDisplay = document.getElementById('acc-display');
         let burstDisplay = document.getElementById('burst-display');
         let wordProgressDisplay = document.getElementById('word-progress');
-        let zenElements = document.querySelectorAll('#spa-content .zen-element');
+        let zenElements = document.querySelectorAll('.zen-element');
         let configBar = document.getElementById('config-bar');
 
         // --- TEST RULES HELPERS ---
@@ -1332,7 +1332,7 @@ window.setTimeout = function(handler, timeout) {
             accDisplay = document.getElementById('acc-display');
             burstDisplay = document.getElementById('burst-display');
             wordProgressDisplay = document.getElementById('word-progress');
-            zenElements = document.querySelectorAll('#spa-content .zen-element');
+            zenElements = document.querySelectorAll('.zen-element');
             configBar = document.getElementById('config-bar');
 
             const savedCaps = sessionStorage.getItem('usertypo_capslock');
@@ -2653,7 +2653,7 @@ window.setTimeout = function(handler, timeout) {
         }
         window.updateCaretPosition = updateCaretPosition;
 
-        // --- PACE CARET (monkeytype-style replay ghost caret) ---
+        // --- PACE CARET (replay ghost caret) ---
         let paceCaretSettings = null;
         let paceCaretStartTimestamp = 0;
         let lastTestWpm = 0;
@@ -3151,22 +3151,18 @@ window.setTimeout = function(handler, timeout) {
                 if (cpsEl) cpsEl.classList.add('hidden');
             }
 
-            // Consistency: standard deviation of keystroke intervals using Monkeytype kogasa formula
-            let consistency = 0;
-            if (typeof keystrokeTimes !== 'undefined' && keystrokeTimes.length > 1) {
-                const intervals = [];
-                for (let i = 1; i < keystrokeTimes.length; i++) {
-                    intervals.push(keystrokeTimes[i] - keystrokeTimes[i - 1]);
+            // Consistency: coefficient of variation of per-second raw WPM mapped via kogasa
+            let consistency = 100;
+            if (rawHistory.length >= 2) {
+                const mean = rawHistory.reduce((a, b) => a + b, 0) / rawHistory.length;
+                if (mean > 0) {
+                    const stdDev = Math.sqrt(rawHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawHistory.length);
+                    const cov = stdDev / mean;
+                    const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+                    consistency = Math.max(0, Math.min(100, Math.round(kogasa)));
                 }
-                const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-                const stdDev = Math.sqrt(intervals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / intervals.length);
-                const cov = stdDev / mean;
-                const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-                consistency = Math.max(0, Math.min(100, Math.round(kogasa)));
             }
-            if (isNaN(consistency) || typeof keystrokeTimes === 'undefined' || keystrokeTimes.length <= 1) {
-                consistency = 100;
-            }
+            if (isNaN(consistency)) consistency = 100;
 
             // Check Thresholds
             let failedReason = forcedFailedReason;

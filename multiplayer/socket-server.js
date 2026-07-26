@@ -411,17 +411,21 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function computeConsistencyFromSnapshots(snapshots) {
+        // Compute per-snapshot raw WPM, then apply COV → kogasa
         if (!Array.isArray(snapshots) || snapshots.length < 2) return 100;
-        const intervals = [];
+        const rawWpms = [];
         for (let i = 1; i < snapshots.length; i += 1) {
-            const delta = snapshots[i][3] - snapshots[i - 1][3];
-            if (delta > 0) intervals.push(delta);
+            const dtMs = snapshots[i][3] - snapshots[i - 1][3];
+            if (dtMs <= 0) continue;
+            const deltaKeystrokes = snapshots[i][2] - snapshots[i - 1][2];
+            const dtMin = dtMs / 60000;
+            rawWpms.push(Math.max(0, (deltaKeystrokes / 5) / dtMin));
         }
-        if (intervals.length < 2) return 100;
-        const mean = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
-        if (!mean) return 100;
-        const variance = intervals.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / intervals.length;
-        const cov = Math.sqrt(variance) / mean;
+        if (rawWpms.length < 2) return 100;
+        const mean = rawWpms.reduce((a, b) => a + b, 0) / rawWpms.length;
+        if (mean <= 0) return 100;
+        const stdDev = Math.sqrt(rawWpms.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawWpms.length);
+        const cov = stdDev / mean;
         const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
         return Math.max(0, Math.min(100, Math.round(kogasa)));
     }
