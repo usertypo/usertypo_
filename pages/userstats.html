@@ -27,23 +27,36 @@
             50%       { border-color: rgba(0,208,255,0.7); box-shadow: inset 0 0 30px rgba(0,208,255,0.1); }
         }
 
-        /* Floating drag clone Ã¢â‚¬â€ keeps the card's NATURAL look, just elevated */
+        /* Floating drag clone — keeps the card's NATURAL look, just elevated */
         .drag-clone {
             position: fixed !important;
             z-index: 9999 !important;
             pointer-events: none !important;
             border-radius: 12px !important;
             overflow: hidden !important;
-            /* Elevated depth shadow + subtle cyan border Ã¢â‚¬â€ no background override */
-            box-shadow:
-                0 22px 65px rgba(0,0,0,0.65),
-                0 0 0 1px rgba(0,208,255,0.32),
-                0 0 38px rgba(0,208,255,0.13) !important;
-            border: 1px solid rgba(0, 208, 255, 0.32) !important;
-            /* Tiny lift scale only */
+            outline: none !important;
+            /* Elevated depth shadow only — no cyan/blue border */
+            box-shadow: 0 22px 65px rgba(0,0,0,0.65) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
             transform: scale(1.02) !important;
             opacity: 0.97 !important;
             will-change: left, top !important;
+        }
+
+        .sortable-card:focus,
+        .sortable-card:focus-visible,
+        .sortable-card.is-dragging,
+        .drag-handle:focus,
+        .drag-handle:focus-visible,
+        .drag-clone:focus,
+        .drag-clone:focus-visible {
+            outline: none !important;
+        }
+
+        .sortable-card.is-sliding {
+            transition: none !important;
+            will-change: transform;
+            z-index: 1;
         }
 
         /* Drag handle */
@@ -271,6 +284,21 @@
             transform: scaleY(1.025);
         }
 
+        /* Shared menu-glass pill tip (matches header #expanding-bubble) */
+        .usertypo-menu-pill-tip {
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 999px !important;
+            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
+            background-image: none !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            color: var(--theme-text, #f3f3f9);
+            font-family: "Roboto Mono", monospace;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
         .score-distribution-column::after {
             content: attr(aria-label);
             position: absolute;
@@ -282,9 +310,9 @@
             border-radius: 999px;
             background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
             background-image: none !important;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
             color: var(--theme-text, #f3f3f9);
             font-family: "Roboto Mono", monospace;
             font-size: 0.65rem;
@@ -347,8 +375,13 @@
         .hotspotsHeatLegend div[data-level="3"] { background: rgba(185, 28, 28, 0.75); }
         .hotspotsHeatLegend div[data-level="4"] { background: rgba(185, 28, 28, 0.92); }
 
+        #hardware-hotspots-card {
+            position: relative;
+            overflow: visible;
+        }
+
         #hardware-hotspots-card #dynamic-keymap-container {
-            overflow: hidden;
+            overflow: visible;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -364,29 +397,64 @@
             max-width: none;
         }
 
+        /* CSS ::after tips disabled — JS float tip stays inside the card */
         #hardware-hotspots-card .hotspot-key-tip {
             position: relative;
         }
         #hardware-hotspots-card .hotspot-key-tip[aria-label]:hover::after {
-            content: attr(aria-label);
+            content: none;
+            display: none;
+        }
+
+        #hotspot-float-tip {
             position: absolute;
-            bottom: calc(100% + 6px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--theme-menu-bg, rgba(26, 29, 35, 0.4)) !important;
-            background-image: none !important;
-            color: var(--theme-text, #f3f3f9);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 999px;
+            left: 0;
+            top: 0;
+            z-index: 80;
             padding: 0.45rem 0.75rem;
             font-size: 0.7rem;
-            font-family: "Roboto Mono", monospace;
-            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, calc(-100% - 6px));
+            transition: opacity 140ms ease, visibility 140ms ease;
+            max-width: calc(100% - 1.5rem);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #hotspot-float-tip.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Profile mini-stat hover pills */
+        .profile-hero-center {
+            position: relative;
+            z-index: 30;
+        }
+        .profile-stat-card {
+            position: relative;
+            z-index: 1;
+        }
+        .profile-stat-card:hover {
             z-index: 50;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+        }
+        .profile-stat-tip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            line-height: 1.25;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 200ms ease, visibility 200ms ease;
+            z-index: 60;
+        }
+        .profile-stat-card:hover .profile-stat-tip {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
@@ -457,7 +525,7 @@
             </div>
             <!-- Center: Profile & Global Stats -->
             <div
-                class="flex flex-col items-center order-1 lg:order-2 opacity-0 animate-fade-in-up [animation-delay:100ms]">
+                class="profile-hero-center flex flex-col items-center order-1 lg:order-2 opacity-0 animate-fade-in-up [animation-delay:100ms]">
                 <div class="relative flex items-center justify-center w-40 h-40 mb-6">
                     <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 40 40" aria-hidden="true">
                         <circle id="profile-xp-track" cx="20" cy="20" r="18" fill="none"
@@ -488,36 +556,32 @@
                     </span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
-                    <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                         <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-tests-tooltip">0 Tests Taken</span>
-                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
-                    <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                         <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-time-tooltip">0 Seconds of Typing</span>
-                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
-                    <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                         <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-words-tooltip">0 Words Typed</span>
-                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
                         </div>
                     </div>
-                    <div class="glass-panel p-4 rounded-lg text-center relative group cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
                         <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                         <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#252932] border border-white/10 rounded shadow-xl text-xs font-headline text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                            <span id="stat-rank-tooltip">Leaderboards coming soon</span>
-                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#252932]"></div>
+                        <div class="profile-stat-tip usertypo-menu-pill-tip">
+                            <span id="stat-rank-tooltip">Loading global rank…</span>
                         </div>
                     </div>
                 </div>
@@ -905,16 +969,17 @@
                             <div class="text-xs text-slate-500 font-headline">—</div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col items-center justify-center overflow-hidden order-1 lg:order-2 py-2">
+                    <div class="flex-1 min-w-0 flex flex-col items-center justify-center order-1 lg:order-2 py-2">
                         <div id="dynamic-keymap-container" class="w-full flex flex-col items-center justify-center">
                             <div id="dynamic-keymap"
                                 class="flex flex-col gap-1.5 items-center justify-center pb-2"></div>
                         </div>
                     </div>
                 </div>
+                <div id="hotspot-float-tip" class="usertypo-menu-pill-tip" aria-hidden="true"></div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
-            <div class="col-span-12 glass-panel p-6 rounded-xl overflow-hidden opacity-0 animate-fade-in-up [animation-delay:350ms]">
+            <div class="col-span-12 glass-panel p-6 rounded-xl opacity-0 animate-fade-in-up [animation-delay:350ms]">
                 <h2 class="font-headline text-lg font-bold mb-6">Activity Tracker</h2>
                 <div id="userstats-test-activity" class="testActivity hidden">
                     <div class="wrapper">
@@ -1535,23 +1600,65 @@ if ('scrollRestoration' in history) {
                     if (!state.isSignedIn) {
                         window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, {
                             mode: 'time',
-                            amount: 60,
+                            amount: 30,
                             timeframe: 'alltime',
                         });
                         return;
                     }
 
-                    var result = await window.usertypoLeaderboards.getMyRank({
-                        mode: 'time',
-                        amount: 60,
-                        timeframe: 'alltime',
-                    });
+                    // Prefer the site default board (timed 30s), then fall back across common boards
+                    // so the rank card isn't blank when the user only has scores in another mode.
+                    var boards = [
+                        { mode: 'time', amount: 30 },
+                        { mode: 'time', amount: 60 },
+                        { mode: 'time', amount: 15 },
+                        { mode: 'time', amount: 120 },
+                        { mode: 'words', amount: 25 },
+                        { mode: 'words', amount: 10 },
+                        { mode: 'words', amount: 50 },
+                        { mode: 'words', amount: 100 },
+                    ];
+                    var best = null;
+                    var bestContext = boards[0];
 
-                    window.usertypoLeaderboards.renderRankStat(display, tooltip, result, {
-                        mode: 'time',
-                        amount: 60,
-                        timeframe: 'alltime',
-                    });
+                    for (var i = 0; i < boards.length; i++) {
+                        var ctx = boards[i];
+                        var result = await window.usertypoLeaderboards.getMyRank({
+                            mode: ctx.mode,
+                            amount: ctx.amount,
+                            timeframe: 'alltime',
+                        });
+                        if (result && result.error) {
+                            if (result.error === 'guest' || result.error === 'auth_missing') {
+                                window.usertypoLeaderboards.renderRankStat(display, tooltip, result, {
+                                    mode: ctx.mode,
+                                    amount: ctx.amount,
+                                    timeframe: 'alltime',
+                                });
+                                return;
+                            }
+                            continue;
+                        }
+                        if (result && result.rank != null && isFinite(Number(result.rank)) && Number(result.rank) > 0) {
+                            if (!best || Number(result.rank) < Number(best.rank)) {
+                                best = result;
+                                bestContext = ctx;
+                            }
+                            // First hit on the preferred board is enough
+                            if (i === 0) break;
+                        }
+                    }
+
+                    window.usertypoLeaderboards.renderRankStat(
+                        display,
+                        tooltip,
+                        best || { rank: null, totalPlayers: 0 },
+                        {
+                            mode: bestContext.mode,
+                            amount: bestContext.amount,
+                            timeframe: 'alltime',
+                        }
+                    );
                 } catch (err) {
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';
@@ -1605,6 +1712,99 @@ if ('scrollRestoration' in history) {
                 return value === ' ' ? 'Space' : String(value == null ? '' : value);
             }
 
+            function bindHotspotFloatTip() {
+                var card = document.getElementById('hardware-hotspots-card');
+                var tip = document.getElementById('hotspot-float-tip');
+                var keymap = document.getElementById('dynamic-keymap');
+                if (!card || !tip || !keymap || tip.dataset.bound === '1') return;
+                tip.dataset.bound = '1';
+
+                var PAD = 10;
+                var hideTimer = null;
+
+                function hideTip() {
+                    tip.classList.remove('is-visible');
+                    tip.setAttribute('aria-hidden', 'true');
+                }
+
+                function positionTip(keyEl) {
+                    var label = keyEl.getAttribute('aria-label');
+                    if (!label) {
+                        hideTip();
+                        return;
+                    }
+
+                    tip.textContent = label;
+                    tip.classList.add('is-visible');
+                    tip.setAttribute('aria-hidden', 'false');
+
+                    // Measure with tip temporarily at origin so size is accurate
+                    tip.style.left = '0px';
+                    tip.style.top = '0px';
+                    tip.style.transform = 'translate(0, 0)';
+
+                    var cardRect = card.getBoundingClientRect();
+                    var keyRect = keyEl.getBoundingClientRect();
+                    var tipW = tip.offsetWidth || 0;
+                    var tipH = tip.offsetHeight || 0;
+
+                    // Prefer centered above the key
+                    var left = (keyRect.left + keyRect.width / 2) - cardRect.left;
+                    var top = (keyRect.top - cardRect.top) - 6;
+
+                    var minLeft = PAD + tipW / 2;
+                    var maxLeft = cardRect.width - PAD - tipW / 2;
+                    if (maxLeft < minLeft) {
+                        left = cardRect.width / 2;
+                    } else {
+                        left = Math.min(Math.max(left, minLeft), maxLeft);
+                    }
+
+                    // Keep the whole pill inside the card vertically
+                    var tipTop = top - tipH;
+                    if (tipTop < PAD) {
+                        // Flip below the key if it won't fit above
+                        top = (keyRect.bottom - cardRect.top) + 6 + tipH;
+                        tipTop = top - tipH;
+                        if (tipTop < PAD) {
+                            top = PAD + tipH;
+                        }
+                    }
+                    var maxTop = cardRect.height - PAD;
+                    if (top > maxTop) top = maxTop;
+
+                    tip.style.left = left + 'px';
+                    tip.style.top = top + 'px';
+                    tip.style.transform = 'translate(-50%, -100%)';
+                }
+
+                keymap.addEventListener('mouseover', function (e) {
+                    var keyEl = e.target && e.target.closest ? e.target.closest('.hotspot-key-tip[aria-label]') : null;
+                    if (!keyEl || !keymap.contains(keyEl)) return;
+                    if (hideTimer) {
+                        clearTimeout(hideTimer);
+                        hideTimer = null;
+                    }
+                    positionTip(keyEl);
+                });
+
+                keymap.addEventListener('mouseout', function (e) {
+                    var related = e.relatedTarget;
+                    if (related && keymap.contains(related) && related.closest && related.closest('.hotspot-key-tip[aria-label]')) {
+                        return;
+                    }
+                    hideTimer = setTimeout(hideTip, 60);
+                });
+
+                keymap.addEventListener('focusin', function (e) {
+                    var keyEl = e.target && e.target.closest ? e.target.closest('.hotspot-key-tip[aria-label]') : null;
+                    if (keyEl) positionTip(keyEl);
+                });
+                keymap.addEventListener('focusout', function () {
+                    hideTimer = setTimeout(hideTip, 60);
+                });
+            }
+
             function renderHardwareHotspots(agg) {
                 var keymap = document.getElementById('dynamic-keymap');
                 if (typeof window.renderKeymap === 'function') {
@@ -1618,6 +1818,8 @@ if ('scrollRestoration' in history) {
                 if (keymap && window.usertypoDiagnostics && typeof window.usertypoDiagnostics.applyKeyHeatmap === 'function') {
                     window.usertypoDiagnostics.applyKeyHeatmap(keymap, counts, { topN: 15 });
                 }
+
+                bindHotspotFloatTip();
 
                 var rowEl = document.getElementById('hotspot-top-chars-row');
                 var listEl = document.getElementById('hotspot-top-chars-list');
@@ -1998,8 +2200,48 @@ if ('scrollRestoration' in history) {
                 let targetX = 0, targetY = 0;   // where cursor wants the clone
                 let currentX = 0, currentY = 0; // current lerp position
                 let offX = 0, offY = 0;
+                let lastInsertBefore = null;
                 const LERP = 0.13;              // smoothing factor (0=no follow, 1=instant)
                 const SCROLL_ZONE = 80, SCROLL_SPEED = 13;
+                const SLIDE_MS = 280;
+
+                function captureCardRects() {
+                    const map = new Map();
+                    sortContainer.querySelectorAll('.sortable-card:not(.card-static)').forEach((el) => {
+                        map.set(el, el.getBoundingClientRect());
+                    });
+                    return map;
+                }
+
+                function animateCardsFrom(firstRects) {
+                    sortContainer.querySelectorAll('.sortable-card:not(.is-dragging):not(.card-static)').forEach((el) => {
+                        const first = firstRects.get(el);
+                        if (!first) return;
+                        const last = el.getBoundingClientRect();
+                        const dx = first.left - last.left;
+                        const dy = first.top - last.top;
+                        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+                        el.classList.add('is-sliding');
+                        el.animate(
+                            [
+                                { transform: 'translate(' + dx + 'px, ' + dy + 'px)' },
+                                { transform: 'translate(0, 0)' },
+                            ],
+                            {
+                                duration: SLIDE_MS,
+                                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                                fill: 'both',
+                            }
+                        ).finished.then(function () {
+                            el.classList.remove('is-sliding');
+                            el.style.transform = '';
+                        }).catch(function () {
+                            el.classList.remove('is-sliding');
+                            el.style.transform = '';
+                        });
+                    });
+                }
 
                 // Ã¢â€â‚¬Ã¢â€â‚¬ Setup cards Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                 Array.from(sortContainer.children).forEach((card, i) => {
@@ -2057,6 +2299,7 @@ if ('scrollRestoration' in history) {
                 // Ã¢â€â‚¬Ã¢â€â‚¬ Drag start Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                 function startDrag(card, startX, startY) {
                     dragCard = card;
+                    lastInsertBefore = null;
                     const rect = card.getBoundingClientRect();
                     offX = startX - rect.left;
                     offY = startY - rect.top;
@@ -2065,12 +2308,15 @@ if ('scrollRestoration' in history) {
 
                     // 1. Clone FIRST (before dimming) so clone has all original classes
                     dragClone = card.cloneNode(true);
-                    // Keep card's own classes (rounded-xl, glass-panel, p-6Ã¢â‚¬Â¦) + add drag-clone
+                    // Keep card's own classes (rounded-xl, glass-panel, p-6…) + add drag-clone
                     dragClone.className = card.className + ' drag-clone';
                     dragClone.style.width = rect.width + 'px';
                     dragClone.style.height = rect.height + 'px';
                     dragClone.style.left = currentX + 'px';
                     dragClone.style.top = currentY + 'px';
+                    dragClone.style.outline = 'none';
+                    dragClone.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                    dragClone.style.boxShadow = '0 22px 65px rgba(0,0,0,0.65)';
                     // Remove handle icon from clone
                     const cloneHandles = dragClone.querySelectorAll('.drag-handle');
                     cloneHandles.forEach(h => h.remove());
@@ -2094,18 +2340,31 @@ if ('scrollRestoration' in history) {
                     autoScroll(e.clientY);
 
                     // Move the dimmed source card live to the hovered position.
-                    // No separate placeholder Ã¢â‚¬â€ the card itself IS the slot indicator.
+                    // No separate placeholder — the card itself IS the slot indicator.
                     const sortables = [...sortContainer.querySelectorAll(
                         '.sortable-card:not(.is-dragging):not(.card-static)'
                     )];
                     for (const sib of sortables) {
                         const r = sib.getBoundingClientRect();
                         if (e.clientY >= r.top && e.clientY <= r.bottom) {
-                            if (e.clientY < r.top + r.height / 2) {
+                            const insertBefore = e.clientY < r.top + r.height / 2;
+                            if (insertBefore) {
+                                if (dragCard.nextElementSibling === sib) break;
+                            } else if (dragCard.previousElementSibling === sib) {
+                                break;
+                            }
+
+                            const nextRef = insertBefore ? sib : sib.nextElementSibling;
+                            if (lastInsertBefore === nextRef) break;
+
+                            const firstRects = captureCardRects();
+                            if (insertBefore) {
                                 sortContainer.insertBefore(dragCard, sib);
                             } else {
                                 sib.after(dragCard);
                             }
+                            lastInsertBefore = dragCard.nextElementSibling;
+                            animateCardsFrom(firstRects);
                             break;
                         }
                     }
@@ -2118,6 +2377,7 @@ if ('scrollRestoration' in history) {
                     cancelAnimationFrame(rafId);
                     cancelAnimationFrame(scrollRAF);
                     rafId = scrollRAF = null;
+                    lastInsertBefore = null;
 
                     if (!dragCard || !dragClone) return;
 

@@ -27,4 +27,17 @@ window.USERTYPO_CONFIG = {
         // Leave blank when Socket.IO is served by the same origin.
         url: '',
     },
+    analytics: {
+        // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
+        ga4MeasurementId: '',
+    },
+    ads: {
+        monetag: {
+            // Set enabled: true and paste your Monetag zone script details when ready.
+            enabled: false,
+            scriptSrc: '',
+            zoneId: '',
+            sdk: '',
+        },
+    },
 };
