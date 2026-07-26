@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- SPA Shell: For direct URL access / refresh on any route, configure the server to serve this file for all paths. See _redirects. -->
 <html lang="en">
 
@@ -336,6 +336,19 @@
         }
         .word {
             white-space: nowrap; 
+        }
+
+        /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
+        body.typing-rtl #text-container,
+        body.typing-rtl #typing-area,
+        body.typing-rtl #room-text-container,
+        body.typing-rtl #room-typing-area {
+            direction: rtl;
+        }
+        body.typing-rtl #text-container .word,
+        body.typing-rtl #room-text-container .word {
+            direction: rtl;
+            unicode-bidi: bidi-override;
         }
 
         /* --- FIXED DYNAMIC CONFIG BAR --- */
@@ -1401,10 +1414,11 @@
         </div>
     </div>
 
-    <script src="languages.js?v=3"></script>
+    <script src="languages.js?v=8"></script>
+    <script src="js/keymap-layouts.js?v=3"></script>
     <script src="audio.js"></script>
     <script src="screenshot.js"></script>
-    <script src="settings.js?v=19"></script>
+    <script src="settings.js?v=23"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Config + auth + data API (before router) -->
@@ -1432,11 +1446,11 @@
     <script src="js/api/notifications.js?v=5"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/api/multiplayer.js?v=19"></script>
-    <script src="js/pages/dual-race.js?v=21"></script>
-    <script src="js/pages/room-race.js?v=30"></script>
+    <script src="js/pages/dual-race.js?v=24"></script>
+    <script src="js/pages/room-race.js?v=31"></script>
     <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=74"></script>
-    <script src="js/router.js?v=12"></script>
+    <script src="js/page-fragments.js?v=80"></script>
+    <script src="js/router.js?v=13"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;

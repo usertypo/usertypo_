@@ -129,6 +129,62 @@ let wordList = [
 // Currently loaded language filename
 let currentLanguageFile = 'english';
 
+/**
+ * Languages that read/type right-to-left.
+ */
+function isLanguageRTL(langFile) {
+    const id = String(langFile || currentLanguageFile || 'english').toLowerCase();
+    return (
+        id.startsWith('arabic')
+        || id.startsWith('hebrew')
+        || id.startsWith('urdu')
+        || id.startsWith('persian')
+        || id.startsWith('farsi')
+        || id.startsWith('pashto')
+        || id.startsWith('kurdish')
+    );
+}
+
+/**
+ * Apply LTR/RTL to typing surfaces and body so layout + caret can follow.
+ */
+function applyTypingTextDirection(langFile) {
+    const file = langFile || currentLanguageFile || getSavedLanguage();
+    const rtl = isLanguageRTL(file);
+    if (document.body) {
+        document.body.classList.toggle('typing-rtl', rtl);
+        document.body.dataset.textDirection = rtl ? 'rtl' : 'ltr';
+    }
+    document.querySelectorAll(
+        '#text-container, #room-text-container, #typing-area, #room-typing-area, [data-typing-text]'
+    ).forEach((el) => {
+        el.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+    });
+    return rtl;
+}
+
+/**
+ * Caret X relative to the text container for a character box.
+ * The caret element is sized to the letter width and must use the letter's
+ * left edge so it sits under the glyph (LTR and RTL).
+ * Only "after last letter" differs: LTR goes to the right edge, RTL stays
+ * on the left edge (reading end of the word).
+ */
+function getCaretOffsetLeft(targetRect, containerRect, isAfter, isRtl) {
+    let left = targetRect.left - containerRect.left;
+    if (isAfter && !isRtl) {
+        left += targetRect.width;
+    }
+    return left;
+}
+
+window.isLanguageRTL = isLanguageRTL;
+window.applyTypingTextDirection = applyTypingTextDirection;
+window.getCaretOffsetLeft = getCaretOffsetLeft;
+window.isTypingRTL = function () {
+    return document.body?.dataset?.textDirection === 'rtl' || isLanguageRTL(currentLanguageFile);
+};
+
 // Cache loaded languages to avoid re-fetching
 const _langCache = {};
 
@@ -146,6 +202,7 @@ async function loadLanguage(filename) {
     if (_langCache[filename]) {
         wordList = _langCache[filename];
         currentLanguageFile = filename;
+        applyTypingTextDirection(filename);
         if (window.usertypoAdaptRefine && typeof window.usertypoAdaptRefine.rebuildPool === 'function') {
             window.usertypoAdaptRefine.rebuildPool(wordList);
         }
@@ -169,6 +226,7 @@ async function loadLanguage(filename) {
             _langCache[filename] = wordsArray;
             wordList = wordsArray;
             currentLanguageFile = filename;
+            applyTypingTextDirection(filename);
             if (window.usertypoAdaptRefine && typeof window.usertypoAdaptRefine.rebuildPool === 'function') {
                 window.usertypoAdaptRefine.rebuildPool(wordList);
             }
@@ -204,15 +262,45 @@ function saveLanguage(filename) {
         const settings = JSON.parse(localStorage.getItem('usertypo_settings') || '{}');
         if (!settings.languageContent) settings.languageContent = {};
         settings.languageContent.testLanguage = filename;
+
+        if (!settings.keyboardLayout) settings.keyboardLayout = {};
+        if (typeof window.syncKeymapLayoutForLanguage === 'function') {
+            window.syncKeymapLayoutForLanguage(settings);
+        } else if (typeof window.resolveLanguageKeymapLayout === 'function') {
+            settings.keyboardLayout.keymapLayout = window.resolveLanguageKeymapLayout(filename);
+        }
+        settings.keyboardLayout.keymapLangSyncVersion = 1;
+
         localStorage.setItem('usertypo_settings', JSON.stringify(settings));
-        // Also update the live settings object if available
         if (window.usertypo_settings) {
             if (!window.usertypo_settings.languageContent) window.usertypo_settings.languageContent = {};
             window.usertypo_settings.languageContent.testLanguage = filename;
+            if (!window.usertypo_settings.keyboardLayout) window.usertypo_settings.keyboardLayout = {};
+            window.usertypo_settings.keyboardLayout.keymapLayout = settings.keyboardLayout.keymapLayout;
+            window.usertypo_settings.keyboardLayout.keymapLangSyncVersion = 1;
         }
+        if (typeof currentLanguageFile !== 'undefined') {
+            currentLanguageFile = filename;
+        }
+        applyTypingTextDirection(filename);
+
         if (window.usertypo_settingsApi?.applyFooterSettings) {
-            window.usertypo_settingsApi.applyFooterSettings();
+            window.usertypo_settingsApi.applyFooterSettings(settings);
         }
+
+        // Force keymap redraw with the newly selected language
+        const redraw = () => {
+            if (window.usertypo_settingsApi?.applyKeymapDisplay) {
+                window.usertypo_settingsApi.applyKeymapDisplay(window.usertypo_settings || settings);
+            } else if (typeof window.renderKeymap === 'function') {
+                window.renderKeymap(true, true, filename);
+            }
+        };
+        redraw();
+        // Restart/test re-render can race; redraw again on next frames
+        requestAnimationFrame(redraw);
+        setTimeout(redraw, 50);
+        setTimeout(redraw, 350);
     } catch (e) {
         console.warn('[languages] Failed to save language:', e);
     }
@@ -348,6 +436,11 @@ if (typeof document !== 'undefined') {
                     && window.usertypo_testRuntime.isActive();
                 if (!opts.skipRestart && !testActive && typeof window.restartTest === 'function') {
                     window.restartTest({ randomizeTheme: false });
+                }
+                if (window.usertypo_settingsApi?.applyKeymapDisplay) {
+                    window.usertypo_settingsApi.applyKeymapDisplay();
+                } else if (typeof window.renderKeymap === 'function') {
+                    window.renderKeymap(true, true, saved);
                 }
             });
             

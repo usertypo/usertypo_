@@ -89,12 +89,16 @@
             if (keyboard.keymapLegend === 'Dynamic') {
                 var expected = words[currentWordIndex]?.[currentCharIndex] || '';
                 var uppercase = keyboard.keymapMode === 'Next'
-                    ? /[A-Z]/.test(expected)
+                    ? /[A-Z\u0400-\u04FF\u0370-\u03FF]/.test(expected)
                     : (pressedKey === 'Shift' && isKeyDown);
                 keys.forEach(function (key) {
                     var text = key.querySelector('.keymap-main-text');
-                    if (text && text.textContent.length === 1) {
+                    if (text && text.textContent.length >= 1) {
                         text.textContent = uppercase ? text.textContent.toUpperCase() : text.textContent.toLowerCase();
+                    }
+                    var qwerty = key.querySelector('.keymap-qwerty-text');
+                    if (qwerty && qwerty.textContent.length === 1) {
+                        qwerty.textContent = uppercase ? qwerty.textContent.toUpperCase() : qwerty.textContent.toLowerCase();
                     }
                 });
             }
@@ -188,6 +192,9 @@
         }
 
         function renderPrompt() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection();
+            }
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             wordOffsets = [];
             var runningOffset = 0;
@@ -265,6 +272,7 @@
             if (!currentWord || !typingArea.clientWidth) return;
             var center = typingArea.clientWidth / 2;
             var containerRect = textContainer.getBoundingClientRect();
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             if (getTapeMode() === 'word') {
                 var wordRect = currentWord.getBoundingClientRect();
                 textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
@@ -278,7 +286,9 @@
             }
             if (!target) target = currentWord;
             var targetRect = target.getBoundingClientRect();
-            var targetLeft = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var targetLeft = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
+                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
             textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
         }
 
@@ -313,8 +323,11 @@
             if (!target) target = wordElement;
             var targetRect = target.getBoundingClientRect();
             var containerRect = textContainer.getBoundingClientRect();
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             element.style.display = 'block';
-            var left = targetRect.left - containerRect.left + (after ? targetRect.width : 0);
+            var left = (typeof window.getCaretOffsetLeft === 'function')
+                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
+                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
             var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
             element.style.width = targetRect.width + 'px';

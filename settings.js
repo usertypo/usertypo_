@@ -138,13 +138,32 @@ function loadSettings() {
         settings.soundscape.errorSounds = settings.soundscape.errorSounds ? 'beep' : 'mute';
     }
 
-    // Sanitize removed languages (e.g. Arabic, Amharic)
+    // Sanitize removed / unknown languages
     if (settings.languageContent && settings.languageContent.testLanguage) {
+        const langId = settings.languageContent.testLanguage;
+        let valid = false;
         if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
-            const valid = ALL_LANGUAGES.some(l => l.file === settings.languageContent.testLanguage);
-            if (!valid) {
-                settings.languageContent.testLanguage = 'english';
+            valid = ALL_LANGUAGES.some(l => l.file === langId);
+        }
+        if (!valid && typeof getSettingsPageLanguages === 'function') {
+            try {
+                valid = getSettingsPageLanguages().some(l => l.file === langId);
+            } catch (e) { /* ignore */ }
+        }
+        if (!valid && typeof window.resolveLanguageKeymapLayout === 'function') {
+            // Keep languages we have a keymap for even if the wordlist list is stale
+            const layout = window.resolveLanguageKeymapLayout(langId);
+            valid = layout && layout !== 'QWERTY' ? true : valid;
+            if (langId === 'english' || String(langId).startsWith('english')
+                || String(langId).startsWith('dutch')
+                || String(langId).startsWith('indonesian')
+                || String(langId).startsWith('japanese_romaji')
+                || String(langId).startsWith('code_')) {
+                valid = true;
             }
+        }
+        if (!valid) {
+            settings.languageContent.testLanguage = 'english';
         }
     }
 
@@ -183,6 +202,14 @@ function loadSettings() {
     }
     if (settings.keyboardLayout && settings.keyboardLayout.keyboardShortcuts === undefined) {
         settings.keyboardLayout.keyboardShortcuts = true;
+    }
+
+    // One-time: adopt language-appropriate keymap for existing saves
+    if (settings.keyboardLayout && settings.keyboardLayout.keymapLangSyncVersion !== 1) {
+        if (typeof window.syncKeymapLayoutForLanguage === 'function') {
+            window.syncKeymapLayoutForLanguage(settings);
+        }
+        settings.keyboardLayout.keymapLangSyncVersion = 1;
     }
 
     // Look & Feel migrations
@@ -2652,11 +2679,41 @@ function isSettingsKeymapPreviewPage() {
 
 /**
  * Show/hide and render the on-screen keymap for test pages and settings preview.
+ * When the keymap is visible on the typing page, unlock page scroll so the
+ * footer remains reachable.
  */
+function syncTypingScrollForKeymap(keymapOn) {
+    const onTypingPage = !!document.getElementById('typing-area')
+        && !!document.getElementById('test-view')
+        && !document.getElementById('test-view')?.classList.contains('hidden');
+    const onStats = !!document.getElementById('stats-view')
+        && !document.getElementById('stats-view')?.classList.contains('hidden')
+        && document.getElementById('stats-view')?.style.display !== 'none';
+
+    if (!onTypingPage || onStats) return;
+
+    if (keymapOn) {
+        if (typeof window.usertypo_unlockStatsScroll === 'function') {
+            window.usertypo_unlockStatsScroll();
+        }
+        document.body?.classList.add('keymap-scrollable');
+    } else {
+        document.body?.classList.remove('keymap-scrollable');
+        if (typeof window.usertypo_lockTypingScroll === 'function') {
+            window.usertypo_lockTypingScroll();
+        }
+    }
+}
+
 function applyKeymapDisplay(settings) {
     if (!settings) settings = loadSettings();
+    if (typeof window.syncKeymapLayoutForLanguage === 'function') {
+        window.syncKeymapLayoutForLanguage(settings);
+    }
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
     const isOn = kl.keymapMode && kl.keymapMode !== 'Off';
+    const langFile = settings.languageContent?.testLanguage
+        || (typeof currentLanguageFile !== 'undefined' ? currentLanguageFile : 'english');
 
     const testContainers = getTestKeymapContainers();
 
@@ -2669,7 +2726,7 @@ function applyKeymapDisplay(settings) {
         } else {
             const args = getKeymapRenderArgs();
             if (typeof window.renderKeymap === 'function') {
-                window.renderKeymap(args.useNumbers, args.usePunctuation);
+                window.renderKeymap(args.useNumbers, args.usePunctuation, langFile);
             }
             testContainers.forEach(el => {
                 el.classList.remove('hidden');
@@ -2679,10 +2736,11 @@ function applyKeymapDisplay(settings) {
                 requestAnimationFrame(() => window.updateKeymapHighlight());
             }
         }
+        syncTypingScrollForKeymap(isOn);
     }
 
     if (isSettingsKeymapPreviewPage() && typeof window.renderKeymap === 'function') {
-        window.renderKeymap(true, true);
+        window.renderKeymap(true, true, langFile);
     }
 }
 
@@ -2692,6 +2750,10 @@ function applyKeymapDisplay(settings) {
 function applyKeyboardLayoutSettings(settings) {
     if (!settings) settings = loadSettings();
     if (!document.body) return;
+
+    if (typeof window.syncKeymapLayoutForLanguage === 'function') {
+        window.syncKeymapLayoutForLanguage(settings);
+    }
 
     const kl = settings.keyboardLayout || DEFAULTS.keyboardLayout;
     const shortcutsOn = kl.keyboardShortcuts !== false;
@@ -3264,143 +3326,151 @@ document.addEventListener('visibilitychange', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  9. KEYMAP RENDER LOGIC
+//  Layout tables live in js/keymap-layouts.js (loaded before this file).
+//  Main legend = language glyph; small legend = US QWERTY key at that position.
 // ─────────────────────────────────────────────────────────────────────────────
 
-window.keymapLayouts = {
-    QWERTY: [
-        [{ k: '`', s: '~' }, { k: '1', s: '!' }, { k: '2', s: '@' }, { k: '3', s: '#' }, { k: '4', s: '$' }, { k: '5', s: '%' }, { k: '6', s: '^' }, { k: '7', s: '&' }, { k: '8', s: '*' }, { k: '9', s: '(' }, { k: '0', s: ')' }, { k: '-', s: '_' }, { k: '=', s: '+' }, { k: 'Backspace', u: 2 }],
-        [{ k: 'Tab', u: 1.5 }, { k: 'q' }, { k: 'w' }, { k: 'e' }, { k: 'r' }, { k: 't' }, { k: 'y' }, { k: 'u' }, { k: 'i' }, { k: 'o' }, { k: 'p' }, { k: '[', s: '{' }, { k: ']', s: '}' }, { k: '\\', s: '|', u: 1.5 }],
-        [{ k: 'Caps', u: 1.75 }, { k: 'a' }, { k: 's' }, { k: 'd' }, { k: 'f' }, { k: 'g' }, { k: 'h' }, { k: 'j' }, { k: 'k' }, { k: 'l' }, { k: ';', s: ':' }, { k: '\'', s: '"' }, { k: 'Enter', u: 2.25 }],
-        [{ k: 'Shift', u: 2.25 }, { k: 'z' }, { k: 'x' }, { k: 'c' }, { k: 'v' }, { k: 'b' }, { k: 'n' }, { k: 'm' }, { k: ',', s: '<' }, { k: '.', s: '>' }, { k: '/', s: '?' }, { k: 'Shift', u: 2.75 }],
-        [{ k: 'Space', u: 6.25 }]
-    ],
-    Dvorak: [
-        [{ k: '`', s: '~' }, { k: '1', s: '!' }, { k: '2', s: '@' }, { k: '3', s: '#' }, { k: '4', s: '$' }, { k: '5', s: '%' }, { k: '6', s: '^' }, { k: '7', s: '&' }, { k: '8', s: '*' }, { k: '9', s: '(' }, { k: '0', s: ')' }, { k: '[', s: '{' }, { k: ']', s: '}' }, { k: 'Backspace', u: 2 }],
-        [{ k: 'Tab', u: 1.5 }, { k: '\'', s: '"' }, { k: ',', s: '<' }, { k: '.', s: '>' }, { k: 'p' }, { k: 'y' }, { k: 'f' }, { k: 'g' }, { k: 'c' }, { k: 'r' }, { k: 'l' }, { k: '/', s: '?' }, { k: '=', s: '+' }, { k: '\\', s: '|', u: 1.5 }],
-        [{ k: 'Caps', u: 1.75 }, { k: 'a' }, { k: 'o' }, { k: 'e' }, { k: 'u' }, { k: 'i' }, { k: 'd' }, { k: 'h' }, { k: 't' }, { k: 'n' }, { k: 's' }, { k: '-', s: '_' }, { k: 'Enter', u: 2.25 }],
-        [{ k: 'Shift', u: 2.25 }, { k: ';', s: ':' }, { k: 'q' }, { k: 'j' }, { k: 'k' }, { k: 'x' }, { k: 'b' }, { k: 'm' }, { k: 'w' }, { k: 'v' }, { k: 'z' }, { k: 'Shift', u: 2.75 }],
-        [{ k: 'Space', u: 6.25 }]
-    ],
-    Colemak: [
-        [{ k: '`', s: '~' }, { k: '1', s: '!' }, { k: '2', s: '@' }, { k: '3', s: '#' }, { k: '4', s: '$' }, { k: '5', s: '%' }, { k: '6', s: '^' }, { k: '7', s: '&' }, { k: '8', s: '*' }, { k: '9', s: '(' }, { k: '0', s: ')' }, { k: '-', s: '_' }, { k: '=', s: '+' }, { k: 'Backspace', u: 2 }],
-        [{ k: 'Tab', u: 1.5 }, { k: 'q' }, { k: 'w' }, { k: 'f' }, { k: 'p' }, { k: 'g' }, { k: 'j' }, { k: 'l' }, { k: 'u' }, { k: 'y' }, { k: ';', s: ':' }, { k: '[', s: '{' }, { k: ']', s: '}' }, { k: '\\', s: '|', u: 1.5 }],
-        [{ k: 'Backspace', u: 1.75 }, { k: 'a' }, { k: 'r' }, { k: 's' }, { k: 't' }, { k: 'd' }, { k: 'h' }, { k: 'n' }, { k: 'e' }, { k: 'i' }, { k: 'o' }, { k: '\'', s: '"' }, { k: 'Enter', u: 2.25 }],
-        [{ k: 'Shift', u: 2.25 }, { k: 'z' }, { k: 'x' }, { k: 'c' }, { k: 'v' }, { k: 'b' }, { k: 'k' }, { k: 'm' }, { k: ',', s: '<' }, { k: '.', s: '>' }, { k: '/', s: '?' }, { k: 'Shift', u: 2.75 }],
-        [{ k: 'Space', u: 6.25 }]
-    ],
-    AZERTY: [
-        [{ k: '²', s: '' }, { k: '&', s: '1' }, { k: 'é', s: '2' }, { k: '"', s: '3' }, { k: '\'', s: '4' }, { k: '(', s: '5' }, { k: '-', s: '6' }, { k: 'è', s: '7' }, { k: '_', s: '8' }, { k: 'ç', s: '9' }, { k: 'à', s: '0' }, { k: ')', s: '°' }, { k: '=', s: '+' }, { k: 'Backspace', u: 2 }],
-        [{ k: 'Tab', u: 1.5 }, { k: 'a' }, { k: 'z' }, { k: 'e' }, { k: 'r' }, { k: 't' }, { k: 'y' }, { k: 'u' }, { k: 'i' }, { k: 'o' }, { k: 'p' }, { k: '^', s: '¨' }, { k: '$', s: '£' }, { k: '*', s: 'µ', u: 1.5 }],
-        [{ k: 'Caps', u: 1.75 }, { k: 'q' }, { k: 's' }, { k: 'd' }, { k: 'f' }, { k: 'g' }, { k: 'h' }, { k: 'j' }, { k: 'k' }, { k: 'l' }, { k: 'm' }, { k: 'ù', s: '%' }, { k: 'Enter', u: 2.25 }],
-        [{ k: 'Shift', u: 2.25 }, { k: 'w' }, { k: 'x' }, { k: 'c' }, { k: 'v' }, { k: 'b' }, { k: 'n' }, { k: ',', s: '?' }, { k: ';', s: '.' }, { k: ':', s: '/' }, { k: '!', s: '§' }, { k: 'Shift', u: 2.75 }],
-        [{ k: 'Space', u: 6.25 }]
-    ],
-    Workman: [
-        [{ k: '`', s: '~' }, { k: '1', s: '!' }, { k: '2', s: '@' }, { k: '3', s: '#' }, { k: '4', s: '$' }, { k: '5', s: '%' }, { k: '6', s: '^' }, { k: '7', s: '&' }, { k: '8', s: '*' }, { k: '9', s: '(' }, { k: '0', s: ')' }, { k: '-', s: '_' }, { k: '=', s: '+' }, { k: 'Backspace', u: 2 }],
-        [{ k: 'Tab', u: 1.5 }, { k: 'q' }, { k: 'd' }, { k: 'r' }, { k: 'w' }, { k: 'b' }, { k: 'j' }, { k: 'f' }, { k: 'u' }, { k: 'p' }, { k: ';', s: ':' }, { k: '[', s: '{' }, { k: ']', s: '}' }, { k: '\\', s: '|', u: 1.5 }],
-        [{ k: 'Caps', u: 1.75 }, { k: 'a' }, { k: 's' }, { k: 'h' }, { k: 't' }, { k: 'g' }, { k: 'y' }, { k: 'n' }, { k: 'e' }, { k: 'o' }, { k: 'i' }, { k: '\'', s: '"' }, { k: 'Enter', u: 2.25 }],
-        [{ k: 'Shift', u: 2.25 }, { k: 'z' }, { k: 'x' }, { k: 'm' }, { k: 'c' }, { k: 'v' }, { k: 'k' }, { k: 'l' }, { k: ',', s: '<' }, { k: '.', s: '>' }, { k: '/', s: '?' }, { k: 'Shift', u: 2.75 }],
-        [{ k: 'Space', u: 6.25 }]
-    ]
-};
-
-window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
+window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFileOverride) {
     const settings = loadSettings();
-    const kl = settings.keyboardLayout || {};
-    let layout = kl.keymapLayout || 'QWERTY';
-    let legend = kl.keymapLegend || 'Lowercase';
-    let mode = kl.keymapMode || 'Off';
+    if (!settings.keyboardLayout) settings.keyboardLayout = {};
+    const kl = settings.keyboardLayout;
+    const legend = kl.keymapLegend || 'Lowercase';
+
+    const langFile = (typeof window.resolveActiveLanguageFile === 'function')
+        ? window.resolveActiveLanguageFile(langFileOverride || settings.languageContent?.testLanguage)
+        : (langFileOverride || settings.languageContent?.testLanguage || 'english');
+
+    const layoutName = (typeof window.resolveLanguageKeymapLayout === 'function')
+        ? window.resolveLanguageKeymapLayout(langFile)
+        : 'QWERTY';
+
+    // Keep persisted setting aligned with the active language
+    if (kl.keymapLayout !== layoutName) {
+        kl.keymapLayout = layoutName;
+        saveSettings(settings);
+    }
 
     const containers = document.querySelectorAll('#dynamic-keymap');
     if (containers.length === 0) return;
 
-    // In settings view, if we're tweaking it, show it. In test view, if Off, hide it.
-    // The container might be handled differently in index.html vs settings.html
-    // We'll let the parent hide the container in index.html, but renderKeymap handles drawing.
-
-    const layoutData = window.keymapLayouts[layout] || window.keymapLayouts['QWERTY'];
+    let layoutData = null;
+    if (typeof window.getKeymapLayoutData === 'function') {
+        layoutData = window.getKeymapLayoutData(layoutName);
+    } else if (typeof window.getKeymapLayoutDataForLanguage === 'function') {
+        layoutData = window.getKeymapLayoutDataForLanguage(langFile);
+    } else if (window.keymapLayouts) {
+        layoutData = window.keymapLayouts[layoutName] || window.keymapLayouts.QWERTY;
+    }
+    if (!layoutData) {
+        console.warn('[keymap] No layout data for', layoutName, langFile);
+        return;
+    }
 
     let html = '';
 
-    const isPunctuationKey = (k, s) => {
-        const puncChars = '`~-_=+\\[]{}|;\':",./<>?'.split('');
-        return puncChars.includes(k) || (s && puncChars.includes(s));
-    };
+    const isLetterLike = (typeof window.isKeymapLetterLike === 'function')
+        ? window.isKeymapLetterLike
+        : (ch) => typeof ch === 'string' && ch.length === 1 && /[a-zA-Z]/i.test(ch);
+
+    const isModifier = (typeof window.isKeymapModifier === 'function')
+        ? window.isKeymapModifier
+        : (name) => ['Backspace', 'Tab', 'Caps', 'Enter', 'Shift', 'Space'].includes(name);
+
     const isNumberKey = (k, s) => {
-        const numChars = '0123456789'.split('');
+        const numChars = '0123456789';
         return numChars.includes(k) || (s && numChars.includes(s));
     };
 
-    layoutData.forEach((row, rowIndex) => {
-        // Pre-check if row has ANY visible keys
-        let rowHasVisibleKeys = false;
-        row.forEach(keyObj => {
-            let k = keyObj.k;
-            let s = keyObj.s || '';
-            let isLetter = k.length === 1 && /^[a-zA-Z]$/i.test(k);
+    const applyLegend = (text, mode) => {
+        if (!text) return '';
+        if (mode === 'Blank') return '';
+        if (mode === 'Uppercase') return text.toUpperCase();
+        if (mode === 'Lowercase' || mode === 'Dynamic') return text.toLowerCase();
+        return text;
+    };
 
+    layoutData.forEach((row) => {
+        let rowHasVisibleKeys = false;
+        row.forEach((keyObj) => {
+            const k = keyObj.k;
+            const s = keyObj.s || '';
+            const letter = isLetterLike(k);
             let isVisible = true;
             if (usePunctuation) {
-                isVisible = true; // Full keyboard
+                isVisible = true;
             } else if (useNumbers) {
-                isVisible = isLetter || isNumberKey(k, s) || k === 'Space' || k === 'Backspace';
+                isVisible = letter || isNumberKey(k, s) || k === 'Space' || k === 'Backspace';
             } else {
-                isVisible = isLetter || k === 'Space';
+                isVisible = letter || k === 'Space';
             }
             if (isVisible) rowHasVisibleKeys = true;
         });
 
-        // Skip completely empty rows to ensure perfect centering
         if (!rowHasVisibleKeys) return;
 
         html += '<div class="flex gap-[6px] w-full justify-center min-w-max">';
-        row.forEach(keyObj => {
-            let u = keyObj.u || 1;
-            let widthPx = u * 32 + (u - 1) * 6; // Base key size is 32px, gap is 6px
-            let keyText = keyObj.k;
-            let shiftText = keyObj.s || '';
-            let isModifier = keyText.length > 1 && keyText !== 'Space';
+        row.forEach((keyObj) => {
+            const u = keyObj.u || 1;
+            const widthPx = u * 32 + (u - 1) * 6;
+            const rawMain = keyObj.k;
+            const rawQwerty = keyObj.q || '';
+            const modifier = isModifier(rawMain);
 
-            // Check visibility requirement
-            let isLetter = keyText.length === 1 && /^[a-zA-Z]$/i.test(keyText);
+            const letter = isLetterLike(rawMain);
             let isVisible = true;
-
             if (usePunctuation) {
-                isVisible = true; // Full keyboard
+                isVisible = true;
             } else if (useNumbers) {
-                isVisible = isLetter || isNumberKey(keyText, shiftText) || keyText === 'Space' || keyText === 'Backspace';
+                isVisible = letter || isNumberKey(rawMain, keyObj.s || '') || rawMain === 'Space' || rawMain === 'Backspace';
             } else {
-                isVisible = isLetter || keyText === 'Space';
+                isVisible = letter || rawMain === 'Space';
             }
 
-            if (!isModifier && keyText !== 'Space') {
-                if (legend === 'Uppercase') {
-                    keyText = keyText.toUpperCase();
-                } else if (legend === 'Lowercase' || legend === 'Dynamic') {
-                    keyText = keyText.toLowerCase();
-                } else if (legend === 'Blank') {
-                    keyText = '';
-                    shiftText = '';
+            let keyText = '';
+            let qwertyText = '';
+            if (modifier) {
+                keyText = rawMain === 'Space' ? '' : rawMain;
+            } else {
+                keyText = applyLegend(rawMain, legend);
+                qwertyText = applyLegend(rawQwerty, legend);
+                // On plain QWERTY, hide duplicate secondary labels
+                if (layoutName === 'QWERTY' && qwertyText && keyText
+                    && qwertyText.toLowerCase() === keyText.toLowerCase()) {
+                    qwertyText = '';
                 }
-            } else if (keyText === 'Space') {
-                keyText = '';
             }
 
             const visibilityClass = isVisible ? '' : 'hidden';
 
-            // Add data-chars attribute containing both normal and shifted chars
-            const safeK = (keyObj.k || '').replace(/"/g, '&quot;');
-            const safeS = (keyObj.s || '').replace(/"/g, '&quot;');
-            let dataAttr = `data-chars="${safeK}${safeS}"`;
-            if (isModifier || keyObj.k === 'Space') {
-                dataAttr = `data-special="${safeK}"`;
+            let charBag = `${rawMain || ''}${keyObj.s || ''}${rawQwerty || ''}`;
+            if (rawMain && rawMain.length === 1 && isLetterLike(rawMain)) {
+                const up = rawMain.toUpperCase();
+                const lo = rawMain.toLowerCase();
+                if (up !== lo) {
+                    if (!charBag.includes(up)) charBag += up;
+                    if (!charBag.includes(lo)) charBag += lo;
+                }
+            }
+            if (rawQwerty && rawQwerty.length === 1 && /[a-z]/i.test(rawQwerty)) {
+                const up = rawQwerty.toUpperCase();
+                const lo = rawQwerty.toLowerCase();
+                if (!charBag.includes(up)) charBag += up;
+                if (!charBag.includes(lo)) charBag += lo;
             }
 
-            if (isModifier || keyObj.k === 'Space') {
+            let dataAttr = `data-chars="${charBag.replace(/"/g, '&quot;')}"`;
+            if (modifier) {
+                dataAttr = `data-special="${String(rawMain || '').replace(/"/g, '&quot;')}"`;
+            }
+            if (rawQwerty) {
+                dataAttr += ` data-qwerty="${String(rawQwerty).replace(/"/g, '&quot;')}"`;
+            }
+
+            if (modifier) {
                 html += `<div ${dataAttr} style="width: ${widthPx}px" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-semibold text-primary transition-all duration-75">${keyText}</div>`;
-            } else if (shiftText && isVisible) {
+            } else if (qwertyText && isVisible) {
                 html += `<div ${dataAttr} style="width: ${widthPx}px" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-start justify-between p-1 pt-0.5 text-[8.5px] font-semibold text-primary/60 transition-all duration-75 relative">
-                     <span class="keymap-shift-text">${shiftText}</span>
+                     <span class="keymap-shift-text keymap-qwerty-text">${qwertyText}</span>
                      <span class="keymap-main-text text-[10.5px] text-primary leading-none ml-[1px] mb-[1px]">${keyText}</span>
                  </div>`;
             } else {
@@ -3410,7 +3480,11 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true) {
         html += '</div>';
     });
 
-    containers.forEach(c => c.innerHTML = html);
+    containers.forEach((c) => {
+        c.dataset.keymapLayout = layoutName;
+        c.dataset.keymapLanguage = langFile;
+        c.innerHTML = html;
+    });
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3621,6 +3695,7 @@ window.usertypo_settingsApi = {
     applyFooterSettings,
     applyAllSettings,
     applyKeymapDisplay,
+    syncTypingScrollForKeymap,
     refreshActiveTestVisuals,
     reapplyAllSettings: _reapplyAllSettings,
     resetToDefaults,

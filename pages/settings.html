@@ -1167,7 +1167,7 @@
 
                 <!-- Card 8: Keyboard & Layout -->
                 <div class="setting-card" data-category="keyboard-layout"
-                    data-keywords="keymap keyboard shortcuts layout legend qwerty dvorak colemak tab">
+                    data-keywords="keymap keyboard shortcuts layout legend qwerty tab">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -3121,42 +3121,6 @@
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Keymap
-                                                            Layout</label>
-                                                        <div
-                                                            class="info-icon-wrapper group relative flex items-center justify-center">
-                                                            <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
-                                                            <div
-                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case z-10">
-                                                                <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                                    <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
-                                                                    How it works
-                                                                </div>
-                                                                Sets the key arrangement used by the on-screen keyboard.
-                                                                Match this to your physical keyboard layout.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2 flex-wrap" id="keymap-layout-btns"
-                                                        data-setting="keyboardLayout.keymapLayout">
-                                                        <button class="opt-btn active"
-                                                            onclick="selectOpt(this); setTimeout(renderKeymap, 10)">QWERTY</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this); setTimeout(renderKeymap, 10)">Dvorak</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this); setTimeout(renderKeymap, 10)">Colemak</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this); setTimeout(renderKeymap, 10)">AZERTY</button>
-                                                        <button class="opt-btn"
-                                                            onclick="selectOpt(this); setTimeout(renderKeymap, 10)">Workman</button>
-                                                    </div>
-                                                </div>
-                                                <div class="flex flex-col gap-2 relative">
-                                                    <div class="flex items-center gap-2">
-                                                        <label
-                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Keymap
                                                             Legend</label>
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
@@ -3170,8 +3134,9 @@
                                                                         class="material-symbols-outlined text-[14px]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Controls the text shown on keymap keys. Dynamic changes
-                                                                case to match what you need to type next.
+                                                                Large letter = character for the selected language.
+                                                                Small letter = the English QWERTY key that produces it.
+                                                                Dynamic changes case to match what you type next.
                                                             </div>
                                                         </div>
                                                     </div>
