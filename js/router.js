@@ -454,7 +454,16 @@
         }
 
         try {
-            var html = await loadPageHtml(routeConfig.page);
+            var htmlPromise = loadPageHtml(routeConfig.page);
+            var bootPromise = (window.__usertypoBootAwaited)
+                ? Promise.resolve()
+                : (typeof window.usertypoAwaitBootTyping === 'function'
+                    ? window.usertypoAwaitBootTyping()
+                    : Promise.resolve());
+            window.__usertypoBootAwaited = true;
+
+            var html = await htmlPromise;
+            await bootPromise;
 
             var parsed = parseFragment(html);
             injectPageStyles(parsed.styles, path);
