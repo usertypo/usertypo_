@@ -759,7 +759,10 @@ window.__spaPageInit = function() {
         if (btnVerify) btnVerify.classList.remove('hidden');
     }
 
-    function goHomeAfterAuth() {
+    function goHomeAfterAuth(welcomeKind) {
+        if (welcomeKind && typeof window.usertypoSetAuthWelcome === 'function') {
+            window.usertypoSetAuthWelcome(welcomeKind);
+        }
         if (window.navigateTo) {
             window.navigateTo('/');
         } else {
@@ -800,7 +803,7 @@ window.__spaPageInit = function() {
         try {
             const result = await window.usertypoAuth.signInWithPassword(identifier, password);
             if (result.status === 'complete') {
-                goHomeAfterAuth();
+                goHomeAfterAuth('back');
                 return;
             }
             showError(authError, result.message || 'Sign in needs another step.');
@@ -838,7 +841,7 @@ window.__spaPageInit = function() {
         try {
             const result = await window.usertypoAuth.signUpWithPassword({ username, email, password });
             if (result.status === 'complete') {
-                goHomeAfterAuth();
+                goHomeAfterAuth('new');
                 return;
             }
             if (result.status === 'needs_email_verification') {
@@ -876,7 +879,7 @@ window.__spaPageInit = function() {
         try {
             const result = await window.usertypoAuth.verifyEmailCode(code);
             if (result.status === 'complete') {
-                goHomeAfterAuth();
+                goHomeAfterAuth('new');
                 return;
             }
             showError(signupError, result.message || 'Verification failed. Try again.');
