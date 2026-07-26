@@ -52,6 +52,111 @@ app.get('/health-check', (_req, res) => {
     res.status(200).type('text/plain').send('200 OK');
 });
 
+const CONTACT_TO = process.env.CONTACT_TO_EMAIL || 'contactusertypo@gmail.com';
+const CONTACT_ALLOWED_PROBLEMS = new Set([
+    'Report a User',
+    'Report a Bug',
+    'Give Feedback',
+    'Feature Request',
+    'Account Issue',
+    'Other',
+]);
+const contactRateByIp = new Map();
+
+function getClientIp(req) {
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    return forwarded || req.socket.remoteAddress || 'unknown';
+}
+
+function allowContactRequest(ip) {
+    const now = Date.now();
+    const windowMs = 60_000;
+    const maxPerWindow = 5;
+    let entry = contactRateByIp.get(ip);
+    if (!entry || now - entry.windowStart > windowMs) {
+        entry = { windowStart: now, count: 0 };
+        contactRateByIp.set(ip, entry);
+    }
+    entry.count += 1;
+    if (contactRateByIp.size > 2000) {
+        for (const [key, value] of contactRateByIp) {
+            if (now - value.windowStart > windowMs) contactRateByIp.delete(key);
+        }
+    }
+    return entry.count <= maxPerWindow;
+}
+
+app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
+    try {
+        const ip = getClientIp(req);
+        if (!allowContactRequest(ip)) {
+            res.status(429).json({ error: 'Too many messages. Please wait a minute and try again.' });
+            return;
+        }
+
+        const body = req.body && typeof req.body === 'object' ? req.body : {};
+        const name = String(body.name || '').trim().slice(0, 80);
+        const email = String(body.email || '').trim().slice(0, 120);
+        const problem = String(body.problem || '').trim().slice(0, 80);
+        const description = String(body.description || '').trim().slice(0, 4000);
+
+        if (!name) {
+            res.status(400).json({ error: 'Please enter your name.' });
+            return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            res.status(400).json({ error: 'Please enter a valid email.' });
+            return;
+        }
+        if (!CONTACT_ALLOWED_PROBLEMS.has(problem)) {
+            res.status(400).json({ error: 'Please select a problem type.' });
+            return;
+        }
+        if (!description) {
+            res.status(400).json({ error: 'Please add a description.' });
+            return;
+        }
+
+        const payload = {
+            name,
+            email,
+            problem,
+            description,
+            _replyto: email,
+            _subject: problem,
+            _template: 'table',
+        };
+
+        const upstream = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONTACT_TO), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        let upstreamBody = null;
+        try {
+            upstreamBody = await upstream.json();
+        } catch {
+            upstreamBody = null;
+        }
+
+        if (!upstream.ok) {
+            const message = (upstreamBody && (upstreamBody.message || upstreamBody.error))
+                || 'Could not deliver your message right now.';
+            res.status(502).json({ error: String(message) });
+            return;
+        }
+
+        res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error('[contact] failed to send message', error);
+        res.status(500).json({ error: 'Could not send your message. Please try again.' });
+    }
+});
+
 function maybeInjectPublicConfig(source) {
     let output = source;
     if (process.env.SUPABASE_PUBLISHABLE_KEY) {
