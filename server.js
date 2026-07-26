@@ -187,21 +187,20 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             return;
         }
 
-        // Default: FormSubmit (requires one-time Activate Form email click).
-        const origin = String(
-            req.headers.origin
+        // Default: FormSubmit.
+        // Forms are keyed by referring site. Custom domains may be unactivated even when
+        // the Render URL works — always use a known-activated origin for delivery.
+        const formOrigin = String(
+            process.env.CONTACT_FORMSUBMIT_ORIGIN
             || process.env.RENDER_EXTERNAL_URL
-            || process.env.SELF_PING_URL
-            || ''
+            || 'https://usertypo.onrender.com'
         ).replace(/\/+$/, '');
         const formHeaders = {
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            Origin: formOrigin,
+            Referer: formOrigin + '/',
         };
-        if (origin) {
-            formHeaders.Origin = origin;
-            formHeaders.Referer = origin + '/';
-        }
 
         const payload = {
             name,
@@ -237,10 +236,13 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
         if (!upstream.ok || !upstreamSuccess) {
             const needsActivation = /activat/i.test(upstreamMessage);
             const message = needsActivation
-                ? 'Almost ready: check the inbox (and Spam) for contactusertypo@gmail.com, open the FormSubmit email, and click “Activate Form”. Then send again.'
+                ? 'Almost ready: check the inbox (and Spam) for '
+                    + CONTACT_TO
+                    + ', open the FormSubmit email, and click “Activate Form”. Then send again.'
                 : (upstreamMessage || 'Could not deliver your message right now.');
             console.warn('[contact] FormSubmit rejected submission', {
                 status: upstream.status,
+                formOrigin,
                 body: upstreamBody,
             });
             res.status(needsActivation ? 409 : 502).json({ error: message, needsActivation: !!needsActivation });

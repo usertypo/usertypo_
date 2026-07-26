@@ -2113,6 +2113,17 @@ window.setTimeout = function(handler, timeout) {
         document.addEventListener('keydown', (e) => {
             if (window.usertypo_settingsSearch?.isOpen()) return;
             if (window.usertypo_footerPicker?.isOpen()) return;
+            if (document.body.dataset.contactOpen === '1') return;
+            const contactModal = document.getElementById('contact-modal');
+            if (contactModal && !contactModal.classList.contains('opacity-0')) return;
+            const systemConfirm = document.getElementById('system-confirm-modal');
+            if (systemConfirm && !systemConfirm.classList.contains('opacity-0')) return;
+            const activeTypingEl = document.activeElement;
+            if (activeTypingEl && (
+                activeTypingEl.tagName === 'INPUT'
+                || activeTypingEl.tagName === 'TEXTAREA'
+                || activeTypingEl.isContentEditable
+            )) return;
             if (isTyping && !testComplete) {
                 hideZenElements();
             }

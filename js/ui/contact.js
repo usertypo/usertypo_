@@ -127,6 +127,13 @@
         resizeDescription();
     }
 
+    function setBackgroundInert(isInert) {
+        var appBody = document.getElementById('app-body');
+        if (!appBody) return;
+        if (isInert) appBody.setAttribute('inert', '');
+        else appBody.removeAttribute('inert');
+    }
+
     function setOpen(open) {
         var modal = $('contact-modal');
         var box = $('contact-box');
@@ -138,6 +145,8 @@
             box.classList.remove('scale-95', 'opacity-0');
             box.classList.add('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'false');
+            document.body.dataset.contactOpen = '1';
+            setBackgroundInert(true);
             closeProblemMenu();
             window.setTimeout(function () {
                 var name = $('contact-name');
@@ -151,6 +160,8 @@
             box.classList.add('scale-95', 'opacity-0');
             box.classList.remove('scale-100', 'opacity-100');
             modal.setAttribute('aria-hidden', 'true');
+            delete document.body.dataset.contactOpen;
+            setBackgroundInert(false);
             setBusy(false);
             setStatus('');
         }
@@ -338,6 +349,7 @@
     window.usertypoContact = {
         open: openModal,
         close: closeModal,
+        isOpen: isOpen,
         to: CONTACT_TO,
     };
     window.openContactModal = openModal;
