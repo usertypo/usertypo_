@@ -436,7 +436,7 @@ function createMultiplayerServer(httpServer, options) {
         let lastSnapshot = snapshots[0];
         for (let i = 1; i < snapshots.length; i += 1) {
             const dtMs = snapshots[i][3] - lastSnapshot[3];
-            if (dtMs < 950 && i !== snapshots.length - 1) continue;
+            if (dtMs < 950) continue;
             const deltaKeystrokes = snapshots[i][2] - lastSnapshot[2];
             const dtMin = dtMs / 60000;
             if (dtMin > 0) {
