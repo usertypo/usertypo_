@@ -2212,7 +2212,7 @@ if ('scrollRestoration' in history) {
                 const LERP = 0.13;              // smoothing factor (0=no follow, 1=instant)
                 const SCROLL_ZONE = 80, SCROLL_SPEED = 13;
                 const SLIDE_MS = 380;
-                const OVERLAP_RATIO = 0.5;      // swap when half the dragged card overlaps a neighbor
+                const OVERLAP_RATIO = 0.5;      // swap when half the shorter card of the pair overlaps
 
                 function captureCardRects() {
                     const map = new Map();
@@ -2358,7 +2358,6 @@ if ('scrollRestoration' in history) {
                     const H = (dragClone && dragClone.offsetHeight) || dragCard.offsetHeight || 1;
                     const dragTop = targetY;
                     const dragBottom = targetY + H;
-                    const threshold = H * OVERLAP_RATIO;
 
                     // Direction from pointer movement — required so a post-swap overlap
                     // doesn't immediately bounce the card back.
@@ -2379,14 +2378,22 @@ if ('scrollRestoration' in history) {
                         return Math.max(0, Math.min(dragBottom, r.bottom) - Math.max(dragTop, r.top));
                     }
 
-                    // Swap DOWN when half the dragged card covers the next card.
+                    // Threshold vs the shorter of the two cards — a tall drag over a short
+                    // neighbor can never reach 50% of the tall card's height.
+                    function swapThreshold(neighborRect) {
+                        var neighborH = Math.max(1, neighborRect.height || 0);
+                        return Math.min(H, neighborH) * OVERLAP_RATIO;
+                    }
+
+                    // Swap DOWN when half the overlapping pair covers the next card.
                     const next = dragCard.nextElementSibling;
                     if (movingDown && isMovable(next)) {
                         const r = next.getBoundingClientRect();
                         const ov = overlapY(r);
+                        const threshold = swapThreshold(r);
                         // #region agent log
                         if (ov > 0) {
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'D1',location:'userstats.html:onMove:down',message:'down overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),H:Math.round(H),willSwap:ov>=threshold,nextId:next.dataset&&next.dataset.cardId,dragHasTransform:!!dragCard.style.transform,nextHasTransform:!!next.style.transform,nextAnimCount:typeof next.getAnimations==='function'?next.getAnimations().length: -1},timestamp:Date.now()});
+                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D1',location:'userstats.html:onMove:down',message:'down overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),H:Math.round(H),neighborH:Math.round(r.height),willSwap:ov>=threshold,nextId:next.dataset&&next.dataset.cardId,dragHasTransform:!!dragCard.style.transform,nextHasTransform:!!next.style.transform,nextAnimCount:typeof next.getAnimations==='function'?next.getAnimations().length: -1},timestamp:Date.now()});
                         }
                         // #endregion
                         if (ov >= threshold) {
@@ -2395,20 +2402,21 @@ if ('scrollRestoration' in history) {
                             lastInsertBefore = dragCard.nextElementSibling;
                             animateCardsFrom(firstRects);
                             // #region agent log
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'D2',location:'userstats.html:onMove:swappedDown',message:'swapped down',data:{order:[...sortContainer.querySelectorAll('.sortable-card')].map(function(c){return c.dataset.cardId;})},timestamp:Date.now()});
+                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D2',location:'userstats.html:onMove:swappedDown',message:'swapped down',data:{order:[...sortContainer.querySelectorAll('.sortable-card')].map(function(c){return c.dataset.cardId;})},timestamp:Date.now()});
                             // #endregion
                             return;
                         }
                     }
 
-                    // Swap UP when half the dragged card covers the previous card.
+                    // Swap UP when half the overlapping pair covers the previous card.
                     const prev = dragCard.previousElementSibling;
                     if (movingUp && isMovable(prev)) {
                         const r = prev.getBoundingClientRect();
                         const ov = overlapY(r);
+                        const threshold = swapThreshold(r);
                         // #region agent log
                         if (ov > 0) {
-                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'pre',hypothesisId:'D1',location:'userstats.html:onMove:up',message:'up overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),willSwap:ov>=threshold,prevId:prev.dataset&&prev.dataset.cardId},timestamp:Date.now()});
+                            if(window.__agentDebugLog)window.__agentDebugLog({sessionId:'8b0b5b',runId:'post-fix',hypothesisId:'D1',location:'userstats.html:onMove:up',message:'up overlap check',data:{ov:Math.round(ov),threshold:Math.round(threshold),neighborH:Math.round(r.height),willSwap:ov>=threshold,prevId:prev.dataset&&prev.dataset.cardId},timestamp:Date.now()});
                         }
                         // #endregion
                         if (ov >= threshold) {
