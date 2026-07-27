@@ -10,13 +10,12 @@
     <script>window.__usertypoBootPath = window.location.pathname;</script>
     <!-- Blocking: Abyss/Paper by OS before CSS paints (prevents usertypo_ blue FOUC) -->
     <script src="js/boot-theme.js?v=5"></script>
-    <!-- Theme-aware tab icon: pixel o + accent underscore on theme bg -->
+    <!-- Theme-aware tab icon (optional — missing file must not reload the app) -->
     <link id="usertypo-favicon" rel="icon" type="image/png" href="/logo-assets/favicon-o.png" />
-    <script src="js/favicon.js?v=5"></script>
+    <script src="js/favicon.js?v=6"></script>
     <link rel="preload" href="/logo-assets/typ_.png" as="image" />
     <link rel="preload" href="/logo-assets/user.png" as="image" />
     <link rel="preload" href="/logo-assets/o.png" as="image" />
-    <link rel="preload" href="/logo-assets/favicon-o.png" as="image" />
     <link rel="preload" href="/js/boot-typing.js?v=5" as="script" />
     <script>
         (function installAssetRecovery() {
@@ -54,6 +53,8 @@
                 if (!resource) return;
                 let url;
                 try { url = new URL(resource, location.href); } catch (_) { return; }
+                // Optional chrome — never reload the whole app for these
+                if (/favicon/i.test(url.pathname) || /\/logo-assets\/favicon/i.test(url.pathname)) return;
                 const isLocal = url.origin === location.origin;
                 const isCriticalCdn = target.tagName === 'SCRIPT' && url.hostname === 'cdn.tailwindcss.com';
                 if ((!isLocal && !isCriticalCdn) || reloadScheduled) return;
@@ -125,8 +126,8 @@
                             '50%': { opacity: '0' },
                         },
                         breath: {
-                            '0%, 100%': { opacity: '1', textShadow: '0 0 10px rgba(0,208,255,0.6)' },
-                            '50%': { opacity: '0.2', textShadow: '0 0 2px rgba(0,208,255,0.1)' },
+                            '0%, 100%': { opacity: '1', textShadow: '0 0 10px rgba(255,255,255,0.45)' },
+                            '50%': { opacity: '0.2', textShadow: '0 0 2px rgba(255,255,255,0.1)' },
                         },
                         boxFadeIn: {
                             '0%': { opacity: '0' },
@@ -240,8 +241,8 @@
         /* Info button forced-active state (mirrors hover) */
         #graph-info-btn.info-active {
             transform: scale(1.1) !important;
-            box-shadow: 0 0 20px rgba(0, 208, 255, 0.4) !important;
-            border-color: rgba(0, 208, 255, 0.5) !important;
+            box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
+            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
         }
 
         .glass-panel {
@@ -399,8 +400,8 @@
 
         /* Config bar glow */
         #config-bar > div {
-            box-shadow: 0 0 12px rgba(0, 208, 255, 0.35), 0 8px 32px rgba(0,0,0,0.3);
-            border-color: rgba(0, 208, 255, 0.4) !important;
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.35), 0 8px 32px rgba(0,0,0,0.3);
+            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
         }
         
         /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
@@ -840,7 +841,7 @@
             transition: color 120ms ease, text-shadow 120ms ease;
         }
         .spa-boot-text .char.is-typed {
-            text-shadow: 0 0 5px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.4);
+            text-shadow: 0 0 5px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4);
         }
         #spa-boot-caret {
             position: absolute;
@@ -877,13 +878,13 @@
         }
         .header-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
-        .header-typ-layer { background-color: #95efff; -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
-        .header-user-layer { background-color: #ffffff; -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
+        .header-typ-layer { background-color: var(--theme-primary, #ffffff); -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
+        .header-user-layer { background-color: var(--theme-text, #cccccc); -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
         .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; animation: header-fade-o 1s ease-out 0s forwards; }
         .header-typ-wrapper { z-index: 1; animation: header-fade-typ 1s ease-out 0s forwards; }
         .header-user-wrapper { z-index: 2; animation: header-fade-user 1s ease-out 0s forwards; }
-        @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(128, 235, 255, 0)); } 100% { filter: drop-shadow(0 0 6px #95efff) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); } }
-        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); } }
+        @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(var(--theme-primary-rgb, 255, 255, 255), 0)); } 100% { filter: drop-shadow(0 0 6px var(--theme-primary, #ffffff)) drop-shadow(0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.55)); } }
+        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px var(--theme-text, #ffffff)) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); } }
         @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); } }
     
     </style>
@@ -1424,7 +1425,7 @@
     <script src="screenshot.js"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=31"></script>
+    <script src="settings.js?v=32"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Auth + data API (before router) -->
