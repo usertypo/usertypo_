@@ -498,7 +498,7 @@ const THEME_PALETTES = {
 
 window.usertypo_THEME_PALETTES = THEME_PALETTES;
 
-function normalizeHexColor(value, fallback = '#00d0ff') {
+function normalizeHexColor(value, fallback = '#ffffff') {
     if (typeof value !== 'string') return fallback;
     let hex = value.trim();
     if (!hex.startsWith('#')) hex = `#${hex}`;
@@ -1173,7 +1173,9 @@ function _hexToRGB(hex) {
  *   - "typ_" layer  → accentPrimary (theme's accent color)
  *   - "o" layer     → always red (#ff3344) across all themes
  */
-/** Smoothly animate theme color changes for ~500ms. */
+/** Smoothly animate theme color changes for ~500ms (user switches only — never first paint). */
+let __lastAppliedThemeKey = null;
+
 function beginThemeColorTransition() {
     const root = document.documentElement;
     if (!root) return;
@@ -1230,10 +1232,14 @@ function applyThemeSettings(settings) {
     })();
     const onPrimary = _accentLum > 0.55 ? _darkenColor(p.accentPrimary, 65) : '#ffffff';
 
-    // Animate color shifts (skip only when boot CSS has not painted yet)
-    if (document.getElementById('usertypo-boot-theme') || document.getElementById('usertypo-theme-css')) {
+    // Animate only when switching away from an already-applied palette.
+    // First paint (Abyss/Paper boot → saved theme) must be instant — otherwise
+    // hardcoded shell cyan (#00d0ff / #95efff) morphs visibly in the middle.
+    const themeKey = `${themeName}|${p.bgMain}|${p.accentPrimary}|${p.textPrimary}`;
+    if (__lastAppliedThemeKey && __lastAppliedThemeKey !== themeKey) {
         beginThemeColorTransition();
     }
+    __lastAppliedThemeKey = themeKey;
 
     // Escape a Tailwind arbitrary-value class for use inside a CSS stylesheet string
     const _escTw = (cls) => cls
@@ -2139,6 +2145,13 @@ function applyThemeSettings(settings) {
             });
         }
     } catch { /* ignore */ }
+
+    // Tab favicon: o_ with theme bg + accent caret
+    try {
+        if (typeof window.usertypoUpdateFavicon === 'function') {
+            window.usertypoUpdateFavicon(p.bgMain, p.accentPrimary);
+        }
+    } catch { /* ignore */ }
 }
 
 
@@ -2202,8 +2215,8 @@ const SMOOTHNESS_DURATION = {
  *   outline    → hollow box around the character
  */
 function buildCaretCSS(style, smoothness, accentHex, accentRGB) {
-    accentHex = accentHex || '#00d0ff';
-    accentRGB = accentRGB || '0, 208, 255';
+    accentHex = accentHex || '#ffffff';
+    accentRGB = accentRGB || '255, 255, 255';
     const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
     const transition = `transform ${dur} ${ease}, width ${dur} ${ease}, opacity 0.5s ease-in-out`;
