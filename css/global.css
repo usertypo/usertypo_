@@ -119,13 +119,14 @@ html {
     background: rgba(0, 208, 255, 0.4);
 }
 
-/* Header Logo */
+/* Header Logo — rem so chrome tracks html { font-size: clamp(13px, 1.3032vw, 24px) }
+   Reference: ~1440px viewport (1rem ≈ 18.77px). */
 .header-logo-link {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 48px;
-    width: 180px;
+    height: 2.557rem;
+    width: 9.592rem;
     outline: none !important;
     border: none !important;
     background: transparent;
@@ -148,10 +149,10 @@ html {
 
 .header-logo-container {
     position: relative;
-    width: 500px;
-    height: 500px;
+    width: 26.644rem;
+    height: 26.644rem;
     transform: scale(0.5);
-    margin: -250px;
+    margin: -13.322rem;
     flex-shrink: 0;
     pointer-events: none;
 }
@@ -233,7 +234,7 @@ html {
     --pla-badge-min: 1.1rem;
     --pla-badge-h: 1.1rem;
     --pla-badge-px: 0.25rem;
-    --pla-badge-font: 9px;
+    --pla-badge-font: 0.48rem;
     --pla-initial-font: 0.75rem;
     --pla-bot-font: 1.1rem;
     width: var(--pla-size);
@@ -246,7 +247,7 @@ html {
     --pla-badge-min: 0.85rem;
     --pla-badge-h: 0.85rem;
     --pla-badge-px: 0.15rem;
-    --pla-badge-font: 7px;
+    --pla-badge-font: 0.373rem;
     --pla-initial-font: 0.55rem;
     --pla-bot-font: 0.7rem;
 }
@@ -257,7 +258,7 @@ html {
     --pla-badge-min: 0.95rem;
     --pla-badge-h: 0.95rem;
     --pla-badge-px: 0.2rem;
-    --pla-badge-font: 8px;
+    --pla-badge-font: 0.426rem;
     --pla-initial-font: 0.65rem;
     --pla-bot-font: 0.9rem;
 }
@@ -271,7 +272,7 @@ html {
     --pla-badge-min: 1.25rem;
     --pla-badge-h: 1.25rem;
     --pla-badge-px: 0.3rem;
-    --pla-badge-font: 10px;
+    --pla-badge-font: 0.533rem;
     --pla-initial-font: 0.95rem;
     --pla-bot-font: 1.35rem;
 }
@@ -281,7 +282,7 @@ html {
     --pla-badge-min: 1.35rem;
     --pla-badge-h: 1.35rem;
     --pla-badge-px: 0.35rem;
-    --pla-badge-font: 11px;
+    --pla-badge-font: 0.586rem;
     --pla-initial-font: 1.05rem;
     --pla-bot-font: 1.5rem;
 }
@@ -293,7 +294,7 @@ html {
     --pla-badge-min: 1.75rem;
     --pla-badge-h: 1.75rem;
     --pla-badge-px: 0.5rem;
-    --pla-badge-font: 14px;
+    --pla-badge-font: 0.746rem;
     --pla-initial-font: 2rem;
     --pla-bot-font: 2.5rem;
 }
