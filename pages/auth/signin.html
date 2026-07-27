@@ -68,7 +68,7 @@
         /* Header Logo */
 
         /* Side Logo */
-        .side-logo-container { position: relative; width: 500px; height: 500px; transform: scale(1.5); margin: -250px; left: 24px; flex-shrink: 0; pointer-events: none; }
+        .side-logo-container { position: relative; width: 26.644rem; height: 26.644rem; transform: scale(1.5); margin: -13.322rem; left: 1.279rem; flex-shrink: 0; pointer-events: none; }
         .side-logo-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .side-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; opacity: 1; }
         .side-user-layer { background-color: #ffffff; -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
@@ -84,10 +84,10 @@
         
         .side-underscore {
             position: absolute;
-            left: 132px; /* Start position */
-            top: 294px;
-            width: 40px;
-            height: 8px;
+            left: 26.4%; /* Start position — % of logo box so it scales */
+            top: 58.8%;
+            width: 8%;
+            height: 1.6%;
             background-color: #95efff;
             border-radius: 2px;
             z-index: 50;
@@ -96,11 +96,11 @@
         }
 
         @keyframes side-caret-typing {
-            0% { left: 132px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            20%, 25% { left: 176px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            45%, 50% { left: 225px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            70%, 75% { left: 274px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            95%, 100% { left: 326px; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); }
+            0% { left: 26.4%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            20%, 25% { left: 35.2%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            45%, 50% { left: 45%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            70%, 75% { left: 54.8%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            95%, 100% { left: 65.2%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); }
         }
 
         @keyframes side-underscore-breath {
@@ -189,7 +189,7 @@
             justify-content: center;
             gap: 12rem;
             width: 100%;
-            max-width: 1300px;
+            max-width: 69.26rem;
             padding: 0 2rem;
         }
 
@@ -200,14 +200,14 @@
             align-items: center;
             gap: 1.25rem;
             flex: 1;
-            max-width: 440px;
+            max-width: 23.44rem;
         }
 
         /* The form side wrapper for local scrolling */
         #form-side-wrapper {
             position: relative;
             flex: 1;
-            max-width: 440px;
+            max-width: 23.44rem;
             display: flex;
             flex-direction: column;
             align-items: center; /* ensures nested flex elements center */
@@ -471,8 +471,8 @@
             <!-- BRAND SIDE -->
             <div id="brand-side" class="fade-target">
                 <!-- Static logo -->
-                <div style="display: flex; align-items: center; justify-content: center; height: 100px; width: 300px; margin-bottom: 10px;">
-                    <div class="side-logo-container" style="--typing-delay: 1.2s; animation: initialFade 0.6s ease-out 0.6s forwards; opacity: 0; position: relative; width: 500px; height: 500px; transform: scale(1.5); transform-origin: center; left: 24px;">
+                <div style="display: flex; align-items: center; justify-content: center; height: 5.33rem; width: 16rem; margin-bottom: 0.533rem;">
+                    <div class="side-logo-container" style="--typing-delay: 1.2s; animation: initialFade 0.6s ease-out 0.6s forwards; opacity: 0; position: relative; width: 26.644rem; height: 26.644rem; transform: scale(1.5); transform-origin: center; left: 1.279rem;">
                         <div class="side-logo-layer side-user-wrapper">
                             <div class="side-logo-layer side-dynamic-layer side-user-layer"></div>
                         </div>
@@ -633,8 +633,8 @@
             <span class="text-slate-700">·</span>
             <span class="text-slate-500">v1.0.0</span>
         </div>
-        <div class="flex items-center gap-2 text-[9px] text-slate-600 font-mono">
-            <span class="material-symbols-outlined text-[12px]">palette</span>
+        <div class="flex items-center gap-2 text-[0.48rem] text-slate-600 font-mono">
+            <span class="material-symbols-outlined text-[0.639rem]">palette</span>
             <span>Themes and Languages</span>
             <button type="button" data-footer-picker
                 class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-1.5 py-0 rounded-full text-[8px] leading-4 text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>

@@ -84,7 +84,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
     <link href="css/test-activity.css?v=5" rel="stylesheet" />
-    <link href="css/global.css?v=13" rel="stylesheet" />
+    <link href="css/global.css?v=14" rel="stylesheet" />
 
     <script>
         tailwind.config = {
@@ -365,7 +365,7 @@
             opacity: 1 !important;
         }
         #config-bar.is-open .max-h-0 {
-            max-height: 200px;
+            max-height: 10.657rem;
         }
         #config-bar.is-open .mt-4 {
             margin-top: 0;
@@ -431,7 +431,7 @@
         aside.is-open .amt-btn,
         aside:hover .adapt-btn,
         aside.is-open .adapt-btn {
-            max-height: 32px !important;
+            max-height: 1.705rem !important;
             opacity: 1 !important;
         }
         aside:hover .modifier-btn:not(:last-child),
@@ -470,9 +470,9 @@
             top: 0;
             left: 0;
             box-sizing: border-box;
-            width: 40px;
-            height: 40px;
-            border-radius: 20px;
+            width: 2.131rem;
+            height: 2.131rem;
+            border-radius: 1.066rem;
             overflow: hidden;
             cursor: default;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -491,8 +491,8 @@
             position: absolute;
             top: 3px;
             right: 1px;
-            width: 8px;
-            height: 8px;
+            width: 0.426rem;
+            height: 0.426rem;
             border-radius: 9999px;
             background: #ef4444;
             box-shadow: 0 0 6px rgba(239, 68, 68, 0.9);
@@ -600,7 +600,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            min-height: 46px;
+            min-height: 2.451rem;
             width: min(92vw, 29rem);
             padding: 0.65rem 0.8rem 0.65rem 1rem;
             border-radius: 9999px;
@@ -619,7 +619,7 @@
         }
 
         #dual-pending-indicator.is-collapsed #dual-pending-inner {
-            width: 46px;
+            width: 2.451rem;
             padding: 0;
             justify-content: center;
         }
@@ -668,8 +668,8 @@
             top: -1px;
             left: -1px;
             z-index: 2;
-            width: 40px;
-            height: 40px;
+            width: 2.131rem;
+            height: 2.131rem;
             padding: 0;
             margin: 0;
             border: none;
@@ -692,8 +692,8 @@
 
         .bubble-icon-stack {
             position: relative;
-            width: 24px;
-            height: 24px;
+            width: 1.279rem;
+            height: 1.279rem;
             flex-shrink: 0;
         }
 
@@ -702,8 +702,8 @@
             inset: 0;
             margin: auto;
             display: block;
-            width: 24px;
-            height: 24px;
+            width: 1.279rem;
+            height: 1.279rem;
             color: var(--theme-primary);
             filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
             transform-origin: center center;
@@ -757,8 +757,8 @@
         }
 
         .bubble-content {
-            width: 260px;
-            margin-top: 40px;
+            width: 13.854rem;
+            margin-top: 2.131rem;
             pointer-events: none;
         }
 
@@ -796,8 +796,8 @@
         }
 
         /* Header Logo */
-        .header-logo-link { display: flex; align-items: center; justify-content: center; height: 48px; width: 180px; }
-        .header-logo-container { position: relative; width: 500px; height: 500px; transform: scale(0.5); margin: -250px; flex-shrink: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
+        .header-logo-link { display: flex; align-items: center; justify-content: center; height: 2.557rem; width: 9.592rem; }
+        .header-logo-container { position: relative; width: 26.644rem; height: 26.644rem; transform: scale(0.5); margin: -13.322rem; flex-shrink: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
         .header-logo-container.logo-assets-ready { opacity: 1; }
         /* Boot / welcome typing overlay — true viewport center */
         #spa-boot-overlay {
@@ -903,7 +903,7 @@
     <header class="flex items-center justify-between p-4 bg-transparent shrink-0 relative z-20">
         <div id="header-left" class="flex items-center gap-3 w-1/3 zen-element relative">
             <!-- Expanding Bubble Menu -->
-            <div class="relative overflow-visible" id="expanding-menu-wrapper" style="width: 40px; height: 40px;">
+            <div class="relative overflow-visible" id="expanding-menu-wrapper" style="width: 2.131rem; height: 2.131rem;">
                 <div id="expanding-bubble" class="expanding-bubble glass-panel bg-surface/85 !backdrop-blur-sm transition-all">
                     <button type="button" id="bubble-toggle" aria-label="Open menu" aria-expanded="false">
                         <span class="bubble-icon-stack" aria-hidden="true">
@@ -924,23 +924,23 @@
                         <nav class="flex flex-col gap-2 py-1 px-3">
                             <a href="/" data-spa-link id="nav-typing"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">keyboard</span>
+                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">keyboard</span>
                                 <span class="font-bold text-sm tracking-wide">Typing Test</span>
                             </a>
                             <a href="/friends" data-spa-link id="nav-friends"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">group</span>
+                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">group</span>
                                 <span class="font-bold text-sm tracking-wide">Friends and multiplayer</span>
                             </a>
                             <a href="/leaderboards" data-spa-link id="nav-leaderboards"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">emoji_events</span>
+                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">emoji_events</span>
                                 <span class="font-bold text-sm tracking-wide">Leaderboards</span>
                             </a>
                             <a href="javascript:void(0)" onclick="openNotifications()"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <div class="relative flex items-center justify-center">
-                                    <span class="material-symbols-outlined nav-icon text-[20px]">notifications</span>
+                                    <span class="material-symbols-outlined nav-icon text-[1.066rem]">notifications</span>
                                     <span id="notifications-bell-dot" class="hidden absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] border border-surface"></span>
                                 </div>
                                 <span class="font-bold text-sm tracking-wide">Notifications</span>
@@ -950,12 +950,12 @@
 
                             <a href="/settings" data-spa-link id="nav-settings"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">settings</span>
+                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">settings</span>
                                 <span class="font-bold text-sm tracking-wide">Settings</span>
                             </a>
                             <a href="#"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[20px]">info</span>
+                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">info</span>
                                 <span class="font-bold text-sm tracking-wide">About</span>
                             </a>
                             
@@ -974,13 +974,13 @@
                                     </div>
                                     <div class="flex flex-col justify-center min-w-0">
                                         <span id="shell-user-name" class="text-white font-bold text-xs leading-tight truncate">Guest</span>
-                                        <span id="shell-user-tier" class="bubble-user-tier text-[10px] font-bold tracking-wide">Not signed in</span>
+                                        <span id="shell-user-tier" class="bubble-user-tier text-[0.533rem] font-bold tracking-wide">Not signed in</span>
                                     </div>
                                 </a>
                                 <a href="/signin" data-spa-link id="shell-auth-action"
                                     class="text-slate-500 hover:text-white transition-colors mr-1 shrink-0"
                                     title="Sign in" aria-label="Sign in">
-                                    <span class="material-symbols-outlined text-[18px]" id="shell-auth-action-icon">login</span>
+                                    <span class="material-symbols-outlined text-[0.959rem]" id="shell-auth-action-icon">login</span>
                                 </a>
                             </div>
                         </div>
@@ -1022,10 +1022,10 @@
                 <span class="relative z-[1] flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] transition-all">
                     <img id="header-account-avatar" alt="" class="hidden w-full h-full object-cover" />
                     <span id="header-account-icon"
-                        class="material-symbols-outlined text-[18px] text-primary group-hover:text-white transition-colors">person</span>
+                        class="material-symbols-outlined text-[0.959rem] text-primary group-hover:text-white transition-colors">person</span>
                 </span>
                 <span id="header-account-level"
-                    class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-on-primary text-[9px] font-black leading-[1.1rem] text-center shadow-md">1</span>
+                    class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-on-primary text-[0.48rem] font-black leading-[1.1rem] text-center shadow-md">1</span>
             </a>
         </div>
     </header>
@@ -1033,7 +1033,7 @@
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
-            <div class="flex items-center gap-3 text-[9px] text-slate-600 font-mono">
+            <div class="flex items-center gap-3 text-[0.48rem] text-slate-600 font-mono">
                 <button type="button" id="footer-contact-btn" data-open-contact
                     class="footer-contact-btn hover:text-primary transition-colors bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer"
                     aria-haspopup="dialog" aria-controls="contact-modal">Contact</button>
@@ -1045,13 +1045,13 @@
             <div class="flex items-center">
                 <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600 hover:text-primary transition-colors mr-2"
                     title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[15px]" data-footer-mute-icon>volume_off</span>
+                    <span class="material-symbols-outlined text-[0.799rem]" data-footer-mute-icon>volume_off</span>
                 </button>
-                <div class="flex items-center gap-1.5 text-[9px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[12px]">palette</span>
+                <div class="flex items-center gap-1.5 text-[0.48rem] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[0.639rem]">palette</span>
                     <span>Themes and Languages</span>
                     <button type="button" data-footer-picker
-                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-1.5 py-0 rounded-full text-[8px] leading-4 text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+                        class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-1.5 py-0 rounded-full text-[0.426rem] leading-4 text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
                 </div>
             </div>
         </footer>
@@ -1078,10 +1078,10 @@
             <div class="flex items-center gap-4 border-b border-white/10 pb-4 shrink-0">
                 <button onclick="closeNotifications()"
                     class="text-slate-400 hover:text-white transition-colors flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[28px]">close</span>
+                    <span class="material-symbols-outlined text-[1.492rem]">close</span>
                 </button>
                 <div class="text-primary font-mono text-2xl font-bold flex items-center gap-3">
-                    <span class="material-symbols-outlined text-[28px]">notifications</span>
+                    <span class="material-symbols-outlined text-[1.492rem]">notifications</span>
                     <span id="notifications-title">Notifications</span>
                 </div>
             </div>
@@ -1089,7 +1089,7 @@
                 class="flex-1 flex flex-col font-sans text-base text-slate-300 overflow-y-auto pr-4 pb-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-primary/50 [&::-webkit-scrollbar-thumb]:rounded-full">
                 <div class="mb-6">
                     <h3 class="text-xs font-bold text-primary tracking-widest uppercase mb-3 ml-2 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[14px]">group</span>
+                        <span class="material-symbols-outlined text-[0.746rem]">group</span>
                         Friends and multiplayer
                     </h3>
                     <div id="notifications-friends-list" class="flex flex-col gap-2"></div>
@@ -1098,7 +1098,7 @@
                 <hr class="border-t-[3px] border-white/10 mb-6 mt-2 rounded-full">
                 <div class="mb-6">
                     <h3 class="text-xs font-bold text-primary tracking-widest uppercase mb-3 ml-2 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[14px]">notifications</span>
+                        <span class="material-symbols-outlined text-[0.746rem]">notifications</span>
                         General
                     </h3>
                     <div id="notifications-general-list" class="flex flex-col gap-2"></div>
@@ -1118,7 +1118,7 @@
         <div class="glass-panel bg-surface/85 !backdrop-blur-sm w-full max-w-sm rounded-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-95 opacity-0 relative flex flex-col gap-4 border border-white/10"
             id="custom-prompt-box">
             <div class="text-primary font-mono text-sm font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">build</span>
+                <span class="material-symbols-outlined text-[0.959rem]">build</span>
                 <span id="custom-prompt-title">Custom Amount</span>
             </div>
             <input type="number" id="custom-prompt-input"
@@ -1145,7 +1145,7 @@
         <div id="system-confirm-box"
             class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-95 opacity-0 relative flex flex-col gap-4 w-full max-w-sm">
             <div class="text-primary font-bold text-sm flex items-center gap-2 tracking-wide">
-                <span class="material-symbols-outlined text-[20px]" id="system-confirm-icon">download</span>
+                <span class="material-symbols-outlined text-[1.066rem]" id="system-confirm-icon">download</span>
                 <span id="system-confirm-title">Export Data</span>
             </div>
             <p id="system-confirm-message" class="text-sm text-slate-300 leading-relaxed">
@@ -1177,20 +1177,20 @@
             class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-95 opacity-0 relative z-10 flex flex-col gap-4 w-full max-w-md">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-primary font-bold text-sm flex items-center gap-2 tracking-wide">
-                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                    <span class="material-symbols-outlined text-[1.066rem]">mail</span>
                     <span id="contact-modal-title">Contact</span>
                 </div>
                 <button type="button" id="contact-close-btn"
                     class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5"
                     aria-label="Close contact form">
-                    <span class="material-symbols-outlined text-[20px]">close</span>
+                    <span class="material-symbols-outlined text-[1.066rem]">close</span>
                 </button>
             </div>
 
             <form id="contact-form" class="flex flex-col gap-3.5" novalidate>
                 <div>
                     <label for="contact-name"
-                        class="block text-slate-400 text-[10px] font-bold mb-1.5 uppercase tracking-widest">Name</label>
+                        class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Name</label>
                     <input id="contact-name" name="name" type="text" autocomplete="name" required maxlength="80"
                         placeholder="Your name"
                         class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors" />
@@ -1198,19 +1198,19 @@
 
                 <div>
                     <label for="contact-email"
-                        class="block text-slate-400 text-[10px] font-bold mb-1.5 uppercase tracking-widest">Email</label>
+                        class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Email</label>
                     <input id="contact-email" name="email" type="email" autocomplete="email" required maxlength="120"
                         placeholder="you@example.com"
                         class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors" />
                 </div>
 
                 <div class="relative" id="contact-problem-picker">
-                    <span class="block text-slate-400 text-[10px] font-bold mb-1.5 uppercase tracking-widest">Problem</span>
+                    <span class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Problem</span>
                     <button type="button" id="contact-problem-btn"
                         class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-left text-white outline-none focus:border-primary/60 focus:bg-black/40 transition-colors flex items-center justify-between gap-2"
                         aria-haspopup="listbox" aria-expanded="false" aria-controls="contact-problem-menu">
                         <span id="contact-problem-label" class="truncate text-slate-400">Select a topic…</span>
-                        <span class="material-symbols-outlined text-[18px] text-slate-400 shrink-0 contact-problem-chevron"
+                        <span class="material-symbols-outlined text-[0.959rem] text-slate-400 shrink-0 contact-problem-chevron"
                             aria-hidden="true">expand_more</span>
                     </button>
                     <input type="hidden" id="contact-problem" name="problem" value="" required />
@@ -1227,7 +1227,7 @@
 
                 <div>
                     <label for="contact-description"
-                        class="block text-slate-400 text-[10px] font-bold mb-1.5 uppercase tracking-widest">Description</label>
+                        class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Description</label>
                     <textarea id="contact-description" name="description" required maxlength="4000"
                         rows="2" placeholder="Tell us what's going on… (Shift+Enter for a new line)"
                         class="contact-pill-textarea w-full bg-black/30 border border-white/10 rounded-[1.25rem] px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors resize-none"></textarea>
@@ -1254,13 +1254,13 @@
             class="glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
             style="backdrop-filter:blur(20px);">
             <span id="dual-pending-icon"
-                class="material-symbols-outlined text-primary text-[20px] shrink-0">progress_activity</span>
+                class="material-symbols-outlined text-primary text-[1.066rem] shrink-0">progress_activity</span>
             <div id="dual-pending-content" class="min-w-0 flex-1">
                 <div id="dual-pending-title" class="text-sm font-semibold text-slate-100 whitespace-nowrap truncate"></div>
-                <div id="dual-pending-body" class="text-[11px] text-slate-400 whitespace-nowrap truncate"></div>
+                <div id="dual-pending-body" class="text-[0.586rem] text-slate-400 whitespace-nowrap truncate"></div>
             </div>
             <button id="dual-pending-cancel" type="button"
-                class="shrink-0 px-3 py-1.5 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors">
+                class="shrink-0 px-3 py-1.5 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[0.586rem] font-bold transition-colors">
                 Cancel
             </button>
         </div>
@@ -1278,7 +1278,7 @@
             <button type="button" id="ppc-close-btn"
                 class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Close profile">
-                <span class="material-symbols-outlined text-[22px]">close</span>
+                <span class="material-symbols-outlined text-[1.172rem]">close</span>
             </button>
             <p id="ppc-status" class="text-center text-xs text-slate-500 font-bold mb-2 min-h-[1rem]"></p>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
@@ -1334,29 +1334,29 @@
                     <div id="ppc-avatar-host" class="mb-4 flex items-center justify-center"></div>
                     <h2 id="ppc-username" class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 mb-1 text-center">Player</h2>
                     <p id="ppc-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
-                    <div class="flex items-center gap-4 mb-5 text-[11px] font-bold text-slate-500">
+                    <div class="flex items-center gap-4 mb-5 text-[0.586rem] font-bold text-slate-500">
                         <span id="ppc-xp-progress" class="tracking-wide">0 / 100 XP</span>
                         <span class="flex items-center gap-1 text-amber-400">
-                            <span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                            <span class="material-symbols-outlined text-[0.746rem]">local_fire_department</span>
                             <span id="ppc-streak">0</span>
                             <span class="text-slate-500">day streak</span>
                         </span>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
                         <div class="glass-panel p-3 rounded-lg text-center">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                             <span id="ppc-stat-tests" class="font-headline text-base font-semibold text-slate-100">—</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                             <span id="ppc-stat-time" class="font-headline text-base font-semibold text-slate-100">—</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                             <span id="ppc-stat-words" class="font-headline text-base font-semibold text-slate-100">—</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                             <span id="ppc-stat-rank" class="font-headline text-base font-semibold text-primary">—</span>
                         </div>
                     </div>
@@ -1420,7 +1420,7 @@
     <script src="screenshot.js"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=29"></script>
+    <script src="settings.js?v=30"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Auth + data API (before router) -->
@@ -1434,7 +1434,7 @@
     <script src="js/api/account.js?v=4"></script>
     <script src="js/api/progression.js?v=6"></script>
     <script src="js/ui/player-avatar.js?v=2"></script>
-    <script src="js/ui/avatar-editor.js?v=1"></script>
+    <script src="js/ui/avatar-editor.js?v=2"></script>
     <script src="js/api/public-profile.js?v=1"></script>
     <script src="js/ui/player-profile-card.js?v=2"></script>
     <script src="js/ui/system-confirm.js?v=5"></script>
@@ -1442,7 +1442,7 @@
     <script src="js/auth/header.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
-    <script src="js/api/performance-chart.js?v=8"></script>
+    <script src="js/api/performance-chart.js?v=9"></script>
     <script src="js/api/test-activity.js?v=3"></script>
     <script src="js/api/leaderboards.js?v=11"></script>
     <script src="js/api/friends.js?v=3"></script>
@@ -1453,7 +1453,7 @@
     <script src="js/pages/dual-race.js?v=24"></script>
     <script src="js/pages/room-race.js?v=31"></script>
     <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=101"></script>
+    <script src="js/page-fragments.js?v=102"></script>
     <script src="js/router.js?v=14"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
@@ -1462,9 +1462,9 @@
 
         let bubbleOpen = false;
         let bubbleExpandedHeight = null;
-        const BUBBLE_W_COLLAPSED = 40;
-        const BUBBLE_H_COLLAPSED = 40;
-        const BUBBLE_W_EXPANDED = 260;
+        const BUBBLE_W_COLLAPSED = '2.131rem';
+        const BUBBLE_H_COLLAPSED = '2.131rem';
+        const BUBBLE_W_EXPANDED = '13.854rem';
         const BUBBLE_ANIM_MS = 400;
         const BUBBLE_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
@@ -1472,12 +1472,12 @@
             expandingBubble.style.visibility = 'hidden';
             expandingBubble.classList.add('is-open');
             expandingBubble.style.transition = 'none';
-            expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
+            expandingBubble.style.width = BUBBLE_W_EXPANDED;
             expandingBubble.style.height = 'auto';
             const height = expandingBubble.scrollHeight;
             expandingBubble.classList.remove('is-open');
-            expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-            expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+            expandingBubble.style.width = BUBBLE_W_COLLAPSED;
+            expandingBubble.style.height = BUBBLE_H_COLLAPSED;
             expandingBubble.style.visibility = '';
             expandingBubble.style.transition = '';
             return height;
@@ -1492,11 +1492,11 @@
                 bubbleToggle.setAttribute('aria-expanded', 'true');
                 expandingBubble.classList.add('is-open', 'is-icon-open');
                 expandingBubble.style.transition = 'none';
-                expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-                expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+                expandingBubble.style.width = BUBBLE_W_COLLAPSED;
+                expandingBubble.style.height = BUBBLE_H_COLLAPSED;
                 void expandingBubble.offsetWidth;
                 expandingBubble.style.transition = transition;
-                expandingBubble.style.width = BUBBLE_W_EXPANDED + 'px';
+                expandingBubble.style.width = BUBBLE_W_EXPANDED;
                 expandingBubble.style.height = bubbleExpandedHeight + 'px';
             } else {
                 if (!bubbleOpen) return;
@@ -1505,8 +1505,8 @@
                 bubbleToggle.setAttribute('aria-expanded', 'false');
                 expandingBubble.classList.remove('is-icon-open', 'is-open');
                 expandingBubble.style.transition = transition;
-                expandingBubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-                expandingBubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+                expandingBubble.style.width = BUBBLE_W_COLLAPSED;
+                expandingBubble.style.height = BUBBLE_H_COLLAPSED;
                 setTimeout(function() {
                     if (!bubbleOpen) {
                         expandingBubble.style.transition = '';

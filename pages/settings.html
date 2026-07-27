@@ -710,7 +710,7 @@
         input[type="range"].custom-slider {
             -webkit-appearance: none;
             appearance: none;
-            height: 24px !important; /* Thick clickable area to prevent finicky grabs */
+            height: 1.279rem !important; /* Thick clickable area to prevent finicky grabs */
             background-color: transparent !important;
             background-image: linear-gradient(var(--theme-primary), var(--theme-primary)), linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
             background-repeat: no-repeat !important;
@@ -727,8 +727,8 @@
         input[type="range"].custom-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 12px;
-            height: 12px;
+            width: 0.639rem;
+            height: 0.639rem;
             border-radius: 50%;
             background: var(--theme-primary);
             cursor: pointer;
@@ -740,8 +740,8 @@
             background: transparent;
         }
         input[type="range"].custom-slider::-moz-range-thumb {
-            width: 12px;
-            height: 12px;
+            width: 0.639rem;
+            height: 0.639rem;
             border: none;
             border-radius: 50%;
             background: var(--theme-primary);
@@ -1021,10 +1021,10 @@
             <div class="search-area">
                 <div class="search-wrapper">
                     <span
-                        class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none z-10">search</span>
+                        class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[0.853rem] pointer-events-none z-10">search</span>
                     <input id="settings-search" type="text" class="search-input" placeholder="Search" />
                     <button id="search-clear-btn" class="search-clear-btn" title="Clear search">
-                        <span class="material-symbols-outlined text-[14px]">close</span>
+                        <span class="material-symbols-outlined text-[0.746rem]">close</span>
                     </button>
                 </div>
                 <div class="quick-settings">
@@ -1069,11 +1069,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">edit_square</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">edit_square</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Cursor & Motion</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Caret, pace, and text flow
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Caret, pace, and text flow
                                 </p>
                             </div>
                 </div>
@@ -1084,11 +1084,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">graphic_eq</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">graphic_eq</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Soundscape</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Audio, clicks, and volume</p>
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Audio, clicks, and volume</p>
                             </div>
                 </div>
 
@@ -1098,11 +1098,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">palette</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">palette</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Look & Feel</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Theme, fonts, and visuals</p>
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Theme, fonts, and visuals</p>
                             </div>
                 </div>
 
@@ -1112,11 +1112,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">rule</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">rule</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Test Rules</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Difficulty, errors, and
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Difficulty, errors, and
                                     options</p>
                             </div>
                 </div>
@@ -1127,11 +1127,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">speed</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">speed</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Live Feed</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Real-time stats and timers
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Real-time stats and timers
                                 </p>
                             </div>
                 </div>
@@ -1142,11 +1142,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">bar_chart</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">bar_chart</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Results & Graphs</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Post-test data and charts</p>
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Post-test data and charts</p>
                             </div>
                 </div>
 
@@ -1156,11 +1156,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">translate</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">translate</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Language & Content</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Language, mode, and locale
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Language, mode, and locale
                                 </p>
                             </div>
                 </div>
@@ -1171,11 +1171,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">keyboard</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">keyboard</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Keyboard & Layout</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Keymap, shortcuts, and input
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Keymap, shortcuts, and input
                                 </p>
                             </div>
                 </div>
@@ -1186,11 +1186,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">person</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">person</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Identity & Social</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Profile, privacy, and sharing
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Profile, privacy, and sharing
                                 </p>
                             </div>
                 </div>
@@ -1201,11 +1201,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">settings_suggest</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">settings_suggest</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">System & Data</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Export, reset, and delete
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Export, reset, and delete
                                 </p>
                             </div>
                 </div>
@@ -1216,11 +1216,11 @@
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
-                        <span class="material-symbols-outlined text-[22px] card-icon shrink-0">manage_accounts</span>
+                        <span class="material-symbols-outlined text-[1.172rem] card-icon shrink-0">manage_accounts</span>
                     </button>
                     <div class="card-label text-left min-w-0">
                                 <h3 class="text-sm font-bold text-slate-100 card-title truncate">Account Settings</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 card-subtitle">Account and blocked users
+                                <p class="text-[0.586rem] text-slate-500 mt-0.5 card-subtitle">Account and blocked users
                                 </p>
                             </div>
                 </div>
@@ -1236,7 +1236,7 @@
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
-                                <span class="material-symbols-outlined text-[18px]" id="panel-icon">edit_square</span>
+                                <span class="material-symbols-outlined text-[0.959rem]" id="panel-icon">edit_square</span>
                             </div>
                             <h2 class="text-base font-bold text-slate-100" id="panel-title">Cursor & Motion</h2>
                         </div>
@@ -1258,12 +1258,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Choose how your typing cursor looks. Line is a thin vertical bar,
@@ -1300,12 +1300,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Controls how smoothly the caret glides between characters. Higher
@@ -1340,11 +1340,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">pace</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">pace</span>
                                                 <span class="text-xs font-semibold text-slate-200">Pace Caret</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -1356,13 +1356,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Sets a ghost caret that moves at a target speed for the
@@ -1406,13 +1406,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Choose the visual style of the pace caret independently
@@ -1456,13 +1456,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         When enabled, the text smoothly scrolls up line by line as you
@@ -1485,12 +1485,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Changes how text flows during the test on every typing view
@@ -1520,13 +1520,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Plays a satisfying keypress sound for every character you type.
@@ -1547,12 +1547,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Off: Plays normal click. Mute: Plays no sound. Beep: Plays a
@@ -1574,12 +1574,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Controls the overall volume level for all typing sounds including
@@ -1590,11 +1590,11 @@
                                         <div class="flex items-center gap-3 mt-1"
                                             data-setting="soundscape.masterVolume">
                                             <span
-                                                class="material-symbols-outlined text-[16px] text-slate-500">volume_down</span>
+                                                class="material-symbols-outlined text-[0.853rem] text-slate-500">volume_down</span>
                                             <input type="range" min="0" max="100" value="50"
                                                 class="w-1/2 appearance-none cursor-pointer custom-slider" />
                                             <span
-                                                class="material-symbols-outlined text-[16px] text-slate-500">volume_up</span>
+                                                class="material-symbols-outlined text-[0.853rem] text-slate-500">volume_up</span>
                                         </div>
                                     </div>
                                     <div class="flex flex-col gap-2 relative sub-setting-card"
@@ -1607,12 +1607,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Choose from different keyboard sound profiles. Each pack emulates a
@@ -1626,7 +1626,7 @@
                                             onclick="openSubSetting(this)">
                                             <span class="truncate">Cherry MX Speed Silver</span>
                                             <span
-                                                class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                                class="material-symbols-outlined text-primary text-[0.853rem]">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -1664,11 +1664,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">color_lens</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">color_lens</span>
                                                 <span class="text-xs font-semibold text-slate-200">Theme</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -1682,13 +1682,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Choose a preset color theme for the entire interface.
@@ -1702,7 +1702,7 @@
                                                         onclick="openSubSetting(this)">
                                                         <span class="truncate">usertypo_</span>
                                                         <span
-                                                            class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                                            class="material-symbols-outlined text-primary text-[0.853rem]">chevron_right</span>
                                                     </button>
                                                     <div class="sub-setting-content hidden">
                                                         <div class="flex flex-col gap-4">
@@ -1759,20 +1759,20 @@
                                                         onclick="openSubSetting(this)">
                                                         <div class="flex items-center gap-2.5">
                                                             <span
-                                                                class="material-symbols-outlined text-primary text-[16px]">palette</span>
+                                                                class="material-symbols-outlined text-primary text-[0.853rem]">palette</span>
                                                             <span class="text-xs font-semibold text-slate-200">Custom
                                                                 Theme</span>
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help"
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help"
                                                                     onclick="event.stopPropagation()">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Build your own theme with light or dark mode, a
@@ -1783,7 +1783,7 @@
                                                             </div>
                                                         </div>
                                                         <span
-                                                            class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                            class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                                     </button>
                                                     <div class="sub-setting-content hidden">
                                                         <div class="flex flex-col gap-4" data-custom-theme-editor
@@ -1897,7 +1897,7 @@
                                                                     data-custom-theme-apply
                                                                     id="apply-custom-theme-btn">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[15px]">check</span>
+                                                                        class="material-symbols-outlined text-[0.799rem]">check</span>
                                                                     Apply Theme
                                                                 </button>
                                                                 <button type="button"
@@ -1905,7 +1905,7 @@
                                                                     data-custom-theme-save
                                                                     id="save-custom-theme-preset-btn">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[15px]">bookmark_add</span>
+                                                                        class="material-symbols-outlined text-[0.799rem]">bookmark_add</span>
                                                                     Save Preset
                                                                 </button>
                                                             </div>
@@ -1915,7 +1915,7 @@
                                                                         class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Saved
                                                                         Presets</label>
                                                                     <span
-                                                                        class="text-[10px] font-mono text-slate-500"><span
+                                                                        class="text-[0.533rem] font-mono text-slate-500"><span
                                                                             data-custom-preset-count
                                                                             id="custom-preset-count">0</span>/3</span>
                                                                 </div>
@@ -1937,13 +1937,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Automatically picks a random theme when you start the
@@ -1973,11 +1973,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">text_fields</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">text_fields</span>
                                                 <span class="text-xs font-semibold text-slate-200">Font</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -1990,13 +1990,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Changes the typeface used across the site. Monospace
@@ -2048,12 +2048,12 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">trending_up</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">trending_up</span>
                                                 <span class="text-xs font-semibold text-slate-200">Difficulty &
                                                     Errors</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -2064,13 +2064,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Normal is the classic typing test experience. Expert
@@ -2096,13 +2096,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Controls whether typing stops when you make an error.
@@ -2128,13 +2128,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Limits backspace usage. On prevents deleting correct
@@ -2159,13 +2159,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Lets you backspace into previously completed words
@@ -2190,13 +2190,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Shows what you actually typed vs what was expected.
@@ -2225,11 +2225,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">tune</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">tune</span>
                                                 <span class="text-xs font-semibold text-slate-200">Test Options</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -2242,13 +2242,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Accepts unaccented characters in place of accented
@@ -2275,13 +2275,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     When enabled, pressing space multiple times between
@@ -2308,13 +2308,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Forces you to correctly type the last word before
@@ -2341,13 +2341,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Displays a warning indicator when Caps Lock is
@@ -2373,13 +2373,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Requires using the opposite hand shift key for
@@ -2414,13 +2414,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Displays your current words per minute in real-time as you type.
@@ -2442,13 +2442,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Shows your current accuracy percentage in real-time during the
@@ -2470,13 +2470,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Shows your burst WPM for each individual word. Burst speed
@@ -2500,12 +2500,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Controls how time remaining or progress is displayed. Bar shows a
@@ -2526,12 +2526,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Adjusts the transparency of all live stats (WPM, Accuracy, Burst,
@@ -2558,10 +2558,10 @@
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">visibility</span><span
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">visibility</span><span
                                                     class="text-xs font-semibold text-slate-200">Display</span></div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -2574,13 +2574,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Shows WPM and accuracy with two decimal places for
@@ -2606,13 +2606,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Shows CPS (characters per second) next to WPM in
@@ -2638,10 +2638,10 @@
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">show_chart</span><span
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">show_chart</span><span
                                                     class="text-xs font-semibold text-slate-200">Graph Settings</span>
                                             </div><span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -2653,13 +2653,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Choose which graph mode appears by default after each
@@ -2684,13 +2684,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Smooths the WPM graph line using bezier curves
@@ -2717,13 +2717,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Starts the WPM and raw lines at 0 at the beginning of
@@ -2749,10 +2749,10 @@
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">filter_alt</span><span
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">filter_alt</span><span
                                                     class="text-xs font-semibold text-slate-200">Thresholds</span></div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -2764,13 +2764,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Set a minimum WPM threshold. Tests below this speed will
@@ -2805,13 +2805,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Set a minimum accuracy threshold. Tests below this
@@ -2859,12 +2859,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Choose the word list used for typing tests. Different languages and
@@ -2878,15 +2878,15 @@
                                             onclick="openSubSetting(this)">
                                             <span class="truncate">English 10k</span>
                                             <span
-                                                class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                                class="material-symbols-outlined text-primary text-[0.853rem]">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
                                                 <div class="lang-group" data-lang-group="natural">
                                                     <div class="flex items-center gap-2 mb-2">
-                                                        <span class="material-symbols-outlined text-primary text-[14px]">translate</span>
-                                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Natural Languages</span>
-                                                        <span class="text-[10px] text-slate-600">(315)</span>
+                                                        <span class="material-symbols-outlined text-primary text-[0.746rem]">translate</span>
+                                                        <span class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest">Natural Languages</span>
+                                                        <span class="text-[0.533rem] text-slate-600">(315)</span>
                                                     </div>
                                                     <div class="grid grid-cols-5 gap-2 mb-4">
                                                     <button class="opt-btn lang-btn" data-lang-file="arabic" onclick="selectLangOpt(this)">Arabic</button>
@@ -2944,9 +2944,9 @@
                                                 </div>
                                                 <div class="lang-group" data-lang-group="code">
                                                     <div class="flex items-center gap-2 mb-2">
-                                                        <span class="material-symbols-outlined text-primary text-[14px]">code</span>
-                                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Code Languages</span>
-                                                        <span class="text-[10px] text-slate-600">(37)</span>
+                                                        <span class="material-symbols-outlined text-primary text-[0.746rem]">code</span>
+                                                        <span class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest">Code Languages</span>
+                                                        <span class="text-[0.533rem] text-slate-600">(37)</span>
                                                     </div>
                                                     <div class="grid grid-cols-5 gap-2">
                                                     <button class="opt-btn lang-btn" data-lang-file="code_bash" onclick="selectLangOpt(this)">Bash</button>
@@ -3001,12 +3001,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Changes the language of the user interface elements like buttons,
@@ -3020,7 +3020,7 @@
                                             aria-disabled="true" tabindex="-1">
                                             <span class="truncate">English (US)</span>
                                             <span
-                                                class="material-symbols-outlined text-primary text-[16px]">chevron_right</span>
+                                                class="material-symbols-outlined text-primary text-[0.853rem]">chevron_right</span>
                                         </button>
                                     </div>
 
@@ -3036,10 +3036,10 @@
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">space_bar</span><span
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">space_bar</span><span
                                                     class="text-xs font-semibold text-slate-200">Keymap</span></div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -3057,13 +3057,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Controls the on-screen keyboard display. Static shows a
@@ -3091,13 +3091,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Changes the physical layout style of the on-screen
@@ -3125,13 +3125,13 @@
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
                                                             <span
-                                                                class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                             <div
                                                                 class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                 <div
-                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                     <span
-                                                                        class="material-symbols-outlined text-[14px]">info</span>
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
                                                                 Large letter = character for the selected language.
@@ -3156,7 +3156,7 @@
 
                                                 <!-- Note -->
                                                 <div
-                                                    class="text-[11px] text-slate-400 mt-2 italic px-3 py-2 bg-primary/5 rounded border-l-2 border-primary/50">
+                                                    class="text-[0.586rem] text-slate-400 mt-2 italic px-3 py-2 bg-primary/5 rounded border-l-2 border-primary/50">
                                                     Note: Numbers and punctuation will only show up on the keymap if the
                                                     current test configuration requires them (e.g., if 'Numbers' or
                                                     'Punctuation' modes are active).
@@ -3170,10 +3170,10 @@
                                             class="sub-card-header w-full flex items-center justify-between p-3 cursor-pointer"
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5"><span
-                                                    class="material-symbols-outlined text-primary text-[16px]">shortcut</span><span
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">shortcut</span><span
                                                     class="text-xs font-semibold text-slate-200">Shortcuts</span></div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-4">
@@ -3186,13 +3186,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     Enables keyboard shortcuts like Enter to confirm
@@ -3218,13 +3218,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     When enabled, press Tab to instantly restart the
@@ -3250,13 +3250,13 @@
                                                             <div
                                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                                 <span
-                                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                                 <div
                                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                                     <div
-                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                                         <span
-                                                                            class="material-symbols-outlined text-[14px]">info</span>
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                         How it works
                                                                     </div>
                                                                     When enabled, press Esc to open the quick settings
@@ -3289,13 +3289,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         When enabled, your test results appear on the public
@@ -3320,13 +3320,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Controls whether other users can send you friend requests.
@@ -3350,13 +3350,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Sends periodic email updates including weekly summaries, friend
@@ -3379,12 +3379,12 @@
                                             <div
                                                 class="info-icon-wrapper group relative flex items-center justify-center">
                                                 <span
-                                                    class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                 <div
                                                     class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                     <div
-                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
-                                                        <span class="material-symbols-outlined text-[14px]">info</span>
+                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                        <span class="material-symbols-outlined text-[0.746rem]">info</span>
                                                         How it works
                                                     </div>
                                                     Controls who can view your profile. Public is visible to everyone,
@@ -3418,13 +3418,13 @@
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">
                                                     <span
-                                                        class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
                                                     <div
                                                         class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
                                                         <div
-                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[10px]">
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
                                                             <span
-                                                                class="material-symbols-outlined text-[14px]">info</span>
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
                                                             How it works
                                                         </div>
                                                         Downloads your comprehensive test history as a CSV file — the
@@ -3446,12 +3446,12 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-error text-[16px]">warning</span>
+                                                    class="material-symbols-outlined text-error text-[0.853rem]">warning</span>
                                                 <span class="text-xs font-semibold text-error">Destructive
                                                     Actions</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-error/60 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-error/60 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-3">
@@ -3502,11 +3502,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">account_circle</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">account_circle</span>
                                                 <span class="text-xs font-semibold text-slate-200">Account</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-5" id="account-settings-form">
@@ -3517,7 +3517,7 @@
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Account
                                                             Name</label>
                                                         <span
-                                                            class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
+                                                            class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-pointer"
                                                             data-account-edit="username">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
@@ -3544,7 +3544,7 @@
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Email
                                                             Address</label>
                                                         <span
-                                                            class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
+                                                            class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-pointer"
                                                             data-account-edit="email">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
@@ -3585,7 +3585,7 @@
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Password</label>
                                                         <span
-                                                            class="material-symbols-outlined text-[15px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
+                                                            class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-pointer"
                                                             data-account-edit="password">edit</span>
                                                     </div>
                                                     <div class="flex items-center gap-3 mt-1">
@@ -3604,7 +3604,7 @@
                                                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary transition-colors flex items-center justify-center"
                                                                     data-account-toggle-password>
                                                                     <span
-                                                                        class="material-symbols-outlined text-[18px]">visibility</span>
+                                                                        class="material-symbols-outlined text-[0.959rem]">visibility</span>
                                                                 </button>
                                                             </div>
                                                             <div class="flex items-center gap-3">
@@ -3646,11 +3646,11 @@
                                             onclick="openSubSetting(this)">
                                             <div class="flex items-center gap-2.5">
                                                 <span
-                                                    class="material-symbols-outlined text-primary text-[16px]">block</span>
+                                                    class="material-symbols-outlined text-primary text-[0.853rem]">block</span>
                                                 <span class="text-xs font-semibold text-slate-200">Blocked Users</span>
                                             </div>
                                             <span
-                                                class="material-symbols-outlined text-slate-500 text-[16px] chevron-icon">chevron_right</span>
+                                                class="material-symbols-outlined text-slate-500 text-[0.853rem] chevron-icon">chevron_right</span>
                                         </button>
                                         <div class="sub-setting-content hidden">
                                             <div class="flex flex-col gap-3">
@@ -4102,7 +4102,7 @@
     <div id="save-toast">
         <div class="flex items-center gap-3 px-5 py-3 glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]"
             style="backdrop-filter:blur(20px);">
-            <span class="material-symbols-outlined text-primary text-[18px]" id="toast-icon">check_circle</span>
+            <span class="material-symbols-outlined text-primary text-[0.959rem]" id="toast-icon">check_circle</span>
             <span class="text-sm font-semibold text-slate-100" id="toast-msg">Settings saved</span>
         </div>
     </div>
@@ -4381,7 +4381,7 @@ window.__spaPageInit = function() {
                     if (results.length === 0) {
                         searchResultsContainer.innerHTML = `
                             <div class="flex flex-col items-center justify-center py-12 text-center">
-                                <span class="material-symbols-outlined text-[40px] text-slate-600 mb-3">search_off</span>
+                                <span class="material-symbols-outlined text-[2.132rem] text-slate-600 mb-3">search_off</span>
                                 <p class="text-slate-400 text-sm font-semibold">No settings found</p>
                                 <p class="text-slate-600 text-xs mt-1">Try a different search term</p>
                             </div>
@@ -4681,17 +4681,17 @@ window.__spaPageInit = function() {
             const searchPlaceholder = title === 'Font' ? 'Search fonts...' : 'Search options...';
             const searchBlock = isSearchable ? `
                 <div class="relative w-full mb-1">
-                    <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none z-10">search</span>
+                    <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[0.853rem] pointer-events-none z-10">search</span>
                     <input type="text" class="search-input w-full" style="padding-left:2.5rem; border-radius:9999px;" placeholder="${searchPlaceholder}" oninput="filterSubOptions(this)" autocomplete="off">
                 </div>` : '';
 
             card.innerHTML = `
                 <div class="flex items-center gap-3 p-4 border-b border-white/5 shrink-0">
                     <button type="button" class="panel-back-btn" title="Back">
-                        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                        <span class="material-symbols-outlined text-[0.959rem]">arrow_back</span>
                     </button>
                     <div class="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                        <span class="material-symbols-outlined text-[18px]">${icon}</span>
+                        <span class="material-symbols-outlined text-[0.959rem]">${icon}</span>
                     </div>
                     <h2 class="text-base font-bold text-slate-100 truncate min-w-0">${formatBreadcrumb(pathTitles)}</h2>
                 </div>

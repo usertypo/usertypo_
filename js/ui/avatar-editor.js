@@ -60,37 +60,37 @@
             '<div id="avatar-editor-overlay" class="fixed inset-0 z-[260] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200" aria-hidden="true">' +
                 '<div id="avatar-editor-box" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 opacity-0 transition-all duration-200 w-[min(92vw,24rem)] relative flex flex-col gap-4">' +
                     '<button type="button" id="avatar-editor-close" class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close">' +
-                        '<span class="material-symbols-outlined text-[20px]">close</span>' +
+                        '<span class="material-symbols-outlined text-[1.066rem]">close</span>' +
                     '</button>' +
                     '<div id="avatar-menu-view" class="flex flex-col gap-3">' +
                         '<div class="text-primary font-bold text-sm flex items-center gap-2 tracking-wide pr-8">' +
-                            '<span class="material-symbols-outlined text-[20px]">account_circle</span>' +
+                            '<span class="material-symbols-outlined text-[1.066rem]">account_circle</span>' +
                             '<span>Profile photo</span>' +
                         '</div>' +
                         '<p class="text-xs text-slate-400 leading-relaxed">Change, edit, or remove your profile picture.</p>' +
                         '<div class="flex flex-col gap-2 mt-1">' +
                             '<button type="button" id="avatar-opt-change" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 text-sm font-bold transition-colors">' +
-                                '<span class="material-symbols-outlined text-[20px]">add_a_photo</span><span>Change photo</span>' +
+                                '<span class="material-symbols-outlined text-[1.066rem]">add_a_photo</span><span>Change photo</span>' +
                             '</button>' +
                             '<button type="button" id="avatar-opt-edit" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface/60 hover:bg-surface text-slate-200 border border-white/10 text-sm font-bold transition-colors">' +
-                                '<span class="material-symbols-outlined text-[20px]">crop</span><span>Edit current</span>' +
+                                '<span class="material-symbols-outlined text-[1.066rem]">crop</span><span>Edit current</span>' +
                             '</button>' +
                             '<button type="button" id="avatar-opt-remove" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-400/20 text-sm font-bold transition-colors">' +
-                                '<span class="material-symbols-outlined text-[20px]">delete</span><span>Remove photo</span>' +
+                                '<span class="material-symbols-outlined text-[1.066rem]">delete</span><span>Remove photo</span>' +
                             '</button>' +
                         '</div>' +
                     '</div>' +
                     '<div id="avatar-edit-view" class="hidden flex flex-col gap-3">' +
                         '<div class="text-primary font-bold text-sm flex items-center gap-2 tracking-wide pr-8">' +
-                            '<span class="material-symbols-outlined text-[20px]">crop</span>' +
+                            '<span class="material-symbols-outlined text-[1.066rem]">crop</span>' +
                             '<span>Edit photo</span>' +
                         '</div>' +
                         '<p class="text-xs text-slate-400">Drag to move · use the slider to zoom</p>' +
-                        '<div id="avatar-crop-stage" class="relative mx-auto w-[280px] h-[280px] rounded-full overflow-hidden bg-black/40 border border-white/10 cursor-grab touch-none select-none">' +
+                        '<div id="avatar-crop-stage" class="relative mx-auto w-[14.92rem] h-[14.92rem] rounded-full overflow-hidden bg-black/40 border border-white/10 cursor-grab touch-none select-none">' +
                             '<canvas id="avatar-crop-canvas" width="280" height="280" class="block w-full h-full"></canvas>' +
                         '</div>' +
                         '<label class="flex items-center gap-3 text-xs font-bold text-slate-400">' +
-                            '<span class="material-symbols-outlined text-[18px]">zoom_in</span>' +
+                            '<span class="material-symbols-outlined text-[0.959rem]">zoom_in</span>' +
                             '<input id="avatar-zoom" type="range" min="100" max="300" value="100" class="flex-1 accent-[rgb(var(--theme-primary-rgb))]" />' +
                         '</label>' +
                         '<div class="flex justify-end gap-2 mt-1">' +

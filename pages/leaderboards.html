@@ -13,7 +13,7 @@
             opacity: 1 !important;
         }
         #config-bar.is-open .max-h-0 {
-            max-height: 200px;
+            max-height: 10.657rem;
         }
 
         /* Config bar glow */
@@ -55,7 +55,7 @@
 
         /* When hovered or open */
         aside#config-bar:hover .cfg-btn,
-        aside#config-bar.is-open .cfg-btn { max-height: 32px !important; opacity: 1 !important; }
+        aside#config-bar.is-open .cfg-btn { max-height: 1.705rem !important; opacity: 1 !important; }
         aside#config-bar:hover .cfg-btn:not(:last-child),
         aside#config-bar.is-open .cfg-btn:not(:last-child) { margin-bottom: 0.75rem !important; }
         aside#config-bar:hover > div { width: 12rem !important; align-items: stretch !important; padding: 1rem !important; }
@@ -67,32 +67,32 @@
 
 <aside id="config-bar"
         class="fixed left-0 top-1/2 -translate-y-1/2 z-30 group zen-element transition-all duration-500">
-        <div class="border border-l-0 !border-l-0 rounded-r-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[200px] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm"
+        <div class="border border-l-0 !border-l-0 rounded-r-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[10.658rem] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm"
             style="border-color:rgba(var(--theme-primary-rgb),0.4);box-shadow:0 0 12px rgba(var(--theme-primary-rgb),0.35), 0 8px 32px rgba(0,0,0,0.3);">
-            <div class="cfg-inner opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full flex flex-col min-w-[144px] pointer-events-none"
+            <div class="cfg-inner opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full flex flex-col min-w-[7.673rem] pointer-events-none"
                 id="inner-config-content">
 
                 <!-- Scope -->
                 <div class="flex flex-col w-full transition-all duration-500 shrink-0">
                     <button id="cfg-global"
-                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[7px] rounded cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[0.373rem] rounded cursor-pointer w-full shrink-0"
                         onclick="setScope('global',this)">
                         <span
-                            class="material-symbols-outlined text-[18px] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">public</span>
+                            class="material-symbols-outlined text-[0.959rem] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">public</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">global</span>
                     </button>
                     <button id="cfg-country"
-                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setScope('country',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0">flag</span>
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0">flag</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">country</span>
                     </button>
                     <button id="cfg-friends"
-                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-scope flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setScope('friends',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0">group</span>
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0">group</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">friends</span>
                     </button>
@@ -103,25 +103,25 @@
                 <!-- Timeframe -->
                 <div class="flex flex-col w-full transition-all duration-500 shrink-0">
                     <button id="cfg-alltime"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[7px] rounded cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[0.373rem] rounded cursor-pointer w-full shrink-0"
                         onclick="setTime('alltime',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">all_inclusive</span>
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">all_inclusive</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">all
                             time</span>
                     </button>
                     <button id="cfg-weekly"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setTime('weekly',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0">date_range</span>
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0">date_range</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">weekly</span>
                     </button>
                     <button id="cfg-daily"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setTime('daily',this)">
                         <span
-                            class="material-symbols-outlined text-[18px] shrink-0">today</span>
+                            class="material-symbols-outlined text-[0.959rem] shrink-0">today</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">daily</span>
                     </button>
@@ -132,21 +132,21 @@
                 <!-- Duration -->
                 <div class="flex flex-col w-full transition-all duration-500 shrink-0">
                     <button id="cfg-15"
-                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[6px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setDur('15',this)">
                         <span class="w-5 text-center shrink-0">15</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">seconds</span>
                     </button>
                     <button id="cfg-30"
-                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[6px] rounded cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[0.32rem] rounded cursor-pointer w-full shrink-0"
                         onclick="setDur('30',this)">
                         <span class="w-5 text-center shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">30</span>
                         <span
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] duration-300 delay-75">seconds</span>
                     </button>
                     <button id="cfg-60"
-                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[6px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setDur('60',this)">
                         <span class="w-5 text-center shrink-0">60</span>
                         <span
@@ -211,7 +211,7 @@
         <div class="w-[10rem] shrink-0 glass-panel rounded-xl flex flex-col relative overflow-hidden hidden lg:flex sticky top-4"
             style="height: calc(100vh - 2rem); align-self: flex-start;">
             <div class="w-full py-2 bg-black/20 text-center border-b border-white/5">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
+                <span class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
             </div>
             <div class="flex-1 flex flex-col items-center justify-center p-3">
                 <div
@@ -219,10 +219,10 @@
                     <span class="material-symbols-outlined text-slate-600 text-4xl">ads_click</span>
                     <div class="text-center px-1">
                         <p class="text-xs text-slate-400 font-bold">YOUR AD HERE</p>
-                        <p class="text-[10px] text-slate-600 font-mono">160x600 Skyscraper</p>
+                        <p class="text-[0.533rem] text-slate-600 font-mono">160x600 Skyscraper</p>
                     </div>
                     <button
-                        class="px-4 py-2 bg-white/5 rounded text-[10px] font-bold text-slate-400 border border-white/5">Learn
+                        class="px-4 py-2 bg-white/5 rounded text-[0.533rem] font-bold text-slate-400 border border-white/5">Learn
                         More</button>
                 </div>
             </div>
