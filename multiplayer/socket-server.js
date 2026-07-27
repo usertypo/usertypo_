@@ -18,10 +18,16 @@ function createMultiplayerServer(httpServer, options) {
     const root = options.root;
     const env = options.env || process.env;
     const logger = options.logger || console;
-    const allowedOrigins = String(env.ALLOWED_ORIGINS || env.RENDER_EXTERNAL_URL || '')
+    const allowedOrigins = String(env.ALLOWED_ORIGINS || '')
         .split(',')
         .map((value) => value.trim())
         .filter(Boolean);
+    // Always allow the Render service URL so same-host multiplayer keeps working
+    // even when ALLOWED_ORIGINS only lists the public Cloudflare domains.
+    for (const extra of [env.RENDER_EXTERNAL_URL, env.PUBLIC_SITE_URL]) {
+        const value = String(extra || '').trim().replace(/\/+$/, '');
+        if (value && !allowedOrigins.includes(value)) allowedOrigins.push(value);
+    }
     const io = new Server(httpServer, {
         cors: {
             origin: allowedOrigins.length ? allowedOrigins : true,

@@ -53,12 +53,17 @@ window.USERTYPO_CONFIG = {
     },
 };
 
-(function normalizeLocalBackendUrls() {
+(function normalizeBackendUrls() {
     var cfg = window.USERTYPO_CONFIG;
     if (!cfg) return;
     var host = '';
     try { host = String(location.hostname || ''); } catch (_) { host = ''; }
-    if (host === 'localhost' || host === '127.0.0.1') {
+    // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
+    if (
+        host === 'localhost'
+        || host === '127.0.0.1'
+        || host === 'usertypo.onrender.com'
+    ) {
         if (cfg.backend) cfg.backend.url = '';
         if (cfg.multiplayer) cfg.multiplayer.url = '';
     }
