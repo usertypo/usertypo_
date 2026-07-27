@@ -6,10 +6,14 @@ const { createClient } = require('@supabase/supabase-js');
 const GUEST_ID_RE = /^guest_[a-z0-9-]{8,80}$/i;
 
 function createAuthServices(env, logger) {
-    const authorizedParties = String(env.CLERK_AUTHORIZED_PARTIES || env.RENDER_EXTERNAL_URL || '')
+    const authorizedParties = String(env.CLERK_AUTHORIZED_PARTIES || '')
         .split(',')
         .map((value) => value.trim())
         .filter(Boolean);
+    for (const extra of [env.RENDER_EXTERNAL_URL, env.PUBLIC_SITE_URL]) {
+        const value = String(extra || '').trim().replace(/\/+$/, '');
+        if (value && !authorizedParties.includes(value)) authorizedParties.push(value);
+    }
     const verifyOptions = {
         secretKey: env.CLERK_SECRET_KEY,
     };
