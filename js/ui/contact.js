@@ -189,8 +189,17 @@
         };
     }
 
+    function contactApiUrl() {
+        var cfg = window.USERTYPO_CONFIG || {};
+        var base = (cfg.backend && cfg.backend.url)
+            || (cfg.multiplayer && cfg.multiplayer.url)
+            || '';
+        base = String(base || '').replace(/\/+$/, '');
+        return (base || '') + '/api/contact';
+    }
+
     async function sendContact(payload) {
-        var response = await fetch('/api/contact', {
+        var response = await fetch(contactApiUrl(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
