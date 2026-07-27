@@ -805,41 +805,108 @@
         };
     }
 
+    function getDatasetByAxis(chart, yAxisID) {
+        if (!chart || !chart.data || !chart.data.datasets) return null;
+        for (var i = 0; i < chart.data.datasets.length; i++) {
+            if (chart.data.datasets[i].yAxisID === yAxisID) return chart.data.datasets[i];
+        }
+        return null;
+    }
+
+    function setDatasetHidden(chart, yAxisID, hidden) {
+        var ds = getDatasetByAxis(chart, yAxisID);
+        if (!ds) return;
+        ds.hidden = !!hidden;
+        // Keep Chart.js meta in sync (setDatasetVisibility alone can desync from dataset.hidden)
+        var idx = chart.data.datasets.indexOf(ds);
+        if (idx >= 0 && typeof chart.setDatasetVisibility === 'function') {
+            chart.setDatasetVisibility(idx, !hidden);
+        }
+        if (idx >= 0 && chart.getDatasetMeta) {
+            var meta = chart.getDatasetMeta(idx);
+            if (meta) meta.hidden = !!hidden;
+        }
+    }
+
+    /**
+     * Monkeytype account-chart visibility sequence:
+     * updateResults → updateAccuracy → updateAverage10 → updateAverage100
+     * @see https://github.com/monkeytypegame/monkeytype chart-controller.ts
+     */
     function applySeriesVisibility(chart) {
         if (!chart) return;
-        var speedOn = accountChart[0] === 'on';
+        var resultsOn = accountChart[0] === 'on';
         var accOn = accountChart[1] === 'on';
         var avg10On = accountChart[2] === 'on';
         var avg100On = accountChart[3] === 'on';
 
-        var visibility = [
-            speedOn,
-            speedOn,
-            accOn,
-            speedOn && avg10On,
-            accOn && avg10On,
-            speedOn && avg100On,
-            accOn && avg100On,
-        ];
+        // updateResults
+        setDatasetHidden(chart, 'wpm', !resultsOn);
+        setDatasetHidden(chart, 'pb', !resultsOn);
+        setDatasetHidden(chart, 'wpmAvgTen', !resultsOn);
+        setDatasetHidden(chart, 'wpmAvgHundred', !resultsOn);
+        if (chart.options.scales.wpm) chart.options.scales.wpm.display = resultsOn;
 
-        visibility.forEach(function (visible, idx) {
-            if (typeof chart.setDatasetVisibility === 'function') {
-                chart.setDatasetVisibility(idx, visible);
-            } else if (chart.data.datasets[idx]) {
-                chart.data.datasets[idx].hidden = !visible;
+        // updateAccuracy
+        setDatasetHidden(chart, 'acc', !accOn);
+        setDatasetHidden(chart, 'accAvgTen', !accOn);
+        setDatasetHidden(chart, 'accAvgHundred', !accOn);
+        if (chart.options.scales.acc) chart.options.scales.acc.display = accOn;
+
+        if (resultsOn) {
+            if (chart.options.scales.acc) chart.options.scales.acc.min = 0;
+            if (chart.options.scales.accAvgTen) chart.options.scales.accAvgTen.min = 0;
+            if (chart.options.scales.accAvgHundred) chart.options.scales.accAvgHundred.min = 0;
+        } else if (accOn) {
+            var accDs = getDatasetByAxis(chart, 'acc');
+            var accPoints = (accDs && accDs.data) || [];
+            if (accPoints.length) {
+                var minAcc = Math.min.apply(null, accPoints.map(function (p) { return p.y; }));
+                var minAccRounded = Math.floor(minAcc / 5) * 5;
+                if (chart.options.scales.acc) chart.options.scales.acc.min = minAccRounded;
+                if (chart.options.scales.accAvgTen) chart.options.scales.accAvgTen.min = minAccRounded;
+                if (chart.options.scales.accAvgHundred) chart.options.scales.accAvgHundred.min = minAccRounded;
             }
-        });
-
-        chart.options.scales.wpm.display = speedOn;
-        chart.options.scales.acc.display = accOn;
-
-        if (speedOn) {
-            chart.options.scales.acc.min = 0;
-        } else if (accOn && chart.data.datasets[2] && chart.data.datasets[2].data.length) {
-            var minAcc = Math.min.apply(null, chart.data.datasets[2].data.map(function (p) { return p.y; }));
-            var minAccRounded = Math.floor(minAcc / 5) * 5;
-            chart.options.scales.acc.min = minAccRounded;
         }
+
+        // updateAverage10 (overrides avg-ten hidden from results/acc steps)
+        if (accOn) setDatasetHidden(chart, 'accAvgTen', !avg10On);
+        if (resultsOn) setDatasetHidden(chart, 'wpmAvgTen', !avg10On);
+
+        // updateAverage100
+        if (accOn) setDatasetHidden(chart, 'accAvgHundred', !avg100On);
+        if (resultsOn) setDatasetHidden(chart, 'wpmAvgHundred', !avg100On);
+    }
+
+    function syncAccountChartDisplay() {
+        updateActive();
+        if (!chartInstance) {
+            render();
+            return;
+        }
+        applySeriesVisibility(chartInstance);
+        applyColors(chartInstance);
+        // Full update — Monkeytype's fix for toggles not refreshing the chart
+        chartInstance.update();
+    }
+
+    function setChartToggle(index) {
+        index = Number(index);
+        if (!isFinite(index) || index < 0 || index > 3) return;
+
+        var previous = accountChart.slice();
+        var next = accountChart.slice();
+        next[index] = next[index] === 'on' ? 'off' : 'on';
+
+        // Monkeytype config override: never allow both speed and accuracy off
+        if (next[0] === 'off' && next[1] === 'off') {
+            var changedIndex = next[0] === previous[0] ? 0 : 1;
+            next[changedIndex] = 'on';
+        }
+
+        accountChart = next;
+        saveChartToggles();
+        syncAccountChartDisplay();
     }
 
     function applyColors(chart) {
@@ -1304,7 +1371,7 @@
         chartInstance = new window.Chart(canvas.getContext('2d'), config);
         applySeriesVisibility(chartInstance);
         applyColors(chartInstance);
-        chartInstance.update('none');
+        chartInstance.update();
 
         canvas.onmouseleave = hideTooltip;
     }
@@ -1315,24 +1382,6 @@
             chartInstance = null;
         }
         if (clearTip !== false) hideTooltip();
-    }
-
-    function setChartToggle(index) {
-        var next = accountChart.slice();
-        next[index] = next[index] === 'on' ? 'off' : 'on';
-        if (next[0] === 'off' && next[1] === 'off') {
-            next[index === 0 ? 1 : 0] = 'on';
-        }
-        accountChart = next;
-        saveChartToggles();
-        updateActive();
-        if (chartInstance) {
-            applySeriesVisibility(chartInstance);
-            applyColors(chartInstance);
-            chartInstance.update('none');
-        } else {
-            render();
-        }
     }
 
     function bindUi() {
@@ -1349,9 +1398,23 @@
             });
         }
 
+        // Direct Monkeytype-style bindings for series toggles (capture so nothing steals the click)
+        rootEl.querySelectorAll('[data-pot-chart-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                setChartToggle(btn.getAttribute('data-pot-chart-toggle'));
+            }, true);
+        });
+
         rootEl.addEventListener('click', function (e) {
             var target = e.target.closest('button');
             if (!target || !rootEl.contains(target)) return;
+
+            if (target.hasAttribute('data-pot-chart-toggle')) {
+                // Handled by direct capture listeners above
+                return;
+            }
 
             if (target.hasAttribute('data-pot-toggle-filters')) {
                 e.stopPropagation();
@@ -1391,13 +1454,6 @@
             var presetId = target.getAttribute('data-pot-preset');
             if (presetId) {
                 applyPreset(presetId);
-                return;
-            }
-
-            var chartToggle = target.getAttribute('data-pot-chart-toggle');
-            if (chartToggle != null) {
-                e.preventDefault();
-                setChartToggle(Number(chartToggle));
                 return;
             }
 
