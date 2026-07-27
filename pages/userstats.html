@@ -81,6 +81,7 @@
             font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
             line-height: 1.3;
+            cursor: pointer;
             transition: color 0.12s ease, background 0.12s ease;
         }
         .pot-card .pot-btn:hover {
@@ -88,12 +89,267 @@
         }
         .pot-card .pot-btn.is-active {
             color: var(--theme-bg, #323437);
-            background: var(--theme-primary-light, #e2b714);
+            background: var(--theme-primary, #00d0ff);
+        }
+        .pot-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
+            position: relative;
+            z-index: 5;
+        }
+        .pot-header h2 {
+            margin: 0;
+            padding-top: 0.35rem;
+        }
+        .pot-filter-bubble-wrap {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            overflow: visible;
+            z-index: 20;
+        }
+        /* Match #expanding-bubble chrome exactly (theme overrides fill via settings.js) */
+        .pot-filter-bubble {
+            position: absolute;
+            top: 0;
+            right: 0;
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: default;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: var(--theme-menu-bg) !important;
+            background-color: var(--theme-menu-bg) !important;
+            background-image: none !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            z-index: 1;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+        .pot-filter-bubble:not(.is-open):hover {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            background-image: none !important;
+        }
+        .pot-filter-bubble.is-open {
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+            background: var(--theme-menu-bg) !important;
+            background-color: var(--theme-menu-bg) !important;
+            background-image: none !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+        .pot-filter-bubble-toggle {
+            appearance: none;
+            -webkit-appearance: none;
+            position: absolute;
+            top: -1px;
+            right: -1px;
+            z-index: 3;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+            font-size: 0;
+            cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            color: var(--theme-primary, #00d0ff);
+        }
+        .pot-filter-bubble-toggle:focus,
+        .pot-filter-bubble-toggle:active {
+            outline: none;
+            background: transparent;
+        }
+        .pot-filter-bubble-icon-stack {
+            position: relative;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .pot-filter-bubble-icon {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            color: var(--theme-text-muted, #94a3b8);
+            filter: none;
+            transform-origin: center center;
+            transition: color 0.2s ease, filter 0.2s ease;
+        }
+        .pot-filter-bubble-icon .material-symbols-outlined {
+            font-size: 20px;
+            line-height: 1;
+        }
+        .pot-filter-bubble-icon-close {
+            display: none !important;
+        }
+        .pot-filter-bubble-toggle:hover .pot-filter-bubble-icon,
+        .pot-filter-bubble:hover .pot-filter-bubble-icon,
+        .pot-filter-bubble.is-open .pot-filter-bubble-icon {
+            color: var(--theme-primary, #00d0ff);
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
+        }
+        .pot-filter-bubble-content {
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 40px;
+            padding: 0 40px 0 0.45rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+        .pot-filter-bubble.is-open .pot-filter-bubble-content {
+            pointer-events: auto;
+            opacity: 1;
+        }
+        .pot-filters-actions {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 0.1rem;
+            height: 40px;
+            white-space: nowrap;
+        }
+        .pot-filters-actions .pot-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            flex: 0 0 auto;
+            width: auto;
+            height: 32px;
+            padding: 0 0.7rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            color: #cbd5e1;
+            background: transparent;
+        }
+        .pot-filters-actions .pot-btn:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .pot-filters-actions .pot-btn.is-active {
+            color: var(--theme-primary, #00d0ff);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .pot-filters-actions .pot-btn .material-symbols-outlined {
+            font-size: 15px;
+            color: inherit;
+        }
+        .pot-filters-actions [data-pot-presets]:not(.hidden) {
+            display: inline-flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 0.1rem;
+            margin-left: 0.15rem;
+            padding-left: 0.35rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pot-advanced {
+            display: none;
+            flex-direction: column;
+            gap: 0.7rem;
+            padding: 0.55rem 0.35rem 0.7rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pot-filter-bubble.is-advanced .pot-advanced {
+            display: flex;
+        }
+        .pot-advanced-block .pot-filter-title {
+            margin-bottom: 0.3rem;
+        }
+        .pot-advanced-block .pot-filter-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .pot-advanced-block .pot-btn {
+            padding: 0.32rem 0.75rem;
+            font-size: 0.7rem;
+            border-radius: 9999px;
+        }
+        .pot-range-row {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.55rem;
+            margin-bottom: 0.45rem;
+        }
+        @keyframes potPillGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), .35); }
+            50% { box-shadow: 0 0 18px rgba(var(--theme-primary-rgb, 0, 208, 255), .6); }
+        }
+        .pot-tab-pill {
+            display: flex;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            padding: 4px;
+            gap: 2px;
+            position: relative;
+        }
+        .pot-tab-pill .pot-btn {
+            position: relative;
+            z-index: 2;
+            padding: 0.4rem 1.15rem;
+            border-radius: 9999px;
+            border: none;
+            background: transparent !important;
+            color: #64748b;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            line-height: 1.2;
+        }
+        .pot-tab-pill .pot-btn:hover {
+            color: #94a3b8;
+            background: transparent !important;
+        }
+        .pot-tab-pill .pot-btn.is-active {
+            color: #fff;
+            background: transparent !important;
+        }
+        .pot-tab-pill-indicator {
+            position: absolute;
+            top: 4px;
+            height: calc(100% - 8px);
+            border-radius: 9999px;
+            background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.18);
+            border: 1px solid rgba(var(--theme-primary-rgb, 0, 208, 255), 0.5);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.25);
+            transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            animation: potPillGlow 3s ease infinite;
+            z-index: 1;
         }
         .pot-filter-row {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
+            justify-content: space-between;
             gap: 0.5rem 0.75rem;
         }
         .pot-filter-title {
@@ -110,17 +366,6 @@
             display: flex;
             flex-wrap: wrap;
             gap: 0.25rem;
-        }
-        .pot-advanced {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem 1.25rem;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .pot-advanced-block .pot-filter-title {
-            margin-bottom: 0.4rem;
         }
         .pot-above {
             display: flex;
@@ -157,6 +402,25 @@
             pointer-events: none;
         }
         .performance-chart-empty.hidden { display: none; }
+        .pot-graph-tooltip {
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            z-index: 50;
+            padding: 0.375rem 0.625rem;
+            border-radius: 0.5rem;
+            font-size: 11px;
+            font-family: 'Roboto Mono', ui-monospace, monospace;
+            font-weight: 700;
+            white-space: nowrap;
+            line-height: 1.8;
+            background: rgba(26, 29, 35, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            color: var(--theme-text, #e2e8f0);
+        }
         .pot-below {
             display: flex;
             flex-wrap: wrap;
@@ -173,12 +437,14 @@
         .pot-below-btns {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.25rem;
+            gap: 0.35rem;
         }
         .pot-below-btns .pot-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            border-radius: 9999px;
+            padding: 0.4rem 0.85rem;
         }
         .pot-below-btns .material-symbols-outlined {
             font-size: 15px;
@@ -654,96 +920,105 @@
             class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16 opacity-0 animate-fade-in-up [animation-delay:700ms]">
             <!-- Top Graph Area: Performance Graph Full Width -->
             <div class="col-span-12 glass-panel p-6 rounded-xl pot-card" id="performance-over-time-card">
-                <h2 class="font-headline text-lg font-bold mb-4">Performance Over Time</h2>
-
-                <div data-pot-presets class="hidden mb-3"></div>
-
-                <div class="pot-filter-row mb-2">
-                    <div class="pot-filter-title">
-                        <span class="material-symbols-outlined text-[14px]">filter_alt</span>
-                        filters
-                    </div>
-                    <div class="pot-filter-btns">
-                        <button type="button" class="pot-btn allFilters">all</button>
-                        <button type="button" class="pot-btn currentConfigFilter">current settings</button>
-                        <button type="button" class="pot-btn toggleAdvancedFilters">advanced</button>
-                        <button type="button" class="pot-btn createFilterPresetBtn">save as preset</button>
+                <div class="pot-header">
+                    <h2 class="font-headline text-lg font-bold">Performance Over Time</h2>
+                    <div class="pot-filter-bubble-wrap">
+                        <div class="pot-filter-bubble" data-pot-filter-bubble>
+                            <button type="button" class="pot-filter-bubble-toggle" data-pot-toggle-filters aria-label="Open filters" aria-expanded="false" title="Filters">
+                                <span class="pot-filter-bubble-icon-stack" aria-hidden="true">
+                                    <span class="pot-filter-bubble-icon pot-filter-bubble-icon-filter">
+                                        <span class="material-symbols-outlined">filter_alt</span>
+                                    </span>
+                                </span>
+                            </button>
+                            <div class="pot-filter-bubble-content">
+                                <div class="pot-filters-actions" data-pot-filters-panel>
+                                    <button type="button" class="pot-btn allFilters">all</button>
+                                    <button type="button" class="pot-btn currentConfigFilter">current settings</button>
+                                    <button type="button" class="pot-btn toggleAdvancedFilters">advanced</button>
+                                    <button type="button" class="pot-btn createFilterPresetBtn">save as preset</button>
+                                    <div data-pot-presets class="hidden"></div>
+                                </div>
+                                <div class="pot-advanced" data-pot-advanced>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-row">
+                                            <div class="pot-filter-title">
+                                                <span class="material-symbols-outlined text-[14px]">build</span>
+                                                advanced filters
+                                            </div>
+                                            <div class="pot-filter-btns">
+                                                <button type="button" class="pot-btn noFilters">clear</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">workspace_premium</span> personal best</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="no">no</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="yes">yes</button>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">view_list</span> mode</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="words">words</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="time">time</button>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">text_fields</span> words</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="10">10</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="25">25</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="50">50</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="100">100</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="custom">custom</button>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">schedule</span> time</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="15">15</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="30">30</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="60">60</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="120">120</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="custom">custom</button>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">alternate_email</span> punctuation</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="on">on</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="off">off</button>
+                                        </div>
+                                    </div>
+                                    <div class="pot-advanced-block">
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">tag</span> numbers</div>
+                                        <div class="pot-filter-btns">
+                                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="on">on</button>
+                                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="off">off</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="pot-filter-btns mb-1" data-pot-group-wrap="date">
-                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_day">last day</button>
-                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_week">last week</button>
-                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_month">last month</button>
-                    <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_3months">last 3 months</button>
-                    <button type="button" class="pot-btn is-active" data-pot-group="date" data-pot-filter="all">all time</button>
-                </div>
-
-                <div class="pot-advanced hidden" data-pot-advanced>
-                    <div class="pot-advanced-block" style="grid-column: 1 / -1">
-                        <div class="pot-filter-row">
-                            <div class="pot-filter-title">
-                                <span class="material-symbols-outlined text-[14px]">build</span>
-                                advanced filters
-                            </div>
-                            <div class="pot-filter-btns">
-                                <button type="button" class="pot-btn noFilters">clear filters</button>
-                            </div>
-                        </div>
+                <div class="pot-range-row">
+                    <div class="pot-tab-pill" data-pot-group-wrap="date">
+                        <div class="pot-tab-pill-indicator" data-pot-pill-indicator="date"></div>
+                        <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_day">last day</button>
+                        <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_week">last week</button>
+                        <button type="button" class="pot-btn" data-pot-group="date" data-pot-filter="last_month">last month</button>
+                        <button type="button" class="pot-btn is-active" data-pot-group="date" data-pot-filter="all">all</button>
                     </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">workspace_premium</span> personal best</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="no">no</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="yes">yes</button>
-                        </div>
-                    </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">view_list</span> mode</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="words">words</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="time">time</button>
-                        </div>
-                    </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">text_fields</span> words</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="10">10</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="25">25</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="50">50</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="100">100</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="custom">custom</button>
-                        </div>
-                    </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">schedule</span> time</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="15">15</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="30">30</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="60">60</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="120">120</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="custom">custom</button>
-                        </div>
-                    </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">alternate_email</span> punctuation</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="on">on</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="off">off</button>
-                        </div>
-                    </div>
-
-                    <div class="pot-advanced-block">
-                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">tag</span> numbers</div>
-                        <div class="pot-filter-btns">
-                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="on">on</button>
-                            <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="off">off</button>
-                        </div>
+                    <div class="pot-tab-pill" data-pot-group-wrap="results">
+                        <div class="pot-tab-pill-indicator" data-pot-pill-indicator="results"></div>
+                        <button type="button" class="pot-btn" data-pot-group="results" data-pot-filter="last_10">last 10</button>
+                        <button type="button" class="pot-btn" data-pot-group="results" data-pot-filter="last_50">last 50</button>
+                        <button type="button" class="pot-btn" data-pot-group="results" data-pot-filter="last_100">last 100</button>
+                        <button type="button" class="pot-btn is-active" data-pot-group="results" data-pot-filter="all">all tests</button>
                     </div>
                 </div>
 
@@ -751,6 +1026,7 @@
 
                 <div class="performance-chart-wrap">
                     <canvas id="performance-over-time-chart" aria-label="Performance over time chart"></canvas>
+                    <div data-pot-tooltip class="pot-graph-tooltip" aria-hidden="true"></div>
                     <div data-pot-empty class="performance-chart-empty hidden">No data found. Check your filters.</div>
                 </div>
 

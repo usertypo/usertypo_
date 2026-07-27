@@ -1536,6 +1536,7 @@ function applyThemeSettings(settings) {
         .glass-card,
         #sidebar-menu,
         #expanding-bubble,
+        .pot-filter-bubble,
         #usertypo-cookie-banner .usertypo-cookie-banner__inner {
             background: var(--theme-menu-bg) !important;
             background-image: none !important;
@@ -1549,7 +1550,8 @@ function applyThemeSettings(settings) {
         .usertypo-menu-pill-tip,
         .score-distribution-column::after,
         .testActivity .activity div[aria-label]:hover::after,
-        #expanding-bubble.is-open {
+        #expanding-bubble.is-open,
+        .pot-filter-bubble.is-open {
             background: var(--theme-menu-bg) !important;
             background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
