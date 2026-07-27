@@ -258,14 +258,59 @@
             color: inherit;
         }
         .pot-filters-actions [data-pot-presets]:not(.hidden) {
+            display: none;
+        }
+        .pot-presets-section {
+            display: none;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.4rem 0.35rem 0.55rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pot-presets-section:not(.hidden) {
+            display: flex;
+        }
+        .pot-preset-chip {
             display: inline-flex;
-            flex-direction: row;
-            flex-wrap: nowrap;
             align-items: center;
             gap: 0.1rem;
-            margin-left: 0.15rem;
-            padding-left: 0.35rem;
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        .pot-preset-chip .pot-btn {
+            height: 28px;
+            padding: 0 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.68rem;
+            color: #cbd5e1;
+        }
+        .pot-preset-chip .pot-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .pot-preset-chip.is-active {
+            border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
+            background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.1);
+        }
+        .pot-preset-chip.is-active .pot-btn[data-pot-preset] {
+            color: var(--theme-primary, #00d0ff);
+        }
+        .pot-preset-delete {
+            width: 28px;
+            height: 28px;
+            padding: 0 !important;
+            color: #64748b !important;
+            background: transparent !important;
+        }
+        .pot-preset-delete:hover {
+            color: var(--theme-error, #ef4444) !important;
+            background: rgba(239, 68, 68, 0.12) !important;
+        }
+        .pot-preset-delete .material-symbols-outlined {
+            font-size: 14px;
         }
         .pot-advanced {
             display: none;
@@ -937,8 +982,8 @@
                                     <button type="button" class="pot-btn currentConfigFilter">current settings</button>
                                     <button type="button" class="pot-btn toggleAdvancedFilters">advanced</button>
                                     <button type="button" class="pot-btn createFilterPresetBtn">save as preset</button>
-                                    <div data-pot-presets class="hidden"></div>
                                 </div>
+                                <div class="pot-presets-section hidden" data-pot-presets></div>
                                 <div class="pot-advanced" data-pot-advanced>
                                     <div class="pot-advanced-block">
                                         <div class="pot-filter-row">

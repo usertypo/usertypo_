@@ -43,6 +43,8 @@
     var advancedOpen = false;
     var bubbleAnimTimer = null;
     var bubbleCloseTimer = null;
+    var ignoreBubbleClose = false;
+    var activePresetId = null;
     var themeObserver = null;
     var BUBBLE_W_COLLAPSED = 40;
     var BUBBLE_H_COLLAPSED = 40;
@@ -234,6 +236,22 @@
         }
     }
 
+    function toast(message, icon) {
+        if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+            window.usertypoNotifications.showToast(message, icon || 'check_circle');
+            return;
+        }
+        try { console.log('[usertypo pot]', message); } catch (e) {}
+    }
+
+    function deSelectFilterPreset() {
+        activePresetId = null;
+        if (!rootEl) return;
+        rootEl.querySelectorAll('.pot-preset-chip.is-active').forEach(function (el) {
+            el.classList.remove('is-active');
+        });
+    }
+
     function readTypingConfig() {
         try {
             return JSON.parse(localStorage.getItem('usertypo_config') || '{}') || {};
@@ -243,6 +261,7 @@
     }
 
     function applyAllFilters() {
+        deSelectFilterPreset();
         Object.keys(filters).forEach(function (group) {
             if (EXCLUSIVE_GROUPS[group]) return;
             setAll(group, true);
@@ -254,9 +273,14 @@
         saveFilters();
         updateActive();
         render();
+        toast('Showing all results', 'filter_alt');
     }
 
     function applyCurrentSettings() {
+        // Monkeytype: currentConfigFilter — match active typing test settings
+        clearBubbleCloseTimer();
+        deSelectFilterPreset();
+
         var cfg = readTypingConfig();
         var mode = cfg.testMode === 'time' ? 'time' : 'words';
         var amount = Number(cfg.testAmount) || (mode === 'time' ? 15 : 10);
@@ -273,6 +297,7 @@
         if (mode === 'time') {
             if (TIME_STANDARD[amount]) filters.time[String(amount)] = true;
             else filters.time.custom = true;
+            // leave words filters off (Monkeytype only enables the active mode's amounts)
         } else {
             if (WORD_STANDARD[amount]) filters.words[String(amount)] = true;
             else filters.words.custom = true;
@@ -286,12 +311,24 @@
 
         setAll('date', false);
         filters.date.all = true;
+        setAll('results', false);
+        filters.results.all = true;
+
         saveFilters();
         updateActive();
+        renderPresetButtons();
         render();
+
+        var label = mode + ' ' + amount;
+        if (cfg.usePunctuation) label += ' · punct';
+        if (cfg.useNumbers) label += ' · nums';
+        toast('Filtered to current settings (' + label + ')', 'tune');
+
+        if (filtersPanelOpen) syncBubbleSize();
     }
 
     function clearAdvancedFilters() {
+        deSelectFilterPreset();
         Object.keys(filters).forEach(function (group) {
             if (EXCLUSIVE_GROUPS[group]) return;
             setAll(group, false);
@@ -302,6 +339,7 @@
     }
 
     function toggleFilter(group, key) {
+        deSelectFilterPreset();
         if (EXCLUSIVE_GROUPS[group]) {
             setAll(group, false);
             filters[group][key] = true;
@@ -314,6 +352,7 @@
     }
 
     function shiftSelectOnly(group, key) {
+        deSelectFilterPreset();
         setAll(group, false);
         filters[group][key] = true;
         saveFilters();
@@ -330,17 +369,63 @@
         }
     }
 
+    function persistPresets(list) {
+        try { localStorage.setItem(STORAGE_PRESETS, JSON.stringify(list)); } catch (e) {}
+    }
+
     function savePreset() {
+        // Prompt steals focus and fires mouseleave — don't auto-close the bubble
+        clearBubbleCloseTimer();
+        ignoreBubbleClose = true;
         var name = window.prompt('Preset name');
-        if (!name || !String(name).trim()) return;
+        ignoreBubbleClose = false;
+        clearBubbleCloseTimer();
+
+        if (name == null) return; // cancelled
+        name = String(name).trim().replace(/\s+/g, ' ');
+        if (!name) {
+            toast('Preset name cannot be empty', 'error');
+            return;
+        }
+        name = name.slice(0, 40);
+
         var list = getPresets();
+        var exists = list.some(function (p) {
+            return String(p.name).toLowerCase() === name.toLowerCase();
+        });
+        if (exists) {
+            toast('A preset with that name already exists', 'error');
+            return;
+        }
+
+        var id = 'p_' + Date.now();
         list.push({
-            id: 'p_' + Date.now(),
-            name: String(name).trim().slice(0, 40),
+            id: id,
+            name: name,
             filters: clone(filters),
         });
-        try { localStorage.setItem(STORAGE_PRESETS, JSON.stringify(list)); } catch (e) {}
+        persistPresets(list);
+        activePresetId = id;
         renderPresetButtons();
+        filtersPanelOpen = true;
+        syncBubbleSize();
+        toast('Filter preset created', 'bookmark');
+    }
+
+    function deletePreset(id) {
+        clearBubbleCloseTimer();
+        ignoreBubbleClose = true;
+        var ok = window.confirm('Delete this filter preset?');
+        ignoreBubbleClose = false;
+        clearBubbleCloseTimer();
+        if (!ok) return;
+
+        var list = getPresets().filter(function (p) { return p.id !== id; });
+        persistPresets(list);
+        if (activePresetId === id) activePresetId = null;
+        renderPresetButtons();
+        if (filtersPanelOpen) syncBubbleSize();
+        toast('Filter preset deleted', 'delete');
     }
 
     function applyPreset(id) {
@@ -357,9 +442,13 @@
         });
         ensureExclusiveGroup('date');
         ensureExclusiveGroup('results');
+        activePresetId = id;
         saveFilters();
         updateActive();
+        renderPresetButtons();
         render();
+        toast('Applied preset: ' + preset.name, 'bookmark');
+        if (filtersPanelOpen) syncBubbleSize();
     }
 
     function renderPresetButtons() {
@@ -374,9 +463,15 @@
         }
         wrap.classList.remove('hidden');
         wrap.innerHTML = list.map(function (p) {
-            return '<button type="button" class="pot-btn" data-pot-preset="' + p.id + '">'
+            var activeClass = p.id === activePresetId ? ' is-active' : '';
+            return '<div class="pot-preset-chip' + activeClass + '">'
+                + '<button type="button" class="pot-btn" data-pot-preset="' + p.id + '" title="Apply preset">'
                 + escapeHtml(p.name)
-                + '</button>';
+                + '</button>'
+                + '<button type="button" class="pot-btn pot-preset-delete" data-pot-preset-delete="' + p.id + '" title="Delete preset" aria-label="Delete preset">'
+                + '<span class="material-symbols-outlined">close</span>'
+                + '</button>'
+                + '</div>';
         }).join('');
         if (filtersPanelOpen) syncBubbleSize();
     }
@@ -416,7 +511,10 @@
     function measureBubbleHeight(wantAdvanced) {
         var bubble = getBubbleEl();
         if (!bubble) return BUBBLE_H_COLLAPSED;
-        if (!wantAdvanced) return BUBBLE_H_COLLAPSED;
+
+        var presetsEl = rootEl && rootEl.querySelector('[data-pot-presets]');
+        var hasPresets = !!(presetsEl && !presetsEl.classList.contains('hidden') && presetsEl.children.length);
+        if (!wantAdvanced && !hasPresets) return BUBBLE_H_COLLAPSED;
 
         var prevTransition = bubble.style.transition;
         var prevWidth = bubble.style.width;
@@ -428,7 +526,8 @@
 
         bubble.style.visibility = 'hidden';
         bubble.style.transition = 'none';
-        bubble.classList.add('is-open', 'is-advanced');
+        bubble.classList.add('is-open');
+        bubble.classList.toggle('is-advanced', !!wantAdvanced);
         bubble.style.width = width + 'px';
         bubble.style.height = 'auto';
         var height = Math.ceil(bubble.scrollHeight);
@@ -543,9 +642,10 @@
 
     function scheduleBubbleClose() {
         clearBubbleCloseTimer();
-        if (!filtersPanelOpen) return;
+        if (!filtersPanelOpen || ignoreBubbleClose) return;
         bubbleCloseTimer = window.setTimeout(function () {
             bubbleCloseTimer = null;
+            if (ignoreBubbleClose) return;
             closeFilterBubble();
         }, BUBBLE_CLOSE_DELAY_MS);
     }
@@ -1407,12 +1507,39 @@
             }, true);
         });
 
+        // Direct bindings for filter actions (same reliability as chart toggles)
+        rootEl.querySelectorAll('.currentConfigFilter, .createFilterPresetBtn, .allFilters').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                clearBubbleCloseTimer();
+                if (btn.classList.contains('currentConfigFilter')) applyCurrentSettings();
+                else if (btn.classList.contains('createFilterPresetBtn')) savePreset();
+                else if (btn.classList.contains('allFilters')) applyAllFilters();
+            }, true);
+        });
+
         rootEl.addEventListener('click', function (e) {
             var target = e.target.closest('button');
             if (!target || !rootEl.contains(target)) return;
 
             if (target.hasAttribute('data-pot-chart-toggle')) {
                 // Handled by direct capture listeners above
+                return;
+            }
+
+            if (target.classList.contains('currentConfigFilter')
+                || target.classList.contains('createFilterPresetBtn')
+                || target.classList.contains('allFilters')) {
+                // Handled by direct capture listeners above
+                return;
+            }
+
+            var deleteId = target.getAttribute('data-pot-preset-delete');
+            if (deleteId) {
+                e.preventDefault();
+                e.stopPropagation();
+                deletePreset(deleteId);
                 return;
             }
 
@@ -1425,14 +1552,6 @@
                 return;
             }
 
-            if (target.classList.contains('allFilters')) {
-                applyAllFilters();
-                return;
-            }
-            if (target.classList.contains('currentConfigFilter')) {
-                applyCurrentSettings();
-                return;
-            }
             if (target.classList.contains('toggleAdvancedFilters')) {
                 e.stopPropagation();
                 clearBubbleCloseTimer();
@@ -1440,10 +1559,6 @@
                 if (advancedOpen) filtersPanelOpen = true;
                 syncBubbleSize();
                 updateActive();
-                return;
-            }
-            if (target.classList.contains('createFilterPresetBtn')) {
-                savePreset();
                 return;
             }
             if (target.classList.contains('noFilters')) {
