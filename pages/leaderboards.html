@@ -103,11 +103,11 @@
                 <!-- Timeframe -->
                 <div class="flex flex-col w-full transition-all duration-500 shrink-0">
                     <button id="cfg-alltime"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[7px] rounded cursor-pointer w-full shrink-0"
                         onclick="setTime('alltime',this)">
-                        <span class="material-symbols-outlined text-[18px] shrink-0">all_inclusive</span>
+                        <span class="material-symbols-outlined text-[18px] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">all_inclusive</span>
                         <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">all
+                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">all
                             time</span>
                     </button>
                     <button id="cfg-weekly"
@@ -118,12 +118,12 @@
                             class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">weekly</span>
                     </button>
                     <button id="cfg-daily"
-                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[7px] rounded cursor-pointer w-full shrink-0"
+                        class="cfg-btn is-time flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[7px] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                         onclick="setTime('daily',this)">
                         <span
-                            class="material-symbols-outlined text-[18px] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">today</span>
+                            class="material-symbols-outlined text-[18px] shrink-0">today</span>
                         <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">daily</span>
+                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">daily</span>
                     </button>
                 </div>
 
@@ -270,7 +270,7 @@ window.setTimeout = function(handler, timeout) {
 window.__spaPageInit = function() {
             var lbState = {
                 scope: 'global',
-                timeframe: 'daily',
+                timeframe: 'alltime',
                 amount: 30,
             };
             var lbRequestId = 0;
