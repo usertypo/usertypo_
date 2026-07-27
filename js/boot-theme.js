@@ -1,7 +1,8 @@
 /**
  * Blocking early theme boot — runs before CSS paints.
- * Prefers the usertypo_theme_boot cookie (saved palette) so the first paint
- * matches the user's theme; falls back to Abyss (dark OS) / Paper (light OS).
+ * Always starts with Abyss (dark OS) / Paper (light OS) so the site never
+ * flashes the classic usertypo_ cyan/blue (or any saved theme) before
+ * settings.js applies the user's real palette.
  * Keep Abyss/Paper palette keys in sync with settings.js THEME_PALETTES.
  */
 (function () {
@@ -44,45 +45,10 @@
         ].join(', ');
     }
 
-    function readThemeBootCookie() {
-        try {
-            var parts = String(document.cookie || '').split(';');
-            for (var i = 0; i < parts.length; i++) {
-                var part = parts[i].trim();
-                if (part.indexOf('usertypo_theme_boot=') !== 0) continue;
-                var raw = decodeURIComponent(part.slice('usertypo_theme_boot='.length));
-                var data = JSON.parse(raw);
-                if (!data || !data.bg || !data.ap) return null;
-                return {
-                    name: data.n || 'saved',
-                    bgMain: data.bg,
-                    bgSecondary: data.bs || data.bg,
-                    textPrimary: data.tp || '#cccccc',
-                    textMuted: data.tm || '#777777',
-                    accentPrimary: data.ap,
-                    accentHover: data.ah || data.ap,
-                    error: data.er || '#ff4444',
-                    isLight: !!data.l
-                };
-            }
-        } catch (e) { /* ignore */ }
-        return null;
-    }
-
-    var saved = readThemeBootCookie();
-    var name;
-    var p;
-    var isLight;
-
-    if (saved) {
-        name = saved.name || 'saved';
-        p = saved;
-        isLight = !!saved.isLight;
-    } else {
-        name = preferredDefault();
-        p = name === 'Paper' ? PAPER : ABYSS;
-        isLight = name === 'Paper';
-    }
+    // Interim only — ignore saved theme cookie / localStorage on first paint
+    var name = preferredDefault();
+    var p = name === 'Paper' ? PAPER : ABYSS;
+    var isLight = name === 'Paper';
 
     var accentRGB = hexToRgb(p.accentPrimary);
     var bgSecRGB = hexToRgb(p.bgSecondary);
@@ -126,4 +92,12 @@
     document.documentElement.appendChild(style);
     document.documentElement.style.backgroundColor = p.bgMain;
     document.documentElement.setAttribute('data-theme-boot', name);
+
+    // Shared with js/favicon.js for first-paint tab icon colors
+    window.__usertypoBootPalette = {
+        name: name,
+        bgMain: p.bgMain,
+        accentPrimary: p.accentPrimary,
+        isLight: isLight
+    };
 })();

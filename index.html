@@ -8,11 +8,15 @@
     <title>Home - Typing Test | usertypo_ </title>
     <base href="/" />
     <script>window.__usertypoBootPath = window.location.pathname;</script>
-    <!-- Blocking: apply saved/OS theme before any CSS paints (prevents usertypo_ blue FOUC) -->
-    <script src="js/boot-theme.js?v=3"></script>
+    <!-- Blocking: Abyss/Paper by OS before CSS paints (prevents usertypo_ blue FOUC) -->
+    <script src="js/boot-theme.js?v=5"></script>
+    <!-- Theme-aware tab icon: pixel o + accent underscore on theme bg -->
+    <link id="usertypo-favicon" rel="icon" type="image/png" href="/logo-assets/favicon-o.png" />
+    <script src="js/favicon.js?v=5"></script>
     <link rel="preload" href="/logo-assets/typ_.png" as="image" />
     <link rel="preload" href="/logo-assets/user.png" as="image" />
     <link rel="preload" href="/logo-assets/o.png" as="image" />
+    <link rel="preload" href="/logo-assets/favicon-o.png" as="image" />
     <link rel="preload" href="/js/boot-typing.js?v=5" as="script" />
     <script>
         (function installAssetRecovery() {
@@ -1420,7 +1424,7 @@
     <script src="screenshot.js"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=30"></script>
+    <script src="settings.js?v=31"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Auth + data API (before router) -->
