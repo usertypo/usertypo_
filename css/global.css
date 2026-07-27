@@ -219,19 +219,25 @@ html {
     color: #475569 !important;
 }
 
-/* Footer link weight — slightly heavier than default mono; pill stays regular */
+/* Footer link weight — mono fonts only ship 400/700, so 700 is the visible bump; pill stays regular */
 .footer-nav-weight {
-    font-weight: 500;
+    font-weight: 700 !important;
 }
 
-.footer-nav-weight .footer-pill {
-    font-weight: 400;
+.footer-nav-weight .footer-pill,
+.footer-nav-weight .footer-pill * {
+    font-weight: 400 !important;
+}
+
+/* Logos + Contact/Terms/Privacy share one gap (display:contents flattens the socials wrapper) */
+.footer-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .footer-socials {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
+    display: contents;
 }
 
 .footer-social-btn {

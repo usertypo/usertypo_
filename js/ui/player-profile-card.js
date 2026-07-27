@@ -259,6 +259,7 @@
 
     function fillCard(card) {
         var nameEl = $('ppc-username');
+        var publicIdEl = $('ppc-public-id');
         var titleEl = $('ppc-level-title');
         var xpEl = $('ppc-xp-progress');
         var streakEl = $('ppc-streak');
@@ -271,6 +272,11 @@
 
         if (statusEl) statusEl.textContent = '';
         if (nameEl) nameEl.textContent = card.username || 'Player';
+        if (publicIdEl) {
+            publicIdEl.textContent = card.publicId
+                ? String(card.publicId).toUpperCase()
+                : '—';
+        }
         if (titleEl) titleEl.textContent = card.title || 'Novice';
         if (xpEl) xpEl.textContent = (card.xpIntoLevel || 0) + ' / ' + (card.xpToNext || 100) + ' XP';
         if (streakEl) streakEl.textContent = String(card.currentStreak || 0);
@@ -309,6 +315,8 @@
         if (statusEl) statusEl.textContent = 'Loading…';
         var nameEl = $('ppc-username');
         if (nameEl) nameEl.textContent = 'Loading…';
+        var publicIdEl = $('ppc-public-id');
+        if (publicIdEl) publicIdEl.textContent = '—';
         var slot = $('ppc-friend-slot');
         if (slot) slot.innerHTML = '';
     }

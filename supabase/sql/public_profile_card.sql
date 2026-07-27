@@ -95,6 +95,7 @@ begin
 
   return jsonb_build_object(
     'user_id', v_profile.user_id,
+    'public_id', v_profile.public_id,
     'username', v_profile.username,
     'display_name', v_profile.display_name,
     'avatar_url', v_profile.avatar_url,

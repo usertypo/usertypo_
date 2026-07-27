@@ -46,6 +46,7 @@
         var summary = raw.summary || {};
         return {
             userId: raw.user_id,
+            publicId: raw.public_id || null,
             username: raw.username || raw.display_name || 'Player',
             displayName: raw.display_name || null,
             avatarUrl: raw.avatar_url || '',
