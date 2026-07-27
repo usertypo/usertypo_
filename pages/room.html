@@ -390,7 +390,7 @@
         </div>
 
         <!-- Bottom CTA Bar -->
-        <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-5">
+        <div class="fixed bottom-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-5">
             <button
                 class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong inline-flex items-center justify-center whitespace-nowrap flex-nowrap"
                 id="ready-btn" type="button">
@@ -407,7 +407,7 @@
 
         <!-- Add Players Button (bottom-left). Container is pointer-events-none so its
              invisible panel width cannot steal clicks from the center Ready/Leave CTA. -->
-        <div class="fixed bottom-8 left-8 z-50 flex flex-col gap-2 items-start pointer-events-none" id="invite-menu-container">
+        <div class="fixed bottom-16 left-8 z-50 flex flex-col gap-2 items-start pointer-events-none" id="invite-menu-container">
             <div id="invite-options"
                 class="flex flex-col gap-2 opacity-0 pointer-events-none translate-y-4 transition-all duration-300 mb-2 w-[min(92vw,22rem)]">
                 <div class="panel-surface rounded-2xl p-4">
@@ -458,7 +458,7 @@
         </div>
 
         <!-- Chat (bottom-right). Same hit-target fix as invite menu. -->
-        <div class="fixed bottom-8 right-8 z-50 flex flex-col gap-2 items-end pointer-events-none" id="lobby-chat-container">
+        <div class="fixed bottom-16 right-8 z-50 flex flex-col gap-2 items-end pointer-events-none" id="lobby-chat-container">
             <div id="lobby-chat-window"
                 class="flex flex-col opacity-0 pointer-events-none translate-y-4 transition-all duration-300 mb-2 w-[min(92vw,22rem)] panel-surface rounded-2xl overflow-hidden"
                 style="height: 28rem;">
@@ -525,11 +525,20 @@
                 <span class="material-symbols-outlined text-primary text-2xl">chat_bubble</span>
             </button>
         </div>
-    </div>
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!--  HOST PLAYER MODAL                                     -->
-    <!-- ═══════════════════════════════════════════════════════ -->
+        <footer id="lobby-view-footer" class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 shrink-0 mt-auto">
+            <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
+                title="Mute sounds" aria-label="Mute sounds">
+                <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+            </button>
+            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono footer-nav-weight">
+                <span class="material-symbols-outlined text-[14px]">palette</span>
+                <span>Themes and Languages</span>
+                <button type="button" data-footer-picker
+                    class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
+            </div>
+        </footer>
+    </div>
     <div id="host-player-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="host-modal-backdrop" class="absolute inset-0 cursor-pointer"></div>
@@ -638,19 +647,6 @@
 
             </div>
         </main>
-
-        <footer class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 shrink-0 mt-auto">
-            <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
-                title="Mute sounds" aria-label="Mute sounds">
-                <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
-            </button>
-            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                <span class="material-symbols-outlined text-[14px]">palette</span>
-                <span>Themes and Languages</span>
-                <button type="button" data-footer-picker
-                    class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
-            </div>
-        </footer>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════ -->
@@ -715,7 +711,7 @@
                 title="Mute sounds" aria-label="Mute sounds">
                 <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
             </button>
-            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
+            <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono footer-nav-weight">
                 <span class="material-symbols-outlined text-[14px]">palette</span>
                 <span>Themes and Languages</span>
                 <button type="button" data-footer-picker

@@ -219,6 +219,46 @@ html {
     color: #475569 !important;
 }
 
+/* Footer link weight — slightly heavier than default mono; pill stays regular */
+.footer-nav-weight {
+    font-weight: 500;
+}
+
+.footer-nav-weight .footer-pill {
+    font-weight: 400;
+}
+
+.footer-socials {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.footer-social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    line-height: 0;
+    font: inherit;
+}
+
+.footer-social-btn:hover {
+    color: var(--theme-primary, #00d0ff);
+}
+
+.footer-social-icon {
+    width: 0.62rem;
+    height: 0.62rem;
+    display: block;
+    flex-shrink: 0;
+}
+
 /* ── Player level avatar (photo + XP ring + level badge) ── */
 .player-level-avatar {
     position: relative;
