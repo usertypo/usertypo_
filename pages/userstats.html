@@ -1916,9 +1916,6 @@ if ('scrollRestoration' in history) {
                 var rankContext = { mode: 'time', amount: 30, timeframe: 'alltime' };
 
                 if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'E',location:'userstats.html:loadUserRank',message:'leaderboards module missing',data:{},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
                     if (display) display.textContent = '—';
                     if (tooltip) tooltip.textContent = 'Global rank unavailable';
                     return;
@@ -1930,9 +1927,6 @@ if ('scrollRestoration' in history) {
                 try {
                     await window.usertypoAuth.ready();
                     var state = window.usertypoAuth.getState();
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'A',location:'userstats.html:loadUserRank',message:'auth state before getMyRank',data:{isSignedIn:!!(state&&state.isSignedIn),userIdPrefix:state&&state.user&&state.user.id?String(state.user.id).slice(0,12):null,hasModule:true},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
                     if (!state.isSignedIn) {
                         window.usertypoLeaderboards.renderRankStat(display, tooltip, { error: 'guest' }, rankContext);
                         return;
@@ -1940,13 +1934,7 @@ if ('scrollRestoration' in history) {
 
                     var result = await window.usertypoLeaderboards.getMyRank(rankContext);
                     window.usertypoLeaderboards.renderRankStat(display, tooltip, result, rankContext);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'E',location:'userstats.html:loadUserRank',message:'after renderRankStat',data:{rank:result&&result.rank,source:result&&result.source,reason:result&&result.reason,error:result&&result.error,completedTests:result&&result.completedTests,bestWpm:result&&result.bestWpm,displayText:display?display.textContent:null,tooltipText:tooltip?tooltip.textContent:null},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
                 } catch (err) {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'userstats.html:loadUserRank',message:'loadUserRank threw',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';
                     if (tooltip) tooltip.textContent = 'Could not load global rank';
