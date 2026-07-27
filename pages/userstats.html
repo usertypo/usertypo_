@@ -1932,32 +1932,8 @@ if ('scrollRestoration' in history) {
                         return;
                     }
 
-                    var myId = state.user && state.user.id;
                     var result = await window.usertypoLeaderboards.getMyRank(rankContext);
                     window.usertypoLeaderboards.renderRankStat(display, tooltip, result, rankContext);
-
-                    // If still empty, force one more board scan (same list as /leaderboards).
-                    if (!result || result.rank == null) {
-                        if (typeof window.usertypoLeaderboards.getLeaderboard === 'function') {
-                            var board = await window.usertypoLeaderboards.getLeaderboard({
-                                mode: 'time',
-                                amount: 30,
-                                timeframe: 'alltime',
-                                limit: 100,
-                            });
-                            var mine = (board.entries || []).find(function (entry) {
-                                return entry && myId && String(entry.userId) === String(myId);
-                            });
-                            if (mine && mine.rank != null) {
-                                window.usertypoLeaderboards.renderRankStat(display, tooltip, {
-                                    rank: mine.rank,
-                                    wpm: mine.wpm,
-                                    accuracy: mine.accuracy,
-                                    totalPlayers: Math.max((board.entries || []).length, Number(mine.rank) || 0),
-                                }, rankContext);
-                            }
-                        }
-                    }
                 } catch (err) {
                     console.error('[usertypo userstats] rank load failed', err);
                     if (display) display.textContent = '—';

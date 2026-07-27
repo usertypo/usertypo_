@@ -114,9 +114,40 @@
             return;
         }
         if (!result || result.rank == null) {
-            tooltipEl.textContent = timeframe === 'alltime'
-                ? 'All-time ' + modeLabel + ' rank needs ≥50 completed tests and ≥30 WPM'
-                : 'Complete a ranked ' + modeLabel + ' test to appear on the ' + timeframeLabel + ' leaderboard';
+            var reason = result && result.reason;
+            var completed = result && result.completedTests != null
+                ? Number(result.completedTests)
+                : null;
+            var bestWpm = result && result.bestWpm != null ? Number(result.bestWpm) : null;
+
+            if (reason === 'opted_out') {
+                tooltipEl.textContent = 'Turn on leaderboard visibility in settings to show your rank';
+                return;
+            }
+            if (timeframe === 'alltime') {
+                if (reason === 'below_tests' || (completed != null && completed < 50)) {
+                    tooltipEl.textContent =
+                        'All-time ' + modeLabel + ' rank needs ≥50 completed tests' +
+                        (completed != null ? ' (you have ' + completed + ')' : '');
+                    return;
+                }
+                if (reason === 'no_mode_score' || bestWpm == null || !isFinite(bestWpm)) {
+                    tooltipEl.textContent =
+                        'Complete a ' + modeLabel + ' test at ≥30 WPM to earn an all-time rank';
+                    return;
+                }
+                if (reason === 'below_wpm' || bestWpm < 30) {
+                    tooltipEl.textContent =
+                        'All-time ' + modeLabel + ' rank needs a best of ≥30 WPM' +
+                        (isFinite(bestWpm) ? ' (yours is ' + Math.round(bestWpm) + ')' : '');
+                    return;
+                }
+                tooltipEl.textContent =
+                    'All-time ' + modeLabel + ' rank needs ≥50 completed tests and ≥30 WPM';
+                return;
+            }
+            tooltipEl.textContent =
+                'Complete a ranked ' + modeLabel + ' test to appear on the ' + timeframeLabel + ' leaderboard';
             return;
         }
 
@@ -124,13 +155,28 @@
         tooltipEl.textContent =
             'Global rank #' +
             Number(result.rank).toLocaleString() +
-            ' of ' +
-            totalPlayers.toLocaleString() +
-            ' players (' +
+            (totalPlayers > 0 ? ' of ' + totalPlayers.toLocaleString() + ' players' : '') +
+            ' (' +
             modeLabel +
             ', ' +
             timeframeLabel +
             ')';
+    }
+
+    function getSignedInUserId() {
+        if (!window.usertypoAuth) return null;
+        try {
+            var state = window.usertypoAuth.getState();
+            if (!state || !state.isSignedIn || !state.user) return null;
+            return state.user.id || state.user.userId || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function entryMatchesUser(entry, userId) {
+        if (!entry || !userId) return false;
+        return String(entry.userId) === String(userId);
     }
 
     function mapEntry(row) {
@@ -364,40 +410,129 @@
 
     /**
      * Resolve rank by scanning the same top list the leaderboards page renders.
-     * More reliable than the dedicated rank endpoint when Redis/Postgres disagree.
+     * Tries Redis first, then Postgres, so a Redis miss still finds Postgres ranks.
      */
     async function findMyRankOnBoard(options) {
         var mode = normalizeMode(options && options.mode);
         var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
         var timeframe = normalizeTimeframe(options && options.timeframe);
-        var myId = null;
-        if (window.usertypoAuth) {
-            var state = window.usertypoAuth.getState();
-            if (state && state.isSignedIn && state.user) {
-                myId = state.user.id || state.user.userId || null;
-            }
-        }
+        var myId = getSignedInUserId();
         if (!myId) return null;
 
-        var board = await getLeaderboard({
-            mode: mode,
-            amount: amount,
-            timeframe: timeframe,
-            limit: 100,
-        });
-        var entries = (board && board.entries) || [];
-        var mine = entries.find(function (entry) {
-            return entry && String(entry.userId) === String(myId);
-        });
-        if (!mine || mine.rank == null) return null;
+        async function scan(board) {
+            var entries = (board && board.entries) || [];
+            var mine = entries.find(function (entry) {
+                return entryMatchesUser(entry, myId);
+            });
+            if (!mine || mine.rank == null) return null;
+            return {
+                rank: Number(mine.rank),
+                wpm: mine.wpm == null ? null : Number(mine.wpm),
+                accuracy: mine.accuracy == null ? null : Number(mine.accuracy),
+                totalPlayers: Math.max(entries.length, Number(mine.rank) || 0),
+                source: (board && board.source) || 'board-scan',
+            };
+        }
 
-        return {
-            rank: Number(mine.rank),
-            wpm: mine.wpm == null ? null : Number(mine.wpm),
-            accuracy: mine.accuracy == null ? null : Number(mine.accuracy),
-            totalPlayers: Math.max(entries.length, Number(mine.rank) || 0),
-            source: (board && board.source) || 'board-scan',
-        };
+        try {
+            var redisBoard = await getLeaderboard({
+                mode: mode,
+                amount: amount,
+                timeframe: timeframe,
+                limit: 100,
+            });
+            var fromRedis = await scan(redisBoard);
+            if (fromRedis) return fromRedis;
+        } catch (err) {
+            console.warn('[usertypo leaderboards] redis board-scan failed', err);
+        }
+
+        try {
+            var pgBoard = await getLeaderboardFromPostgres({
+                mode: mode,
+                amount: amount,
+                timeframe: timeframe,
+                limit: 100,
+            });
+            var fromPg = await scan(pgBoard);
+            if (fromPg) return fromPg;
+        } catch (err) {
+            console.warn('[usertypo leaderboards] postgres board-scan failed', err);
+        }
+
+        return null;
+    }
+
+    async function getRankEligibility(options) {
+        var mode = normalizeMode(options && options.mode);
+        var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
+        var myId = getSignedInUserId();
+        if (!myId || !window.usertypoDb) {
+            return {
+                completedTests: null,
+                bestWpm: null,
+                showOnLeaderboard: true,
+                reason: 'auth_missing',
+            };
+        }
+
+        try {
+            var client = await getClient();
+            var countResult = await client
+                .from('typing_sessions')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', myId)
+                .eq('failed', false);
+
+            var bestResult = await client
+                .from('typing_sessions')
+                .select('wpm')
+                .eq('user_id', myId)
+                .eq('mode', mode)
+                .eq('amount', amount)
+                .eq('failed', false)
+                .gt('wpm', 0)
+                .order('wpm', { ascending: false })
+                .limit(1);
+
+            var profileResult = await client
+                .from('profiles')
+                .select('show_on_leaderboard')
+                .eq('user_id', myId)
+                .maybeSingle();
+
+            var completedTests = countResult.error ? null : (Number(countResult.count) || 0);
+            var bestRow = (!bestResult.error && Array.isArray(bestResult.data) && bestResult.data[0])
+                ? bestResult.data[0]
+                : null;
+            var bestWpm = bestRow && bestRow.wpm != null ? Number(bestRow.wpm) : null;
+            var showOnLeaderboard = !(
+                profileResult &&
+                profileResult.data &&
+                profileResult.data.show_on_leaderboard === false
+            );
+
+            var reason = 'not_ranked';
+            if (!showOnLeaderboard) reason = 'opted_out';
+            else if (completedTests != null && completedTests < 50) reason = 'below_tests';
+            else if (bestWpm == null || !isFinite(bestWpm)) reason = 'no_mode_score';
+            else if (bestWpm < 30) reason = 'below_wpm';
+
+            return {
+                completedTests: completedTests,
+                bestWpm: bestWpm,
+                showOnLeaderboard: showOnLeaderboard,
+                reason: reason,
+            };
+        } catch (err) {
+            console.warn('[usertypo leaderboards] eligibility lookup failed', err);
+            return {
+                completedTests: null,
+                bestWpm: null,
+                showOnLeaderboard: true,
+                reason: 'not_ranked',
+            };
+        }
     }
 
     async function getMyRank(options) {
@@ -425,7 +560,7 @@
             console.warn('[usertypo leaderboards] board-scan rank failed', err);
         }
 
-        // 2) Dedicated Redis rank endpoint
+        // 2) Dedicated Redis rank endpoint (works beyond the visible top list).
         try {
             var redisResult = await callLeaderboardFunction({
                 action: 'rank',
@@ -450,7 +585,7 @@
             console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
         }
 
-        // 3) Postgres RPC
+        // 3) Postgres RPC — full board, not capped at top 100.
         try {
             var pg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
             if (pg && pg.rank != null && isFinite(Number(pg.rank)) && Number(pg.rank) > 0) {
@@ -460,12 +595,19 @@
             console.warn('[usertypo leaderboards] postgres rank failed', err);
         }
 
+        var eligibility = timeframe === 'alltime'
+            ? await getRankEligibility({ mode: mode, amount: amount })
+            : { reason: 'not_ranked', completedTests: null, bestWpm: null };
+
         return {
             rank: null,
             wpm: null,
             accuracy: null,
             totalPlayers: 0,
             source: 'none',
+            reason: eligibility.reason || 'not_ranked',
+            completedTests: eligibility.completedTests,
+            bestWpm: eligibility.bestWpm,
         };
     }
 

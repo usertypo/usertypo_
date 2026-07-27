@@ -111,6 +111,7 @@ as $$
   limit least(greatest(coalesce(p_limit, 50), 1), 100);
 $$;
 
+-- Full-board rank for the signed-in caller (not capped at top 100).
 create or replace function public.get_my_leaderboard_rank(
   p_mode text default 'time',
   p_amount integer default 30,
@@ -127,20 +128,73 @@ stable
 security definer
 set search_path = public
 as $$
-  with board as (
-    select *
-    from public.get_leaderboard(p_mode, p_amount, p_timeframe, 100000)
+  with me as (
+    select coalesce(
+      nullif(auth.jwt() ->> 'sub', ''),
+      nullif(auth.jwt() ->> 'user_id', '')
+    ) as user_id
   ),
-  me as (
-    select (auth.jwt() ->> 'sub') as user_id
+  user_test_counts as (
+    select
+      ts.user_id,
+      count(*)::integer as completed_tests
+    from public.typing_sessions ts
+    where ts.failed = false
+    group by ts.user_id
+  ),
+  filtered_sessions as (
+    select
+      ts.user_id,
+      ts.wpm,
+      ts.accuracy,
+      ts.created_at
+    from public.typing_sessions ts
+    inner join public.profiles p on p.user_id = ts.user_id
+    left join user_test_counts utc on utc.user_id = ts.user_id
+    where ts.mode = p_mode
+      and ts.amount = p_amount
+      and ts.failed = false
+      and p.show_on_leaderboard = true
+      and (
+        (
+          p_timeframe = 'alltime'
+          and ts.wpm >= 30
+          and coalesce(utc.completed_tests, 0) >= 50
+        )
+        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
+        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
+      )
+  ),
+  best_per_user as (
+    select distinct on (fs.user_id)
+      fs.user_id,
+      fs.wpm,
+      fs.accuracy,
+      fs.created_at as session_created_at
+    from filtered_sessions fs
+    order by fs.user_id, fs.wpm desc, fs.accuracy desc nulls last, fs.created_at asc
+  ),
+  ranked as (
+    select
+      row_number() over (
+        order by bpu.wpm desc, bpu.accuracy desc nulls last, bpu.session_created_at asc
+      ) as rank,
+      bpu.user_id,
+      bpu.wpm,
+      bpu.accuracy
+    from best_per_user bpu
+  ),
+  totals as (
+    select count(*)::bigint as total_players from ranked
   )
   select
-    b.rank,
-    b.wpm,
-    b.accuracy,
-    (select count(*)::bigint from board) as total_players
-  from board b
-  inner join me on me.user_id = b.user_id;
+    r.rank,
+    r.wpm,
+    r.accuracy,
+    t.total_players
+  from ranked r
+  cross join totals t
+  inner join me on me.user_id is not null and me.user_id = r.user_id;
 $$;
 
 revoke all on function public.get_leaderboard(text, integer, text, integer) from public;
