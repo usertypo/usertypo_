@@ -442,8 +442,14 @@
                 limit: 100,
             });
             var fromRedis = await scan(redisBoard);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'B',location:'leaderboards.js:findMyRankOnBoard',message:'redis board scan',data:{mode:mode,amount:amount,timeframe:timeframe,myIdPrefix:String(myId).slice(0,12),entryCount:(redisBoard&&redisBoard.entries||[]).length,source:redisBoard&&redisBoard.source,topIds:(redisBoard&&redisBoard.entries||[]).slice(0,5).map(function(e){return e&&e.userId?String(e.userId).slice(0,12):null;}),foundRank:fromRedis&&fromRedis.rank},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (fromRedis) return fromRedis;
         } catch (err) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'leaderboards.js:findMyRankOnBoard',message:'redis board scan error',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             console.warn('[usertypo leaderboards] redis board-scan failed', err);
         }
 
@@ -455,8 +461,14 @@
                 limit: 100,
             });
             var fromPg = await scan(pgBoard);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'C',location:'leaderboards.js:findMyRankOnBoard',message:'postgres board scan',data:{entryCount:(pgBoard&&pgBoard.entries||[]).length,topIds:(pgBoard&&pgBoard.entries||[]).slice(0,5).map(function(e){return e&&e.userId?String(e.userId).slice(0,12):null;}),myIdPrefix:String(myId).slice(0,12),foundRank:fromPg&&fromPg.rank},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (fromPg) return fromPg;
         } catch (err) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'leaderboards.js:findMyRankOnBoard',message:'postgres board scan error',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             console.warn('[usertypo leaderboards] postgres board-scan failed', err);
         }
 
@@ -569,6 +581,10 @@
                 timeframe: timeframe,
             }, true);
 
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'leaderboards.js:getMyRank',message:'redis rank endpoint',data:{ok:!!(redisResult&&redisResult.ok),status:redisResult&&redisResult.status,rank:redisResult&&redisResult.data&&redisResult.data.rank,source:redisResult&&redisResult.data&&redisResult.data.source,eligible:redisResult&&redisResult.data&&redisResult.data.alltime_eligible,completed:redisResult&&redisResult.data&&redisResult.data.completed_tests,err:redisResult&&redisResult.data&&redisResult.data.error},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+
             if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
                 var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
                 if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
@@ -588,16 +604,26 @@
         // 3) Postgres RPC — full board, not capped at top 100.
         try {
             var pg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'leaderboards.js:getMyRank',message:'postgres rpc rank',data:{rank:pg&&pg.rank,totalPlayers:pg&&pg.totalPlayers,wpm:pg&&pg.wpm},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (pg && pg.rank != null && isFinite(Number(pg.rank)) && Number(pg.rank) > 0) {
                 return pg;
             }
         } catch (err) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'D',location:'leaderboards.js:getMyRank',message:'postgres rpc error',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             console.warn('[usertypo leaderboards] postgres rank failed', err);
         }
 
         var eligibility = timeframe === 'alltime'
             ? await getRankEligibility({ mode: mode, amount: amount })
             : { reason: 'not_ranked', completedTests: null, bestWpm: null };
+
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'92fa40'},body:JSON.stringify({sessionId:'92fa40',runId:'pre-fix',hypothesisId:'B',location:'leaderboards.js:getMyRank',message:'final null rank with eligibility',data:{reason:eligibility.reason,completedTests:eligibility.completedTests,bestWpm:eligibility.bestWpm,showOnLeaderboard:eligibility.showOnLeaderboard,mode:mode,amount:amount,timeframe:timeframe},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
 
         return {
             rank: null,
