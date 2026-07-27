@@ -1433,60 +1433,6 @@ window.setTimeout = function(handler, timeout) {
     return id;
 };
 
-var __prevSpaCleanup = window.__spaPageCleanup;
-window.__spaPageCleanup = function() {
-    __pageAbort.abort();
-    __pageTimers.forEach(function(t) {
-        if (t.kind === 'interval') __origClearInterval(t.id);
-        else __origClearTimeout(t.id);
-    });
-    document.addEventListener = __origDocAEL;
-    window.addEventListener = __origWinAEL;
-    window.setInterval = __origSetInterval;
-    window.setTimeout = __origSetTimeout;
-    if (typeof __prevSpaCleanup === 'function') {
-        try { __prevSpaCleanup(); } catch (e) {}
-    }
-};
-
-</script>
-
-<script>
-// --- SPA lifecycle (auto-injected) ---
-const __pageAbort = new AbortController();
-const __pageSignal = __pageAbort.signal;
-const __pageTimers = [];
-const __origDocAEL = document.addEventListener.bind(document);
-const __origWinAEL = window.addEventListener.bind(window);
-const __origSetInterval = window.setInterval.bind(window);
-const __origSetTimeout = window.setTimeout.bind(window);
-const __origClearInterval = window.clearInterval.bind(window);
-const __origClearTimeout = window.clearTimeout.bind(window);
-function __spaMergeSignal(options) {
-    if (options && typeof options === 'object') {
-        if (options.signal) return options;
-        return Object.assign({}, options, { signal: __pageSignal });
-    }
-    if (typeof options === 'boolean') return { capture: options, signal: __pageSignal };
-    return { signal: __pageSignal };
-}
-document.addEventListener = function(type, listener, options) {
-    return __origDocAEL(type, listener, __spaMergeSignal(options));
-};
-window.addEventListener = function(type, listener, options) {
-    return __origWinAEL(type, listener, __spaMergeSignal(options));
-};
-window.setInterval = function(handler, timeout) {
-    const id = __origSetInterval(handler, timeout);
-    __pageTimers.push({ kind: 'interval', id: id });
-    return id;
-};
-window.setTimeout = function(handler, timeout) {
-    const id = __origSetTimeout(handler, timeout);
-    __pageTimers.push({ kind: 'timeout', id: id });
-    return id;
-};
-
 if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';
         }
