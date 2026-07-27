@@ -46,8 +46,10 @@
     var ignoreBubbleClose = false;
     var activePresetId = null;
     var themeObserver = null;
-    var BUBBLE_W_COLLAPSED = 40;
-    var BUBBLE_H_COLLAPSED = 40;
+    var BUBBLE_W_COLLAPSED = '2.131rem';
+    var BUBBLE_H_COLLAPSED = '2.131rem';
+    var BUBBLE_W_COLLAPSED_REM = 2.131;
+    var BUBBLE_H_COLLAPSED_REM = 2.131;
     var BUBBLE_W_FILTERS = 520;
     var BUBBLE_W_ADVANCED = 520;
     var BUBBLE_ANIM_MS = 400;
@@ -498,23 +500,27 @@
             + ', border-radius ' + BUBBLE_ANIM_MS + 'ms ' + BUBBLE_EASING;
     }
 
+    function uiRemPx(rem) {
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+
     function measureBubbleWidth() {
         var bubble = getBubbleEl();
-        if (!bubble) return BUBBLE_W_FILTERS;
+        if (!bubble) return uiRemPx(27.709);
         var actions = bubble.querySelector('.pot-filters-actions');
-        if (!actions) return BUBBLE_W_FILTERS;
-        // Icon column (40) + left padding (~8) + actions content
-        var needed = Math.ceil(actions.scrollWidth + 48);
-        return Math.max(needed, 280);
+        if (!actions) return uiRemPx(27.709);
+        // Icon column + left padding + actions content
+        var needed = Math.ceil(actions.scrollWidth + uiRemPx(2.557));
+        return Math.max(needed, uiRemPx(14.92));
     }
 
     function measureBubbleHeight(wantAdvanced) {
         var bubble = getBubbleEl();
-        if (!bubble) return BUBBLE_H_COLLAPSED;
+        if (!bubble) return uiRemPx(BUBBLE_H_COLLAPSED_REM);
 
         var presetsEl = rootEl && rootEl.querySelector('[data-pot-presets]');
         var hasPresets = !!(presetsEl && !presetsEl.classList.contains('hidden') && presetsEl.children.length);
-        if (!wantAdvanced && !hasPresets) return BUBBLE_H_COLLAPSED;
+        if (!wantAdvanced && !hasPresets) return uiRemPx(BUBBLE_H_COLLAPSED_REM);
 
         var prevTransition = bubble.style.transition;
         var prevWidth = bubble.style.width;
@@ -538,7 +544,7 @@
         bubble.style.height = prevHeight;
         bubble.style.visibility = prevVisibility;
         bubble.style.transition = prevTransition;
-        return Math.max(height, BUBBLE_H_COLLAPSED);
+        return Math.max(height, uiRemPx(BUBBLE_H_COLLAPSED_REM));
     }
 
     function syncBubbleSize() {
@@ -571,9 +577,9 @@
             }
             bubble.style.transition = bubbleTransition();
             bubble.classList.remove('is-open');
-            bubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-            bubble.style.height = BUBBLE_H_COLLAPSED + 'px';
-            bubble.style.borderRadius = '20px';
+            bubble.style.width = BUBBLE_W_COLLAPSED;
+            bubble.style.height = BUBBLE_H_COLLAPSED;
+            bubble.style.borderRadius = '1.066rem';
             bubbleAnimTimer = window.setTimeout(function () {
                 bubbleAnimTimer = null;
                 if (!filtersPanelOpen) {
@@ -588,7 +594,7 @@
 
         var targetW = measureBubbleWidth();
         var targetH = measureBubbleHeight(advancedOpen);
-        var targetRadius = advancedOpen ? '1.25rem' : '20px';
+        var targetRadius = advancedOpen ? '1.25rem' : '1.066rem';
 
         if (toggle) {
             toggle.setAttribute('aria-label', 'Close filters');
@@ -602,12 +608,12 @@
 
         if (!wasOpen) {
             bubble.style.transition = 'none';
-            bubble.style.width = BUBBLE_W_COLLAPSED + 'px';
-            bubble.style.height = BUBBLE_H_COLLAPSED + 'px';
-            bubble.style.borderRadius = '20px';
+            bubble.style.width = BUBBLE_W_COLLAPSED;
+            bubble.style.height = BUBBLE_H_COLLAPSED;
+            bubble.style.borderRadius = '1.066rem';
             void bubble.offsetWidth;
         } else if (!wasAdvanced && advancedOpen) {
-            bubble.style.height = BUBBLE_H_COLLAPSED + 'px';
+            bubble.style.height = BUBBLE_H_COLLAPSED;
             void bubble.offsetWidth;
         }
 

@@ -35,7 +35,7 @@
             box-shadow: 0 0 20px rgba(var(--theme-primary-rgb), 0.2);
         }
         .rank-tag {
-            @apply text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full;
+            @apply text-[0.48rem] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full;
         }
 
         /* Live race leaderboard pills */
@@ -70,7 +70,7 @@
             --pla-size: 1.75rem;
             --pla-badge-min: 0.85rem;
             --pla-badge-h: 0.85rem;
-            --pla-badge-font: 7px;
+            --pla-badge-font: 0.373rem;
         }
         #live-leaderboard .lb-name {
             flex: 1 1 auto;
@@ -113,6 +113,8 @@
         #room-typing-area {
             font-size: clamp(32px, 2.4vw, 43.2px) !important;
             line-height: 1.5 !important;
+            padding-left: 0.853rem;
+            padding-right: 0.853rem;
         }
 
         /* Text container */
@@ -275,8 +277,8 @@
             position: absolute;
             bottom: 2px;
             right: 2px;
-            width: 10px;
-            height: 10px;
+            width: 0.533rem;
+            height: 0.533rem;
             border-radius: 9999px;
             border: 2px solid #020016;
             background: #4b5563;
@@ -350,7 +352,7 @@
 
 <div class="fixed inset-0 pointer-events-none -z-10">
     <div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary/5 blur-[120px] rounded-full"></div>
-    <div class="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-error/5 blur-[150px] rounded-full"></div>
+    <div class="absolute bottom-1/4 -right-20 w-[26.644rem] h-[26.644rem] bg-error/5 blur-[150px] rounded-full"></div>
 </div>
 
 <div id="app-views" class="flex-1 flex flex-col relative w-full min-h-0 h-full">
@@ -395,13 +397,13 @@
                 class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong inline-flex items-center justify-center whitespace-nowrap flex-nowrap"
                 id="ready-btn" type="button">
                 <span id="ready-btn-label" class="whitespace-nowrap">Ready Up</span>
-                <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500 shrink-0">Enter</span>
+                <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500 shrink-0">Enter</span>
             </button>
             <button type="button"
                 class="px-8 py-3 panel-surface rounded-xl font-display font-bold text-base uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all inline-flex items-center justify-center whitespace-nowrap flex-nowrap"
                 id="leave-btn">
                 <span class="whitespace-nowrap">Leave Room</span>
-                <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500 shrink-0">Tab + Enter</span>
+                <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500 shrink-0">Tab + Enter</span>
             </button>
         </div>
 
@@ -414,24 +416,24 @@
                     <h3 class="font-display font-bold text-on-surface text-sm uppercase tracking-widest mb-3">Invite Players</h3>
                     <div class="border border-white/5 rounded-xl p-3 mb-3 flex flex-col gap-2">
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-primary/70 font-bold uppercase tracking-widest w-16 shrink-0">Room ID</span>
+                            <span class="text-[0.533rem] text-primary/70 font-bold uppercase tracking-widest w-16 shrink-0">Room ID</span>
                             <span id="invite-panel-room-id" class="flex-1 text-sm font-mono font-bold text-white">0000</span>
                             <button id="copy-room-id-btn" title="Copy Room ID"
                                 class="text-slate-400 hover:text-primary transition-colors flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/5 shrink-0">
-                                <span class="material-symbols-outlined text-[16px]" id="copy-room-id-icon">content_copy</span>
+                                <span class="material-symbols-outlined text-[0.853rem]" id="copy-room-id-icon">content_copy</span>
                             </button>
                         </div>
                         <div class="h-px bg-white/5"></div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-primary/70 font-bold uppercase tracking-widest w-16 shrink-0">Join Link</span>
-                            <span id="invite-panel-join-link" class="flex-1 text-[11px] font-mono text-on-surface-variant truncate">usertypo.app/join/0000</span>
+                            <span class="text-[0.533rem] text-primary/70 font-bold uppercase tracking-widest w-16 shrink-0">Join Link</span>
+                            <span id="invite-panel-join-link" class="flex-1 text-[0.586rem] font-mono text-on-surface-variant truncate">usertypo.app/join/0000</span>
                             <button id="copy-join-link-btn" title="Copy join link"
                                 class="text-slate-400 hover:text-primary transition-colors flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/5 shrink-0">
-                                <span class="material-symbols-outlined text-[16px]" id="copy-join-link-icon">content_copy</span>
+                                <span class="material-symbols-outlined text-[0.853rem]" id="copy-join-link-icon">content_copy</span>
                             </button>
                         </div>
                     </div>
-                    <p class="text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-2">Friends</p>
+                    <p class="text-[0.533rem] uppercase font-bold text-on-surface-variant tracking-widest mb-2">Friends</p>
                     <div id="invite-friends-list" class="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                         <p class="text-xs text-slate-500 italic px-2 py-3">Loading friends...</p>
                     </div>
@@ -439,11 +441,11 @@
                         <button id="invite-add-bot-btn" type="button"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:border-primary/30 hover:bg-primary/10 transition-all text-left">
                             <span class="w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+                                <span class="material-symbols-outlined text-primary text-[1.066rem]">smart_toy</span>
                             </span>
                             <span class="min-w-0 flex-1">
                                 <span id="invite-add-bot-label" class="block text-sm font-bold text-white">Add a bot</span>
-                                <span class="block text-[11px] text-slate-500">One bot per room</span>
+                                <span class="block text-[0.586rem] text-slate-500">One bot per room</span>
                             </span>
                         </button>
                     </div>
@@ -476,33 +478,33 @@
                     </div>
                     <button id="close-lobby-chat-btn"
                         class="text-slate-400 hover:text-white transition-colors flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10">
-                        <span class="material-symbols-outlined text-[20px]">close</span>
+                        <span class="material-symbols-outlined text-[1.066rem]">close</span>
                     </button>
                 </div>
                 <div class="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-4 min-h-0">
                     <div class="text-center text-xs text-slate-500 my-1">Today</div>
                     <div class="flex flex-col gap-1">
-                        <span class="text-[10px] uppercase font-bold text-primary tracking-widest">System</span>
+                        <span class="text-[0.533rem] uppercase font-bold text-primary tracking-widest">System</span>
                         <p class="text-sm text-on-surface-variant italic">Welcome to the lobby. Get ready!</p>
                     </div>
                     <div class="flex flex-col gap-1">
                         <div class="flex justify-between items-center">
-                            <span class="text-[10px] uppercase font-bold text-on-surface tracking-widest">NeonRunner</span>
-                            <span class="text-[10px] text-white/20">14:02</span>
+                            <span class="text-[0.533rem] uppercase font-bold text-on-surface tracking-widest">NeonRunner</span>
+                            <span class="text-[0.533rem] text-white/20">14:02</span>
                         </div>
                         <p class="text-sm text-on-surface/80">gl hf everyone!</p>
                     </div>
                     <div class="flex flex-col gap-1">
                         <div class="flex justify-between items-center">
-                            <span class="text-[10px] uppercase font-bold text-tertiary tracking-widest">TypeMaster99</span>
-                            <span class="text-[10px] text-white/20">14:03</span>
+                            <span class="text-[0.533rem] uppercase font-bold text-tertiary tracking-widest">TypeMaster99</span>
+                            <span class="text-[0.533rem] text-white/20">14:03</span>
                         </div>
                         <p class="text-sm text-on-surface/80">Who's ready to lose? 🏎️</p>
                     </div>
                     <div class="flex flex-col gap-1">
                         <div class="flex justify-between items-center">
-                            <span class="text-[10px] uppercase font-bold text-on-surface tracking-widest">ShadowKeys</span>
-                            <span class="text-[10px] text-white/20">14:04</span>
+                            <span class="text-[0.533rem] uppercase font-bold text-on-surface tracking-widest">ShadowKeys</span>
+                            <span class="text-[0.533rem] text-white/20">14:04</span>
                         </div>
                         <p class="text-sm text-on-surface/80">Need 2 more for full lobby.</p>
                     </div>
@@ -514,7 +516,7 @@
                             placeholder="Type a message..." type="text" />
                         <button
                             class="absolute right-2 p-1.5 bg-primary rounded-full text-background-dark hover:bg-primary/90 hover:shadow-[0_0_8px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
-                            <span class="material-symbols-outlined text-[16px]">send</span>
+                            <span class="material-symbols-outlined text-[0.853rem]">send</span>
                         </button>
                     </div>
                 </div>
@@ -539,7 +541,7 @@
                 <h3 class="font-display font-bold text-white text-base uppercase tracking-widest">Players in Room</h3>
                 <button id="close-host-modal-btn"
                     class="text-slate-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
-                    <span class="material-symbols-outlined text-[20px]">close</span>
+                    <span class="material-symbols-outlined text-[1.066rem]">close</span>
                 </button>
             </div>
             <div id="host-players-list" class="flex flex-col gap-1.5 max-h-[22rem] overflow-y-auto custom-scrollbar pr-0.5"></div>
@@ -580,9 +582,9 @@
                 <!-- LEADERBOARD SIDEBAR -->
                 <div class="w-[15rem] md:w-[17.5rem] shrink-0 flex flex-col gap-3 self-center">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-[10px] font-bold tracking-[2px] uppercase text-slate-500">Leaderboard</span>
+                        <span class="text-[0.533rem] font-bold tracking-[0.107rem] uppercase text-slate-500">Leaderboard</span>
                         <span id="room-player-count-badge"
-                            class="text-[10px] text-slate-500 panel-surface rounded-full px-2 py-0.5">0 players</span>
+                            class="text-[0.533rem] text-slate-500 panel-surface rounded-full px-2 py-0.5">0 players</span>
                     </div>
                     <div id="live-leaderboard" class="flex flex-col gap-3 pr-1 relative"></div>
                 </div>
@@ -592,11 +594,11 @@
                     <div id="room-test-box" class="relative w-full test-box-outer">
 
                         <!-- ABOVE: timer / progress (absolute, does not shift centering) -->
-                        <div class="absolute left-0 right-0 bottom-full pb-[28px]">
-                            <div id="room-timer-progress-wrapper" class="relative w-full h-[32px]">
-                                <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
+                        <div class="absolute left-0 right-0 bottom-full pb-[1.492rem]">
+                            <div id="room-timer-progress-wrapper" class="relative w-full h-[1.705rem]">
+                                <div class="transition-opacity duration-300 text-white font-mono text-[1.279rem] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                                     id="room-word-progress"></div>
-                                <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
+                                <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[0.107rem] bg-white/10 rounded-full overflow-hidden hidden"
                                     id="room-word-progress-bar-container">
                                     <div id="room-word-progress-bar"
                                         class="h-full bg-primary transition-all duration-300 ease-linear"
@@ -608,7 +610,7 @@
                         <!-- TYPING AREA (vertically centered element) -->
                         <div class="w-full relative z-10">
                             <div id="room-typing-area"
-                                class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
+                                class="font-mono text-[1.279rem] md:text-[1.598rem] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
                                 <div id="room-text-container" class="relative w-full transition-all duration-300">
                                     <span id="caret"
                                         class="text-primary animate-breath drop-shadow-[0_0_8px_rgba(0,208,255,0.8)]"></span>
@@ -617,19 +619,19 @@
                         </div>
 
                         <!-- BELOW: live stats (absolute) -->
-                        <div class="absolute left-0 right-0 top-full h-[48px]">
+                        <div class="absolute left-0 right-0 top-full h-[2.557rem]">
                             <div id="room-live-stats"
-                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[16px] flex items-baseline gap-[16px] pointer-events-auto">
-                                <div id="room-live-wpm-wrapper" class="flex items-baseline gap-[4px]">
+                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[0.853rem] flex items-baseline gap-[0.853rem] pointer-events-auto">
+                                <div id="room-live-wpm-wrapper" class="flex items-baseline gap-[0.213rem]">
                                     <span id="room-wpm-display"
-                                        class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
+                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
-                                <div id="room-live-wpm-divider" class="w-px h-[16px] bg-white/10 relative top-0.5"></div>
-                                <div id="room-live-acc-wrapper" class="flex items-baseline gap-[4px]">
+                                <div id="room-live-wpm-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5"></div>
+                                <div id="room-live-acc-wrapper" class="flex items-baseline gap-[0.213rem]">
                                     <span id="room-acc-display"
-                                        class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
+                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
                             </div>
                         </div>
@@ -640,7 +642,7 @@
         </main>
 
         <footer class="px-8 py-4 flex justify-between items-center gap-3 relative z-20 shrink-0 mt-auto">
-            <div class="flex items-center gap-2 text-[9px] text-slate-600 font-mono">
+            <div class="flex items-center gap-2 text-[0.48rem] text-slate-600 font-mono">
                 <button type="button" data-open-contact
                     class="footer-contact-btn hover:text-primary transition-colors bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer"
                     aria-haspopup="dialog" aria-controls="contact-modal">Contact</button>
@@ -656,10 +658,10 @@
             <div class="flex items-center gap-3">
                 <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
                     title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                    <span class="material-symbols-outlined text-[0.959rem]" data-footer-mute-icon>volume_off</span>
                 </button>
-                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                <div class="flex items-center gap-2 text-[0.533rem] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[0.746rem]">palette</span>
                     <span>Themes and Languages</span>
                     <button type="button" data-footer-picker
                         class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>
@@ -687,17 +689,17 @@
                     <button id="stats-return-lobby-btn" type="button"
                         class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong inline-flex items-center justify-center whitespace-nowrap flex-nowrap">
                         <span id="stats-return-lobby-label" class="whitespace-nowrap">Back to Lobby</span>
-                        <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500 shrink-0">Enter</span>
+                        <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500 shrink-0">Enter</span>
                     </button>
                     <button id="stats-leave-room-btn" type="button"
                         class="px-8 py-3 panel-surface rounded-xl font-display font-bold text-base uppercase tracking-widest text-on-surface hover:bg-white/10 transition-all inline-flex items-center justify-center whitespace-nowrap flex-nowrap">
                         <span class="whitespace-nowrap">Leave Room</span>
-                        <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[10px] font-mono text-slate-500 shrink-0">Tab + Enter</span>
+                        <span class="inline-flex ml-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500 shrink-0">Tab + Enter</span>
                     </button>
                     <button id="screenshot-btn" type="button"
                         class="panel-surface flex items-center justify-center w-11 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                         title="Share Screenshot">
-                        <span class="material-symbols-outlined text-[20px]">ios_share</span>
+                        <span class="material-symbols-outlined text-[1.066rem]">ios_share</span>
                     </button>
                 </div>
                 </div>
@@ -707,7 +709,7 @@
             <div class="w-[10rem] shrink-0 glass-panel rounded-xl flex flex-col relative overflow-hidden hidden lg:flex sticky top-4"
                 style="height: calc(100vh - 2rem); align-self: flex-start;">
                 <div class="w-full py-2 bg-black/20 text-center border-b border-white/5">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
+                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
                 </div>
                 <div class="flex-1 flex flex-col items-center justify-center p-3">
                     <div
@@ -715,10 +717,10 @@
                         <span class="material-symbols-outlined text-slate-600 text-4xl">ads_click</span>
                         <div class="text-center px-1">
                             <p class="text-xs text-slate-400 font-bold">YOUR AD HERE</p>
-                            <p class="text-[10px] text-slate-600 font-mono">160x600 Skyscraper</p>
+                            <p class="text-[0.533rem] text-slate-600 font-mono">160x600 Skyscraper</p>
                         </div>
                         <button
-                            class="px-4 py-2 bg-white/5 rounded text-[10px] font-bold text-slate-400 border border-white/5">Learn
+                            class="px-4 py-2 bg-white/5 rounded text-[0.533rem] font-bold text-slate-400 border border-white/5">Learn
                             More</button>
                     </div>
                 </div>
@@ -726,7 +728,7 @@
         </main>
 
         <footer class="px-8 py-4 flex justify-between items-center gap-3 relative z-20 shrink-0 mt-auto">
-            <div class="flex items-center gap-2 text-[9px] text-slate-600 font-mono">
+            <div class="flex items-center gap-2 text-[0.48rem] text-slate-600 font-mono">
                 <button type="button" data-open-contact
                     class="footer-contact-btn hover:text-primary transition-colors bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer"
                     aria-haspopup="dialog" aria-controls="contact-modal">Contact</button>
@@ -742,10 +744,10 @@
             <div class="flex items-center gap-3">
                 <button type="button" class="footer-mute-btn flex items-center justify-center text-slate-600"
                     title="Mute sounds" aria-label="Mute sounds">
-                    <span class="material-symbols-outlined text-[18px]" data-footer-mute-icon>volume_off</span>
+                    <span class="material-symbols-outlined text-[0.959rem]" data-footer-mute-icon>volume_off</span>
                 </button>
-                <div class="flex items-center gap-2 text-[10px] text-slate-600 font-mono">
-                    <span class="material-symbols-outlined text-[14px]">palette</span>
+                <div class="flex items-center gap-2 text-[0.533rem] text-slate-600 font-mono">
+                    <span class="material-symbols-outlined text-[0.746rem]">palette</span>
                     <span>Themes and Languages</span>
                     <button type="button" data-footer-picker
                         class="footer-pill glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 px-2.5 py-0.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer">usertypo_, English 10k</button>

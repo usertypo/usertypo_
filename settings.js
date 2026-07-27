@@ -3446,10 +3446,10 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 
         if (!rowHasVisibleKeys) return;
 
-        html += '<div class="flex gap-[6px] w-full justify-center min-w-max">';
+        html += '<div class="flex gap-[0.32rem] w-full justify-center min-w-max">';
         row.forEach((keyObj) => {
             const u = keyObj.u || 1;
-            const widthPx = u * 32 + (u - 1) * 6;
+            const widthRem = u * 1.705 + (u - 1) * 0.32;
             const rawMain = keyObj.k;
             const rawQwerty = keyObj.q || '';
             const modifier = isModifier(rawMain);
@@ -3505,14 +3505,14 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             }
 
             if (modifier) {
-                html += `<div ${dataAttr} style="width: ${widthPx}px" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-semibold text-primary transition-all duration-75">${keyText}</div>`;
+                html += `<div ${dataAttr} style="width: ${widthRem}rem" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[0.533rem] font-semibold text-primary transition-all duration-75">${keyText}</div>`;
             } else if (qwertyText && isVisible) {
-                html += `<div ${dataAttr} style="width: ${widthPx}px" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-start justify-between p-1 pt-0.5 text-[8.5px] font-semibold text-primary/60 transition-all duration-75 relative">
+                html += `<div ${dataAttr} style="width: ${widthRem}rem" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-start justify-between p-1 pt-0.5 text-[0.453rem] font-semibold text-primary/60 transition-all duration-75 relative">
                      <span class="keymap-shift-text keymap-qwerty-text">${qwertyText}</span>
-                     <span class="keymap-main-text text-[10.5px] text-primary leading-none ml-[1px] mb-[1px]">${keyText}</span>
+                     <span class="keymap-main-text text-[0.56rem] text-primary leading-none ml-[0.053rem] mb-[0.053rem]">${keyText}</span>
                  </div>`;
             } else {
-                html += `<div ${dataAttr} style="width: ${widthPx}px" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-semibold text-primary transition-all duration-75 relative"><span class="keymap-main-text">${keyText}</span></div>`;
+                html += `<div ${dataAttr} style="width: ${widthRem}rem" class="keymap-key ${visibilityClass} h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[0.533rem] font-semibold text-primary transition-all duration-75 relative"><span class="keymap-main-text">${keyText}</span></div>`;
             }
         });
         html += '</div>';

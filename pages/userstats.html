@@ -106,8 +106,8 @@
         }
         .pot-filter-bubble-wrap {
             position: relative;
-            width: 40px;
-            height: 40px;
+            width: 2.131rem;
+            height: 2.131rem;
             flex-shrink: 0;
             overflow: visible;
             z-index: 20;
@@ -118,9 +118,9 @@
             top: 0;
             right: 0;
             box-sizing: border-box;
-            width: 40px;
-            height: 40px;
-            border-radius: 20px;
+            width: 2.131rem;
+            height: 2.131rem;
+            border-radius: 1.066rem;
             overflow: hidden;
             cursor: default;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -155,8 +155,8 @@
             top: -1px;
             right: -1px;
             z-index: 3;
-            width: 40px;
-            height: 40px;
+            width: 2.131rem;
+            height: 2.131rem;
             padding: 0;
             margin: 0;
             border: none;
@@ -178,8 +178,8 @@
         }
         .pot-filter-bubble-icon-stack {
             position: relative;
-            width: 22px;
-            height: 22px;
+            width: 1.172rem;
+            height: 1.172rem;
             flex-shrink: 0;
         }
         .pot-filter-bubble-icon {
@@ -189,15 +189,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 1.172rem;
+            height: 1.172rem;
             color: var(--theme-text-muted, #94a3b8);
             filter: none;
             transform-origin: center center;
             transition: color 0.2s ease, filter 0.2s ease;
         }
         .pot-filter-bubble-icon .material-symbols-outlined {
-            font-size: 20px;
+            font-size: 1.066rem;
             line-height: 1;
         }
         .pot-filter-bubble-icon-close {
@@ -212,8 +212,8 @@
         .pot-filter-bubble-content {
             box-sizing: border-box;
             width: 100%;
-            min-height: 40px;
-            padding: 0 40px 0 0.45rem;
+            min-height: 2.131rem;
+            padding: 0 2.131rem 0 0.45rem;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.18s ease;
@@ -228,7 +228,7 @@
             flex-wrap: nowrap;
             align-items: center;
             gap: 0.1rem;
-            height: 40px;
+            height: 2.131rem;
             white-space: nowrap;
         }
         .pot-filters-actions .pot-btn {
@@ -238,7 +238,7 @@
             gap: 0.3rem;
             flex: 0 0 auto;
             width: auto;
-            height: 32px;
+            height: 1.705rem;
             padding: 0 0.7rem;
             border-radius: 9999px;
             font-size: 0.72rem;
@@ -254,7 +254,7 @@
             background-color: rgba(255, 255, 255, 0.05);
         }
         .pot-filters-actions .pot-btn .material-symbols-outlined {
-            font-size: 15px;
+            font-size: 0.799rem;
             color: inherit;
         }
         .pot-filters-actions [data-pot-presets]:not(.hidden) {
@@ -281,7 +281,7 @@
             overflow: hidden;
         }
         .pot-preset-chip .pot-btn {
-            height: 28px;
+            height: 1.492rem;
             padding: 0 0.65rem;
             border-radius: 9999px;
             font-size: 0.68rem;
@@ -779,7 +779,7 @@
 <!-- Main Content -->
     <main class="flex-1 w-full max-w-7xl mx-auto px-6 pt-4 pb-8 relative z-10">
         <!-- Hero Section -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-16 min-h-[calc(100vh-10rem)]">
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-16 min-h-0">
             <!-- Left: Timed Bests -->
             <div class="flex flex-col gap-4 order-2 lg:order-1">
                 <h3
@@ -854,7 +854,7 @@
                         <img id="profile-avatar" alt="Your profile photo" class="w-full h-full object-cover"
                             src="" />
                         <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
-                            <span class="material-symbols-outlined text-white text-[28px]">photo_camera</span>
+                            <span class="material-symbols-outlined text-white text-[1.492rem]">photo_camera</span>
                         </span>
                     </span>
                     <span id="profile-level-badge"
@@ -862,38 +862,38 @@
                 </div>
                 <h1 id="profile-username" class="font-headline text-3xl font-bold tracking-tight text-slate-100 mb-1">Loading...</h1>
                 <p id="profile-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
-                <div class="flex items-center gap-4 mb-6 text-[11px] font-bold text-slate-500">
+                <div class="flex items-center gap-4 mb-6 text-[0.586rem] font-bold text-slate-500">
                     <span id="profile-xp-progress" class="tracking-wide">0 / 100 XP</span>
                     <span class="flex items-center gap-1 text-amber-400">
-                        <span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                        <span class="material-symbols-outlined text-[0.746rem]">local_fire_department</span>
                         <span id="profile-streak-value">0</span>
                         <span class="text-slate-500">day streak</span>
                     </span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
-                        <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
+                        <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                         <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-tests-tooltip">0 Tests Taken</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
-                        <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
+                        <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                         <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-time-tooltip">0 Seconds of Typing</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
-                        <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
+                        <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                         <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-words-tooltip">0 Words Typed</span>
                         </div>
                     </div>
                     <div class="profile-stat-card glass-panel p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
-                        <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
+                        <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                         <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-rank-tooltip">Loading global rank…</span>
@@ -988,7 +988,7 @@
                                     <div class="pot-advanced-block">
                                         <div class="pot-filter-row">
                                             <div class="pot-filter-title">
-                                                <span class="material-symbols-outlined text-[14px]">build</span>
+                                                <span class="material-symbols-outlined text-[0.746rem]">build</span>
                                                 advanced filters
                                             </div>
                                             <div class="pot-filter-btns">
@@ -997,21 +997,21 @@
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">workspace_premium</span> personal best</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">workspace_premium</span> personal best</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="no">no</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="pb" data-pot-filter="yes">yes</button>
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">view_list</span> mode</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">view_list</span> mode</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="words">words</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="mode" data-pot-filter="time">time</button>
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">text_fields</span> words</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">text_fields</span> words</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="10">10</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="words" data-pot-filter="25">25</button>
@@ -1021,7 +1021,7 @@
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">schedule</span> time</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">schedule</span> time</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="15">15</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="time" data-pot-filter="30">30</button>
@@ -1031,14 +1031,14 @@
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">alternate_email</span> punctuation</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">alternate_email</span> punctuation</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="on">on</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="punctuation" data-pot-filter="off">off</button>
                                         </div>
                                     </div>
                                     <div class="pot-advanced-block">
-                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[14px]">tag</span> numbers</div>
+                                        <div class="pot-filter-title"><span class="material-symbols-outlined text-[0.746rem]">tag</span> numbers</div>
                                         <div class="pot-filter-btns">
                                             <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="on">on</button>
                                             <button type="button" class="pot-btn is-active" data-pot-group="numbers" data-pot-filter="off">off</button>
@@ -1101,24 +1101,24 @@
                     <div class="flex justify-between border-r border-white/5 pr-6 md:pr-12">
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Left
+                                <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Left
                                     Hand</span>
                                 <span class="font-headline text-3xl font-bold text-slate-100"><span id="hand-left-wpm">—</span> <span
                                         class="text-xs font-normal text-slate-500">WPM</span></span>
                             </div>
                             <div class="flex gap-8">
                                 <div>
-                                    <span class="text-[10px] text-slate-500 block">Accuracy</span>
+                                    <span class="text-[0.533rem] text-slate-500 block">Accuracy</span>
                                     <span id="hand-left-acc" class="font-headline text-slate-100">—</span>
                                 </div>
                                 <div>
-                                    <span class="text-[10px] text-slate-500 block">Total Errors</span>
+                                    <span class="text-[0.533rem] text-slate-500 block">Total Errors</span>
                                     <span id="hand-left-errors" class="font-headline text-slate-100">—</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Slowest
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Slowest
                                 Finger</span>
                             <span id="hand-left-slowest" class="font-headline text-sm font-medium text-error">—</span>
                         </div>
@@ -1126,24 +1126,24 @@
                     <div class="flex justify-between">
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Right
+                                <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Right
                                     Hand</span>
                                 <span class="font-headline text-3xl font-bold text-primary cyan-glow-text"><span id="hand-right-wpm">—</span> <span
                                         class="text-xs font-normal text-slate-500">WPM</span></span>
                             </div>
                             <div class="flex gap-8">
                                 <div>
-                                    <span class="text-[10px] text-slate-500 block">Accuracy</span>
+                                    <span class="text-[0.533rem] text-slate-500 block">Accuracy</span>
                                     <span id="hand-right-acc" class="font-headline text-slate-100">—</span>
                                 </div>
                                 <div>
-                                    <span class="text-[10px] text-slate-500 block">Total Errors</span>
+                                    <span class="text-[0.533rem] text-slate-500 block">Total Errors</span>
                                     <span id="hand-right-errors" class="font-headline text-slate-100">—</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] uppercase tracking-widest text-slate-500 block mb-1">Slowest
+                            <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Slowest
                                 Finger</span>
                             <span id="hand-right-slowest" class="font-headline text-sm font-medium text-error">—</span>
                         </div>
@@ -1154,43 +1154,43 @@
                     <div class="space-y-6 relative z-10">
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div id="hand-bar-left-wpm" class="h-8 bg-[#475569] rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                <div id="hand-bar-left-wpm" class="h-8 bg-[#475569] rounded-l flex items-center justify-end px-3 text-[0.533rem] font-bold text-white transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
-                                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Avg
+                                <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline">Avg
                                     Speed</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div id="hand-bar-right-wpm" class="h-8 bg-primary rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div id="hand-bar-right-wpm" class="h-8 bg-primary rounded-r flex items-center justify-start px-3 text-[0.533rem] font-bold text-background-dark transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div id="hand-bar-left-acc" class="h-8 bg-[#475569]/60 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                <div id="hand-bar-left-acc" class="h-8 bg-[#475569]/60 rounded-l flex items-center justify-end px-3 text-[0.533rem] font-bold text-white transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
                                 <span
-                                    class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Accuracy</span>
+                                    class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline">Accuracy</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div id="hand-bar-right-acc" class="h-8 bg-primary/60 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div id="hand-bar-right-acc" class="h-8 bg-primary/60 rounded-r flex items-center justify-start px-3 text-[0.533rem] font-bold text-background-dark transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex justify-end">
-                                <div id="hand-bar-left-errors" class="h-8 bg-[#475569]/20 rounded-l flex items-center justify-end px-3 text-[10px] font-bold text-white transition-all"
+                                <div id="hand-bar-left-errors" class="h-8 bg-[#475569]/20 rounded-l flex items-center justify-end px-3 text-[0.533rem] font-bold text-white transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                             <div class="w-32 text-center">
-                                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Error
+                                <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline">Error
                                     Vol.</span>
                             </div>
                             <div class="flex-1 flex justify-start">
-                                <div id="hand-bar-right-errors" class="h-8 bg-primary/20 rounded-r flex items-center justify-start px-3 text-[10px] font-bold text-background-dark transition-all"
+                                <div id="hand-bar-right-errors" class="h-8 bg-primary/20 rounded-r flex items-center justify-start px-3 text-[0.533rem] font-bold text-background-dark transition-all"
                                     style="width: 0%;">—</div>
                             </div>
                         </div>
@@ -1204,18 +1204,18 @@
                 </div>
                 <div id="diag-content" class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="space-y-8">
-                        <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">The
+                        <h3 class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline mb-4">The
                             Blacklist
                         </h3>
                         <div class="space-y-4">
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Errored Bigrams</span>
+                                <span class="text-[0.533rem] text-slate-500 block mb-2">Top 5 Errored Bigrams</span>
                                 <div id="diag-top-bigrams" class="space-y-1">
                                     <div class="text-xs text-slate-500 font-headline">—</div>
                                 </div>
                             </div>
                             <div>
-                                <span class="text-[10px] text-slate-500 block mb-2">Top 5 Errored Words</span>
+                                <span class="text-[0.533rem] text-slate-500 block mb-2">Top 5 Errored Words</span>
                                 <div id="diag-top-words" class="space-y-1">
                                     <div class="text-xs text-slate-500 font-headline">—</div>
                                 </div>
@@ -1223,7 +1223,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col items-center">
-                        <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-6 self-start">
+                        <h3 class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline mb-6 self-start">
                             Error Anatomy</h3>
                         <div class="relative w-32 h-32 mb-6">
                             <svg id="diag-anatomy-svg" class="w-full h-full -rotate-90" viewBox="0 0 36 36">
@@ -1232,7 +1232,7 @@
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center flex-col">
                                 <span id="diag-anatomy-total" class="font-headline text-sm text-slate-100">—</span>
-                                <span class="text-[9px] font-headline text-slate-500">TOTAL</span>
+                                <span class="text-[0.48rem] font-headline text-slate-500">TOTAL</span>
                             </div>
                         </div>
                         <div id="diag-anatomy-legend" class="grid grid-cols-1 gap-2 w-full px-4">
@@ -1259,10 +1259,10 @@
                         </div>
                     </div>
                     <div class="space-y-6">
-                        <h3 class="text-[10px] uppercase tracking-widest text-slate-500 font-headline mb-4">Mechanical
+                        <h3 class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline mb-4">Mechanical
                             Friction</h3>
                         <div>
-                            <span class="text-[10px] text-slate-500 block mb-2">Key Confusion</span>
+                            <span class="text-[0.533rem] text-slate-500 block mb-2">Key Confusion</span>
                             <div id="diag-key-confusion" class="space-y-2">
                                 <div class="text-xs text-slate-500 font-headline">—</div>
                             </div>
@@ -1286,7 +1286,7 @@
                 </div>
                 <div class="w-full flex flex-col lg:flex-row gap-8 items-center">
                     <div class="lg:w-56 shrink-0 flex flex-col justify-center order-2 lg:order-1">
-                        <span class="text-[10px] text-slate-500 block mb-3 uppercase tracking-widest font-headline">Top 5 Errored Characters</span>
+                        <span class="text-[0.533rem] text-slate-500 block mb-3 uppercase tracking-widest font-headline">Top 5 Errored Characters</span>
                         <div id="hotspot-top-chars-row" class="flex items-baseline gap-3 mb-4 flex-wrap">
                             <span class="font-headline font-bold text-red-400 text-3xl">—</span>
                         </div>
@@ -1344,7 +1344,7 @@
                 <div class="flex items-center justify-between gap-4 mb-6">
                     <h2 class="font-headline text-lg font-bold">Score Distribution</h2>
                     <span id="score-distribution-summary"
-                        class="text-[10px] uppercase tracking-widest text-slate-500 font-headline">Loading…</span>
+                        class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline">Loading…</span>
                 </div>
                 <div class="w-full">
                     <div id="score-distribution-layout" class="score-distribution-layout">
@@ -1375,7 +1375,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="bg-surface-light/30 text-[10px] uppercase tracking-widest text-slate-500">
+                            <tr class="bg-surface-light/30 text-[0.533rem] uppercase tracking-widest text-slate-500">
                                 <th class="px-6 py-4 font-medium">Mode</th>
                                 <th class="px-6 py-4 font-medium">WPM</th>
                                 <th class="px-6 py-4 font-medium">Accuracy</th>
@@ -2328,7 +2328,7 @@ if ('scrollRestoration' in history) {
                         confusionEl.innerHTML = '<div class="text-xs text-slate-500 font-headline">—</div>';
                     } else {
                         confusionEl.innerHTML = data.topConfusions.map(function (pair) {
-                            return '<div class="bg-surface px-3 py-1.5 rounded-full text-[10px] font-headline border border-white/5 flex items-center justify-between gap-3">'
+                            return '<div class="bg-surface px-3 py-1.5 rounded-full text-[0.533rem] font-headline border border-white/5 flex items-center justify-between gap-3">'
                                 + '<span><span class="text-slate-500">Expected</span> '
                                 + '<span class="text-slate-100 font-bold">' + escapeHtml(formatDiagChar(pair.expected)) + '</span> '
                                 + '<span class="text-primary mx-2">→</span> '
@@ -2544,7 +2544,7 @@ if ('scrollRestoration' in history) {
                     if (h2) {
                         const handle = document.createElement('div');
                         handle.className = 'drag-handle';
-                        handle.innerHTML = '<span class="material-symbols-outlined text-[18px] text-slate-400 hover:text-primary transition-colors">drag_indicator</span>';
+                        handle.innerHTML = '<span class="material-symbols-outlined text-[0.959rem] text-slate-400 hover:text-primary transition-colors">drag_indicator</span>';
                         h2.classList.add('flex', 'items-center', 'gap-2', '-ml-2');
                         h2.insertBefore(handle, h2.firstChild);
                         
@@ -2556,7 +2556,7 @@ if ('scrollRestoration' in history) {
                     } else {
                         const handle = document.createElement('div');
                         handle.className = 'drag-handle';
-                        handle.innerHTML = '<span class="material-symbols-outlined text-[18px] text-slate-400 hover:text-primary transition-colors">drag_indicator</span>';
+                        handle.innerHTML = '<span class="material-symbols-outlined text-[0.959rem] text-slate-400 hover:text-primary transition-colors">drag_indicator</span>';
                         card.insertBefore(handle, card.firstChild);
                         
                         handle.addEventListener('mousedown', e => {
