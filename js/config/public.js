@@ -9,7 +9,8 @@
  *
  * Architecture:
  * - Website: https://usertypo.com (Cloudflare Pages)
- * - Backend (Socket.IO, /api/*): https://mp.usertypo.com (Render)
+ * - Backend (Socket.IO, /api/*): Render (mp.usertypo.com once DNS is live)
+ * - Temporary until mp.usertypo.com works: https://usertypo.onrender.com
  * - Local `npm run dev`: blank backend URLs → same-origin Express
  */
 window.USERTYPO_CONFIG = {
@@ -29,12 +30,13 @@ window.USERTYPO_CONFIG = {
         anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZWJvc2VwZWRheG52Y2FpemthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMjc5MDEsImV4cCI6MjA5OTYwMzkwMX0.OhFRFJQfzlL3DJJXtv-lKWZYDWnrkJ5cQhu3dwduDFI',
     },
     // Render backend host (no trailing slash). Blank on localhost.
+    // TODO: switch both to https://mp.usertypo.com after Cloudflare is Active + Step 6.
     backend: {
-        url: 'https://mp.usertypo.com',
+        url: 'https://usertypo.onrender.com',
     },
     multiplayer: {
         // Socket.IO server. Usually same as backend.url. Blank on localhost.
-        url: 'https://mp.usertypo.com',
+        url: 'https://usertypo.onrender.com',
     },
     analytics: {
         // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
