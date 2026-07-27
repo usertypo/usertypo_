@@ -142,6 +142,7 @@ drop function if exists public.search_profiles(text, integer);
 create or replace function public.search_profiles(p_query text, p_limit integer default 10)
 returns table (
   user_id text,
+  public_id text,
   username text,
   display_name text,
   avatar_url text,
@@ -157,6 +158,7 @@ as $$
 declare
   v_me text := auth.jwt() ->> 'sub';
   v_query text := trim(coalesce(p_query, ''));
+  v_query_upper text;
   v_limit integer := greatest(1, least(coalesce(p_limit, 10), 20));
 begin
   if v_me is null then
@@ -167,9 +169,12 @@ begin
     return;
   end if;
 
+  v_query_upper := upper(v_query);
+
   return query
   select
     p.user_id,
+    p.public_id,
     p.username,
     p.display_name,
     public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
@@ -185,10 +190,12 @@ begin
   where p.user_id <> v_me
     and (
       (p.username is not null and p.username ilike v_query || '%')
-      or p.user_id ilike v_query || '%'
+      or p.public_id ilike v_query_upper || '%'
     )
   order by
-    case when p.username ilike v_query || '%' then 0 else 1 end,
+    case when p.public_id = v_query_upper then 0
+         when p.username ilike v_query || '%' then 1
+         else 2 end,
     p.username nulls last,
     p.created_at asc
   limit v_limit;
@@ -434,6 +441,7 @@ begin
   from (
     select
       p.user_id,
+      p.public_id,
       p.username,
       p.display_name,
       public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
@@ -458,6 +466,7 @@ begin
       fr.id as request_id,
       fr.created_at,
       p.user_id,
+      p.public_id,
       p.username,
       p.display_name,
       public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
@@ -482,6 +491,7 @@ begin
       fr.id as request_id,
       fr.created_at,
       p.user_id,
+      p.public_id,
       p.username,
       p.display_name,
       public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,

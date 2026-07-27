@@ -133,12 +133,13 @@
         var fingerprint = userFingerprint(user);
 
         if (!force && cachedProfile && cachedProfile.user_id === user.id && lastFingerprint === fingerprint) {
-            return cachedProfile;
+            if (cachedProfile.public_id) return cachedProfile;
+            force = true;
         }
 
         if (!force) {
             var hydratedProfile = hydrateProfileCache(user, fingerprint);
-            if (hydratedProfile) {
+            if (hydratedProfile && hydratedProfile.public_id) {
                 notifyProfileSynced(hydratedProfile);
                 return hydratedProfile;
             }

@@ -1038,7 +1038,7 @@
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
-            <div class="flex items-center gap-3 text-[0.48rem] text-slate-600 font-mono footer-nav-weight">
+            <div class="footer-nav-links text-[0.48rem] text-slate-600 font-mono footer-nav-weight" aria-label="Footer links">
                 <span class="footer-socials" aria-label="Social links">
                     <button type="button" class="footer-social-btn" aria-label="X" title="X">
                         <svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -1056,9 +1056,7 @@
                 <button type="button" id="footer-contact-btn" data-open-contact
                     class="footer-contact-btn hover:text-primary transition-colors bg-transparent border-0 p-0 m-0 font-inherit text-inherit cursor-pointer"
                     aria-haspopup="dialog" aria-controls="contact-modal">Contact</button>
-                <span class="text-slate-700">·</span>
                 <a href="/terms" data-spa-link class="hover:text-primary transition-colors">Terms</a>
-                <span class="text-slate-700">·</span>
                 <a href="/privacy" data-spa-link class="hover:text-primary transition-colors">Privacy</a>
             </div>
             <div class="flex items-center">
@@ -1352,6 +1350,7 @@
                 <div class="flex flex-col items-center order-1 lg:order-2">
                     <div id="ppc-avatar-host" class="mb-4 flex items-center justify-center"></div>
                     <h2 id="ppc-username" class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 mb-1 text-center">Player</h2>
+                    <p id="ppc-public-id" class="text-[0.7rem] font-mono tracking-wider text-slate-500 mb-1">—</p>
                     <p id="ppc-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
                     <div class="flex items-center gap-4 mb-5 text-[0.586rem] font-bold text-slate-500">
                         <span id="ppc-xp-progress" class="tracking-wide">0 / 100 XP</span>
@@ -1448,14 +1447,14 @@
     <script src="js/ui/cookie-consent.js?v=3"></script>
     <script src="js/auth/clerk.js?v=5"></script>
     <script src="js/api/supabase.js"></script>
-    <script src="js/api/profiles.js?v=4"></script>
+    <script src="js/api/profiles.js?v=5"></script>
     <script src="js/api/sessions.js?v=10"></script>
     <script src="js/api/account.js?v=4"></script>
     <script src="js/api/progression.js?v=6"></script>
     <script src="js/ui/player-avatar.js?v=2"></script>
     <script src="js/ui/avatar-editor.js?v=2"></script>
-    <script src="js/api/public-profile.js?v=1"></script>
-    <script src="js/ui/player-profile-card.js?v=2"></script>
+    <script src="js/api/public-profile.js?v=2"></script>
+    <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=5"></script>
     <script src="js/ui/contact.js?v=3"></script>
     <script src="js/auth/header.js?v=3"></script>

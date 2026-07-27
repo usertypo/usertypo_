@@ -3537,6 +3537,23 @@
                                                     <p class="account-field-status text-xs text-slate-500 hidden"></p>
                                                 </div>
 
+                                                <!-- Public User ID -->
+                                                <div class="flex flex-col gap-2 relative" data-account-field="public-id">
+                                                    <div class="flex items-center gap-2">
+                                                        <label
+                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">User
+                                                            ID</label>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 mt-1">
+                                                        <div id="account-public-id-display"
+                                                            class="flex-1 text-sm font-bold text-slate-200 font-mono tracking-wider">
+                                                            —</div>
+                                                        <button type="button" id="account-public-id-copy"
+                                                            class="opt-btn" title="Copy user ID">Copy</button>
+                                                    </div>
+                                                    <p class="text-xs text-slate-500">Share this 8-character ID so friends can find you.</p>
+                                                </div>
+
                                                 <!-- Email Address -->
                                                 <div class="flex flex-col gap-2 relative" data-account-field="email">
                                                     <div class="flex items-center gap-2">
@@ -3764,11 +3781,15 @@
                                         || '—';
                                     var email = (user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress)
                                         || '—';
+                                    var publicId = (profile && profile.public_id)
+                                        ? String(profile.public_id).toUpperCase()
+                                        : '—';
 
                                     var nameDisplay = q(root, '#account-username-display');
                                     var nameInput = q(root, '#account-username-input');
                                     var emailDisplay = q(root, '#account-email-display');
                                     var emailInput = q(root, '#account-email-input');
+                                    var publicIdDisplay = q(root, '#account-public-id-display');
                                     var passwordDisplay = q(root, '#account-password-display');
                                     var currentPw = q(root, '#account-password-current');
 
@@ -3782,6 +3803,7 @@
                                         emailInput.value = email === '—' ? '' : email;
                                         emailInput.placeholder = email === '—' ? 'you@example.com' : email;
                                     }
+                                    if (publicIdDisplay) publicIdDisplay.textContent = publicId;
                                     if (passwordDisplay) {
                                         passwordDisplay.textContent = (user && user.passwordEnabled === false)
                                             ? 'Not set'
@@ -4015,6 +4037,35 @@
                                 }
 
                                 function onAccountClick(event) {
+                                    var copyBtn = event.target && event.target.closest
+                                        ? event.target.closest('#account-public-id-copy')
+                                        : null;
+                                    if (copyBtn) {
+                                        var root = copyBtn.closest('.settings-panel-card')
+                                            || copyBtn.closest('#account-settings-form')
+                                            || activeAccountRoot;
+                                        var idEl = q(root, '#account-public-id-display');
+                                        var id = idEl ? String(idEl.textContent || '').trim() : '';
+                                        if (!id || id === '—') return;
+                                        var done = function () {
+                                            var prev = copyBtn.textContent;
+                                            copyBtn.textContent = 'Copied';
+                                            setTimeout(function () { copyBtn.textContent = prev || 'Copy'; }, 1200);
+                                        };
+                                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                                            navigator.clipboard.writeText(id).then(done).catch(function () {});
+                                        } else {
+                                            var ta = document.createElement('textarea');
+                                            ta.value = id;
+                                            document.body.appendChild(ta);
+                                            ta.select();
+                                            document.execCommand('copy');
+                                            ta.remove();
+                                            done();
+                                        }
+                                        return;
+                                    }
+
                                     var target = event.target && event.target.closest
                                         ? event.target.closest('[data-account-edit], [data-account-save], [data-account-cancel], [data-account-verify-email], [data-account-toggle-password]')
                                         : null;
