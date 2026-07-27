@@ -3732,8 +3732,8 @@ window.setTimeout = function(handler, timeout) {
                 let liveFailedReason = null;
 
                 if (resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
-                    // 2-word grace period for accuracy
-                    if (currentWordIndex >= 2) {
+                    // 5-word grace period for accuracy
+                    if (currentWordIndex >= 5) {
                         let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
                         if (!isNaN(minAccVal) && acc < minAccVal) {
                             liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
