@@ -20,6 +20,8 @@ services:
         value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com
       - key: CLERK_AUTHORIZED_PARTIES
         value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com
+      - key: SELF_PING_URL
+        value: https://mp.usertypo.com
       - key: SELF_PING_ENABLED
         value: "true"
       - key: CLERK_SECRET_KEY
