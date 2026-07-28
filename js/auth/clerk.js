@@ -123,6 +123,11 @@
             // instead of being hard-redirected home without an active session.
             signInFallbackRedirectUrl: config.afterSignInUrl || '/',
             signUpFallbackRedirectUrl: config.afterSignUpUrl || '/',
+            // Block open redirects via ?redirect_url= to unknown hosts.
+            allowedRedirectOrigins: config.allowedRedirectOrigins || [
+                'https://usertypo.com',
+                'https://www.usertypo.com',
+            ],
         };
 
         if (window.__internal_ClerkUICtor) {
