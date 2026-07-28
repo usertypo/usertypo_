@@ -619,6 +619,9 @@
         if (!session || session.failed) {
             return { skipped: true, reason: 'failed_or_missing' };
         }
+        if (!session.id) {
+            return { skipped: true, reason: 'missing_session_id' };
+        }
         if (!(Number(session.wpm) > 0)) {
             return { skipped: true, reason: 'invalid_wpm' };
         }
@@ -626,14 +629,8 @@
         try {
             var result = await callLeaderboardFunction({
                 action: 'ingest',
-                mode: session.mode,
-                amount: session.amount,
-                wpm: session.wpm,
-                raw_wpm: session.raw_wpm,
-                accuracy: session.accuracy,
-                consistency: session.consistency,
-                created_at: session.created_at,
-                failed: !!session.failed,
+                // Server loads mode/wpm/etc from this row — client fields are not trusted.
+                session_id: session.id,
             }, true);
 
             if (!result.ok) {

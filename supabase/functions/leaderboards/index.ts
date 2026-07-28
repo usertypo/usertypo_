@@ -4,7 +4,7 @@
  * Actions (POST JSON):
  *   { action: "top", mode, amount, timeframe, limit }
  *   { action: "rank", mode, amount, timeframe }
- *   { action: "ingest", mode, amount, wpm, raw_wpm, accuracy, consistency, created_at, failed }
+ *   { action: "ingest", session_id }  // scores loaded from Postgres (not trusted from client)
  *   { action: "set_visibility", show_on_leaderboard }
  *
  * Rules:
@@ -27,6 +27,10 @@ type Mode = "time" | "words";
 
 const ALLTIME_MIN_TESTS = 50;
 const ALLTIME_MIN_WPM = 30;
+/** Soft ceiling aligned with multiplayer anti-cheat (+ headroom). */
+const MAX_INGEST_WPM = 350;
+/** Ignore stale ingest replays of old session rows. */
+const MAX_INGEST_AGE_MS = 60 * 60 * 1000;
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -618,27 +622,54 @@ async function handleIngest(body: Record<string, unknown>, authHeader: string | 
     return json(200, { source: "redis", skipped: true, reason: "opted_out" });
   }
 
-  if (body.failed) {
+  const sessionId = typeof body.session_id === "string" ? body.session_id.trim() : "";
+  if (!sessionId) {
+    return json(400, { error: "session_id_required" });
+  }
+
+  const userId = auth.profile.user_id;
+  const sb = serviceClient();
+  const sessionResult = await sb
+    .from("typing_sessions")
+    .select("id, user_id, mode, amount, wpm, raw_wpm, accuracy, consistency, created_at, failed")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (sessionResult.error) throw sessionResult.error;
+  const session = sessionResult.data;
+  if (!session) {
+    return json(404, { error: "session_not_found" });
+  }
+  if (session.user_id !== userId) {
+    return json(403, { error: "forbidden_session" });
+  }
+  if (session.failed) {
     return json(200, { source: "redis", skipped: true, reason: "failed_test" });
   }
 
-  const mode = normalizeMode(body.mode);
-  const amount = Math.max(1, Math.round(Number(body.amount) || 1));
-  const wpm = Number(body.wpm);
+  const mode = normalizeMode(session.mode);
+  const amount = Math.max(1, Math.round(Number(session.amount) || 1));
+  if (!BOARD_COMBOS.some((c) => c.mode === mode && c.amount === amount)) {
+    return json(200, { source: "redis", skipped: true, reason: "unsupported_combo" });
+  }
+
+  const wpm = Number(session.wpm);
   if (!isFinite(wpm) || wpm <= 0) {
     return json(200, { source: "redis", skipped: true, reason: "invalid_wpm" });
   }
+  if (wpm > MAX_INGEST_WPM) {
+    return json(200, { source: "redis", skipped: true, reason: "wpm_cap" });
+  }
 
-  const accuracy = body.accuracy == null || body.accuracy === "" ? null : Number(body.accuracy);
-  const rawWpm = body.raw_wpm == null || body.raw_wpm === "" ? null : Number(body.raw_wpm);
-  const consistency = body.consistency == null || body.consistency === "" || body.consistency === "--"
-    ? null
-    : Number(body.consistency);
-  const createdAt = typeof body.created_at === "string" && body.created_at
-    ? body.created_at
-    : new Date().toISOString();
+  const createdAt = session.created_at || new Date().toISOString();
   const at = new Date(createdAt);
-  const userId = auth.profile.user_id;
+  if (!isFinite(at.getTime()) || (Date.now() - at.getTime()) > MAX_INGEST_AGE_MS) {
+    return json(200, { source: "redis", skipped: true, reason: "session_too_old" });
+  }
+
+  const accuracy = session.accuracy == null ? null : Number(session.accuracy);
+  const rawWpm = session.raw_wpm == null ? null : Number(session.raw_wpm);
+  const consistency = session.consistency == null ? null : Number(session.consistency);
   const metaValue = buildMetaValue({
     accuracy: isFinite(Number(accuracy)) ? Number(accuracy) : null,
     raw_wpm: isFinite(Number(rawWpm)) ? Number(rawWpm) : null,
@@ -679,6 +710,7 @@ async function handleIngest(body: Record<string, unknown>, authHeader: string | 
     alltime_eligible: qualifiesAlltime,
     completed_tests: completedTests,
     user_id: userId,
+    session_id: sessionId,
     mode,
     amount,
     wpm,
