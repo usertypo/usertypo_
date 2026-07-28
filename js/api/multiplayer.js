@@ -332,19 +332,32 @@
     }
 
     function ensureSocketIoClient() {
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'A',location:'multiplayer.js:ensureSocketIoClient:entry',message:'ensureSocketIoClient entry',data:{hasIo:typeof window.io,src:socketIoClientSrc()},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         if (window.io) return Promise.resolve();
         return new Promise(function (resolve, reject) {
+            var src = socketIoClientSrc();
             var script = document.createElement('script');
-            script.src = socketIoClientSrc();
+            script.src = src;
             script.async = true;
             script.onload = function () {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'C',location:'multiplayer.js:ensureSocketIoClient:onload',message:'dynamic script onload',data:{src:src,hasIo:typeof window.io},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 if (window.io) resolve();
                 else reject(new Error('Socket.IO client is not loaded.'));
             };
-            script.onerror = function () {
+            script.onerror = function (ev) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'B',location:'multiplayer.js:ensureSocketIoClient:onerror',message:'dynamic script onerror',data:{src:src},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 reject(new Error('Socket.IO client is not loaded.'));
             };
             document.head.appendChild(script);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'B',location:'multiplayer.js:ensureSocketIoClient:appended',message:'dynamic script appended',data:{src:src},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
         });
     }
 
@@ -352,7 +365,17 @@
         if (socket && socket.connected && readyState) return socket;
         if (connectPromise) return connectPromise;
         connectPromise = (async function () {
-            await ensureSocketIoClient();
+            try {
+                await ensureSocketIoClient();
+            } catch (err) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'D',location:'multiplayer.js:ensureConnected:catch',message:'ensureSocketIoClient failed',data:{err:String(err&&err.message||err),hasIo:typeof window.io,src:socketIoClientSrc(),href:location.href},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+                throw err;
+            }
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'E',location:'multiplayer.js:ensureConnected:afterIo',message:'past ensureSocketIoClient',data:{hasIo:typeof window.io,mpUrl:(window.USERTYPO_CONFIG&&window.USERTYPO_CONFIG.multiplayer&&window.USERTYPO_CONFIG.multiplayer.url)||null},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (!window.io) throw new Error('Socket.IO client is not loaded.');
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
