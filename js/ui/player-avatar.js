@@ -17,6 +17,9 @@
         );
 
     function escapeHtml(value) {
+        if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
+            return window.usertypoEscape.html(value);
+        }
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -26,6 +29,9 @@
     }
 
     function escapeAttr(value) {
+        if (window.usertypoEscape && typeof window.usertypoEscape.attr === 'function') {
+            return window.usertypoEscape.attr(value);
+        }
         return escapeHtml(value).replace(/`/g, '&#96;');
     }
 
@@ -51,8 +57,15 @@
     }
 
     function resolveAvatarUrl(url) {
+        if (window.usertypoEscape && typeof window.usertypoEscape.url === 'function') {
+            return window.usertypoEscape.url(url, DEFAULT_AVATAR_URL) || DEFAULT_AVATAR_URL;
+        }
         var trimmed = String(url || '').trim();
-        return trimmed || DEFAULT_AVATAR_URL;
+        if (!trimmed) return DEFAULT_AVATAR_URL;
+        if (/^https?:\/\//i.test(trimmed) || /^data:image\//i.test(trimmed) || /^\/(?!\/)/.test(trimmed)) {
+            return trimmed;
+        }
+        return DEFAULT_AVATAR_URL;
     }
 
     function pickProgress(source) {

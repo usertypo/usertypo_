@@ -285,6 +285,18 @@ window.__spaPageInit = function() {
                 }
             }
 
+            function escapeHtml(value) {
+                if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
+                    return window.usertypoEscape.html(value);
+                }
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
             function setStatus(text) {
                 var el = document.getElementById('lb-status');
                 if (el) el.textContent = text;
@@ -304,10 +316,13 @@ window.__spaPageInit = function() {
                     });
                 }
                 var lb = window.usertypoLeaderboards;
-                var letter = lb ? lb.initialFor(entry.username) : '?';
-                if (entry.avatarUrl) {
+                var letter = escapeHtml(lb ? lb.initialFor(entry.username) : '?');
+                var safeAvatar = window.usertypoEscape && typeof window.usertypoEscape.url === 'function'
+                    ? window.usertypoEscape.url(entry.avatarUrl, '')
+                    : '';
+                if (safeAvatar) {
                     return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center overflow-hidden border border-transparent' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : '') + '">' +
-                        '<img src="' + entry.avatarUrl + '" alt="" class="w-full h-full object-cover" loading="lazy" />' +
+                        '<img src="' + escapeHtml(safeAvatar) + '" alt="" class="w-full h-full object-cover" loading="lazy" />' +
                         '</div>';
                 }
                 return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center font-sans font-bold text-xs' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : ' border border-transparent group-hover:border-white/10 transition-colors') + '">' + letter + '</div>';
@@ -322,7 +337,7 @@ window.__spaPageInit = function() {
             function renderMessage(message) {
                 var tbody = document.getElementById('lb-tbody');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="7" class="py-10 px-5 text-center text-slate-500 text-sm">' + message + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-10 px-5 text-center text-slate-500 text-sm">' + escapeHtml(message) + '</td></tr>';
             }
 
             function renderTable(entries, myUserId) {
@@ -338,19 +353,20 @@ window.__spaPageInit = function() {
                 tbody.innerHTML = entries.map(function (entry, index) {
                     var isMe = !!(myUserId && entry.userId === myUserId);
                     var colorClass = isMe ? 'bg-primary text-background-dark' : lb.colorClassForIndex(index);
-                    var rank = lb.formatRank(entry.rank);
-                    var wpm = lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm));
-                    var raw = lb.formatWpm ? lb.formatWpm(entry.rawWpm) : '—';
-                    var acc = lb.formatAccuracy(entry.accuracy);
-                    var cons = lb.formatConsistency ? lb.formatConsistency(entry.consistency) : lb.formatAccuracy(entry.consistency);
-                    var date = lb.formatRelativeTime(entry.createdAt);
+                    var rank = escapeHtml(lb.formatRank(entry.rank));
+                    var wpm = escapeHtml(lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm)));
+                    var raw = escapeHtml(lb.formatWpm ? lb.formatWpm(entry.rawWpm) : '—');
+                    var acc = escapeHtml(lb.formatAccuracy(entry.accuracy));
+                    var cons = escapeHtml(lb.formatConsistency ? lb.formatConsistency(entry.consistency) : lb.formatAccuracy(entry.consistency));
+                    var date = escapeHtml(lb.formatRelativeTime(entry.createdAt));
+                    var username = escapeHtml(entry.username || 'Player');
 
                     if (isMe) {
                         return '<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">' +
                             '<td class="py-2.5 px-5 font-bold text-primary">' + rank + '</td>' +
                             '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
                             renderAvatar(entry, colorClass, true) +
-                            '<span class="font-sans font-bold text-white tracking-wide">' + entry.username + '</span>' +
+                            '<span class="font-sans font-bold text-white tracking-wide">' + username + '</span>' +
                             '<span class="material-symbols-outlined text-primary text-sm" title="You">person</span>' +
                             '</div></td>' +
                             '<td class="py-2.5 px-5 text-right font-bold text-white text-base">' + wpm + '</td>' +
@@ -365,7 +381,7 @@ window.__spaPageInit = function() {
                         '<td class="py-2.5 px-5 text-slate-400">' + rank + '</td>' +
                         '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
                         renderAvatar(entry, colorClass, false) +
-                        '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + entry.username + '</span>' +
+                        '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + username + '</span>' +
                         '</div></td>' +
                         '<td class="py-2.5 px-5 text-right font-bold text-primary/80">' + wpm + '</td>' +
                         '<td class="py-2.5 px-4 text-right text-slate-400 hidden md:table-cell">' + raw + '</td>' +

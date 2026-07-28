@@ -125,8 +125,11 @@
                 }, options || {}));
             }
             if (player.isBot) return botAvatarHtml(extraClass || 'w-9 h-9', 18);
-            if (player.avatarUrl) {
-                return '<img src="' + escapeHtml(player.avatarUrl) + '" class="w-9 h-9 rounded-full object-cover border border-white/10" alt="">';
+            var safeAvatar = window.usertypoEscape && typeof window.usertypoEscape.url === 'function'
+                ? window.usertypoEscape.url(player.avatarUrl, '')
+                : '';
+            if (safeAvatar) {
+                return '<img src="' + escapeHtml(safeAvatar) + '" class="w-9 h-9 rounded-full object-cover border border-white/10" alt="">';
             }
             return '<div class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 font-black text-xs">' +
                 escapeHtml((player.name || '?').charAt(0).toUpperCase()) + '</div>';
