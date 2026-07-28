@@ -321,7 +321,7 @@
             .replace(/\s+/g, '_')
             .replace(/[^a-z0-9_]/g, '')
             .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '')
+            .replace(/^_+/g, '')
             .slice(0, 32);
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
