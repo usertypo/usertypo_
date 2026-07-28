@@ -92,17 +92,37 @@
         if (!run) throw new Error('invalid_action');
 
         try {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'A',location:'account.js:withReverification',message:'first attempt start',data:{level:level||'first_factor'},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return await run();
         } catch (err) {
             var auth = window.usertypoAuth;
+            var isRev = !!(auth && typeof auth.isReverificationError === 'function' && auth.isReverificationError(err));
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'A',location:'account.js:withReverification',message:'first attempt failed',data:{isRev:isRev,errMsg:String(err&&err.message||err).slice(0,160),errCode:err&&err.errors&&err.errors[0]&&err.errors[0].code||null},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (!auth
                 || typeof auth.isReverificationError !== 'function'
                 || !auth.isReverificationError(err)
                 || typeof auth.ensureReverified !== 'function') {
                 throw err;
             }
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'account.js:withReverification',message:'calling ensureReverified before retry',data:{level:level||'first_factor'},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             await auth.ensureReverified(level || 'first_factor');
-            return await run();
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'account.js:withReverification',message:'ensureReverified resolved; retrying action',data:{},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+            try {
+                return await run();
+            } catch (retryErr) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'E',location:'account.js:withReverification',message:'retry after reverify failed',data:{errMsg:String(retryErr&&retryErr.message||retryErr).slice(0,160),errCode:retryErr&&retryErr.errors&&retryErr.errors[0]&&retryErr.errors[0].code||null,isRev:!!(auth.isReverificationError&&auth.isReverificationError(retryErr))},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+                throw retryErr;
+            }
         }
     }
 
@@ -124,6 +144,10 @@
             throw new Error('Could not update account name.');
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'B',location:'account.js:updateUsername',message:'updateUsername start',data:{requestedLen:(username||'').length,sanitizedLen:name.length,clerkBefore:state.user&&state.user.username||null,profileBefore:(window.__USERTYPO_PROFILE__&&window.__USERTYPO_PROFILE__.username)||null,passwordEnabled:!!(state.user&&state.user.passwordEnabled)},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
+
         await withReverification(async function () {
             var user = window.usertypoAuth.getState().user;
             if (!user || typeof user.update !== 'function') {
@@ -133,6 +157,9 @@
             if (typeof user.reload === 'function') {
                 await user.reload();
             }
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'B',location:'account.js:updateUsername',message:'Clerk user.update+reload ok',data:{clerkAfter:(window.usertypoAuth.getState().user&&window.usertypoAuth.getState().user.username)||null,expected:name},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
         }, 'first_factor');
 
         var user = window.usertypoAuth.getState().user;
@@ -143,6 +170,9 @@
         var profileResult = null;
         if (window.usertypoProfiles && typeof window.usertypoProfiles.setUsername === 'function') {
             profileResult = await window.usertypoProfiles.setUsername(name);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'B',location:'account.js:updateUsername',message:'setUsername finished',data:{profileAfter:profileResult&&profileResult.profile&&profileResult.profile.username||null,expected:name,clerkNow:user&&user.username||null},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
         } else if (window.usertypoDb) {
             var client = await window.usertypoDb.getClient();
             var updated = await client
@@ -163,6 +193,10 @@
             } catch (e) { /* ignore */ }
             profileResult = { profile: updated.data };
         }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'C',location:'account.js:updateUsername',message:'updateUsername returning ok',data:{returnedUsername:name,profileUsername:(window.__USERTYPO_PROFILE__&&window.__USERTYPO_PROFILE__.username)||null,clerkUsername:(window.usertypoAuth.getState().user&&window.usertypoAuth.getState().user.username)||null},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
 
         return {
             ok: true,
