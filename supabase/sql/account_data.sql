@@ -1,6 +1,7 @@
 -- Account data wipe helpers for System & Data settings.
 -- reset_my_account_data: keep the profile/Clerk user, delete linked app data.
 -- delete_my_account_data: delete profile + all linked app data (Clerk delete is client-side).
+-- See also: phase8_account_privacy.sql (live hardening).
 
 create or replace function public.reset_my_account_data()
 returns jsonb
@@ -38,6 +39,10 @@ begin
   where f.user_id = v_me
      or f.friend_id = v_me;
 
+  delete from public.user_blocks ub
+  where ub.blocker_id = v_me
+     or ub.blocked_id = v_me;
+
   delete from public.notifications n
   where n.user_id = v_me;
 
@@ -72,12 +77,13 @@ set search_path = public
 as $$
 declare
   v_me text := auth.jwt() ->> 'sub';
+  v_sessions integer := 0;
 begin
   if v_me is null or trim(v_me) = '' then
     raise exception 'not_authenticated';
   end if;
 
-  -- typing_sessions has no FK to profiles; wipe explicitly first.
+  -- Wipe user-owned rows explicitly (typing_sessions has no FK to profiles).
   delete from public.typing_session_diagnostics d
   where d.user_id = v_me;
 
@@ -86,14 +92,38 @@ begin
 
   delete from public.typing_sessions ts
   where ts.user_id = v_me;
+  get diagnostics v_sessions = row_count;
 
-  -- Profile delete cascades friendships, friend_requests, notifications, progression.
+  delete from public.friend_requests fr
+  where fr.from_user_id = v_me
+     or fr.to_user_id = v_me;
+
+  delete from public.friendships f
+  where f.user_id = v_me
+     or f.friend_id = v_me;
+
+  delete from public.user_blocks ub
+  where ub.blocker_id = v_me
+     or ub.blocked_id = v_me;
+
+  delete from public.notifications n
+  where n.user_id = v_me;
+
+  delete from public.user_progression up
+  where up.user_id = v_me;
+
+  -- Profile delete also cascades remaining FKs if any remain.
   delete from public.profiles p
   where p.user_id = v_me;
 
-  return jsonb_build_object('ok', true);
+  return jsonb_build_object(
+    'ok', true,
+    'sessions_deleted', v_sessions
+  );
 end;
 $$;
 
+revoke all on function public.reset_my_account_data() from public, anon;
+revoke all on function public.delete_my_account_data() from public, anon;
 grant execute on function public.reset_my_account_data() to authenticated;
 grant execute on function public.delete_my_account_data() to authenticated;
