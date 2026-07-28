@@ -30,7 +30,10 @@ function createMultiplayerServer(httpServer, options) {
     }
     const io = new Server(httpServer, {
         cors: {
-            origin: allowedOrigins.length ? allowedOrigins : true,
+            // Fail closed in production if ALLOWED_ORIGINS was forgotten.
+            origin: allowedOrigins.length
+                ? allowedOrigins
+                : (env.NODE_ENV === 'production' ? false : true),
             credentials: true,
         },
         transports: ['websocket', 'polling'],
@@ -49,8 +52,55 @@ function createMultiplayerServer(httpServer, options) {
     const rooms = new Map();
     const userToRoom = new Map();
     const disconnectTimers = new Map();
+    const connectionsByIp = new Map();
+    const connectAttemptsByIp = new Map();
     const maxBurstWpm = clampInteger(env.MAX_BURST_WPM, 160, 500, 280);
     const maxSustainedWpm = clampInteger(env.MAX_SUSTAINED_WPM, 120, 400, 220);
+
+    function clientIp(socket) {
+        const forwarded = String((socket.handshake && socket.handshake.headers
+            && socket.handshake.headers['x-forwarded-for']) || '');
+        if (forwarded) return forwarded.split(',')[0].trim().slice(0, 80) || 'unknown';
+        return String((socket.handshake && socket.handshake.address) || 'unknown').slice(0, 80);
+    }
+
+    function noteConnectAttempt(ip) {
+        const now = Date.now();
+        let entry = connectAttemptsByIp.get(ip);
+        if (!entry || now - entry.windowStart >= LIMITS.connectAttemptWindowMs) {
+            entry = { windowStart: now, count: 0 };
+            connectAttemptsByIp.set(ip, entry);
+        }
+        entry.count += 1;
+        if (connectAttemptsByIp.size > 5000) {
+            for (const [key, value] of connectAttemptsByIp) {
+                if (now - value.windowStart >= LIMITS.connectAttemptWindowMs) {
+                    connectAttemptsByIp.delete(key);
+                }
+            }
+        }
+        return entry.count <= LIMITS.maxConnectAttemptsPerIpWindow;
+    }
+
+    // Cheap flood gate before Clerk/JWT work.
+    io.use((socket, next) => {
+        const ip = clientIp(socket);
+        socket.data.clientIp = ip;
+        if (!noteConnectAttempt(ip)) {
+            const err = new Error('Too many connections');
+            err.data = { code: 'connect_rate_limited' };
+            next(err);
+            return;
+        }
+        const active = connectionsByIp.get(ip) || 0;
+        if (active >= LIMITS.maxConnectionsPerIp) {
+            const err = new Error('Too many connections from this network');
+            err.data = { code: 'connect_capacity' };
+            next(err);
+            return;
+        }
+        next();
+    });
 
     io.use(auth.authenticateSocket);
 
@@ -1039,9 +1089,30 @@ function createMultiplayerServer(httpServer, options) {
 
     io.on('connection', async (socket) => {
         const userId = socket.data.userId;
+        const ip = socket.data.clientIp || clientIp(socket);
+        connectionsByIp.set(ip, (connectionsByIp.get(ip) || 0) + 1);
+        socket.once('disconnect', () => {
+            const nextCount = (connectionsByIp.get(ip) || 1) - 1;
+            if (nextCount <= 0) connectionsByIp.delete(ip);
+            else connectionsByIp.set(ip, nextCount);
+        });
+
         socket.join(userChannel(userId));
         if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
-        onlineUsers.get(userId).add(socket.id);
+        const userSockets = onlineUsers.get(userId);
+        // Cap tabs/devices per account (and per guest id) so one identity cannot fan out forever.
+        if (userSockets.size >= LIMITS.maxSocketsPerUser) {
+            const oldest = userSockets.values().next().value;
+            if (oldest) {
+                const oldSocket = io.sockets.sockets.get(oldest);
+                if (oldSocket) {
+                    oldSocket.emit('multiplayer:error', ['session_replaced']);
+                    oldSocket.disconnect(true);
+                }
+                userSockets.delete(oldest);
+            }
+        }
+        userSockets.add(socket.id);
         if (disconnectTimers.has(userId)) {
             clearTimeout(disconnectTimers.get(userId));
             disconnectTimers.delete(userId);
