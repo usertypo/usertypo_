@@ -103,10 +103,16 @@
         }
 
         await user.update({ username: name });
-        await user.reload();
+        if (typeof user.reload === 'function') {
+            await user.reload();
+        }
 
+        // Profiles row is the display source of truth for the app UI.
+        // Do not call ensureMyProfile afterward — a concurrent/stale Clerk sync
+        // used to overwrite the new username in cache (and sometimes DB).
+        var profileResult = null;
         if (window.usertypoProfiles && typeof window.usertypoProfiles.setUsername === 'function') {
-            await window.usertypoProfiles.setUsername(name);
+            profileResult = await window.usertypoProfiles.setUsername(name);
         } else if (window.usertypoDb) {
             var client = await window.usertypoDb.getClient();
             var updated = await client
@@ -119,10 +125,20 @@
             if (window.usertypoProfiles && typeof window.usertypoProfiles.clearCache === 'function') {
                 window.usertypoProfiles.clearCache();
             }
+            window.__USERTYPO_PROFILE__ = updated.data;
+            try {
+                window.dispatchEvent(new CustomEvent('usertypo:profile-synced', {
+                    detail: { profile: updated.data },
+                }));
+            } catch (e) { /* ignore */ }
+            profileResult = { profile: updated.data };
         }
 
-        await syncProfileFromClerk(user);
-        return { ok: true, username: name };
+        return {
+            ok: true,
+            username: name,
+            profile: profileResult && profileResult.profile || null,
+        };
     }
 
     /**

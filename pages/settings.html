@@ -3961,9 +3961,18 @@
                                     var value = input ? input.value.trim() : '';
                                     setFieldStatus('username', 'Saving…', false, root);
                                     try {
-                                        await window.usertypoAccount.updateUsername(value);
+                                        var result = await window.usertypoAccount.updateUsername(value);
                                         setEditMode('username', false, root);
                                         fillAccountFields(root);
+                                        var nameDisplay = q(root, '#account-username-display');
+                                        var nameInput = q(root, '#account-username-input');
+                                        if (result && result.username) {
+                                            if (nameDisplay) nameDisplay.textContent = result.username;
+                                            if (nameInput) {
+                                                nameInput.value = result.username;
+                                                nameInput.placeholder = result.username;
+                                            }
+                                        }
                                         toast('Account name updated.', 'check_circle');
                                         if (typeof window.triggerSave === 'function') window.triggerSave();
                                     } catch (err) {
