@@ -1,21 +1,8 @@
 # Cloudflare Pages redirects.
 # Do NOT use `/* /index.html 200` — Cloudflare rejects it as an infinite loop.
+# Do NOT rewrite SPA paths to /index.html here — Pages may 308 them to `/`
+# and break /signin, /room, etc. Unknown paths use dist/404.html (SPA shell).
 # https://developers.cloudflare.com/pages/configuration/redirects/
-#
-# Explicit SPA shells (200) so auth/deep links are not served as HTTP 404.
-# 404.html remains as a fallback for any other client-side paths.
 
 # Invite links (same behavior as Express /join/:code)
 /join/:code       /room?code=:code       302
-
-# Auth + app routes — serve the SPA shell with 200
-/signin           /index.html            200
-/sso-callback     /index.html            200
-/settings         /index.html            200
-/friends          /index.html            200
-/room             /index.html            200
-/dual             /index.html            200
-/leaderboards     /index.html            200
-/userstats        /index.html            200
-/privacy          /index.html            200
-/terms            /index.html            200
