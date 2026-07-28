@@ -17,9 +17,9 @@ services:
       - key: PUBLIC_SITE_URL
         value: https://usertypo.com
       - key: ALLOWED_ORIGINS
-        value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com
+        value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com,http://127.0.0.1:3000,http://localhost:3000
       - key: CLERK_AUTHORIZED_PARTIES
-        value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com
+        value: https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,https://usertypo.onrender.com,http://127.0.0.1:3000,http://localhost:3000
       - key: SELF_PING_URL
         value: https://mp.usertypo.com
       - key: SELF_PING_ENABLED
