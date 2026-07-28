@@ -79,6 +79,13 @@ app.use(keepAwake.middleware);
 app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    // HSTS only when the request arrived over HTTPS (Render / Cloudflare terminate TLS).
+    const proto = String(_req.headers['x-forwarded-proto'] || _req.protocol || '');
+    if (proto.split(',')[0].trim() === 'https' || process.env.NODE_ENV === 'production') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    }
     next();
 });
 
