@@ -21,6 +21,11 @@ window.USERTYPO_CONFIG = {
         afterSignInUrl: '/',
         afterSignUpUrl: '/',
         ssoCallbackUrl: '/sso-callback',
+        // Used by Clerk.load({ allowedRedirectOrigins })
+        allowedRedirectOrigins: [
+            'https://usertypo.com',
+            'https://www.usertypo.com',
+        ],
     },
     supabase: {
         url: 'https://skebosepedaxnvcaizka.supabase.co',
