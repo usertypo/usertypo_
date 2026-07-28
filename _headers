@@ -1,0 +1,13 @@
+# Cloudflare Pages security headers
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# Intentionally NO Content-Security-Policy yet — Clerk, Tailwind CDN,
+# Google Fonts, Supabase, and Socket.IO need a carefully tested allowlist.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
