@@ -1,17 +1,16 @@
--- Phase 5: score integrity — rate-limit session inserts + tighten WPM cap.
--- Existing real scores peak ~95 WPM; multiplayer burst cap is 280.
+-- Phase 5: score integrity — rate-limit session inserts + WPM cap.
+-- Cap restored to 500 (product preference; Phase 5 had briefly used 350).
 
--- Tighten WPM / raw WPM ceiling (was 500)
 alter table public.typing_sessions drop constraint if exists typing_sessions_wpm_range;
 alter table public.typing_sessions drop constraint if exists typing_sessions_raw_wpm_range;
 
 alter table public.typing_sessions
   add constraint typing_sessions_wpm_range
-    check (wpm is null or (wpm >= 0 and wpm <= 350));
+    check (wpm is null or (wpm >= 0 and wpm <= 500));
 
 alter table public.typing_sessions
   add constraint typing_sessions_raw_wpm_range
-    check (raw_wpm is null or (raw_wpm >= 0 and raw_wpm <= 350));
+    check (raw_wpm is null or (raw_wpm >= 0 and raw_wpm <= 500));
 
 -- Rate limit: max 40 inserts per user per rolling 10 minutes (blocks spam floods)
 create or replace function public.typing_sessions_rate_limit()
