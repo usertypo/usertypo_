@@ -1,11 +1,10 @@
-# Cloudflare Pages / Workers static assets.
-# SPA fallback replaces the old `_redirects` rule: /* /index.html 200
-# https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/
+# Cloudflare Pages static site.
+# Build command (dashboard): npm run build:cloudflare
+# Output directory (dashboard): dist
 
 name = "usertypo"
 compatibility_date = "2026-07-27"
-pages_build_output_dir = "."
+pages_build_output_dir = "dist"
 
 [assets]
-directory = "."
 not_found_handling = "single-page-application"

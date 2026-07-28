@@ -6,6 +6,7 @@
     "start": "node server.js",
     "test": "node --test \"test/*.test.js\"",
     "build:pages": "node scripts/build-page-fragments.js",
+    "build:cloudflare": "node scripts/build-cloudflare.js",
     "serve": "npx --yes serve . --single --listen 3000"
   },
   "engines": {

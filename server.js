@@ -49,6 +49,8 @@ function allowedBrowserOrigins() {
         PUBLIC_SITE_URL,
         'https://www.usertypo.com',
         'https://usertypo.pages.dev',
+        'http://127.0.0.1:3000',
+        'http://localhost:3000',
     ].filter(Boolean);
 }
 
