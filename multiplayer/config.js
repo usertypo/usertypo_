@@ -17,6 +17,11 @@ const LIMITS = Object.freeze({
     minReadyToStart: 3,
     countdownSeconds: 5,
     maxRetainedSnapshots: 32,
+    // Connection flood protection (Phase 7)
+    maxConnectionsPerIp: 20,
+    maxConnectAttemptsPerIpWindow: 40,
+    connectAttemptWindowMs: 60_000,
+    maxSocketsPerUser: 8,
 });
 
 function clampInteger(value, min, max, fallback) {
