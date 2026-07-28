@@ -321,10 +321,38 @@
         return id;
     }
 
+    function socketIoClientSrc() {
+        var cfg = window.USERTYPO_CONFIG || {};
+        var base = String(
+            (cfg.multiplayer && cfg.multiplayer.url)
+            || (cfg.backend && cfg.backend.url)
+            || ''
+        ).replace(/\/+$/, '');
+        return (base || '') + '/socket.io/socket.io.js';
+    }
+
+    function ensureSocketIoClient() {
+        if (window.io) return Promise.resolve();
+        return new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = socketIoClientSrc();
+            script.async = true;
+            script.onload = function () {
+                if (window.io) resolve();
+                else reject(new Error('Socket.IO client is not loaded.'));
+            };
+            script.onerror = function () {
+                reject(new Error('Socket.IO client is not loaded.'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
     async function ensureConnected() {
         if (socket && socket.connected && readyState) return socket;
         if (connectPromise) return connectPromise;
         connectPromise = (async function () {
+            await ensureSocketIoClient();
             if (!window.io) throw new Error('Socket.IO client is not loaded.');
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
