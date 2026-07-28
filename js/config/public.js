@@ -56,14 +56,6 @@ window.USERTYPO_CONFIG = {
     if (!cfg) return;
     var host = '';
     try { host = String(location.hostname || ''); } catch (_) { host = ''; }
-    // Debug: force remote mp backend even on localhost so HTTPS/prod path can be tested locally.
-    try {
-        if (/[?&]debugMp=1(?:&|$)/.test(String(location.search || ''))) {
-            if (cfg.backend) cfg.backend.url = 'https://mp.usertypo.com';
-            if (cfg.multiplayer) cfg.multiplayer.url = 'https://mp.usertypo.com';
-            return;
-        }
-    } catch (_) { /* ignore */ }
     // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
     if (
         host === 'localhost'
