@@ -573,6 +573,9 @@
         if (typeof session.checkAuthorization === 'function') {
             try {
                 if (session.checkAuthorization(authCheck)) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'already authorized via checkAuthorization',data:{verificationLevel:verificationLevel,ages:session.factorVerificationAge||null},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     return true;
                 }
             } catch (e) { /* fall through to modal */ }
@@ -586,15 +589,22 @@
             && ages[0] < 10
             && verificationLevel === 'first_factor'
         ) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'skipping modal due to fresh factorVerificationAge',data:{ages:ages,verificationLevel:verificationLevel},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return true;
         }
 
         var openModal = null;
+        var modalKind = 'none';
         if (typeof clerk.__internal_openReverification === 'function') {
             openModal = clerk.__internal_openReverification.bind(clerk);
+            modalKind = 'internal_openReverification';
         } else if (typeof clerk.__experimental_openUserVerification === 'function') {
             openModal = clerk.__experimental_openUserVerification.bind(clerk);
+            modalKind = 'experimental_openUserVerification';
         } else if (clerk.session && typeof clerk.session.startVerification === 'function') {
+            modalKind = 'session.startVerification';
             // Fallback for newer Clerk builds that expose session.startVerification.
             openModal = function (opts) {
                 return clerk.session.startVerification({
@@ -609,6 +619,10 @@
             };
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'opening reverification modal',data:{modalKind:modalKind,verificationLevel:verificationLevel,ages:ages||null},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
+
         if (!openModal) {
             throw new Error('session_reverification_required');
         }
@@ -620,12 +634,18 @@
                 afterVerification: function () {
                     if (settled) return;
                     settled = true;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'afterVerification callback fired',data:{ages:(getClerk().session&&getClerk().session.factorVerificationAge)||null},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     notify(getState());
                     resolve(true);
                 },
                 afterVerificationCancelled: function () {
                     if (settled) return;
                     settled = true;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'afterVerificationCancelled fired',data:{},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     reject(new Error('verification_cancelled'));
                 },
             });
@@ -634,6 +654,9 @@
                 result.then(function () {
                     if (settled) return;
                     settled = true;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:ensureReverified',message:'openModal promise resolved (no callback)',data:{},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     notify(getState());
                     resolve(true);
                 }, function () {
