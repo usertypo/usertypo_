@@ -1477,10 +1477,18 @@
         ).replace(/\/+$/, '');
         // Local `npm run dev`: same-origin Express/Socket.IO. Production: mp.usertypo.com.
         var src = (base || '') + '/socket.io/socket.io.js';
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'A',location:'index.html:loadSocketIoClient',message:'document.write socket.io src',data:{src:src,base:base,host:location.hostname,hasConfig:!!cfg.multiplayer},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         document.write('<script src="' + src + '"><\/script>');
     })();
     </script>
-    <script src="js/api/multiplayer.js?v=22"></script>
+    <script>
+    // #region agent log
+    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c30dc0'},body:JSON.stringify({sessionId:'c30dc0',runId:'pre-fix',hypothesisId:'A',location:'index.html:after-write',message:'window.io after document.write scripts continue',data:{hasIo:typeof window.io,ioType:typeof window.io},timestamp:Date.now()})}).catch(function(){});
+    // #endregion
+    </script>
+    <script src="js/api/multiplayer.js?v=23"></script>
     <script src="js/pages/dual-race.js?v=24"></script>
     <script src="js/pages/room-race.js?v=31"></script>
     <script src="dual.js?v=9"></script>
