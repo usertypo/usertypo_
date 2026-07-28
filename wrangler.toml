@@ -1,10 +1,8 @@
 # Cloudflare Pages static site.
-# Build command (dashboard): npm run build:cloudflare
-# Output directory (dashboard): dist
+# Dashboard build command: npm run build:cloudflare
+# Dashboard output directory: dist
+# Do NOT add [assets] here — Pages rejects that key and fails the build.
 
 name = "usertypo"
 compatibility_date = "2026-07-27"
 pages_build_output_dir = "dist"
-
-[assets]
-not_found_handling = "single-page-application"

@@ -78,6 +78,12 @@ function main() {
         fs.copyFileSync(vendorSrc, socketOut);
     }
 
+    // Pages-compatible SPA fallback (/* /index.html 200 is rejected by Cloudflare).
+    const indexHtml = path.join(DIST, 'index.html');
+    if (fs.existsSync(indexHtml)) {
+        fs.copyFileSync(indexHtml, path.join(DIST, '404.html'));
+    }
+
     console.log('[build-cloudflare] wrote static site to ' + DIST);
 }
 
