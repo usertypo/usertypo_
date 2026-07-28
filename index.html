@@ -1466,9 +1466,21 @@
     <script src="js/api/friends.js?v=3"></script>
     <script src="js/api/presence.js"></script>
     <script src="js/api/notifications.js?v=5"></script>
-    <!-- Local client; connects to USERTYPO_CONFIG.multiplayer.url (mp.usertypo.com in prod). -->
-    <script src="js/vendor/socket.io.min.js?v=1"></script>
-    <script src="js/api/multiplayer.js?v=21"></script>
+    <!-- Socket.IO client from the multiplayer host (Pages does not serve /socket.io). -->
+    <script>
+    (function loadSocketIoClient() {
+        var cfg = window.USERTYPO_CONFIG || {};
+        var base = String(
+            (cfg.multiplayer && cfg.multiplayer.url)
+            || (cfg.backend && cfg.backend.url)
+            || ''
+        ).replace(/\/+$/, '');
+        // Local `npm run dev`: same-origin Express/Socket.IO. Production: mp.usertypo.com.
+        var src = (base || '') + '/socket.io/socket.io.js';
+        document.write('<script src="' + src + '"><\/script>');
+    })();
+    </script>
+    <script src="js/api/multiplayer.js?v=22"></script>
     <script src="js/pages/dual-race.js?v=24"></script>
     <script src="js/pages/room-race.js?v=31"></script>
     <script src="dual.js?v=9"></script>
