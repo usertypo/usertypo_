@@ -549,8 +549,10 @@
     }
 
     /**
-     * Clerk requires recent credential proof for sensitive actions (e.g. account delete).
+     * Clerk requires recent credential proof for sensitive actions
+     * (username change, email/password, account delete).
      * Opens Clerk's verification modal when the current session is stale.
+     * Google-only accounts can re-verify with Google (password not required).
      * @param {'first_factor'|'second_factor'|'multi_factor'} [level]
      */
     async function ensureReverified(level) {
@@ -592,6 +594,19 @@
             openModal = clerk.__internal_openReverification.bind(clerk);
         } else if (typeof clerk.__experimental_openUserVerification === 'function') {
             openModal = clerk.__experimental_openUserVerification.bind(clerk);
+        } else if (clerk.session && typeof clerk.session.startVerification === 'function') {
+            // Fallback for newer Clerk builds that expose session.startVerification.
+            openModal = function (opts) {
+                return clerk.session.startVerification({
+                    level: opts && opts.level,
+                }).then(function () {
+                    if (opts && typeof opts.afterVerification === 'function') opts.afterVerification();
+                }, function () {
+                    if (opts && typeof opts.afterVerificationCancelled === 'function') {
+                        opts.afterVerificationCancelled();
+                    }
+                });
+            };
         }
 
         if (!openModal) {
@@ -600,7 +615,7 @@
 
         return new Promise(function (resolve, reject) {
             var settled = false;
-            openModal({
+            var result = openModal({
                 level: verificationLevel,
                 afterVerification: function () {
                     if (settled) return;
@@ -614,6 +629,19 @@
                     reject(new Error('verification_cancelled'));
                 },
             });
+            // Some Clerk builds return a Promise instead of using callbacks.
+            if (result && typeof result.then === 'function') {
+                result.then(function () {
+                    if (settled) return;
+                    settled = true;
+                    notify(getState());
+                    resolve(true);
+                }, function () {
+                    if (settled) return;
+                    settled = true;
+                    reject(new Error('verification_cancelled'));
+                });
+            }
         });
     }
 

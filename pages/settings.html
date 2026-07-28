@@ -3976,7 +3976,19 @@
                                         toast('Account name updated.', 'check_circle');
                                         if (typeof window.triggerSave === 'function') window.triggerSave();
                                     } catch (err) {
-                                        setFieldStatus('username', mapErr(err).message, true, root);
+                                        var mapped = mapErr(err);
+                                        if (mapped.code === 'verification_cancelled') {
+                                            setFieldStatus('username', mapped.message, true, root);
+                                        } else if (mapped.code === 'session_reverification_required') {
+                                            setFieldStatus(
+                                                'username',
+                                                'Clerk could not open identity verification. Refresh and try again, or re-sign in with Google.',
+                                                true,
+                                                root
+                                            );
+                                        } else {
+                                            setFieldStatus('username', mapped.message, true, root);
+                                        }
                                     }
                                 }
 

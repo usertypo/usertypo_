@@ -19,8 +19,8 @@
             form_param_format_invalid: 'That value is not valid.',
             form_username_invalid_length: 'Username must be between 3 and 32 characters.',
             verification_required: 'Enter the verification code sent to your new email.',
-            verification_cancelled: 'Account deletion cancelled — identity verification was not completed.',
-            session_reverification_required: 'Verify your identity to delete your account, then try again.',
+            verification_cancelled: 'Cancelled — identity verification was not completed.',
+            session_reverification_required: 'Verify your identity (Google / email), then try again.',
         };
         if (friendly[code]) {
             return { error: err, code: code, message: friendly[code] };
@@ -83,6 +83,29 @@
         return window.usertypoProfiles.ensureMyProfile(user, { force: true });
     }
 
+    /**
+     * Run a Clerk-sensitive action; if the session is stale, open reverification and retry once.
+     * Google-only accounts re-verify via Google (no password required).
+     */
+    async function withReverification(action, level) {
+        var run = typeof action === 'function' ? action : null;
+        if (!run) throw new Error('invalid_action');
+
+        try {
+            return await run();
+        } catch (err) {
+            var auth = window.usertypoAuth;
+            if (!auth
+                || typeof auth.isReverificationError !== 'function'
+                || !auth.isReverificationError(err)
+                || typeof auth.ensureReverified !== 'function') {
+                throw err;
+            }
+            await auth.ensureReverified(level || 'first_factor');
+            return await run();
+        }
+    }
+
     async function updateUsername(username) {
         var state = await requireAuth();
         var name = String(username || '')
@@ -97,15 +120,22 @@
             throw new Error('form_username_invalid_length');
         }
 
-        var user = state.user;
-        if (typeof user.update !== 'function') {
+        if (typeof state.user.update !== 'function') {
             throw new Error('Could not update account name.');
         }
 
-        await user.update({ username: name });
-        if (typeof user.reload === 'function') {
-            await user.reload();
-        }
+        await withReverification(async function () {
+            var user = window.usertypoAuth.getState().user;
+            if (!user || typeof user.update !== 'function') {
+                throw new Error('Could not update account name.');
+            }
+            await user.update({ username: name });
+            if (typeof user.reload === 'function') {
+                await user.reload();
+            }
+        }, 'first_factor');
+
+        var user = window.usertypoAuth.getState().user;
 
         // Profiles row is the display source of truth for the app UI.
         // Do not call ensureMyProfile afterward — a concurrent/stale Clerk sync
@@ -190,12 +220,26 @@
             throw new Error('Email address not found. Start the change again.');
         }
 
-        if (typeof emailAddress.attemptVerification === 'function') {
-            await emailAddress.attemptVerification({ code: verificationCode });
-        }
+        await withReverification(async function () {
+            var user = window.usertypoAuth.getState().user;
+            var emailAddress = (user.emailAddresses || []).find(function (item) {
+                return item && item.id === id;
+            });
+            if (!emailAddress) {
+                throw new Error('Email address not found. Start the change again.');
+            }
 
-        await user.update({ primaryEmailAddressId: id });
-        await user.reload();
+            if (typeof emailAddress.attemptVerification === 'function') {
+                await emailAddress.attemptVerification({ code: verificationCode });
+            }
+
+            await user.update({ primaryEmailAddressId: id });
+            if (typeof user.reload === 'function') {
+                await user.reload();
+            }
+        }, 'first_factor');
+
+        var user = window.usertypoAuth.getState().user;
         await syncProfileFromClerk(user);
 
         return {
@@ -223,7 +267,13 @@
             }
         }
 
-        await user.updatePassword(payload);
+        await withReverification(async function () {
+            var current = window.usertypoAuth.getState().user;
+            if (!current || typeof current.updatePassword !== 'function') {
+                throw new Error('Password changes are not available for this account.');
+            }
+            await current.updatePassword(payload);
+        }, 'first_factor');
         return { ok: true };
     }
 
