@@ -14,8 +14,8 @@
  */
 window.USERTYPO_CONFIG = {
     clerk: {
-        publishableKey: 'pk_test_dHJ1c3RlZC1wcmF3bi0zMS5jbGVyay5hY2NvdW50cy5kZXYk',
-        frontendApi: 'trusted-prawn-31.clerk.accounts.dev',
+        publishableKey: 'pk_live_Y2xlcmsudXNlcnR5cG8uY29tJA',
+        frontendApi: 'clerk.usertypo.com',
         signInUrl: '/signin',
         signUpUrl: '/signin',
         afterSignInUrl: '/',
