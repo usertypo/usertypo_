@@ -28,7 +28,7 @@ type Mode = "time" | "words";
 const ALLTIME_MIN_TESTS = 50;
 const ALLTIME_MIN_WPM = 30;
 /** Soft ceiling aligned with multiplayer anti-cheat (+ headroom). */
-const MAX_INGEST_WPM = 350;
+const MAX_INGEST_WPM = 500;
 /** Ignore stale ingest replays of old session rows. */
 const MAX_INGEST_AGE_MS = 60 * 60 * 1000;
 
