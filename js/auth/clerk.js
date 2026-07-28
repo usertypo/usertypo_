@@ -265,7 +265,7 @@
             .replace(/\s+/g, '_')
             .replace(/[^a-z0-9_]/g, '')
             .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '')
+            .replace(/^_+/g, '')
             .slice(0, 20);
         while (base.length < 4) {
             base += String(Math.floor(Math.random() * 10));

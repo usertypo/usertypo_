@@ -134,8 +134,11 @@
             .replace(/\s+/g, '_')
             .replace(/[^a-z0-9_]/g, '')
             .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '')
+            .replace(/^_+/g, '')
             .slice(0, 32);
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'28f6bf'},body:JSON.stringify({sessionId:'28f6bf',runId:'post-fix',hypothesisId:'F',location:'account.js:updateUsername',message:'sanitize result',data:{rawLen:String(username||'').length,rawEndsUnderscore:/_$/.test(String(username||'').trim()),sanitized:name,sameAsClerk:name===(state.user&&state.user.username),sameAsProfile:name===((window.__USERTYPO_PROFILE__&&window.__USERTYPO_PROFILE__.username)||null)},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
         }
