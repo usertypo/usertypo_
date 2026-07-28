@@ -21,6 +21,8 @@
             verification_required: 'Enter the verification code sent to your new email.',
             verification_cancelled: 'Cancelled — identity verification was not completed.',
             session_reverification_required: 'Verify your identity (Google / email), then try again.',
+            leaderboard_purge_failed: 'Could not remove your leaderboard scores. Try again in a moment.',
+            leaderboard_purge_unavailable: 'Leaderboard cleanup is unavailable. Try again in a moment.',
         };
         if (friendly[code]) {
             return { error: err, code: code, message: friendly[code] };
@@ -68,13 +70,40 @@
         } catch (e) { /* ignore */ }
     }
 
-    async function purgeLeaderboards() {
-        if (window.usertypoLeaderboards && typeof window.usertypoLeaderboards.syncVisibility === 'function') {
-            try {
-                await window.usertypoLeaderboards.syncVisibility(false);
-            } catch (err) {
-                console.warn('[usertypo account] leaderboard purge failed', err);
+    function clearLocalAccountArtifacts() {
+        var keys = [
+            'usertypo_settings',
+            'usertypo:profile-cache:v1',
+            'usertypo_pace_history_v1',
+            'usertypo_pot_filters',
+            'usertypo_pot_chart',
+            'usertypo_pot_presets',
+            'usertypo_auth_welcome',
+        ];
+        keys.forEach(function (key) {
+            try { window.localStorage.removeItem(key); } catch (e) { /* ignore */ }
+        });
+    }
+
+    async function purgeLeaderboards(options) {
+        var required = !!(options && options.required);
+        if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.syncVisibility !== 'function') {
+            if (required) throw new Error('leaderboard_purge_unavailable');
+            return { ok: false, skipped: true };
+        }
+        try {
+            var result = await window.usertypoLeaderboards.syncVisibility(false);
+            if (result && result.ok) return { ok: true, data: result.data || null };
+            // Postgres-only mode (no Redis) still counts as cleaned for app data.
+            if (result && result.data && result.data.redis === 'skipped') {
+                return { ok: true, skipped: true, data: result.data };
             }
+            if (required) throw new Error('leaderboard_purge_failed');
+            return { ok: false, details: result };
+        } catch (err) {
+            console.warn('[usertypo account] leaderboard purge failed', err);
+            if (required) throw err.code ? err : new Error('leaderboard_purge_failed');
+            return { ok: false, error: err };
         }
     }
 
@@ -321,7 +350,7 @@
         var result = await client.rpc('reset_my_account_data');
         if (result.error) throw result.error;
 
-        await purgeLeaderboards();
+        await purgeLeaderboards({ required: false });
         try {
             var profile = window.__USERTYPO_PROFILE__;
             if (profile && profile.show_on_leaderboard !== false && window.usertypoLeaderboards) {
@@ -330,6 +359,7 @@
         } catch (e) { /* ignore */ }
 
         await clearClientCaches();
+        clearLocalAccountArtifacts();
         if (window.usertypoAuth) {
             var state = window.usertypoAuth.getState();
             if (state.user && window.usertypoProfiles) {
@@ -370,24 +400,21 @@
         // Clerk blocks user.delete() unless credentials were verified recently.
         // Reverify *before* wiping app data so a cancelled/failed check leaves the account intact.
         if (window.usertypoAuth && typeof window.usertypoAuth.ensureReverified === 'function') {
-            await window.usertypoAuth.ensureReverified('multi_factor');
+            await window.usertypoAuth.ensureReverified('first_factor');
             state = window.usertypoAuth.getState();
             user = state.user;
         }
 
         var client = await window.usertypoDb.getClient();
 
-        await purgeLeaderboards();
+        // Must clear Redis before deleting the profile (visibility sync needs the profile JWT path).
+        await purgeLeaderboards({ required: true });
 
         var result = await client.rpc('delete_my_account_data');
         if (result.error) throw result.error;
 
         await clearClientCaches();
-
-        try {
-            window.localStorage.removeItem('usertypo_settings');
-            window.localStorage.removeItem('usertypo:profile-cache:v1');
-        } catch (e) { /* ignore */ }
+        clearLocalAccountArtifacts();
 
         state = window.usertypoAuth.getState();
         user = state.user;
@@ -399,7 +426,7 @@
                 && typeof window.usertypoAuth.isReverificationError === 'function'
                 && window.usertypoAuth.isReverificationError(err)
                 && typeof window.usertypoAuth.ensureReverified === 'function') {
-                await window.usertypoAuth.ensureReverified('multi_factor');
+                await window.usertypoAuth.ensureReverified('first_factor');
                 state = window.usertypoAuth.getState();
                 await deleteClerkUser(state.user);
             } else {
@@ -408,6 +435,79 @@
         }
 
         return { ok: true };
+    }
+
+    /**
+     * Privacy export: test-history CSV + account summary JSON.
+     */
+    async function exportMyData() {
+        await requireAuth();
+        var state = window.usertypoAuth.getState();
+        var user = state.user;
+        var profile = window.__USERTYPO_PROFILE__ || null;
+        if ((!profile || !profile.user_id) && window.usertypoProfiles && user) {
+            try {
+                profile = await window.usertypoProfiles.ensureMyProfile(user, { force: true });
+            } catch (e) { /* ignore */ }
+        }
+        var progression = null;
+        if (window.usertypoProgression && typeof window.usertypoProgression.getMine === 'function') {
+            try {
+                progression = await window.usertypoProgression.getMine({ force: true });
+            } catch (e) { /* ignore */ }
+        }
+
+        var email = user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress
+            ? user.primaryEmailAddress.emailAddress
+            : null;
+
+        var summary = {
+            exported_at: new Date().toISOString(),
+            account: {
+                user_id: user && user.id || null,
+                username: (profile && profile.username) || (user && user.username) || null,
+                public_id: profile && profile.public_id || null,
+                email: email,
+                show_on_leaderboard: profile ? profile.show_on_leaderboard !== false : null,
+                profile_visibility: profile && profile.profile_visibility || null,
+                created_at: profile && profile.created_at || null,
+            },
+            progression: progression
+                ? {
+                    level: progression.level,
+                    total_xp: progression.totalXp != null ? progression.totalXp : progression.total_xp,
+                    current_streak: progression.currentStreak != null ? progression.currentStreak : progression.current_streak,
+                    longest_streak: progression.longestStreak != null ? progression.longestStreak : progression.longest_streak,
+                }
+                : null,
+        };
+
+        var dateStamp = new Date().toISOString().slice(0, 10);
+        var jsonBlob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+        var jsonUrl = URL.createObjectURL(jsonBlob);
+        var jsonLink = document.createElement('a');
+        jsonLink.href = jsonUrl;
+        jsonLink.download = 'usertypo-account-' + dateStamp + '.json';
+        document.body.appendChild(jsonLink);
+        jsonLink.click();
+        jsonLink.remove();
+        setTimeout(function () { URL.revokeObjectURL(jsonUrl); }, 0);
+
+        var csvResult = { ok: true, skipped: true };
+        if (window.usertypoSessions && typeof window.usertypoSessions.exportTestHistoryCsv === 'function') {
+            csvResult = await window.usertypoSessions.exportTestHistoryCsv();
+            if (csvResult && csvResult.error && csvResult.error !== 'no_sessions') {
+                throw new Error(csvResult.message || 'Could not export test history.');
+            }
+        }
+
+        return {
+            ok: true,
+            account_export: true,
+            history: csvResult && csvResult.error === 'no_sessions'
+                ? { skipped: true, reason: 'no_sessions' }
+                : csvResult,
+        };
     }
 
     window.usertypoAccount = {
@@ -419,6 +519,7 @@
         listBlockedUsers: listBlockedUsers,
         resetAccountData: resetAccountData,
         deleteAccount: deleteAccount,
+        exportMyData: exportMyData,
         mapRpcError: mapRpcError,
     };
 })();

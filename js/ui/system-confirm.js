@@ -80,7 +80,7 @@
 
         if (mode === MODE.EXPORT) {
             if (title) title.textContent = 'Export Data';
-            if (message) message.textContent = 'Would you like to download your usertypo_ data?';
+            if (message) message.textContent = 'Would you like to download your usertypo_ account summary and test history?';
             if (icon) icon.textContent = 'download';
             if (ok) ok.textContent = 'Download';
             return;
@@ -180,6 +180,15 @@
     }
 
     async function runExport() {
+        if (window.usertypoAccount && typeof window.usertypoAccount.exportMyData === 'function') {
+            var exported = await window.usertypoAccount.exportMyData();
+            if (exported && exported.history && exported.history.skipped) {
+                toast('Account summary downloaded (no test history yet).', 'download');
+            } else {
+                toast('Data downloaded.', 'download');
+            }
+            return;
+        }
         if (!window.usertypoSessions || typeof window.usertypoSessions.exportTestHistoryCsv !== 'function') {
             throw new Error('Export unavailable.');
         }
