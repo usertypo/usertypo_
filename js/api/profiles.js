@@ -146,7 +146,14 @@
         }
 
         if (syncInFlight && lastSyncedUserId === user.id) {
-            return syncInFlight;
+            if (!force) {
+                return syncInFlight;
+            }
+            // Forced refresh must not reuse a stale in-flight sync (e.g. username change
+            // while settings/auth are still hydrating the previous profile).
+            try {
+                await syncInFlight;
+            } catch (e) { /* continue with a fresh sync */ }
         }
 
         lastSyncedUserId = user.id;
@@ -165,10 +172,17 @@
                 if (!avatarUrl && existing.data.avatar_url) {
                     nextAvatar = null;
                 }
+                // Once a profile username exists, it is app-managed (setUsername / settings).
+                // Do not clobber it with a stale Clerk user object or Google fullName.
+                var nextUsername = existing.data.username || username;
+                var nextDisplayName = existing.data.username
+                    ? (existing.data.display_name || existing.data.username)
+                    : (displayName || existing.data.display_name || username);
+
                 var needsUpdate =
-                    (username && existing.data.username !== username) ||
+                    (nextUsername && existing.data.username !== nextUsername) ||
                     (existing.data.avatar_url || null) !== (nextAvatar || null) ||
-                    (displayName && existing.data.display_name !== displayName);
+                    (nextDisplayName && existing.data.display_name !== nextDisplayName);
 
                 if (!needsUpdate) {
                     cachedProfile = existing.data;
@@ -181,8 +195,8 @@
                 var updated = await client
                     .from('profiles')
                     .update({
-                        username: username || existing.data.username,
-                        display_name: displayName || existing.data.display_name,
+                        username: nextUsername || existing.data.username,
+                        display_name: nextDisplayName || existing.data.display_name,
                         avatar_url: nextAvatar,
                     })
                     .eq('user_id', user.id)
@@ -301,7 +315,14 @@
     }
 
     async function setUsername(username) {
-        var name = String(username || '').trim();
+        var name = String(username || '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 32);
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
         }
