@@ -43,7 +43,7 @@ window.USERTYPO_CONFIG = {
     },
     analytics: {
         // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
-        ga4MeasurementId: '',
+        ga4MeasurementId: 'G-J3Z3XM22WQ',
     },
     ads: {
         monetag: {
