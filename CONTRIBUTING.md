@@ -24,6 +24,11 @@ Thanks for helping improve usertypo_.
 
 You cannot push directly to `main` on the upstream repo unless you are added as a collaborator.
 
+## License
+
+By contributing, you agree that your contributions are licensed under the same
+[GNU Affero General Public License v3.0](./LICENSE) (AGPLv3) as the project.
+
 ## Never paste secrets
 
 Do **not** put any of the following in issues, PR descriptions, screenshots, or commits:

@@ -2,7 +2,7 @@
   "name": "usertypo",
   "private": true,
   "description": "usertypo_ — typing tests, profiles, friends, leaderboards, and multiplayer races",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "homepage": "https://usertypo.com",
   "repository": {
     "type": "git",
