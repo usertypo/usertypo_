@@ -1,6 +1,13 @@
 {
   "name": "usertypo",
   "private": true,
+  "description": "usertypo_ — typing tests, profiles, friends, leaderboards, and multiplayer races",
+  "license": "MIT",
+  "homepage": "https://usertypo.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usertypo/usertypo.git"
+  },
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",

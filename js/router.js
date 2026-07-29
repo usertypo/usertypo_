@@ -256,6 +256,9 @@
             try { applyFooterSettings(); } catch (e) { console.warn('applyFooterSettings', e); }
         }
         wireShellMuteButtons();
+        if (window.usertypoAds && typeof window.usertypoAds.refresh === 'function') {
+            try { window.usertypoAds.refresh(); } catch (e) { console.warn('usertypoAds', e); }
+        }
     }
 
     function wireShellMuteButtons() {
