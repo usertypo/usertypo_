@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Private / app-only routes (still reachable by users; discourage indexing)
+Disallow: /signin
+Disallow: /sso-callback
+Disallow: /settings
+Disallow: /room
+Disallow: /dual
+
+Sitemap: https://usertypo.com/sitemap.xml

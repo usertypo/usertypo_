@@ -10,20 +10,125 @@
         window.__usertypoBootPath = String(window.location.pathname || '/');
     }
 
+    const SITE_ORIGIN = 'https://usertypo.com';
+    const DEFAULT_DESCRIPTION = 'Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer.';
+
     const routes = {
-        '/': { page: 'pages/home.html', title: 'Home - Typing Test | usertypo_', navId: 'nav-typing', hideShellFooter: true, compact: false, typingLayout: true },
-        '/settings': { page: 'pages/settings.html', title: 'Settings - Configure Your Experience | usertypo_', navId: 'nav-settings', compact: false },
-        '/signin': { page: 'pages/auth/signin.html', title: 'Sign In - Continue the Fun! | usertypo_', navId: null, compact: false, signinLayout: true, hideShellFooter: true },
-        '/sso-callback': { page: 'pages/auth/sso-callback.html', title: 'Signing in... | usertypo_', navId: null, compact: false, hideShellFooter: true, hideShellHeader: true },
-        '/friends': { page: 'pages/friends.html', title: 'Friends | usertypo_', navId: 'nav-friends', compact: true },
-        '/room': { page: 'pages/room.html', title: 'Room | usertypo_', navId: null, compact: true, typingLayout: true, hideShellFooter: true },
-        '/dual': { page: 'pages/dual.html', title: 'Dual Match | usertypo_', navId: null, compact: true, typingLayout: true, hideShellHeader: true, hideShellFooter: true },
-        '/leaderboards': { page: 'pages/leaderboards.html', title: 'Leaderboards | usertypo_', navId: 'nav-leaderboards', compact: false },
-        '/userstats': { page: 'pages/userstats.html', title: 'User Stats | usertypo_', navId: 'nav-userstats', compact: false },
-        '/privacy': { page: 'pages/privacy.html', title: 'Privacy Policy | usertypo_', navId: null, compact: false },
-        '/terms': { page: 'pages/terms.html', title: 'Terms and Conditions | usertypo_', navId: null, compact: false },
-        '/about': { page: 'pages/about.html', title: 'About | usertypo_', navId: null, compact: false },
-        '/security': { page: 'pages/security.html', title: 'Security Policy | usertypo_', navId: null, compact: false },
+        '/': {
+            page: 'pages/home.html',
+            title: 'Home - Typing Test | usertypo_',
+            description: DEFAULT_DESCRIPTION,
+            robots: 'index, follow',
+            navId: 'nav-typing',
+            hideShellFooter: true,
+            compact: false,
+            typingLayout: true,
+        },
+        '/settings': {
+            page: 'pages/settings.html',
+            title: 'Settings - Configure Your Experience | usertypo_',
+            description: 'Configure themes, typing behavior, privacy, and account settings for usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: 'nav-settings',
+            compact: false,
+        },
+        '/signin': {
+            page: 'pages/auth/signin.html',
+            title: 'Sign In - Continue the Fun! | usertypo_',
+            description: 'Sign in to usertypo_ to save progress, join leaderboards, and play multiplayer.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: false,
+            signinLayout: true,
+            hideShellFooter: true,
+        },
+        '/sso-callback': {
+            page: 'pages/auth/sso-callback.html',
+            title: 'Signing in... | usertypo_',
+            description: 'Completing sign-in to usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: false,
+            hideShellFooter: true,
+            hideShellHeader: true,
+        },
+        '/friends': {
+            page: 'pages/friends.html',
+            title: 'Friends | usertypo_',
+            description: 'Manage friends, find opponents, and start multiplayer typing races on usertypo_.',
+            robots: 'noindex, follow',
+            navId: 'nav-friends',
+            compact: true,
+        },
+        '/room': {
+            page: 'pages/room.html',
+            title: 'Room | usertypo_',
+            description: 'Multiplayer typing room on usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: true,
+            typingLayout: true,
+            hideShellFooter: true,
+        },
+        '/dual': {
+            page: 'pages/dual.html',
+            title: 'Dual Match | usertypo_',
+            description: '1v1 typing race on usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: true,
+            typingLayout: true,
+            hideShellHeader: true,
+            hideShellFooter: true,
+        },
+        '/leaderboards': {
+            page: 'pages/leaderboards.html',
+            title: 'Leaderboards | usertypo_',
+            description: 'Global and friends typing leaderboards on usertypo_. Compare WPM, accuracy, and climb the ranks.',
+            robots: 'index, follow',
+            navId: 'nav-leaderboards',
+            compact: false,
+        },
+        '/userstats': {
+            page: 'pages/userstats.html',
+            title: 'User Stats | usertypo_',
+            description: 'Your typing stats, personal bests, and history on usertypo_.',
+            robots: 'noindex, follow',
+            navId: 'nav-userstats',
+            compact: false,
+        },
+        '/privacy': {
+            page: 'pages/privacy.html',
+            title: 'Privacy Policy | usertypo_',
+            description: 'How usertypo_ collects, uses, and protects your data.',
+            robots: 'index, follow',
+            navId: null,
+            compact: false,
+        },
+        '/terms': {
+            page: 'pages/terms.html',
+            title: 'Terms and Conditions | usertypo_',
+            description: 'Terms and conditions for using usertypo_.',
+            robots: 'index, follow',
+            navId: null,
+            compact: false,
+        },
+        '/about': {
+            page: 'pages/about.html',
+            title: 'About | usertypo_',
+            description: 'Learn about usertypo_ — a free open-source typing test with leaderboards and multiplayer races.',
+            robots: 'index, follow',
+            navId: null,
+            compact: false,
+        },
+        '/security': {
+            page: 'pages/security.html',
+            title: 'Security Policy | usertypo_',
+            description: 'Security policy and how to report vulnerabilities for usertypo_.',
+            robots: 'index, follow',
+            navId: null,
+            compact: false,
+        },
     };
 
     const htmlRouteMap = {
@@ -94,6 +199,35 @@
         history.pushState({ spa: true, path: targetPath, search }, '', url);
         return loadRoute(targetPath);
     };
+
+    function setMetaById(id, attr, value) {
+        var el = document.getElementById(id);
+        if (!el || value == null) return;
+        if (attr === 'text') {
+            el.textContent = value;
+            return;
+        }
+        el.setAttribute(attr, value);
+    }
+
+    function updateDocumentSeo(path, routeConfig) {
+        if (!routeConfig) return;
+        var title = routeConfig.title || 'usertypo_';
+        var description = routeConfig.description || DEFAULT_DESCRIPTION;
+        var robots = routeConfig.robots || 'index, follow';
+        var canonicalPath = path === '/' ? '/' : path;
+        var canonicalUrl = SITE_ORIGIN + canonicalPath;
+
+        document.title = title;
+        setMetaById('meta-description', 'content', description);
+        setMetaById('meta-robots', 'content', robots);
+        setMetaById('meta-canonical', 'href', canonicalUrl);
+        setMetaById('og-title', 'content', title);
+        setMetaById('og-description', 'content', description);
+        setMetaById('og-url', 'content', canonicalUrl);
+        setMetaById('twitter-title', 'content', title);
+        setMetaById('twitter-description', 'content', description);
+    }
 
     function parseFragment(html) {
         const styles = [];
@@ -565,6 +699,7 @@
             }
 
             document.title = routeConfig.title;
+            updateDocumentSeo(path, routeConfig);
             updateNavActive(routeConfig.navId);
             updateShellFooter(routeConfig);
             updateShellHeader(routeConfig);
