@@ -49,15 +49,16 @@ window.USERTYPO_CONFIG = {
         monetag: {
             // Set enabled: true and paste your Monetag zone script details when ready.
             // Leave slot zone IDs empty until Monetag gives you per-placement IDs.
+            // Placeholders stay visible on the site; ads are not user-toggleable.
             enabled: false,
             scriptSrc: '',
             zoneId: '',
             sdk: '',
             slots: {
                 home_results: '',
-                userstats: '',
                 leaderboards: '',
-                friends: '',
+                room: '',
+                dual: '',
             },
         },
     },
