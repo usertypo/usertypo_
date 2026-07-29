@@ -87,7 +87,7 @@
             '    <div class="usertypo-cookie-row">',
             '      <div>',
             '        <p class="usertypo-cookie-row__label">Advertising</p>',
-            '        <p class="usertypo-cookie-row__hint">Monetag — ads that help keep usertypo_ free.</p>',
+            '        <p class="usertypo-cookie-row__hint">Third-party ads that help keep usertypo_ free (when an ad provider is configured).</p>',
             '      </div>',
             '    </div>',
             '    <p class="usertypo-cookie-banner__text usertypo-cookie-banner__text--tight">',
