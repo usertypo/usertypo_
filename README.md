@@ -6,7 +6,7 @@ A modern typing-test web app with profiles, friends, leaderboards, and real-time
 **Multiplayer / API:** [https://mp.usertypo.com](https://mp.usertypo.com)  
 **Repository:** [https://github.com/usertypo/usertypo](https://github.com/usertypo/usertypo)
 
-License: [MIT](./LICENSE)
+License: [AGPLv3](./LICENSE)
 
 > **For the site owner:** Making this repository public lets anyone **read and fork** the code. It does **not** let strangers push to `main`, change your Cloudflare/Render deploy, or access your database, Redis, or Clerk users. Other people can only propose changes by opening a Pull Request, which you can accept or reject.
 
