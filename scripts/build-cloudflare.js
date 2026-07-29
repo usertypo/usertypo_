@@ -78,13 +78,42 @@ function main() {
         fs.copyFileSync(vendorSrc, socketOut);
     }
 
-    // Pages-compatible SPA fallback (/* /index.html 200 is rejected by Cloudflare).
     const indexHtml = path.join(DIST, 'index.html');
-    if (fs.existsSync(indexHtml)) {
-        fs.copyFileSync(indexHtml, path.join(DIST, '404.html'));
+    if (!fs.existsSync(indexHtml)) {
+        throw new Error('[build-cloudflare] missing dist/index.html');
     }
 
-    console.log('[build-cloudflare] wrote static site to ' + DIST);
+    // Cloudflare Pages: a root 404.html disables SPA 200-fallback and returns
+    // real HTTP 404 for missing paths (good). But client-routed URLs like
+    // /about must ALSO exist as real HTML files, or Google sees 404 and will
+    // not index them. Emit a copy of the SPA shell for each app route.
+    // https://developers.cloudflare.com/pages/configuration/serving-pages/
+    const spaShellRoutes = [
+        'about',
+        'privacy',
+        'terms',
+        'security',
+        'leaderboards',
+        'friends',
+        'userstats',
+        'settings',
+        'signin',
+        'sso-callback',
+        'room',
+        'dual',
+    ];
+    for (const route of spaShellRoutes) {
+        fs.copyFileSync(indexHtml, path.join(DIST, route + '.html'));
+    }
+
+    // Unknown paths still get a real 404 status with the SPA shell body
+    // (so a mistyped URL can recover client-side if desired).
+    fs.copyFileSync(indexHtml, path.join(DIST, '404.html'));
+
+    console.log(
+        '[build-cloudflare] wrote static site to ' + DIST
+        + ' (' + spaShellRoutes.length + ' SPA shell routes)'
+    );
 }
 
 main();

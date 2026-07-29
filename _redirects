@@ -1,7 +1,9 @@
 # Cloudflare Pages redirects.
-# Do NOT use `/* /index.html 200` — Cloudflare rejects it as an infinite loop.
-# Do NOT rewrite SPA paths to /index.html here — Pages may 308 them to `/`
-# and break /signin, /room, etc. Unknown paths use dist/404.html (SPA shell).
+# SPA routes are emitted as real HTML shells in scripts/build-cloudflare.js
+# (about.html → /about with HTTP 200) so Google can index them.
+# A root 404.html keeps unknown paths as real HTTP 404s.
+# Do NOT add `/* /index.html 200` — that fights Pages SPA/404 behavior.
+# https://developers.cloudflare.com/pages/configuration/serving-pages/
 # https://developers.cloudflare.com/pages/configuration/redirects/
 
 # Invite links (same behavior as Express /join/:code)
