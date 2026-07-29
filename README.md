@@ -65,13 +65,11 @@ Useful scripts:
 
 See `.env.example` and `supabase/LEADERBOARDS_REDIS.md` for setup details.
 
-## Ads (Monetag) — scaffold only
+## Ads
 
-Ads are **disabled** by default (`ads.monetag.enabled: false` in `js/config/public.js`).
-
-- Empty ad slot containers exist on home results, user stats, leaderboards, and friends.
-- Root [`ads.txt`](./ads.txt) is an empty placeholder so `https://usertypo.com/ads.txt` can return 200 after deploy.
-- When you are ready to monetize: get Monetag zone IDs + seller lines, paste them into config / `ads.txt`, set `enabled: true`, and redeploy. Do not commit secrets; Monetag zone IDs for display ads are typically public config.
+Visible Sponsored placeholder slots exist on results pages (home, leaderboards, room, dual).
+No ad network is wired yet — when you pick a provider, configure scripts / `ads.txt` then.
+Ads are not user-toggleable.
 
 ## Security notes
 

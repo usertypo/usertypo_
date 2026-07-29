@@ -45,23 +45,6 @@ window.USERTYPO_CONFIG = {
         // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
         ga4MeasurementId: 'G-J3Z3XM22WQ',
     },
-    ads: {
-        monetag: {
-            // Set enabled: true and paste your Monetag zone script details when ready.
-            // Leave slot zone IDs empty until Monetag gives you per-placement IDs.
-            // Placeholders stay visible on the site; ads are not user-toggleable.
-            enabled: false,
-            scriptSrc: '',
-            zoneId: '',
-            sdk: '',
-            slots: {
-                home_results: '',
-                leaderboards: '',
-                room: '',
-                dual: '',
-            },
-        },
-    },
 };
 
 (function normalizeBackendUrls() {
