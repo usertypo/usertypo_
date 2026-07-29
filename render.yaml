@@ -1,3 +1,7 @@
+# usertypo_ multiplayer / API service on Render.
+# Forkers must replace PUBLIC_SITE_URL, ALLOWED_ORIGINS, SUPABASE_URL, and
+# SELF_PING_URL with their own values, and set secret env vars (CLERK_SECRET_KEY,
+# SUPABASE_SERVICE_ROLE_KEY, etc.) in the Render dashboard — never commit secret values.
 services:
   - type: web
     name: usertypo

@@ -48,10 +48,17 @@ window.USERTYPO_CONFIG = {
     ads: {
         monetag: {
             // Set enabled: true and paste your Monetag zone script details when ready.
+            // Leave slot zone IDs empty until Monetag gives you per-placement IDs.
             enabled: false,
             scriptSrc: '',
             zoneId: '',
             sdk: '',
+            slots: {
+                home_results: '',
+                userstats: '',
+                leaderboards: '',
+                friends: '',
+            },
         },
     },
 };

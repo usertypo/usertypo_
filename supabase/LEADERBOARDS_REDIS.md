@@ -51,7 +51,7 @@ Daily and weekly boards have **no** min-test / min-WPM gates.
 
 ### B) Add those secrets to Supabase Edge Functions
 
-1. Open [Supabase Dashboard](https://supabase.com/dashboard/project/skebosepedaxnvcaizka)
+1. Open [Supabase Dashboard](https://supabase.com/dashboard) → select your project
 2. Go to **Edge Functions** → **Secrets** (or Project Settings → Edge Functions → Secrets)
 3. Add these two secrets exactly:
 
@@ -67,12 +67,12 @@ Supabase already provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SER
 ### C) Confirm the Edge Function is deployed
 
 Function name: `leaderboards`  
-URL shape: `https://skebosepedaxnvcaizka.supabase.co/functions/v1/leaderboards`
+URL shape: `https://YOUR_PROJECT_REF.supabase.co/functions/v1/leaderboards`
 
 If you change the function source later, redeploy from this folder:
 
 ```bash
-npx supabase functions deploy leaderboards --project-ref skebosepedaxnvcaizka
+npx supabase functions deploy leaderboards --project-ref YOUR_PROJECT_REF
 ```
 
 ### D) Do NOT put Upstash values in frontend files

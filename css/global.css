@@ -763,3 +763,33 @@ html {
         text-align: center;
     }
 }
+
+/* Monetag ad slots — hidden until ads.monetag.enabled + a zone ID are set */
+.usertypo-ad-slot[hidden],
+.usertypo-ad-slot:not(.is-active) {
+    display: none !important;
+}
+.usertypo-ad-slot.is-active {
+    display: block;
+}
+.usertypo-ad-rail.is-active {
+    display: none;
+    width: 10rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+    min-height: 12rem;
+}
+@media (min-width: 1024px) {
+    .usertypo-ad-rail.is-active {
+        display: flex;
+        flex-direction: column;
+    }
+}
+.usertypo-ad-banner.is-active {
+    width: 100%;
+    min-height: 0;
+    max-width: 100%;
+}
+
