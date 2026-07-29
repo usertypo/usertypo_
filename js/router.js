@@ -22,6 +22,8 @@
         '/userstats': { page: 'pages/userstats.html', title: 'User Stats | usertypo_', navId: 'nav-userstats', compact: false },
         '/privacy': { page: 'pages/privacy.html', title: 'Privacy Policy | usertypo_', navId: null, compact: false },
         '/terms': { page: 'pages/terms.html', title: 'Terms and Conditions | usertypo_', navId: null, compact: false },
+        '/about': { page: 'pages/about.html', title: 'About | usertypo_', navId: null, compact: false },
+        '/security': { page: 'pages/security.html', title: 'Security Policy | usertypo_', navId: null, compact: false },
     };
 
     const htmlRouteMap = {
@@ -35,6 +37,8 @@
         'userstats.html': '/userstats',
         'privacy.html': '/privacy',
         'terms.html': '/terms',
+        'about.html': '/about',
+        'security.html': '/security',
     };
 
     let isNavigating = false;
@@ -292,6 +296,74 @@
         else footer.classList.remove('hidden');
     }
 
+    var BACK_TO_TOP_ROUTES = {
+        '/about': true,
+        '/terms': true,
+        '/privacy': true,
+        '/security': true,
+    };
+    var backToTopEnabled = false;
+
+    function getWindowScrollTop() {
+        var bodyEl = document.getElementById('app-body');
+        return Math.max(
+            window.scrollY || 0,
+            document.documentElement.scrollTop || 0,
+            bodyEl ? (bodyEl.scrollTop || 0) : 0
+        );
+    }
+
+    function syncBackToTopVisibility() {
+        var btn = document.getElementById('back-to-top-btn');
+        if (!btn || !backToTopEnabled) return;
+        if (getWindowScrollTop() > 280) btn.classList.add('is-visible');
+        else btn.classList.remove('is-visible');
+    }
+
+    function updateBackToTop(path) {
+        var btn = document.getElementById('back-to-top-btn');
+        if (!btn) return;
+        backToTopEnabled = !!BACK_TO_TOP_ROUTES[path];
+        if (!backToTopEnabled) {
+            btn.hidden = true;
+            btn.classList.remove('is-visible');
+            return;
+        }
+        btn.hidden = false;
+        syncBackToTopVisibility();
+    }
+
+    function wireBackToTop() {
+        var btn = document.getElementById('back-to-top-btn');
+        if (!btn || btn.dataset.spaBackToTopWired === '1') return;
+        btn.dataset.spaBackToTopWired = '1';
+
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var bodyEl = document.getElementById('app-body');
+            try {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                window.scrollTo(0, 0);
+            }
+            if (bodyEl) {
+                try {
+                    bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+                } catch (err2) {
+                    bodyEl.scrollTop = 0;
+                }
+            }
+            document.documentElement.scrollTop = 0;
+        });
+
+        var onScroll = function () { syncBackToTopVisibility(); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+        window.addEventListener('resize', onScroll);
+        var bodyEl = document.getElementById('app-body');
+        if (bodyEl) bodyEl.addEventListener('scroll', onScroll, { passive: true });
+    }
+
     function updateShellHeader(routeConfig) {
         var header = document.querySelector('body > header');
         if (!header) return;
@@ -498,6 +570,7 @@
             updateShellHeader(routeConfig);
             updateShellLayout(routeConfig);
             window.scrollTo(0, 0);
+            updateBackToTop(path);
 
             if (typeof window.__spaPageInit === 'function') {
                 try { await Promise.resolve(window.__spaPageInit()); } catch (e) { console.warn('__spaPageInit', e); }
@@ -634,6 +707,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         wireShellMuteButtons();
+        wireBackToTop();
         var loc = parseRouteFromLocation();
         if (!routes[loc.path]) {
             history.replaceState({ spa: true, path: '/' }, '', '/');

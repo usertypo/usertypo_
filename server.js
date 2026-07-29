@@ -418,7 +418,7 @@ if (BACKEND_ONLY) {
 
     const SPA_ROUTES = new Set([
         '/', '/index.html', '/settings', '/signin', '/sso-callback', '/friends',
-        '/room', '/dual', '/leaderboards', '/userstats', '/privacy', '/terms',
+        '/room', '/dual', '/leaderboards', '/userstats', '/privacy', '/terms', '/about', '/security',
     ]);
 
     app.use((req, res, next) => {

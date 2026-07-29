@@ -1,0 +1,426 @@
+<style type="text/tailwindcss">
+        .about-page {
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            min-width: 0;
+        }
+        .about-page h1,
+        .about-page h2 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+        }
+        .about-prose h2,
+        .about-prose section {
+            scroll-margin-top: 5rem;
+        }
+        .about-page a.about-link {
+            color: var(--theme-primary) !important;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .about-page a.about-link:hover {
+            color: var(--theme-text) !important;
+        }
+        .about-toc a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        .about-toc a:hover {
+            color: var(--theme-primary);
+        }
+        @media (max-width: 640px) {
+            .about-toc ol {
+                grid-template-columns: 1fr;
+            }
+        }
+</style>
+
+<main class="about-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
+    <div class="w-full max-w-5xl mx-auto py-6 sm:py-10 min-w-0">
+        <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">About</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">About usertypo</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mb-2">
+            <span class="text-slate-500">Last updated:</span> July 29, 2026
+            <span class="text-slate-600 mx-2">·</span>
+            <span class="text-slate-500">Officially launched:</span> July 27, 2026
+        </p>
+        <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
+            Welcome to <strong class="text-slate-200 font-semibold">usertypo</strong>, a modern typing test
+            and multiplayer racing platform operated by
+            <strong class="text-slate-200 font-semibold">usertypo_</strong>.
+            Live at
+            <a class="about-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">usertypo.com</a>.
+            Questions:
+            <a class="about-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+        </p>
+
+        <nav class="about-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
+            <p class="text-[0.586rem] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
+            <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm list-decimal list-inside">
+                <li><a href="#who-we-are" data-about-toc>Who We Are</a></li>
+                <li><a href="#our-story" data-about-toc>Our Story</a></li>
+                <li><a href="#mission" data-about-toc>Mission &amp; Values</a></li>
+                <li><a href="#what-we-build" data-about-toc>What We Build</a></li>
+                <li><a href="#design" data-about-toc>Design Philosophy</a></li>
+                <li><a href="#timeline" data-about-toc>Launch &amp; Timeline</a></li>
+                <li><a href="#open-source" data-about-toc>Open Source</a></li>
+                <li><a href="#community" data-about-toc>Community</a></li>
+                <li><a href="#team" data-about-toc>The Team</a></li>
+                <li><a href="#legal" data-about-toc>Legal &amp; Privacy</a></li>
+                <li><a href="#contact" data-about-toc>Contact Us</a></li>
+            </ol>
+        </nav>
+
+        <article class="about-prose space-y-10 sm:space-y-12 text-sm sm:text-[0.799rem] leading-relaxed text-slate-300 min-w-0">
+
+            <section id="who-we-are">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">1. Who We Are</h2>
+                <p class="mb-3">
+                    usertypo is a free online typing platform built for people who care about speed,
+                    accuracy, and the feel of every keystroke. Whether you are warming up for work,
+                    chasing a personal best, or racing a friend in real time, usertypo is designed to
+                    stay out of your way and keep the focus on typing.
+                </p>
+                <p>
+                    We ship the Service at
+                    <a class="about-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">usertypo.com</a>,
+                    with real-time multiplayer at
+                    <a class="about-link" href="https://mp.usertypo.com" target="_blank" rel="noopener noreferrer">mp.usertypo.com</a>.
+                    The product is operated by <strong class="text-slate-200 font-semibold">usertypo_</strong>.
+                </p>
+            </section>
+
+            <section id="our-story">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">2. Our Story</h2>
+                <p class="mb-3">
+                    usertypo started with a simple frustration: we loved typing tests, but most of them
+                    felt either too bare or too cluttered. Solo practice was easy to find. Smooth,
+                    modern multiplayer—with a UX that felt intentional instead of bolted on—was harder.
+                </p>
+                <p class="mb-3">
+                    So we set out to build the site we wanted to use ourselves: a multiplayer-first typing
+                    experience with a clean, contemporary interface. From day one the goal was not just
+                    “another WPM counter,” but a place where you could race friends, climb leaderboards,
+                    track progress over time, and still enjoy a quiet solo session when you needed one.
+                </p>
+                <p>
+                    Late nights turned into prototypes. Prototypes turned into rooms, dual matches,
+                    profiles, and themes. On <strong class="text-slate-100">July 27, 2026</strong>,
+                    usertypo officially went live—and we have been iterating ever since.
+                </p>
+            </section>
+
+            <section id="mission">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">3. Mission &amp; Values</h2>
+                <p class="mb-3">
+                    Our mission is to make typing practice feel fast, fair, and genuinely fun—whether
+                    you are alone at the keyboard or racing someone across the world.
+                </p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        <strong class="text-slate-200 font-semibold">UX first.</strong>
+                        Clarity, responsiveness, and comfort matter as much as raw features.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Fair play.</strong>
+                        Leaderboards and races should reward skill, not cheats or noise.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Accessible by default.</strong>
+                        Core typing and racing features stay free so anyone can improve.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Open and honest.</strong>
+                        We ship in the open, document how the product works, and listen to feedback.
+                    </li>
+                </ul>
+            </section>
+
+            <section id="what-we-build">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">4. What We Build</h2>
+                <p class="mb-3">
+                    usertypo combines classic typing practice with social and competitive layers:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-3">
+                    <li>Timed and word-count typing tests with languages, punctuation, and numbers</li>
+                    <li>Real-time multiplayer rooms and dual matches</li>
+                    <li>Profiles, XP, streaks, and detailed session stats</li>
+                    <li>Friends, notifications, and online presence</li>
+                    <li>Leaderboards with privacy-aware visibility controls</li>
+                    <li>Themes, sound packs, and customization that stay out of the way until you want them</li>
+                </ul>
+                <p>
+                    Features continue to evolve. If something feels missing, tell us—we read
+                    <a class="about-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>
+                    and in-app contact messages carefully.
+                </p>
+            </section>
+
+            <section id="design">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">5. Design Philosophy</h2>
+                <p class="mb-3">
+                    Typing is a rhythm. The UI should protect that rhythm, not interrupt it.
+                    We aim for a modern look with deliberate motion, strong focus states, and layouts
+                    that keep the caret and text as the hero of the screen.
+                </p>
+                <p>
+                    Multiplayer should feel instant and readable under pressure. Settings should be
+                    powerful without dumping every option onto the first screen. When we add something
+                    new, we ask whether it helps you type better—or just makes the page louder.
+                </p>
+            </section>
+
+            <section id="timeline">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Launch &amp; Timeline</h2>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Early 2026 —</strong>
+                        Concept and first prototypes for a UX-first multiplayer typing site.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Mid 2026 —</strong>
+                        Solo tests, accounts, stats, friends, rooms, dual racing, and leaderboards
+                        come together into one product.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">July 27, 2026 —</strong>
+                        Official public launch of
+                        <a class="about-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">usertypo.com</a>.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">July 2026 onward —</strong>
+                        Open-source release, continued polish, and community-driven improvements.
+                    </li>
+                </ul>
+            </section>
+
+            <section id="open-source">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Open Source</h2>
+                <p class="mb-3">
+                    usertypo is open source under the
+                    <a class="about-link" href="https://github.com/usertypo/usertypo/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
+                    You can read the code, fork it, and propose improvements.
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-3">
+                    <li>
+                        Repository:
+                        <a class="about-link" href="https://github.com/usertypo/usertypo" target="_blank" rel="noopener noreferrer">github.com/usertypo/usertypo</a>
+                    </li>
+                    <li>
+                        Contributing guide:
+                        <a class="about-link" href="https://github.com/usertypo/usertypo/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">CONTRIBUTING.md</a>
+                    </li>
+                    <li>
+                        Security reports:
+                        <a class="about-link" href="https://github.com/usertypo/usertypo/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">SECURITY.md</a>
+                    </li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Making the repository public lets anyone read and fork the code. It does not grant
+                    strangers deploy access, database access, or the ability to push directly to production.
+                    Changes land through review and Pull Requests.
+                </p>
+            </section>
+
+            <section id="community">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. Community</h2>
+                <p class="mb-3">
+                    usertypo grows with the people who use it. Race your friends, share feedback, report
+                    bugs, and help others get faster. If you build something cool on top of the open-source
+                    project, we would love to hear about it.
+                </p>
+                <p>
+                    You can reach us by email, through the in-app Contact form, or by opening an issue
+                    or Pull Request on
+                    <a class="about-link" href="https://github.com/usertypo/usertypo" target="_blank" rel="noopener noreferrer">GitHub</a>.
+                </p>
+            </section>
+
+            <section id="team">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. The Team</h2>
+                <p class="mb-3">
+                    usertypo is built and operated by
+                    <strong class="text-slate-200 font-semibold">usertypo_</strong>—a small team
+                    that cares about typing, product craft, and shipping things that feel good to use.
+                </p>
+                <p>
+                    We are independent builders. There is no giant corporate parent behind the logo—
+                    just people who wanted a better multiplayer typing site and decided to make one.
+                </p>
+            </section>
+
+            <section id="legal">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. Legal &amp; Privacy</h2>
+                <p class="mb-3">
+                    Using usertypo means you agree to our
+                    <a class="about-link" href="/terms" data-spa-link>Terms and Conditions</a>
+                    and
+                    <a class="about-link" href="/privacy" data-spa-link>Privacy Policy</a>.
+                    Those pages explain accounts, fair play, data handling, third-party services, and more.
+                </p>
+                <p>
+                    If you have a privacy or legal question, email
+                    <a class="about-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+                </p>
+            </section>
+
+            <section id="contact">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">11. Contact Us</h2>
+                <p class="mb-3">
+                    We would love to hear from you:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Email: <a class="about-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a></li>
+                    <li>Website: <a class="about-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">https://usertypo.com</a></li>
+                    <li>GitHub: <a class="about-link" href="https://github.com/usertypo/usertypo" target="_blank" rel="noopener noreferrer">https://github.com/usertypo/usertypo</a></li>
+                    <li>In-app: footer <strong class="text-slate-200 font-semibold">Contact</strong> button</li>
+                    <li>Legal: <a class="about-link" href="/terms" data-spa-link>Terms</a> · <a class="about-link" href="/security" data-spa-link>Security</a> · <a class="about-link" href="/privacy" data-spa-link>Privacy</a></li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Service: usertypo · Operator: usertypo_ · Launched: July 27, 2026
+                </p>
+            </section>
+
+        </article>
+    </div>
+</main>
+
+<script>
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+
+window.__spaPageInit = function () {
+    window.scrollTo(0, 0);
+
+    document.querySelectorAll('[data-about-toc]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var href = link.getAttribute('href') || '';
+            var id = href.charAt(0) === '#' ? href.slice(1) : '';
+            var target = id ? document.getElementById(id) : null;
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (history.replaceState) {
+                history.replaceState({ spa: true, path: '/about', search: '' }, '', '/about#' + id);
+            }
+        }, { signal: __pageSignal });
+    });
+
+    const pageTrack = document.getElementById('page-scroll-track');
+    const pageThumb = document.getElementById('page-scroll-thumb');
+    if (!pageTrack || !pageThumb) return;
+
+    pageTrack.style.display = 'block';
+    pageTrack.style.visibility = '';
+
+    let isDragging = false;
+    let startY;
+    let startScrollTop;
+    var bodyEl = document.getElementById('app-body') || document.body;
+
+    function getScrollMetrics() {
+        var winH = window.innerHeight;
+        var docH = Math.max(
+            bodyEl.scrollHeight || 0,
+            document.documentElement.scrollHeight || 0,
+            document.documentElement.offsetHeight || 0
+        );
+        var scrollTop = Math.max(
+            window.scrollY || 0,
+            bodyEl.scrollTop || 0,
+            document.documentElement.scrollTop || 0
+        );
+        return {
+            docH: docH,
+            winH: winH,
+            scrollTop: scrollTop,
+            scrollable: Math.max(0, docH - winH),
+        };
+    }
+
+    function scrollToY(y) {
+        var top = Math.max(0, y);
+        window.scrollTo(0, top);
+        bodyEl.scrollTop = top;
+        document.documentElement.scrollTop = top;
+    }
+
+    function updatePageScrollbar() {
+        var m = getScrollMetrics();
+        if (m.scrollable <= 0) {
+            pageTrack.style.visibility = 'hidden';
+            return;
+        }
+        pageTrack.style.visibility = 'visible';
+        pageTrack.style.display = 'block';
+        var pct = Math.min(1, Math.max(0, m.scrollTop / m.scrollable));
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = Math.max(trackH * (m.winH / m.docH), 40);
+        pageThumb.style.height = thumbH + 'px';
+        pageThumb.style.top = (pct * (trackH - thumbH)) + 'px';
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (isDragging || window.innerWidth - e.clientX < 40) {
+            pageTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        } else {
+            pageTrack.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        }
+    }, { signal: __pageSignal });
+
+    window.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    bodyEl.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    window.addEventListener('resize', updatePageScrollbar, { signal: __pageSignal });
+
+    pageThumb.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startScrollTop = getScrollMetrics().scrollTop;
+        document.body.style.userSelect = 'none';
+        pageThumb.classList.add('bg-primary');
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+        var m = getScrollMetrics();
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = pageThumb.clientHeight || 40;
+        var maxThumbTop = Math.max(1, trackH - thumbH);
+        var deltaY = e.clientY - startY;
+        scrollToY(startScrollTop + (deltaY / maxThumbTop) * m.scrollable);
+        updatePageScrollbar();
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mouseup', function () {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        pageThumb.classList.remove('bg-primary');
+    }, { signal: __pageSignal });
+
+    var mainEl = document.querySelector('.about-page');
+    if (mainEl && typeof ResizeObserver === 'function') {
+        var ro = new ResizeObserver(function () { updatePageScrollbar(); });
+        ro.observe(mainEl);
+        __pageAbort.signal.addEventListener('abort', function () { ro.disconnect(); }, { once: true });
+    }
+
+    requestAnimationFrame(function () {
+        updatePageScrollbar();
+        setTimeout(updatePageScrollbar, 100);
+        setTimeout(updatePageScrollbar, 400);
+    });
+};
+
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function () {
+    __pageAbort.abort();
+    document.body.style.userSelect = '';
+    if (typeof __prevSpaCleanup === 'function') __prevSpaCleanup();
+};
+</script>

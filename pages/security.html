@@ -1,0 +1,443 @@
+<style type="text/tailwindcss">
+        .security-page {
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            min-width: 0;
+        }
+        .security-page h1,
+        .security-page h2 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+        }
+        .security-prose h2,
+        .security-prose section {
+            scroll-margin-top: 5rem;
+        }
+        .security-page a.security-link {
+            color: var(--theme-primary) !important;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .security-page a.security-link:hover {
+            color: var(--theme-text) !important;
+        }
+        .security-toc a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        .security-toc a:hover {
+            color: var(--theme-primary);
+        }
+        @media (max-width: 640px) {
+            .security-toc ol {
+                grid-template-columns: 1fr;
+            }
+        }
+</style>
+
+<main class="security-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
+    <div class="w-full max-w-5xl mx-auto py-6 sm:py-10 min-w-0">
+        <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">Security</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">Security Policy</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mb-2">
+            <span class="text-slate-500">Last updated:</span> July 29, 2026
+        </p>
+        <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
+            We take the security and integrity of
+            <strong class="text-slate-200 font-semibold">usertypo</strong> seriously.
+            If you have found a vulnerability that could affect our users, accounts, races,
+            leaderboards, or infrastructure, please report it as soon as possible so we can
+            investigate and fix it. Questions:
+            <a class="security-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+        </p>
+
+        <nav class="security-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
+            <p class="text-[0.586rem] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
+            <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm list-decimal list-inside">
+                <li><a href="#commitment" data-security-toc>Our Commitment</a></li>
+                <li><a href="#disclose" data-security-toc>How to Disclose a Vulnerability</a></li>
+                <li><a href="#what-to-include" data-security-toc>What to Include</a></li>
+                <li><a href="#guidelines" data-security-toc>Submission Guidelines</a></li>
+                <li><a href="#scope" data-security-toc>In Scope</a></li>
+                <li><a href="#out-of-scope" data-security-toc>Out of Scope</a></li>
+                <li><a href="#practices" data-security-toc>How We Protect the Service</a></li>
+                <li><a href="#response" data-security-toc>What Happens After You Report</a></li>
+                <li><a href="#contact" data-security-toc>Contact</a></li>
+            </ol>
+        </nav>
+
+        <article class="security-prose space-y-10 sm:space-y-12 text-sm sm:text-[0.799rem] leading-relaxed text-slate-300 min-w-0">
+
+            <section id="commitment">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">1. Our Commitment</h2>
+                <p class="mb-3">
+                    usertypo is a typing and multiplayer platform. That means we handle account
+                    sessions, profile data, race state, and leaderboard scores. We aim to keep those
+                    systems trustworthy: users should be able to sign in safely, race fairly, and
+                    trust that private account tools stay private.
+                </p>
+                <p>
+                    Responsible researchers help us do that. We welcome good-faith reports that
+                    improve the confidentiality, integrity, or availability of the Service.
+                </p>
+            </section>
+
+            <section id="disclose">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">2. How to Disclose a Vulnerability</h2>
+                <p class="mb-3">
+                    For vulnerabilities that impact usertypo services, email a private report to
+                    <a class="security-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+                    Please do <strong class="text-slate-100">not</strong> open a public GitHub issue for
+                    security problems.
+                </p>
+                <p class="mb-3">
+                    For ordinary product bugs, typos, UX issues, or feature ideas that are not security
+                    issues, use normal channels instead: GitHub issues on
+                    <a class="security-link" href="https://github.com/usertypo/usertypo" target="_blank" rel="noopener noreferrer">usertypo/usertypo</a>,
+                    or the in-app Contact form.
+                </p>
+                <p>
+                    A shorter version of this policy also lives in the repository as
+                    <a class="security-link" href="https://github.com/usertypo/usertypo/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">SECURITY.md</a>.
+                </p>
+            </section>
+
+            <section id="what-to-include">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">3. What to Include</h2>
+                <p class="mb-3">
+                    Include as much detail as possible so we can reproduce and prioritize the issue.
+                    At a minimum, please send:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-3">
+                    <li>A short description of the vulnerability</li>
+                    <li>Steps to reproduce, or a proof of concept</li>
+                    <li>Impact — what an attacker could do if the issue were abused</li>
+                    <li>Screenshots, request/response examples, or other supporting evidence when useful</li>
+                    <li>Your preferred contact method if follow-up is needed</li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Please do not include real user passwords, session tokens from other people, or
+                    unrelated personal data in your report.
+                </p>
+            </section>
+
+            <section id="guidelines">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">4. Submission Guidelines</h2>
+                <p class="mb-3">
+                    Test carefully and stay within good-faith research:
+                </p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        Do not perform actions that could cause a denial of service, overload
+                        multiplayer rooms, spam leaderboards, or put significant strain on critical resources.
+                    </li>
+                    <li>
+                        Do not negatively impact other users. Use your own accounts and test rooms
+                        wherever possible.
+                    </li>
+                    <li>
+                        Do not attempt to access, modify, or delete another person’s account, friend
+                        list, race history, or private data beyond what is needed to demonstrate the issue.
+                    </li>
+                    <li>
+                        Do not publicly disclose the vulnerability until we have had a reasonable chance
+                        to investigate and ship a fix.
+                    </li>
+                    <li>
+                        Social engineering of usertypo_ staff or support channels, physical attacks,
+                        and spam are not part of this program.
+                    </li>
+                </ul>
+            </section>
+
+            <section id="scope">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">5. In Scope</h2>
+                <p class="mb-3">
+                    We are especially interested in issues affecting:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-3">
+                    <li>
+                        <a class="security-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">usertypo.com</a>
+                        — the main typing app and static frontend
+                    </li>
+                    <li>
+                        <a class="security-link" href="https://mp.usertypo.com" target="_blank" rel="noopener noreferrer">mp.usertypo.com</a>
+                        — multiplayer / API and realtime race infrastructure
+                    </li>
+                    <li>
+                        Authentication and session handling (via Clerk), including account takeover paths
+                    </li>
+                    <li>
+                        Unauthorized access to profiles, friends, notifications, typing history, or settings
+                    </li>
+                    <li>
+                        Leaderboard or race integrity issues (for example, injecting scores or spoofing opponents)
+                    </li>
+                    <li>
+                        Server-side request issues, broken access control, injection, or privilege escalation
+                        in our APIs and Edge Functions
+                    </li>
+                    <li>
+                        Exposure of secret credentials (service-role keys, secret API keys, private tokens)
+                    </li>
+                </ul>
+                <p>
+                    If you are unsure whether something is in scope, email us anyway — we would rather
+                    hear about it early.
+                </p>
+            </section>
+
+            <section id="out-of-scope">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Out of Scope</h2>
+                <p class="mb-3">
+                    The following are generally <strong class="text-slate-100">not</strong> treated as
+                    vulnerabilities for usertypo:
+                </p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        Publishable Clerk keys (<code class="text-slate-300">pk_…</code>) and Supabase
+                        anon / publishable keys that ship in the browser by design
+                    </li>
+                    <li>
+                        The ability to fork, clone, or read this open-source repository
+                    </li>
+                    <li>
+                        Missing security headers or best-practice suggestions with no demonstrated impact
+                    </li>
+                    <li>
+                        Reports based solely on automated scanner output without a working proof of concept
+                    </li>
+                    <li>
+                        Clickjacking on pages with no sensitive action, or self-XSS that requires the
+                        victim to paste code themselves
+                    </li>
+                    <li>
+                        Rate limiting or brute-force concerns already mitigated by our auth provider,
+                        unless you can demonstrate a practical bypass with real impact
+                    </li>
+                    <li>
+                        Issues in third-party services (Clerk, Supabase, Cloudflare, Upstash, and similar)
+                        that are outside our control — please report those to the provider when appropriate
+                    </li>
+                    <li>
+                        Empty or placeholder ads / <code class="text-slate-300">ads.txt</code> content
+                        before monetization is enabled
+                    </li>
+                </ul>
+            </section>
+
+            <section id="practices">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. How We Protect the Service</h2>
+                <p class="mb-3">
+                    A high-level look at how usertypo is built with security in mind:
+                </p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Authentication.</strong>
+                        Sign-in is handled by Clerk. We do not store user passwords in our own database.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Data access.</strong>
+                        App data in Supabase is protected with Row Level Security where applicable.
+                        Secret keys and service-role credentials stay in server / dashboard environments,
+                        not in the public client bundle.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Open source vs secrets.</strong>
+                        Making the repository public lets people read and fork the code. It does not
+                        grant strangers deploy access, database access, or the ability to push to production.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Edge &amp; hosting.</strong>
+                        The frontend is served through Cloudflare. Multiplayer and API traffic run on
+                        our backend service with origin and CORS controls.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200 font-semibold">Leaderboards.</strong>
+                        Leaderboard writes go through controlled paths (including Edge Functions and
+                        Redis caching) rather than exposing raw admin credentials to the browser.
+                    </li>
+                </ul>
+                <p class="mt-3 text-sm text-slate-400">
+                    More detail on data handling is in our
+                    <a class="security-link" href="/privacy" data-spa-link>Privacy Policy</a>.
+                </p>
+            </section>
+
+            <section id="response">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. What Happens After You Report</h2>
+                <p class="mb-3">
+                    We will acknowledge security reports when we can, investigate, and work on a fix
+                    before any public disclosure. Timing depends on severity and complexity.
+                </p>
+                <p class="mb-3">
+                    We currently do not run a paid bug bounty program. That may change later. Even
+                    without a bounty, thoughtful reports are appreciated and help keep usertypo safe
+                    for everyone who types here.
+                </p>
+                <p>
+                    If your report is valid and you wish to be credited after a fix ships, tell us in
+                    the email and we will do our best to acknowledge you where appropriate.
+                </p>
+            </section>
+
+            <section id="contact">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. Contact</h2>
+                <p class="mb-3">
+                    Security reports and questions:
+                </p>
+                <ul class="list-disc pl-5 space-y-1 mb-4">
+                    <li>Email: <a class="security-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a></li>
+                    <li>Repository policy: <a class="security-link" href="https://github.com/usertypo/usertypo/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">SECURITY.md</a></li>
+                    <li>Website: <a class="security-link" href="https://usertypo.com" target="_blank" rel="noopener noreferrer">https://usertypo.com</a></li>
+                    <li>Privacy: <a class="security-link" href="/privacy" data-spa-link>Privacy Policy</a></li>
+                    <li>Terms: <a class="security-link" href="/terms" data-spa-link>Terms and Conditions</a></li>
+                </ul>
+                <p class="text-sm text-slate-400">
+                    Service: usertypo · Operator: usertypo_
+                </p>
+            </section>
+
+        </article>
+    </div>
+</main>
+
+<script>
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+
+window.__spaPageInit = function () {
+    window.scrollTo(0, 0);
+
+    document.querySelectorAll('[data-security-toc]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var href = link.getAttribute('href') || '';
+            var id = href.charAt(0) === '#' ? href.slice(1) : '';
+            var target = id ? document.getElementById(id) : null;
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (history.replaceState) {
+                history.replaceState({ spa: true, path: '/security', search: '' }, '', '/security#' + id);
+            }
+        }, { signal: __pageSignal });
+    });
+
+    const pageTrack = document.getElementById('page-scroll-track');
+    const pageThumb = document.getElementById('page-scroll-thumb');
+    if (!pageTrack || !pageThumb) return;
+
+    pageTrack.style.display = 'block';
+    pageTrack.style.visibility = '';
+
+    let isDragging = false;
+    let startY;
+    let startScrollTop;
+    var bodyEl = document.getElementById('app-body') || document.body;
+
+    function getScrollMetrics() {
+        var winH = window.innerHeight;
+        var docH = Math.max(
+            bodyEl.scrollHeight || 0,
+            document.documentElement.scrollHeight || 0,
+            document.documentElement.offsetHeight || 0
+        );
+        var scrollTop = Math.max(
+            window.scrollY || 0,
+            bodyEl.scrollTop || 0,
+            document.documentElement.scrollTop || 0
+        );
+        return {
+            docH: docH,
+            winH: winH,
+            scrollTop: scrollTop,
+            scrollable: Math.max(0, docH - winH),
+        };
+    }
+
+    function scrollToY(y) {
+        var top = Math.max(0, y);
+        window.scrollTo(0, top);
+        bodyEl.scrollTop = top;
+        document.documentElement.scrollTop = top;
+    }
+
+    function updatePageScrollbar() {
+        var m = getScrollMetrics();
+        if (m.scrollable <= 0) {
+            pageTrack.style.visibility = 'hidden';
+            return;
+        }
+        pageTrack.style.visibility = 'visible';
+        pageTrack.style.display = 'block';
+        var pct = Math.min(1, Math.max(0, m.scrollTop / m.scrollable));
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = Math.max(trackH * (m.winH / m.docH), 40);
+        pageThumb.style.height = thumbH + 'px';
+        pageThumb.style.top = (pct * (trackH - thumbH)) + 'px';
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (isDragging || window.innerWidth - e.clientX < 40) {
+            pageTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        } else {
+            pageTrack.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        }
+    }, { signal: __pageSignal });
+
+    window.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    bodyEl.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    window.addEventListener('resize', updatePageScrollbar, { signal: __pageSignal });
+
+    pageThumb.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startScrollTop = getScrollMetrics().scrollTop;
+        document.body.style.userSelect = 'none';
+        pageThumb.classList.add('bg-primary');
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+        var m = getScrollMetrics();
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = pageThumb.clientHeight || 40;
+        var maxThumbTop = Math.max(1, trackH - thumbH);
+        var deltaY = e.clientY - startY;
+        scrollToY(startScrollTop + (deltaY / maxThumbTop) * m.scrollable);
+        updatePageScrollbar();
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mouseup', function () {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        pageThumb.classList.remove('bg-primary');
+    }, { signal: __pageSignal });
+
+    var mainEl = document.querySelector('.security-page');
+    if (mainEl && typeof ResizeObserver === 'function') {
+        var ro = new ResizeObserver(function () { updatePageScrollbar(); });
+        ro.observe(mainEl);
+        __pageAbort.signal.addEventListener('abort', function () { ro.disconnect(); }, { once: true });
+    }
+
+    requestAnimationFrame(function () {
+        updatePageScrollbar();
+        setTimeout(updatePageScrollbar, 100);
+        setTimeout(updatePageScrollbar, 400);
+    });
+};
+
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function () {
+    __pageAbort.abort();
+    document.body.style.userSelect = '';
+    if (typeof __prevSpaCleanup === 'function') __prevSpaCleanup();
+};
+</script>
