@@ -2,17 +2,17 @@
  * Monetag loader — loads whenever ads.monetag is enabled in config.
  * Public: window.usertypoAds
  *
- * Fill USERTYPO_CONFIG.ads.monetag in js/config/public.js with your zone snippet.
- * Slot containers stay hidden/empty until a non-empty zone ID is set for that slot.
+ * Visible "Sponsored / YOUR AD HERE" placeholders stay on the page until
+ * Monetag is enabled with a zone ID for that slot. Ads are not user-toggleable.
  */
 (function () {
     var loaded = false;
 
     var SLOT_ELEMENT_IDS = {
         home_results: 'ad-slot-home-results',
-        userstats: 'ad-slot-userstats',
         leaderboards: 'ad-slot-leaderboards',
-        friends: 'ad-slot-friends',
+        room: 'ad-slot-room',
+        dual: 'ad-slot-dual',
     };
 
     function getMonetagConfig() {
@@ -51,25 +51,15 @@
             if (!el) return;
 
             var zone = cfg.slots[key] || '';
-            // No-op when ads are off or this slot has no zone ID yet.
+            // Keep the visual placeholder as-is until ads are live for this slot.
             if (!cfg.enabled || !zone) {
-                el.setAttribute('hidden', '');
-                el.setAttribute('aria-hidden', 'true');
-                el.classList.remove('is-active');
                 el.removeAttribute('data-zone');
-                el.textContent = '';
+                el.removeAttribute('data-ad-ready');
                 return;
             }
 
-            el.removeAttribute('hidden');
-            el.setAttribute('aria-hidden', 'false');
-            el.classList.add('is-active');
             el.setAttribute('data-zone', zone);
-            // Monetag (or a future wrapper) can target [data-zone] / #ad-slot-*.
-            // Leave the node empty for the ad network to inject into.
-            if (!el.getAttribute('data-ad-ready')) {
-                el.setAttribute('data-ad-ready', '1');
-            }
+            el.setAttribute('data-ad-ready', '1');
         });
     }
 
@@ -89,7 +79,6 @@
         init();
     }
 
-    // SPA navigations re-inject page HTML; re-bind slots when the route changes.
     window.addEventListener('usertypo:page-ready', refresh);
     window.addEventListener('popstate', function () {
         setTimeout(refresh, 0);
