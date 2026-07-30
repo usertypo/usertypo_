@@ -45,6 +45,10 @@ window.USERTYPO_CONFIG = {
         // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
         ga4MeasurementId: 'G-J3Z3XM22WQ',
     },
+    ads: {
+        // Google AdSense publisher client. Ad units wired after approval.
+        adsenseClient: 'ca-pub-4215657077722335',
+    },
 };
 
 (function normalizeBackendUrls() {
