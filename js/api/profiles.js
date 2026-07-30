@@ -106,6 +106,34 @@
         } catch (e) { /* ignore */ }
     }
 
+    async function detectCountryCode() {
+        try {
+            var res = await fetch('/api/geo', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+            });
+            if (!res.ok) return null;
+            var data = await res.json();
+            var code = String((data && data.country) || '').trim().toUpperCase();
+            if (!/^[A-Z]{2}$/.test(code) || code === 'XX' || code === 'T1') return null;
+            return code;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function ensureCountryOnProfile(profile) {
+        if (!profile || profile.country_code) return profile;
+        var code = await detectCountryCode();
+        if (!code) return profile;
+        try {
+            return await updateMyProfileFields({ country_code: code });
+        } catch (e) {
+            return profile;
+        }
+    }
+
     async function getMyProfile() {
         if (cachedProfile) return cachedProfile;
         if (window.__USERTYPO_PROFILE__) return window.__USERTYPO_PROFILE__;
@@ -133,7 +161,7 @@
         var fingerprint = userFingerprint(user);
 
         if (!force && cachedProfile && cachedProfile.user_id === user.id && lastFingerprint === fingerprint) {
-            if (cachedProfile.public_id) return cachedProfile;
+            if (cachedProfile.public_id) return ensureCountryOnProfile(cachedProfile);
             force = true;
         }
 
@@ -141,13 +169,13 @@
             var hydratedProfile = hydrateProfileCache(user, fingerprint);
             if (hydratedProfile && hydratedProfile.public_id) {
                 notifyProfileSynced(hydratedProfile);
-                return hydratedProfile;
+                return ensureCountryOnProfile(hydratedProfile);
             }
         }
 
         if (syncInFlight && lastSyncedUserId === user.id) {
             if (!force) {
-                return syncInFlight;
+                return ensureCountryOnProfile(await syncInFlight);
             }
             // Forced refresh must not reuse a stale in-flight sync (e.g. username change
             // while settings/auth are still hydrating the previous profile).
@@ -231,7 +259,7 @@
         })();
 
         try {
-            return await syncInFlight;
+            return await ensureCountryOnProfile(await syncInFlight);
         } catch (err) {
             lastSyncedUserId = null;
             throw err;

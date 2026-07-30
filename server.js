@@ -93,6 +93,21 @@ app.get('/health-check', (_req, res) => {
     res.status(200).type('text/plain').send('200 OK');
 });
 
+// Approximate country for community stats (Cloudflare cf-ipcountry when present).
+app.get('/api/geo', (req, res) => {
+    applyCors(req, res);
+    const raw = String(
+        req.headers['cf-ipcountry']
+        || req.headers['x-vercel-ip-country']
+        || ''
+    ).trim().toUpperCase();
+    const country = /^[A-Z]{2}$/.test(raw) && raw !== 'XX' && raw !== 'T1'
+        ? raw
+        : null;
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.status(200).json({ country });
+});
+
 // Browser calls from usertypo.com → mp.usertypo.com need CORS on HTTP APIs.
 app.use('/api', (req, res, next) => {
     applyCors(req, res);

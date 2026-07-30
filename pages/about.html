@@ -29,6 +29,156 @@
         .about-toc a:hover {
             color: var(--theme-primary);
         }
+        .about-stat-card {
+            min-width: 0;
+            padding: 0.15rem 0;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        .about-stat-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .about-stat-value {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+        .about-stat-label {
+            margin-top: 0.35rem;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .about-chart-panel {
+            min-width: 0;
+            padding: 0.15rem 0;
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .about-chart-panel.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .about-score-layout {
+            display: grid;
+            grid-template-columns: 2.1rem minmax(0, 1fr);
+            grid-template-rows: 11.5rem auto;
+            grid-template-areas:
+                "y chart"
+                "empty x";
+            gap: 0.4rem 0.55rem;
+        }
+        .about-score-layout.is-empty {
+            display: none;
+        }
+        .about-score-chart {
+            grid-area: chart;
+            height: 11.5rem;
+            display: flex;
+            align-items: flex-end;
+            gap: clamp(2px, 0.45vw, 6px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background-image: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.035) 0,
+                rgba(255, 255, 255, 0.035) 1px,
+                transparent 1px,
+                transparent 20%
+            );
+        }
+        .about-score-y {
+            grid-area: y;
+            position: relative;
+            color: #94a3b8;
+            font-family: "Roboto Mono", monospace;
+            font-size: 0.55rem;
+            line-height: 1;
+        }
+        .about-score-y span {
+            position: absolute;
+            right: 0;
+            transform: translateY(-50%);
+        }
+        .about-score-x {
+            grid-area: x;
+            display: flex;
+            gap: clamp(2px, 0.45vw, 6px);
+            color: #94a3b8;
+            font-family: "Roboto Mono", monospace;
+            font-size: clamp(0.38rem, 0.55vw, 0.55rem);
+            line-height: 1;
+        }
+        .about-score-x span {
+            flex: 1 1 0;
+            min-width: 0;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .about-score-col {
+            position: relative;
+            flex: 1 1 0;
+            min-width: 0;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            cursor: default;
+        }
+        .about-score-bar {
+            display: block;
+            width: 100%;
+            height: var(--bar-height, 0%);
+            min-height: 0;
+            border-radius: 4px 4px 0 0;
+            background: color-mix(in srgb, var(--theme-primary) var(--bar-strength, 40%), #1e293b);
+            transform-origin: bottom;
+            transform: scaleY(0);
+            transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .about-score-bar.is-animated {
+            transform: scaleY(1);
+        }
+        .about-score-col.is-empty .about-score-bar {
+            opacity: 0.22;
+            min-height: 2px;
+        }
+        .about-mode-row {
+            display: grid;
+            grid-template-columns: 6.5rem minmax(0, 1fr) 2.75rem;
+            gap: 0.65rem;
+            align-items: center;
+            margin-bottom: 0.55rem;
+        }
+        .about-mode-row:last-child {
+            margin-bottom: 0;
+        }
+        .about-mode-track {
+            height: 0.55rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+        .about-mode-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: var(--theme-primary);
+            transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .about-country-ring circle {
+            transition: stroke-dasharray 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
         @media (max-width: 640px) {
             .about-toc ol {
                 grid-template-columns: 1fr;
@@ -39,14 +189,14 @@
 <main class="about-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
     <div class="w-full max-w-5xl mx-auto py-6 sm:py-10 min-w-0">
         <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">About</p>
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">About usertypo</h1>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">About usertypo_</h1>
         <p class="text-xs sm:text-sm text-slate-400 mb-2">
             <span class="text-slate-500">Last updated:</span> July 29, 2026
             <span class="text-slate-600 mx-2">·</span>
-            <span class="text-slate-500">Officially launched:</span> July 27, 2026
+            <span class="text-slate-500">Launched:</span> July 27, 2026
         </p>
         <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
-            Welcome to <strong class="text-slate-200 font-semibold">usertypo</strong>, a modern typing test
+            Welcome to <strong class="text-slate-200 font-semibold">usertypo_</strong>, a modern typing test
             and multiplayer racing platform operated by
             <strong class="text-slate-200 font-semibold">usertypo_</strong>.
             Live at
@@ -54,6 +204,86 @@
             Questions:
             <a class="about-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
         </p>
+
+        <section id="about-community-stats" class="mb-8 sm:mb-12" aria-label="Community stats">
+            <div class="flex items-end justify-between gap-3 mb-4">
+                <div>
+                    <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-1.5">Live community</p>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-100 tracking-tight">Stats across usertypo_</h2>
+                </div>
+                <p id="about-stats-updated" class="text-[0.65rem] text-slate-500 hidden sm:block"></p>
+            </div>
+
+            <div id="about-kpi-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div class="about-stat-card" data-about-kpi style="transition-delay:40ms">
+                    <div class="about-stat-value" data-about-count data-stat="total_seconds" data-format="duration">0</div>
+                    <div class="about-stat-label">Total time typed</div>
+                </div>
+                <div class="about-stat-card" data-about-kpi style="transition-delay:90ms">
+                    <div class="about-stat-value" data-about-count data-stat="tests_taken" data-format="compact">0</div>
+                    <div class="about-stat-label">Tests taken</div>
+                </div>
+                <div class="about-stat-card" data-about-kpi style="transition-delay:140ms">
+                    <div class="about-stat-value" data-about-count data-stat="total_words" data-format="compact">0</div>
+                    <div class="about-stat-label">Words typed</div>
+                </div>
+                <div class="about-stat-card" data-about-kpi style="transition-delay:190ms">
+                    <div class="about-stat-value" data-about-count data-stat="users" data-format="compact">0</div>
+                    <div class="about-stat-label">Registered users</div>
+                </div>
+            </div>
+
+            <div class="about-chart-panel mb-6 sm:mb-8" data-about-panel style="transition-delay:140ms">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-100">30s timed score distribution</h3>
+                        <p class="text-[0.7rem] text-slate-500 mt-1">All users · 5 WPM buckets</p>
+                    </div>
+                    <span id="about-score-summary" class="text-[0.65rem] text-slate-500 text-right max-w-[12rem]"></span>
+                </div>
+                <div id="about-score-layout" class="about-score-layout is-empty">
+                    <div id="about-score-y" class="about-score-y" aria-hidden="true"></div>
+                    <div id="about-score-chart" class="about-score-chart" role="img" aria-label="Score distribution"></div>
+                    <div id="about-score-x" class="about-score-x" aria-hidden="true"></div>
+                </div>
+                <div id="about-score-empty" class="hidden text-xs text-slate-500 py-10 text-center">
+                    No completed 30-second timed tests yet.
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6 sm:gap-8">
+                <div class="about-chart-panel" data-about-panel style="transition-delay:180ms">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-100">Users by country</h3>
+                            <p class="text-[0.7rem] text-slate-500 mt-1">Top 5 + other · signed-in accounts</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-5">
+                        <div class="relative w-36 h-36 shrink-0">
+                            <svg id="about-country-svg" class="about-country-ring w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+                                <circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                                <span id="about-country-center" class="text-lg font-bold text-slate-100 font-[Space_Grotesk]">—</span>
+                                <span class="text-[0.6rem] uppercase tracking-wider text-slate-500">top share</span>
+                            </div>
+                        </div>
+                        <div id="about-country-legend" class="grid grid-cols-1 gap-2 w-full min-w-0">
+                            <div class="text-xs text-slate-500">Loading…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-chart-panel" data-about-panel style="transition-delay:220ms">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-semibold text-slate-100">Most popular modes</h3>
+                        <p class="text-[0.7rem] text-slate-500 mt-1">Standard presets only</p>
+                    </div>
+                    <div id="about-modes-list" class="min-w-0"></div>
+                </div>
+            </div>
+        </section>
 
         <nav class="about-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
             <p class="text-[0.586rem] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
@@ -77,9 +307,9 @@
             <section id="who-we-are">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">1. Who We Are</h2>
                 <p class="mb-3">
-                    usertypo is a free online typing platform built for people who care about speed,
+                    usertypo_ is a free online typing platform built for people who care about speed,
                     accuracy, and the feel of every keystroke. Whether you are warming up for work,
-                    chasing a personal best, or racing a friend in real time, usertypo is designed to
+                    chasing a personal best, or racing a friend in real time, usertypo_ is designed to
                     stay out of your way and keep the focus on typing.
                 </p>
                 <p>
@@ -94,7 +324,7 @@
             <section id="our-story">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">2. Our Story</h2>
                 <p class="mb-3">
-                    usertypo started with a simple frustration: we loved typing tests, but most of them
+                    usertypo_ started with a simple frustration: we loved typing tests, but most of them
                     felt either too bare or too cluttered. Solo practice was easy to find. Smooth,
                     modern multiplayer—with a UX that felt intentional instead of bolted on—was harder.
                 </p>
@@ -107,7 +337,7 @@
                 <p>
                     Late nights turned into prototypes. Prototypes turned into rooms, dual matches,
                     profiles, and themes. On <strong class="text-slate-100">July 27, 2026</strong>,
-                    usertypo officially went live—and we have been iterating ever since.
+                    usertypo_ officially went live—and we have been iterating ever since.
                 </p>
             </section>
 
@@ -140,7 +370,7 @@
             <section id="what-we-build">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">4. What We Build</h2>
                 <p class="mb-3">
-                    usertypo combines classic typing practice with social and competitive layers:
+                    usertypo_ combines classic typing practice with social and competitive layers:
                 </p>
                 <ul class="list-disc pl-5 space-y-1 mb-3">
                     <li>Timed and word-count typing tests with languages, punctuation, and numbers</li>
@@ -198,7 +428,7 @@
             <section id="open-source">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Open Source</h2>
                 <p class="mb-3">
-                    usertypo is open source under the
+                    usertypo_ is open source under the
                     <a class="about-link" href="https://github.com/usertypo/usertypo/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GNU Affero General Public License v3.0 (AGPLv3)</a>.
                     You can read the code, fork it, and propose improvements.
                 </p>
@@ -226,7 +456,7 @@
             <section id="community">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. Community</h2>
                 <p class="mb-3">
-                    usertypo grows with the people who use it. Race your friends, share feedback, report
+                    usertypo_ grows with the people who use it. Race your friends, share feedback, report
                     bugs, and help others get faster. If you build something cool on top of the open-source
                     project, we would love to hear about it.
                 </p>
@@ -240,7 +470,7 @@
             <section id="team">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. The Team</h2>
                 <p class="mb-3">
-                    usertypo is built and operated by
+                    usertypo_ is built and operated by
                     <strong class="text-slate-200 font-semibold">usertypo_</strong>,
                     created by Saad Ali and Laksh Jhawar—a small team that cares about typing,
                     product craft, and shipping things that feel good to use.
@@ -254,7 +484,7 @@
             <section id="legal">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. Legal &amp; Privacy</h2>
                 <p class="mb-3">
-                    Using usertypo means you agree to our
+                    Using usertypo_ means you agree to our
                     <a class="about-link" href="/terms" data-spa-link>Terms and Conditions</a>
                     and
                     <a class="about-link" href="/privacy" data-spa-link>Privacy Policy</a>.
@@ -279,7 +509,7 @@
                     <li>Legal: <a class="about-link" href="/terms" data-spa-link>Terms</a> · <a class="about-link" href="/security" data-spa-link>Security</a> · <a class="about-link" href="/privacy" data-spa-link>Privacy</a></li>
                 </ul>
                 <p class="text-sm text-slate-400">
-                    Service: usertypo · Operator: usertypo_ · Launched: July 27, 2026
+                    Service: usertypo_ · Operator: usertypo_ · Launched: July 27, 2026
                 </p>
             </section>
 
@@ -290,6 +520,273 @@
 <script>
 const __pageAbort = new AbortController();
 const __pageSignal = __pageAbort.signal;
+
+function initAboutCommunityStats() {
+    var COUNTRY_COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#94a3b8'];
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function countryName(code) {
+        if (!code) return 'Unknown';
+        try {
+            if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+                var names = new Intl.DisplayNames(['en'], { type: 'region' });
+                return names.of(code) || code;
+            }
+        } catch (e) { /* ignore */ }
+        return code;
+    }
+
+    function formatCompact(n) {
+        var value = Number(n) || 0;
+        if (Math.abs(value) >= 1000000) return (value / 1000000).toFixed(value >= 10000000 ? 0 : 1).replace(/\.0$/, '') + 'M';
+        if (Math.abs(value) >= 1000) return (value / 1000).toFixed(value >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K';
+        return Math.round(value).toLocaleString();
+    }
+
+    function formatDuration(totalSeconds) {
+        var seconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+        if (seconds < 60) return seconds + 's';
+        var hours = seconds / 3600;
+        if (hours >= 100) return Math.round(hours).toLocaleString() + 'h';
+        if (hours >= 1) return (Math.round(hours * 10) / 10).toLocaleString() + 'h';
+        var minutes = seconds / 60;
+        return (Math.round(minutes * 10) / 10).toLocaleString() + 'm';
+    }
+
+    function formatModeLabel(mode, amount) {
+        if (mode === 'time') return amount + 's';
+        return amount + ' words';
+    }
+
+    function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+    }
+
+    function animateCount(el, target, format, duration) {
+        var start = performance.now();
+        var from = 0;
+        var to = Number(target) || 0;
+        var ms = duration || 1100;
+
+        function frame(now) {
+            if (__pageAbort.signal.aborted) return;
+            var t = Math.min(1, (now - start) / ms);
+            var value = from + (to - from) * easeOutCubic(t);
+            if (format === 'duration') el.textContent = formatDuration(value);
+            else if (format === 'percent') el.textContent = (Math.round(value * 10) / 10).toLocaleString() + '%';
+            else if (format === 'decimal') el.textContent = (Math.round(value * 10) / 10).toLocaleString();
+            else el.textContent = formatCompact(value);
+            if (t < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+    }
+
+    function revealCards() {
+        document.querySelectorAll('[data-about-kpi], [data-about-panel]').forEach(function (el) {
+            requestAnimationFrame(function () {
+                el.classList.add('is-visible');
+            });
+        });
+    }
+
+    function isStandardMode(mode, amount) {
+        var value = Number(amount);
+        if (mode === 'time') return value === 15 || value === 30 || value === 60 || value === 120;
+        if (mode === 'words') return value === 10 || value === 25 || value === 50 || value === 100;
+        return false;
+    }
+
+    function renderKpis(totals) {
+        var map = totals || {};
+        document.querySelectorAll('[data-about-count]').forEach(function (el) {
+            var key = el.getAttribute('data-stat');
+            var format = el.getAttribute('data-format') || 'compact';
+            animateCount(el, map[key] == null ? 0 : map[key], format);
+        });
+    }
+
+    function renderCountries(countries) {
+        var svg = document.getElementById('about-country-svg');
+        var legend = document.getElementById('about-country-legend');
+        var center = document.getElementById('about-country-center');
+        if (!svg || !legend) return;
+
+        var items = (countries && countries.items ? countries.items.slice() : []);
+        var other = countries && countries.other ? Number(countries.other) : 0;
+        if (other > 0) items.push({ code: 'OTHER', users: other });
+        var total = items.reduce(function (sum, item) { return sum + (Number(item.users) || 0); }, 0);
+
+        if (!total) {
+            if (center) center.textContent = '—';
+            svg.innerHTML = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+            legend.innerHTML = '<div class="text-xs text-slate-500 leading-relaxed">Country chart fills in as signed-in typists visit from around the world.</div>';
+            return;
+        }
+
+        var topPct = Math.round((Number(items[0].users) / total) * 1000) / 10;
+        if (center) animateCount(center, topPct, 'percent', 900);
+
+        var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+        var offset = 0;
+        var gap = items.length > 1 ? 5.2 : 0;
+        items.forEach(function (item, index) {
+            var pct = (Number(item.users) / total) * 100;
+            var arc = Math.max(0.5, pct - gap);
+            rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+                + COUNTRY_COLORS[index % COUNTRY_COLORS.length]
+                + '" stroke-linecap="round" stroke-dasharray="0 100'
+                + '" stroke-dashoffset="' + (-offset)
+                + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
+            offset += pct;
+        });
+        svg.innerHTML = rings;
+        requestAnimationFrame(function () {
+            svg.querySelectorAll('[data-about-arc]').forEach(function (circle) {
+                circle.setAttribute('stroke-dasharray', circle.getAttribute('data-about-arc'));
+            });
+        });
+
+        legend.innerHTML = items.map(function (item, index) {
+            var pct = Math.round((Number(item.users) / total) * 1000) / 10;
+            var label = item.code === 'OTHER' ? 'Other' : countryName(item.code);
+            return '<div class="flex items-center justify-between gap-3 min-w-0">'
+                + '<div class="flex items-center gap-2 min-w-0">'
+                + '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + COUNTRY_COLORS[index % COUNTRY_COLORS.length] + '"></span>'
+                + '<span class="text-xs text-slate-300 truncate">' + escapeHtml(label) + '</span>'
+                + '</div>'
+                + '<span class="text-xs text-slate-500 font-mono shrink-0">' + pct + '%</span>'
+                + '</div>';
+        }).join('');
+    }
+
+    function renderScoreDistribution(distribution) {
+        var layout = document.getElementById('about-score-layout');
+        var chart = document.getElementById('about-score-chart');
+        var xAxis = document.getElementById('about-score-x');
+        var yAxis = document.getElementById('about-score-y');
+        var empty = document.getElementById('about-score-empty');
+        var summary = document.getElementById('about-score-summary');
+        if (!layout || !chart || !xAxis || !yAxis || !empty || !summary) return;
+
+        // Keep buckets from 0–5 upward (do not trim leading empty bins).
+        var bins = Array.isArray(distribution && distribution.bins) ? distribution.bins.slice() : [];
+        chart.replaceChildren();
+        xAxis.replaceChildren();
+        yAxis.replaceChildren();
+
+        if (!bins.length || !(distribution && distribution.total)) {
+            layout.classList.add('is-empty');
+            empty.classList.remove('hidden');
+            summary.textContent = '';
+            return;
+        }
+
+        layout.classList.remove('is-empty');
+        empty.classList.add('hidden');
+
+        var maxCount = bins.reduce(function (max, bin) {
+            return Math.max(max, Number(bin.count) || 0);
+        }, 0);
+        var yAxisMax = Math.max(5, Math.ceil(maxCount / 5) * 5);
+        for (var tick = 5; tick >= 0; tick--) {
+            var yLabel = document.createElement('span');
+            yLabel.textContent = String((yAxisMax / 5) * tick);
+            yLabel.style.top = (((5 - tick) / 5) * 100) + '%';
+            yAxis.appendChild(yLabel);
+        }
+
+        bins.forEach(function (bin, index) {
+            var count = Number(bin.count) || 0;
+            var heightRatio = yAxisMax > 0 ? count / yAxisMax : 0;
+            var colorRatio = maxCount > 0 ? count / maxCount : 0;
+            var column = document.createElement('div');
+            column.className = 'about-score-col' + (count ? '' : ' is-empty');
+            column.title = bin.start + '–' + bin.end + ' WPM: ' + count;
+            column.style.setProperty('--bar-height', Math.max(heightRatio * 100, count ? 4 : 0) + '%');
+            column.style.setProperty('--bar-strength', (25 + colorRatio * 75) + '%');
+            var bar = document.createElement('span');
+            bar.className = 'about-score-bar';
+            column.appendChild(bar);
+            chart.appendChild(column);
+
+            var xLabel = document.createElement('span');
+            xLabel.textContent = bin.start + '-' + bin.end;
+            xAxis.appendChild(xLabel);
+
+            setTimeout(function () {
+                if (!__pageAbort.signal.aborted) bar.classList.add('is-animated');
+            }, 80 + index * 28);
+        });
+
+        summary.textContent = distribution.total.toLocaleString() + ' tests · avg '
+            + (distribution.average == null ? '—' : distribution.average) + ' WPM';
+    }
+
+    function renderModes(modes) {
+        var listEl = document.getElementById('about-modes-list');
+        if (!listEl) return;
+        var list = (Array.isArray(modes) ? modes : []).filter(function (row) {
+            return isStandardMode(row.mode, row.amount);
+        }).slice(0, 6);
+        if (!list.length) {
+            listEl.innerHTML = '<div class="text-xs text-slate-500">No completed standard-mode tests yet.</div>';
+            return;
+        }
+        var max = list.reduce(function (m, row) {
+            return Math.max(m, Number(row.tests) || 0);
+        }, 0);
+        listEl.innerHTML = list.map(function (row) {
+            var tests = Number(row.tests) || 0;
+            var pct = max > 0 ? (tests / max) * 100 : 0;
+            return '<div class="about-mode-row">'
+                + '<div class="text-xs text-slate-300 truncate">' + escapeHtml(formatModeLabel(row.mode, row.amount)) + '</div>'
+                + '<div class="about-mode-track"><div class="about-mode-fill" data-about-mode-fill style="width:0%" data-target-width="' + pct + '%"></div></div>'
+                + '<div class="text-[0.65rem] text-slate-500 font-mono text-right">' + formatCompact(tests) + '</div>'
+                + '</div>';
+        }).join('');
+        requestAnimationFrame(function () {
+            listEl.querySelectorAll('[data-about-mode-fill]').forEach(function (fill) {
+                fill.style.width = fill.getAttribute('data-target-width');
+            });
+        });
+    }
+
+    revealCards();
+
+    if (!window.usertypoSiteStats || typeof window.usertypoSiteStats.getPublicStats !== 'function') {
+        var legend = document.getElementById('about-country-legend');
+        if (legend) legend.innerHTML = '<div class="text-xs text-slate-500">Stats unavailable right now.</div>';
+        return;
+    }
+
+    window.usertypoSiteStats.getPublicStats()
+        .then(function (stats) {
+            if (__pageAbort.signal.aborted || !stats) return;
+            renderKpis(stats.totals || {});
+            renderCountries(stats.countries || {});
+            renderScoreDistribution(stats.score_distribution_30s || {});
+            renderModes(stats.popular_modes || []);
+            var updated = document.getElementById('about-stats-updated');
+            if (updated && stats.generated_at) {
+                var when = new Date(stats.generated_at);
+                updated.textContent = isNaN(when.getTime())
+                    ? ''
+                    : 'Updated ' + when.toLocaleString();
+            }
+        })
+        .catch(function (err) {
+            console.warn('[about] failed to load community stats', err);
+            var legendFail = document.getElementById('about-country-legend');
+            if (legendFail) legendFail.innerHTML = '<div class="text-xs text-slate-500">Could not load live stats.</div>';
+        });
+}
 
 window.__spaPageInit = function () {
     window.scrollTo(0, 0);
@@ -308,6 +805,8 @@ window.__spaPageInit = function () {
             }
         }, { signal: __pageSignal });
     });
+
+    initAboutCommunityStats();
 
     const pageTrack = document.getElementById('page-scroll-track');
     const pageThumb = document.getElementById('page-scroll-thumb');
