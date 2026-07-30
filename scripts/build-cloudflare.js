@@ -90,6 +90,7 @@ function main() {
     // https://developers.cloudflare.com/pages/configuration/serving-pages/
     const spaShellRoutes = [
         'about',
+        'how-it-works',
         'privacy',
         'terms',
         'security',

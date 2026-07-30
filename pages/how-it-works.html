@@ -1,0 +1,897 @@
+<style type="text/tailwindcss">
+        .hiw-page {
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            min-width: 0;
+        }
+        .hiw-page h1,
+        .hiw-page h2,
+        .hiw-page h3 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+        }
+        .hiw-prose h2,
+        .hiw-prose h3,
+        .hiw-prose section {
+            scroll-margin-top: 5rem;
+        }
+        .hiw-page a.hiw-link {
+            color: var(--theme-primary) !important;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .hiw-page a.hiw-link:hover {
+            color: var(--theme-text) !important;
+        }
+        .hiw-toc a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        .hiw-toc a:hover {
+            color: var(--theme-primary);
+        }
+        .hiw-math {
+            margin: 1rem 0 1.25rem;
+            padding: 1.15rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.9rem;
+            background: rgba(255, 255, 255, 0.03);
+            overflow-x: auto;
+        }
+        .hiw-eq {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem 0.85rem;
+            color: #e2e8f0;
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+            font-weight: 500;
+            line-height: 1.2;
+            text-align: center;
+        }
+        .hiw-eq + .hiw-eq {
+            margin-top: 1rem;
+        }
+        .hiw-eq-sub {
+            font-size: clamp(0.82rem, 1.8vw, 0.98rem);
+            color: #cbd5e1;
+            font-weight: 450;
+        }
+        .hiw-lhs {
+            color: var(--theme-primary);
+            font-weight: 650;
+            white-space: nowrap;
+        }
+        .hiw-op {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .hiw-where {
+            display: block;
+            margin: 0.95rem 0 0.55rem;
+            text-align: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .hiw-frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            min-width: 0;
+        }
+        .hiw-num,
+        .hiw-den {
+            padding: 0.15rem 0.45rem;
+            white-space: nowrap;
+        }
+        .hiw-num {
+            border-bottom: 1.5px solid rgba(226, 232, 240, 0.55);
+            margin-bottom: 0.15rem;
+            padding-bottom: 0.35rem;
+        }
+        .hiw-den {
+            padding-top: 0.3rem;
+        }
+        .hiw-fn {
+            white-space: nowrap;
+        }
+        .hiw-var {
+            font-style: italic;
+            color: #f1f5f9;
+        }
+        .hiw-callout {
+            border-left: 2px solid var(--theme-primary);
+            padding: 0.65rem 0 0.65rem 1rem;
+            margin: 1rem 0;
+            color: #cbd5e1;
+            background: rgba(var(--theme-primary-rgb), 0.05);
+            border-radius: 0 0.65rem 0.65rem 0;
+        }
+        .hiw-table-wrap {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .hiw-table {
+            width: 100%;
+            min-width: 32rem;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+        .hiw-table th,
+        .hiw-table td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.7rem 0.9rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .hiw-table th {
+            background: rgba(var(--theme-primary-rgb), 0.08);
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+        .hiw-table td {
+            color: #cbd5e1;
+        }
+        .hiw-table tr:last-child td {
+            border-bottom: 0;
+        }
+        @media (max-width: 640px) {
+            .hiw-toc ol {
+                grid-template-columns: 1fr;
+            }
+        }
+</style>
+
+<main class="hiw-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
+    <div class="w-full max-w-5xl mx-auto py-6 sm:py-10 min-w-0">
+        <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">Docs</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">How usertypo_ scoring works</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mb-2">
+            <span class="text-slate-500">Last updated:</span> July 30, 2026
+        </p>
+        <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
+            A technical walkthrough of how <strong class="text-slate-200 font-semibold">usertypo_</strong>
+            measures speed, accuracy, and consistency; how the home-page result graphs are drawn;
+            how Profile / Stats cards are computed; and how XP, levels, titles, and leaderboard ranks
+            are awarded.
+        </p>
+
+        <nav class="hiw-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
+            <p class="text-[0.586rem] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
+            <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm list-decimal list-inside">
+                <li><a href="#overview" data-hiw-toc>Overview</a></li>
+                <li><a href="#wpm" data-hiw-toc>Words Per Minute (WPM)</a></li>
+                <li><a href="#raw-wpm" data-hiw-toc>Raw WPM</a></li>
+                <li><a href="#accuracy" data-hiw-toc>Accuracy</a></li>
+                <li><a href="#consistency" data-hiw-toc>Consistency</a></li>
+                <li><a href="#result-graphs" data-hiw-toc>Home result graphs</a></li>
+                <li><a href="#userstats" data-hiw-toc>Userstats page cards</a></li>
+                <li><a href="#xp-levels" data-hiw-toc>XP, levels &amp; titles</a></li>
+                <li><a href="#leaderboards" data-hiw-toc>Leaderboard rankings</a></li>
+                <li><a href="#glossary" data-hiw-toc>Glossary</a></li>
+            </ol>
+        </nav>
+
+        <article class="hiw-prose space-y-10 sm:space-y-12 text-sm sm:text-[0.799rem] leading-relaxed text-slate-300 min-w-0">
+
+            <section id="overview">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">1. Overview</h2>
+                <p class="mb-3">
+                    Every completed typing test on usertypo_ ends with a small set of headline numbers:
+                    <strong class="text-slate-200">WPM</strong>,
+                    <strong class="text-slate-200">raw WPM</strong>,
+                    <strong class="text-slate-200">accuracy</strong>, and
+                    <strong class="text-slate-200">consistency</strong>.
+                    Those values are computed in the browser from what you typed, then—when you are
+                    signed in—saved to your session history so Profile stats, XP, and leaderboards
+                    can reuse them.
+                </p>
+                <p class="mb-3">
+                    Under the hood, usertypo_ treats typing the way most modern typing sites do:
+                    one “word” is defined as <strong class="text-slate-200">five characters</strong>
+                    (letters, spaces, and punctuation all count). Speed is therefore
+                    characters-per-minute divided by five. Accuracy is keystroke-based, not
+                    “percentage of words that look correct.” Consistency measures how steady your
+                    second-by-second raw speed was, using a coefficient-of-variation transform
+                    inspired by the well-known Monkeytype “kogasa” mapping.
+                </p>
+                <div class="hiw-callout">
+                    Guest tests still show live results and graphs. Signed-in tests also persist to
+                    Postgres, award XP, update personal bests, and may update Redis-backed leaderboards.
+                </div>
+            </section>
+
+            <section id="wpm">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">2. Words Per Minute (WPM)</h2>
+                <p class="mb-3">
+                    <strong class="text-slate-200">Net WPM</strong> (the big number on your results)
+                    is intended to reward clean typing. Only characters that count as correct
+                    contribute. On usertypo_, a finished word only contributes to net WPM if that
+                    word has no error styling left on it—no mistyped letters, no extra characters,
+                    no lingering error underlines. When a word qualifies, every non-extra character
+                    in it is counted, plus one character for the trailing space that separates words.
+                    The word you are currently typing contributes only the letters that are already
+                    marked correct (no trailing space yet).
+                </p>
+                <p class="mb-3">
+                    Elapsed time is measured from the first keystroke that starts the test until the
+                    test ends. To avoid wild early spikes, the denominator never drops below
+                    <strong class="text-slate-200">two seconds</strong> (about 0.033 minutes) when
+                    computing final WPM.
+                </p>
+                <div class="hiw-math" role="group" aria-label="Net WPM formulas">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">WPM</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-frac">
+                            <span class="hiw-num">( <span class="hiw-var">validChars</span> ÷ 5 )</span>
+                            <span class="hiw-den"><span class="hiw-var">elapsedMinutes</span></span>
+                        </span>
+                    </div>
+                    <span class="hiw-where">where</span>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">elapsedMinutes</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">max( <span class="hiw-var">elapsedMs</span> ÷ 60000 , 2 ÷ 60 )</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">validChars</span>
+                        <span class="hiw-op">=</span>
+                        <span>correct chars from clean finished words (+ spaces) + correct chars on the current word</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    The UI usually rounds net WPM for display. When a session is saved for a signed-in
+                    account, the database stores a higher-precision value (two decimal places) so
+                    personal bests and leaderboards can break ties fairly.
+                </p>
+                <p class="mb-3">
+                    Optional characters-per-second (CPS) is a unit conversion of the same net speed:
+                </p>
+                <div class="hiw-math" role="group" aria-label="CPS formula">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">CPS</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn"><span class="hiw-var">WPM</span> × 5 ÷ 60</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="raw-wpm">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">3. Raw WPM</h2>
+                <p class="mb-3">
+                    <strong class="text-slate-200">Raw WPM</strong> answers a different question:
+                    how fast were your fingers moving, regardless of whether the text ended up
+                    correct? Raw character counts include every character you actually typed on
+                    completed words (plus spaces), and every typed character on the current word—
+                    including mistakes and extras—while ignoring untouched slate letters that were
+                    never reached.
+                </p>
+                <div class="hiw-math" role="group" aria-label="Raw WPM formula">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">rawWPM</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-frac">
+                            <span class="hiw-num">( <span class="hiw-var">rawChars</span> ÷ 5 )</span>
+                            <span class="hiw-den"><span class="hiw-var">elapsedMinutes</span></span>
+                        </span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    Comparing net and raw WPM is one of the fastest ways to diagnose your session.
+                    A large gap usually means you were correcting a lot, leaving errors unfixed, or
+                    both. A tiny gap with high accuracy means you typed cleanly at a stable pace.
+                </p>
+                <div class="hiw-table-wrap">
+                    <table class="hiw-table">
+                        <thead>
+                            <tr>
+                                <th>Signal</th>
+                                <th>What it usually means</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Raw ≈ net, high accuracy</td>
+                                <td>Clean typing with few corrections.</td>
+                            </tr>
+                            <tr>
+                                <td>Raw ≫ net, high accuracy</td>
+                                <td>You fixed mistakes as you went (backspaces / retypes).</td>
+                            </tr>
+                            <tr>
+                                <td>Raw ≫ net, lower accuracy</td>
+                                <td>Uncorrected errors and/or extras left in the text.</td>
+                            </tr>
+                            <tr>
+                                <td>Both low</td>
+                                <td>Overall pace was slow—or the test ended early / failed a threshold.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="accuracy">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">4. Accuracy</h2>
+                <p class="mb-3">
+                    Accuracy on usertypo_ is <strong class="text-slate-200">keystroke-based</strong>.
+                    Every keystroke you make during the test increments a total. Every incorrect
+                    keystroke increments an error counter. At the end:
+                </p>
+                <div class="hiw-math" role="group" aria-label="Accuracy formula">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">accuracy%</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">max( 0 ,</span>
+                        <span class="hiw-frac">
+                            <span class="hiw-num"><span class="hiw-var">totalKeystrokes</span> − <span class="hiw-var">errorsMade</span></span>
+                            <span class="hiw-den"><span class="hiw-var">totalKeystrokes</span></span>
+                        </span>
+                        <span class="hiw-fn">× 100 )</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    If somehow no keystrokes were recorded, accuracy is treated as 0 for the final
+                    save path. Live UI may round for display; saved sessions keep finer precision.
+                </p>
+                <p class="mb-3">
+                    This design matters because fixing a typo costs keystrokes too. Backspacing and
+                    retyping the correct letter can lower accuracy even when the final on-screen
+                    word looks perfect. That is intentional: accuracy reflects control over the
+                    keyboard stream, not only the final rendered string.
+                </p>
+            </section>
+
+            <section id="consistency">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">5. Consistency</h2>
+                <p class="mb-3">
+                    Consistency asks whether your speed was smooth or bursty. On the solo home test,
+                    usertypo_ samples <strong class="text-slate-200">raw WPM once per second</strong>
+                    while you type. That series becomes the input to a coefficient-of-variation
+                    calculation, then a nonlinear map (often called a kogasa transform) that
+                    compresses the result into a friendly 0–100 score.
+                </p>
+                <div class="hiw-math" role="group" aria-label="Consistency formulas">
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span>If fewer than 2 samples,</span>
+                        <span class="hiw-lhs">consistency</span>
+                        <span class="hiw-op">=</span>
+                        <span>100</span>
+                    </div>
+                    <span class="hiw-where">otherwise</span>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">mean</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">average( <span class="hiw-var">rawWpmPerSecond</span> )</span>
+                    </div>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">stdDev</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">√( Σ ( <span class="hiw-var">x</span> − <span class="hiw-var">mean</span> )² ÷ <span class="hiw-var">n</span> )</span>
+                    </div>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">cov</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-frac">
+                            <span class="hiw-num"><span class="hiw-var">stdDev</span></span>
+                            <span class="hiw-den"><span class="hiw-var">mean</span></span>
+                        </span>
+                    </div>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">kogasa</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">100 × ( 1 − tanh( <span class="hiw-var">cov</span> + <span class="hiw-var">cov</span>³÷3 + <span class="hiw-var">cov</span>⁵÷5 ) )</span>
+                    </div>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">consistency</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">clamp( round( <span class="hiw-var">kogasa</span> ) , 0 , 100 )</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    High consistency means your per-second raw speeds clustered tightly around the
+                    mean. Low consistency usually means surges and stalls—common when hunting for
+                    personal bests with uneven rhythm, or when a hard word forces a pause.
+                    If <span class="hiw-var">mean</span> ≤ 0, consistency stays at 100.
+                </p>
+                <div class="hiw-callout">
+                    Multiplayer dual/room races can compute consistency from inter-keystroke
+                    intervals instead of the per-second raw series. The kogasa mapping is the same;
+                    the input signal differs. Always compare consistency within the same mode family.
+                </div>
+            </section>
+
+            <section id="result-graphs">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Home result graphs</h2>
+                <p class="mb-3">
+                    After a solo test, the home page can open a stats view with a
+                    <strong class="text-slate-200">basic</strong> or
+                    <strong class="text-slate-200">advanced</strong> graph. Both share the same
+                    timeline: the X-axis is seconds from test start, and the Y-axis is WPM with a
+                    “nice” maximum snapped upward in steps of 30. Failed threshold tests clear
+                    history series and skip drawing—there is no graph for a run that did not qualify
+                    as a completed measurement.
+                </p>
+
+                <h3 id="basic-graph" class="text-base font-semibold text-slate-200 mt-6 mb-2">6.1 Basic graph</h3>
+                <p class="mb-3">The basic graph focuses on three readable signals:</p>
+                <ul class="list-disc pl-5 space-y-2 mb-3">
+                    <li>
+                        <strong class="text-slate-200">Solid primary line</strong> —
+                        cumulative average net WPM over time (how your overall pace evolved).
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Dashed gray line</strong> —
+                        instantaneous raw WPM for that second.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Red error dots</strong> —
+                        non-hesitation error markers placed at the second they occurred.
+                    </li>
+                </ul>
+                <div class="hiw-math" role="group" aria-label="Per-second raw WPM formula">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">rawWPM<sub style="font-size:0.7em">second</sub></span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">( <span class="hiw-var">keystrokesThisSecond</span> ÷ 5 ) × 60</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    A soft fill under the net WPM line uses average word difficulty (based on word
+                    length bands) to tint how “heavy” the passage felt. Hovering interpolates
+                    WPM/raw and shows how many errors landed on that second. Optional settings can
+                    force the Y-axis to start at zero and can smooth the polyline with a
+                    Catmull-Rom-style curve.
+                </p>
+
+                <h3 id="advanced-graph" class="text-base font-semibold text-slate-200 mt-6 mb-2">6.2 Advanced graph</h3>
+                <p class="mb-3">
+                    The advanced graph keeps the same net/raw lines, then layers richer diagnostics
+                    for people who want to study <em>how</em> a score was made.
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-3">
+                    <li>
+                        <strong class="text-slate-200">Cadence ribbon</strong> —
+                        around the raw line, a band whose half-width grows with the coefficient of
+                        variation of inter-key intervals inside that second. Wide ribbons mean
+                        uneven key timing.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Word difficulty columns</strong> —
+                        vertical clips of the WPM fill sized by how long each word took on the
+                        timeline, so hard or slow words visually thicken the chart.
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Typed error DNA</strong> —
+                        shaped markers for mistype, reversal, overshoot, missed, extra, and
+                        hesitation (hesitations use a distinct amber square).
+                    </li>
+                    <li>
+                        <strong class="text-slate-200">Zoom</strong> —
+                        Ctrl + mouse wheel changes how many words are visible; you can pan
+                        horizontally through the passage.
+                    </li>
+                </ul>
+                <div class="hiw-math" role="group" aria-label="Cadence ribbon half-width">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">ribbonHalfWidth</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">min( 28 , <span class="hiw-var">cv</span> × <span class="hiw-var">rawWPM</span> × 0.55 )</span>
+                    </div>
+                    <p class="text-center text-xs text-slate-500 mt-3 mb-0">
+                        If fewer than two inter-key intervals exist in that second, a small default band (±3) is used instead.
+                    </p>
+                </div>
+            </section>
+
+            <section id="userstats">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Userstats page cards</h2>
+                <p class="mb-3">
+                    The Profile / Stats page
+                    <a class="hiw-link" href="/userstats" data-spa-link>/userstats</a>
+                    is a history dashboard. Almost everything there is derived from your saved
+                    <code class="text-slate-200">typing_sessions</code> rows, plus compact
+                    diagnostics attached to recent tests, progression state, and optional
+                    leaderboard rank lookups.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.1 Profile header &amp; progression ring</h3>
+                <p class="mb-3">
+                    Username, avatar, and visibility settings come from your profile. The level
+                    ring, title, XP into level, streak, and percent-to-next come from the
+                    progression API (see Section 8). The ring’s arc is a visual of
+                    <span class="hiw-var">percentToNext</span>.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.2 Timed bests &amp; word bests</h3>
+                <p class="mb-3">
+                    Standard presets get dedicated personal-best cards:
+                    timed <strong class="text-slate-200">15 / 30 / 60 / 120</strong> seconds and
+                    words <strong class="text-slate-200">10 / 25 / 50 / 100</strong>.
+                    For each mode+amount, usertypo_ scans non-failed sessions and keeps the row with
+                    the highest WPM (accuracy is taken from that same best row). Custom amounts you
+                    invent in the footer picker do not get a dedicated best card here—even though
+                    those sessions still appear in history and totals.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.3 Summary totals</h3>
+                <p class="mb-3">
+                    Tests counted, total time typed, and words typed summarize your whole history—
+                    not just standard presets:
+                </p>
+                <div class="hiw-math" role="group" aria-label="Summary total formulas">
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">totalSeconds</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">Σ <span class="hiw-var">durationSeconds</span></span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">totalWords</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">Σ round( <span class="hiw-var">correctChars</span> ÷ 5 )</span>
+                    </div>
+                </div>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.4 Performance over time</h3>
+                <p class="mb-3">
+                    A Chart.js timeline plots filtered sessions as Speed (WPM), Accuracy, rolling
+                    averages (avg of 10 / avg of 100 newest-first), personal-best step markers, and
+                    a least-squares estimate of speed change per hour. Filters let you focus on a
+                    mode family so the trend is not polluted by mixing 10-word sprints with 120s
+                    endurance runs.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.5 Error diagnostics &amp; hardware hotspots</h3>
+                <p class="mb-3">
+                    For recent tests, usertypo_ stores a compact diagnostics summary (capped roughly
+                    to your last ~50 diagnostic rows). Aggregates power:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-3">
+                    <li>Error anatomy donut (mistype / reversal / overshoot / missed / extra shares)</li>
+                    <li>Top troublesome bigrams and words</li>
+                    <li>Key confusion pairs (expected vs typed)</li>
+                    <li>Hardware hotspot heatmap on a keymap, plus top characters by error count</li>
+                    <li>Hand biometrics estimates from finger timing when available</li>
+                </ul>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.6 Activity tracker &amp; score distribution</h3>
+                <p class="mb-3">
+                    The activity heatmap buckets completed (non-failed) tests by UTC day—similar in
+                    spirit to contribution calendars. Score distribution bins every completed WPM
+                    into 5-WPM ranges from 0 upward:
+                </p>
+                <div class="hiw-math" role="group" aria-label="Score distribution ceiling">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">upperBound</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">ceil( <span class="hiw-var">maxWpm</span> ÷ 5 ) × 5</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    Each bin then reports its count; the card also shows average, min, and max WPM
+                    across the filtered completed tests.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">7.7 Test history table</h3>
+                <p class="mb-3">
+                    A paginated table lists individual sessions with mode, WPM, raw, accuracy,
+                    consistency, errors, duration, language flags, and whether the row was a
+                    personal best or a failed threshold attempt. Failed rows remain visible for
+                    honesty, but they do not update bests, XP, or leaderboards.
+                </p>
+            </section>
+
+            <section id="xp-levels">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. XP, levels &amp; titles</h2>
+                <p class="mb-3">
+                    Experience points are awarded server-side when a non-failed session with
+                    positive WPM is inserted. The client may show an estimate for guests, but the
+                    database function is the source of truth for signed-in accounts.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">8.1 Level curve</h3>
+                <div class="hiw-math" role="group" aria-label="Level XP formulas">
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">xpNeeded(L)</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">floor( 100 × <span class="hiw-var">L</span><sup>1.45</sup> )</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">percentToNext</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">round( ( <span class="hiw-var">xpIntoLevel</span> ÷ <span class="hiw-var">xpToNext</span> ) × 1000 ) ÷ 10</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    Titles currently map roughly as: Novice (&lt;10), Typist (≥10), Fluent (≥25),
+                    Sharp (≥50), Elite (≥75), Legend (≥100). The title is cosmetic; the level
+                    number and XP math are what progression uses. Level needs are at least 1 XP.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">8.2 XP award formula</h3>
+                <p class="mb-3">Failed or zero-WPM sessions award nothing. Otherwise:</p>
+                <div class="hiw-math" role="group" aria-label="XP award formulas">
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">base</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">min( 80 , max( 1 , floor( 1200 ÷ <span class="hiw-var">durationSeconds</span> ) ) )</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">accMult</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">clamp( <span class="hiw-var">accuracy</span> ÷ 100 , 0 , 1 )</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">modMult</span>
+                        <span class="hiw-op">=</span>
+                        <span>1.15 if punctuation or numbers is on, else 1.0</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">streakMult</span>
+                        <span class="hiw-op">=</span>
+                        <span>2.0 (≥14d) / 1.3 (≥7d) / 1.15 (≥3d) / 1.0</span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">pbBonus</span>
+                        <span class="hiw-op">=</span>
+                        <span>50 if personal best, else 0</span>
+                    </div>
+                    <span class="hiw-where">then</span>
+                    <div class="hiw-eq">
+                        <span class="hiw-lhs">rawXp</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">max( 1 , floor( <span class="hiw-var">base</span> × <span class="hiw-var">accMult</span> × <span class="hiw-var">wpmMult</span> × <span class="hiw-var">modMult</span> × <span class="hiw-var">streakMult</span> ) ) + <span class="hiw-var">pbBonus</span></span>
+                    </div>
+                    <div class="hiw-eq hiw-eq-sub">
+                        <span class="hiw-lhs">awarded</span>
+                        <span class="hiw-op">=</span>
+                        <span class="hiw-fn">softCap( <span class="hiw-var">dailyXpSoFar</span> , <span class="hiw-var">rawXp</span> )</span>
+                    </div>
+                </div>
+                <p class="mb-3">
+                    <span class="hiw-var">wpmMult</span> starts simple when you have few samples
+                    (1.25 if WPM ≥ 80, 1.1 if ≥ 50, else 1.0). Later it compares against your recent
+                    average (1.25 if ≥ 1.15× avg, 1.1 if ≥ 1.05×, else 1.0). Consistency is not used
+                    in the XP product. After 400 XP in a UTC day, further gains are soft-capped at
+                    ×0.25 (at least 1 XP).
+                </p>
+            </section>
+
+            <section id="leaderboards">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. Leaderboard rankings</h2>
+                <p class="mb-3">
+                    Leaderboards cover the same standard presets as best cards (timed 15/30/60/120
+                    and words 10/25/50/100), across daily, weekly, and all-time windows. Scores are
+                    ingested through a secure server path—never by writing Redis keys directly from
+                    the browser.
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-3">
+                    <li>Opt out anytime with <strong class="text-slate-200">Show on leaderboard</strong> in settings.</li>
+                    <li>Hard safety cap: WPM above 500 is rejected.</li>
+                    <li>Daily / weekly boards accept any valid non-failed score for a supported preset.</li>
+                    <li>
+                        All-time boards require
+                        <strong class="text-slate-200">≥ 50 completed tests</strong>
+                        overall and a qualifying score of
+                        <strong class="text-slate-200">WPM ≥ 30</strong>.
+                        Until you reach 50 tests, you will not appear on all-time rankings
+                        (and existing all-time entries are cleared for that account).
+                    </li>
+                    <li>
+                        Rank ordering prefers higher WPM, then higher accuracy, then earlier
+                        timestamp for ties.
+                    </li>
+                </ul>
+                <div class="hiw-callout">
+                    Personal bests, XP, and leaderboards are related but not identical. A PB updates
+                    your Profile cards immediately. Leaderboard eligibility can still block an
+                    otherwise strong score if privacy, WPM caps, or all-time sample-size rules apply.
+                </div>
+            </section>
+
+            <section id="glossary">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. Glossary</h2>
+                <div class="hiw-table-wrap">
+                    <table class="hiw-table">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>Meaning on usertypo_</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Word (for WPM)</td>
+                                <td>Five characters of typed text, including spaces and punctuation.</td>
+                            </tr>
+                            <tr>
+                                <td>Net WPM</td>
+                                <td>Speed from valid/correct characters only.</td>
+                            </tr>
+                            <tr>
+                                <td>Raw WPM</td>
+                                <td>Speed from all typed characters, including mistakes.</td>
+                            </tr>
+                            <tr>
+                                <td>Accuracy</td>
+                                <td>Share of keystrokes that were correct.</td>
+                            </tr>
+                            <tr>
+                                <td>Consistency</td>
+                                <td>0–100 smoothness score from speed variance (kogasa map).</td>
+                            </tr>
+                            <tr>
+                                <td>Personal best (PB)</td>
+                                <td>Highest non-failed WPM for a mode+amount; flagged in the database.</td>
+                            </tr>
+                            <tr>
+                                <td>Standard preset</td>
+                                <td>Timed 15/30/60/120 or words 10/25/50/100.</td>
+                            </tr>
+                            <tr>
+                                <td>Failed test</td>
+                                <td>Run that hit a fail threshold; saved for history but excluded from bests/XP/boards.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mt-4">
+                    Want the short version? See the scoring overview on the
+                    <a class="hiw-link" href="/about#scoring" data-spa-link>About</a> page.
+                    Questions about fairness or edge cases:
+                    <a class="hiw-link" href="mailto:contactusertypo@gmail.com">contactusertypo@gmail.com</a>.
+                </p>
+            </section>
+
+        </article>
+    </div>
+</main>
+
+<script>
+const __pageAbort = new AbortController();
+const __pageSignal = __pageAbort.signal;
+
+window.__spaPageInit = function () {
+    window.scrollTo(0, 0);
+
+    document.querySelectorAll('[data-hiw-toc]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var href = link.getAttribute('href') || '';
+            var id = href.charAt(0) === '#' ? href.slice(1) : '';
+            var target = id ? document.getElementById(id) : null;
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (history.replaceState) {
+                history.replaceState({ spa: true, path: '/how-it-works', search: '' }, '', '/how-it-works#' + id);
+            }
+        }, { signal: __pageSignal });
+    });
+
+    const pageTrack = document.getElementById('page-scroll-track');
+    const pageThumb = document.getElementById('page-scroll-thumb');
+    if (!pageTrack || !pageThumb) return;
+
+    pageTrack.style.display = 'block';
+    pageTrack.style.visibility = '';
+
+    let isDragging = false;
+    let startY;
+    let startScrollTop;
+    var bodyEl = document.getElementById('app-body') || document.body;
+
+    function getScrollMetrics() {
+        var winH = window.innerHeight;
+        var docH = Math.max(
+            bodyEl.scrollHeight || 0,
+            document.documentElement.scrollHeight || 0,
+            document.documentElement.offsetHeight || 0
+        );
+        var scrollTop = Math.max(
+            window.scrollY || 0,
+            bodyEl.scrollTop || 0,
+            document.documentElement.scrollTop || 0
+        );
+        return {
+            docH: docH,
+            winH: winH,
+            scrollTop: scrollTop,
+            scrollable: Math.max(0, docH - winH),
+        };
+    }
+
+    function scrollToY(y) {
+        var top = Math.max(0, y);
+        window.scrollTo(0, top);
+        bodyEl.scrollTop = top;
+        document.documentElement.scrollTop = top;
+    }
+
+    function updatePageScrollbar() {
+        var m = getScrollMetrics();
+        if (m.scrollable <= 0) {
+            pageTrack.style.visibility = 'hidden';
+            return;
+        }
+        pageTrack.style.visibility = 'visible';
+        pageTrack.style.display = 'block';
+        var pct = Math.min(1, Math.max(0, m.scrollTop / m.scrollable));
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = Math.max(trackH * (m.winH / m.docH), 40);
+        pageThumb.style.height = thumbH + 'px';
+        pageThumb.style.top = (pct * (trackH - thumbH)) + 'px';
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (isDragging || window.innerWidth - e.clientX < 40) {
+            pageTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        } else {
+            pageTrack.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
+            pageTrack.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
+        }
+    }, { signal: __pageSignal });
+
+    window.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    bodyEl.addEventListener('scroll', updatePageScrollbar, { signal: __pageSignal, passive: true });
+    window.addEventListener('resize', updatePageScrollbar, { signal: __pageSignal });
+
+    pageThumb.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startScrollTop = getScrollMetrics().scrollTop;
+        document.body.style.userSelect = 'none';
+        pageThumb.classList.add('bg-primary');
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!isDragging) return;
+        var m = getScrollMetrics();
+        var trackH = pageTrack.clientHeight || (window.innerHeight - 16);
+        var thumbH = pageThumb.clientHeight || 40;
+        var maxThumbTop = Math.max(1, trackH - thumbH);
+        var deltaY = e.clientY - startY;
+        scrollToY(startScrollTop + (deltaY / maxThumbTop) * m.scrollable);
+        updatePageScrollbar();
+    }, { signal: __pageSignal });
+
+    document.addEventListener('mouseup', function () {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        pageThumb.classList.remove('bg-primary');
+    }, { signal: __pageSignal });
+
+    var mainEl = document.querySelector('.hiw-page');
+    if (mainEl && typeof ResizeObserver === 'function') {
+        var ro = new ResizeObserver(function () { updatePageScrollbar(); });
+        ro.observe(mainEl);
+        __pageAbort.signal.addEventListener('abort', function () { ro.disconnect(); }, { once: true });
+    }
+
+    requestAnimationFrame(function () {
+        updatePageScrollbar();
+        setTimeout(updatePageScrollbar, 100);
+        setTimeout(updatePageScrollbar, 400);
+    });
+};
+
+var __prevSpaCleanup = window.__spaPageCleanup;
+window.__spaPageCleanup = function () {
+    __pageAbort.abort();
+    document.body.style.userSelect = '';
+    if (typeof __prevSpaCleanup === 'function') __prevSpaCleanup();
+};
+</script>
