@@ -184,6 +184,78 @@
                 grid-template-columns: 1fr;
             }
         }
+        .about-math {
+            margin: 0.85rem 0 1.1rem;
+            padding: 1rem 1.15rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.9rem;
+            background: rgba(255, 255, 255, 0.03);
+            overflow-x: auto;
+        }
+        .about-eq {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem 0.75rem;
+            color: #e2e8f0;
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: clamp(0.9rem, 2vw, 1.05rem);
+            font-weight: 500;
+            line-height: 1.2;
+            text-align: center;
+        }
+        .about-eq + .about-eq {
+            margin-top: 0.85rem;
+        }
+        .about-eq-sub {
+            font-size: clamp(0.78rem, 1.7vw, 0.92rem);
+            color: #cbd5e1;
+        }
+        .about-lhs {
+            color: var(--theme-primary);
+            font-weight: 650;
+            white-space: nowrap;
+        }
+        .about-op {
+            color: #94a3b8;
+        }
+        .about-where {
+            display: block;
+            margin: 0.8rem 0 0.45rem;
+            text-align: center;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .about-frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+        }
+        .about-num,
+        .about-den {
+            padding: 0.12rem 0.4rem;
+            white-space: nowrap;
+        }
+        .about-num {
+            border-bottom: 1.5px solid rgba(226, 232, 240, 0.55);
+            margin-bottom: 0.12rem;
+            padding-bottom: 0.3rem;
+        }
+        .about-den {
+            padding-top: 0.25rem;
+        }
+        .about-fn {
+            white-space: nowrap;
+        }
+        .about-var {
+            font-style: italic;
+            color: #f1f5f9;
+        }
 </style>
 
 <main class="about-page flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-0 pb-4 relative z-10 min-w-0">
@@ -293,6 +365,7 @@
                 <li><a href="#mission" data-about-toc>Mission &amp; Values</a></li>
                 <li><a href="#what-we-build" data-about-toc>What We Build</a></li>
                 <li><a href="#design" data-about-toc>Design Philosophy</a></li>
+                <li><a href="#scoring" data-about-toc>How Scoring Works</a></li>
                 <li><a href="#timeline" data-about-toc>Launch &amp; Timeline</a></li>
                 <li><a href="#open-source" data-about-toc>Open Source</a></li>
                 <li><a href="#community" data-about-toc>Community</a></li>
@@ -401,8 +474,93 @@
                 </p>
             </section>
 
+            <section id="scoring">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. How Scoring Works</h2>
+                <p class="mb-3">
+                    After every test, usertypo_ summarizes your run with four headline numbers.
+                    Here is the short version of what each one means—and the formulas behind them.
+                </p>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-5 mb-2">WPM (net speed)</h3>
+                <p class="mb-3">
+                    Correct characters only, divided into five-character “words,” then divided by
+                    minutes typed. Mistakes on a finished word can remove that whole word from the
+                    net count, so clean typing is rewarded. Elapsed time is floored at two seconds
+                    so very short samples do not explode.
+                </p>
+                <div class="about-math" role="group" aria-label="WPM formula">
+                    <div class="about-eq">
+                        <span class="about-lhs">WPM</span>
+                        <span class="about-op">=</span>
+                        <span class="about-frac">
+                            <span class="about-num">( <span class="about-var">validChars</span> ÷ 5 )</span>
+                            <span class="about-den"><span class="about-var">elapsedMinutes</span></span>
+                        </span>
+                    </div>
+                    <span class="about-where">where</span>
+                    <div class="about-eq about-eq-sub">
+                        <span class="about-lhs">elapsedMinutes</span>
+                        <span class="about-op">=</span>
+                        <span class="about-fn">max( <span class="about-var">elapsedMs</span> ÷ 60000 , 2 ÷ 60 )</span>
+                    </div>
+                </div>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-5 mb-2">Accuracy</h3>
+                <p class="mb-3">
+                    A keystroke ratio—not a “words that look correct” ratio. Fixing typos still costs
+                    keystrokes, so accuracy reflects control over the keyboard stream.
+                </p>
+                <div class="about-math" role="group" aria-label="Accuracy formula">
+                    <div class="about-eq">
+                        <span class="about-lhs">accuracy%</span>
+                        <span class="about-op">=</span>
+                        <span class="about-fn">max( 0 ,</span>
+                        <span class="about-frac">
+                            <span class="about-num"><span class="about-var">totalKeystrokes</span> − <span class="about-var">errorsMade</span></span>
+                            <span class="about-den"><span class="about-var">totalKeystrokes</span></span>
+                        </span>
+                        <span class="about-fn">× 100 )</span>
+                    </div>
+                </div>
+
+                <h3 class="text-base font-semibold text-slate-200 mt-5 mb-2">Consistency</h3>
+                <p class="mb-3">
+                    How steady your per-second raw speed was. Bursty surges and stalls lower the
+                    score; a smooth pace raises it. The mapping is a kogasa-style transform of the
+                    coefficient of variation into a 0–100 value.
+                </p>
+                <div class="about-math" role="group" aria-label="Consistency formulas">
+                    <div class="about-eq about-eq-sub">
+                        <span class="about-lhs">cov</span>
+                        <span class="about-op">=</span>
+                        <span class="about-frac">
+                            <span class="about-num"><span class="about-var">stdDev</span>( raw WPM / sec )</span>
+                            <span class="about-den"><span class="about-var">mean</span>( raw WPM / sec )</span>
+                        </span>
+                    </div>
+                    <div class="about-eq">
+                        <span class="about-lhs">consistency</span>
+                        <span class="about-op">=</span>
+                        <span class="about-fn">clamp( round( 100 × ( 1 − tanh( <span class="about-var">cov</span> + <span class="about-var">cov</span>³÷3 + <span class="about-var">cov</span>⁵÷5 ) ) ) , 0 , 100 )</span>
+                    </div>
+                </div>
+
+                <p class="mb-4">
+                    Raw WPM (all typed characters, including mistakes), home-page basic/advanced
+                    graphs, Profile cards, XP levels, and leaderboard ranks build on these same
+                    foundations with more rules and edge cases.
+                </p>
+                <p>
+                    <a class="about-link inline-flex items-center gap-1.5 font-semibold" href="/how-it-works" data-spa-link>
+                        See the full technical breakdown
+                        <span class="material-symbols-outlined text-[1rem] leading-none" aria-hidden="true">arrow_forward</span>
+                    </a>
+                    <span class="text-slate-500"> — formulas, graphs, Profile cards, XP, and rankings in detail.</span>
+                </p>
+            </section>
+
             <section id="timeline">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">6. Launch &amp; Timeline</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Launch &amp; Timeline</h2>
                 <ul class="list-disc pl-5 space-y-2">
                     <li>
                         <strong class="text-slate-200 font-semibold">Early 2026 —</strong>
@@ -426,7 +584,7 @@
             </section>
 
             <section id="open-source">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">7. Open Source</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. Open Source</h2>
                 <p class="mb-3">
                     usertypo_ is open source under the
                     <a class="about-link" href="https://github.com/usertypo/usertypo/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GNU Affero General Public License v3.0 (AGPLv3)</a>.
@@ -454,7 +612,7 @@
             </section>
 
             <section id="community">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">8. Community</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. Community</h2>
                 <p class="mb-3">
                     usertypo_ grows with the people who use it. Race your friends, share feedback, report
                     bugs, and help others get faster. If you build something cool on top of the open-source
@@ -468,7 +626,7 @@
             </section>
 
             <section id="team">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">9. The Team</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. The Team</h2>
                 <p class="mb-3">
                     usertypo_ is built and operated by
                     <strong class="text-slate-200 font-semibold">usertypo_</strong>,
@@ -482,7 +640,7 @@
             </section>
 
             <section id="legal">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">10. Legal &amp; Privacy</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">11. Legal &amp; Privacy</h2>
                 <p class="mb-3">
                     Using usertypo_ means you agree to our
                     <a class="about-link" href="/terms" data-spa-link>Terms and Conditions</a>
@@ -497,7 +655,7 @@
             </section>
 
             <section id="contact">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">11. Contact Us</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-100 mb-4">12. Contact Us</h2>
                 <p class="mb-3">
                     We would love to hear from you:
                 </p>

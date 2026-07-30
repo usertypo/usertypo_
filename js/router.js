@@ -121,6 +121,14 @@
             navId: null,
             compact: false,
         },
+        '/how-it-works': {
+            page: 'pages/how-it-works.html',
+            title: 'How Scoring Works | usertypo_',
+            description: 'Technical details for WPM, accuracy, consistency, result graphs, Profile stats, XP levels, and leaderboard rankings on usertypo_.',
+            robots: 'index, follow',
+            navId: null,
+            compact: false,
+        },
         '/security': {
             page: 'pages/security.html',
             title: 'Security Policy | usertypo_',
@@ -143,6 +151,7 @@
         'privacy.html': '/privacy',
         'terms.html': '/terms',
         'about.html': '/about',
+        'how-it-works.html': '/how-it-works',
         'security.html': '/security',
     };
 
@@ -429,6 +438,7 @@
 
     var BACK_TO_TOP_ROUTES = {
         '/about': true,
+        '/how-it-works': true,
         '/terms': true,
         '/privacy': true,
         '/security': true,
