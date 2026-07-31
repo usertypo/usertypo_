@@ -1,0 +1,8 @@
+/* Subset Material Symbols (~29KB). Icon list from scripts/collect-icons.js. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/css/fonts/material-symbols.ttf') format('truetype');
+}

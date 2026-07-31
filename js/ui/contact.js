@@ -341,8 +341,7 @@
         });
 
         document.addEventListener('keydown', onDocumentKeydown, true);
-
-        resizeDescription();
+        // Do not measure textarea until the modal opens (avoids forced reflow on every page load).
     }
 
     function init() {

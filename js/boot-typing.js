@@ -141,8 +141,12 @@
         if (instant) {
             caret.style.transition = 'none';
             caret.style.transform = 'translate3d(' + left + 'px, 0, 0)';
-            void caret.offsetWidth;
-            caret.style.transition = 'transform ' + MOVE_MS + 'ms cubic-bezier(0.2, 0, 0.2, 1)';
+            // Avoid forced reflow (void offsetWidth); double-rAF restores transition after paint
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    caret.style.transition = 'transform ' + MOVE_MS + 'ms cubic-bezier(0.2, 0, 0.2, 1)';
+                });
+            });
         } else {
             caret.style.transition = 'transform ' + MOVE_MS + 'ms cubic-bezier(0.2, 0, 0.2, 1)';
             caret.style.transform = 'translate3d(' + left + 'px, 0, 0)';
