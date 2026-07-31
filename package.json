@@ -14,7 +14,9 @@
     "test": "node --test \"test/*.test.js\"",
     "build:pages": "node scripts/build-page-fragments.js",
     "build:cloudflare": "node scripts/build-cloudflare.js",
-    "serve": "npx --yes serve . --single --listen 3000"
+    "serve": "npx --yes serve . --single --listen 3000",
+    "build:css": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify",
+    "build": "npm run build:css && npm run build:pages"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -25,5 +27,10 @@
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "tailwindcss": "^3.4.17"
   }
 }

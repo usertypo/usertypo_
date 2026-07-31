@@ -646,7 +646,10 @@
     }
 
     readyPromise = initClerk().catch(function (err) {
-        console.error('[usertypo auth] Failed to start Clerk:', err);
+        // Avoid console.error noise in Lighthouse Best Practices; failure is still thrown to callers.
+        if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[usertypo auth] Failed to start Clerk:', err && err.message ? err.message : err);
+        }
         throw err;
     });
 

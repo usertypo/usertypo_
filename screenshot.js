@@ -131,8 +131,40 @@
         cloned.appendChild(img);
     }
 
+    let modernScreenshotPromise = null;
+
     function getRenderer() {
         return global.modernScreenshot || null;
+    }
+
+    function ensureModernScreenshot() {
+        if (getRenderer()?.domToCanvas) return Promise.resolve(getRenderer());
+        if (modernScreenshotPromise) return modernScreenshotPromise;
+        modernScreenshotPromise = new Promise(function (resolve, reject) {
+            var existing = document.querySelector('script[data-usertypo-modern-screenshot]');
+            if (existing) {
+                existing.addEventListener('load', function () {
+                    getRenderer()?.domToCanvas ? resolve(getRenderer()) : reject(new Error('modern-screenshot failed to load'));
+                });
+                existing.addEventListener('error', function () {
+                    reject(new Error('modern-screenshot failed to load'));
+                });
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/modern-screenshot@4.6.8/dist/index.js';
+            script.async = true;
+            script.dataset.usertypoModernScreenshot = '1';
+            script.onload = function () {
+                getRenderer()?.domToCanvas ? resolve(getRenderer()) : reject(new Error('modern-screenshot failed to load'));
+            };
+            script.onerror = function () {
+                modernScreenshotPromise = null;
+                reject(new Error('modern-screenshot failed to load'));
+            };
+            document.head.appendChild(script);
+        });
+        return modernScreenshotPromise;
     }
 
     function getThemeBackgroundColor() {
@@ -334,9 +366,15 @@
             afterCapture,
         } = options;
 
-        const ms = getRenderer();
         if (!captureArea) {
             console.error('Screenshot failed: capture area not found');
+            return false;
+        }
+        let ms;
+        try {
+            ms = await ensureModernScreenshot();
+        } catch (err) {
+            console.error('Screenshot failed: modern-screenshot not loaded', err);
             return false;
         }
         if (!ms?.domToCanvas) {

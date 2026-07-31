@@ -30,23 +30,76 @@
         content="Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer." />
     <meta name="twitter:image" content="https://usertypo.com/og-image.png" />
 
-    <!-- Google AdSense (site verification + future ad units) -->
+    <!-- Google AdSense account meta only — script loads after idle to avoid blocking first paint -->
     <meta name="google-adsense-account" content="ca-pub-4215657077722335">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4215657077722335"
-        crossorigin="anonymous"></script>
+    <script>
+    (function loadAdSenseWhenIdle() {
+        function inject() {
+            if (document.querySelector('script[data-usertypo-adsense]')) return;
+            var s = document.createElement('script');
+            s.async = true;
+            s.dataset.usertypoAdsense = '1';
+            s.crossOrigin = 'anonymous';
+            s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4215657077722335';
+            document.head.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(inject, { timeout: 4000 });
+        } else {
+            setTimeout(inject, 2500);
+        }
+    })();
+    </script>
 
     <base href="/" />
     <script>window.__usertypoBootPath = window.location.pathname;</script>
-    <!-- Blocking: Abyss/Paper by OS before CSS paints (prevents usertypo_ blue FOUC) -->
-    <script src="js/boot-theme.js?v=5"></script>
+    <!-- Inline boot theme: Abyss/Paper by OS before CSS paints (no extra network hop) -->
+    <script>
+    (function () {
+        var ABYSS = { bgMain: '#000000', bgSecondary: '#444444', textPrimary: '#cccccc', textMuted: '#777777', accentPrimary: '#ffffff', accentHover: '#dddddd', error: '#ff4444' };
+        var PAPER = { bgMain: '#ffffff', bgSecondary: '#b3b3b3', textPrimary: '#333333', textMuted: '#888888', accentPrimary: '#000000', accentHover: '#333333', error: '#cc0000' };
+        function preferredDefault() {
+            try {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'Paper';
+            } catch (e) { /* ignore */ }
+            return 'Abyss';
+        }
+        function hexToRgb(hex) {
+            var h = String(hex || '').replace('#', '');
+            if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+            if (h.length !== 6) return '0, 0, 0';
+            return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0].join(', ');
+        }
+        var name = preferredDefault();
+        var p = name === 'Paper' ? PAPER : ABYSS;
+        var isLight = name === 'Paper';
+        var accentRGB = hexToRgb(p.accentPrimary);
+        var bgSecRGB = hexToRgb(p.bgSecondary);
+        var errorRGB = hexToRgb(p.error);
+        var bgMainRGB = hexToRgb(p.bgMain);
+        var onPrimary = isLight ? '#ffffff' : '#000000';
+        var fgStrong = isLight ? '#333333' : '#ffffff';
+        var ringTrack = isLight ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.12)';
+        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}';
+        var style = document.createElement('style');
+        style.id = 'usertypo-boot-theme';
+        style.textContent = css;
+        document.documentElement.appendChild(style);
+        document.documentElement.style.backgroundColor = p.bgMain;
+        document.documentElement.setAttribute('data-theme-boot', name);
+        window.__usertypoBootPalette = { name: name, bgMain: p.bgMain, accentPrimary: p.accentPrimary, isLight: isLight };
+    })();
+    </script>
     <!-- Theme-aware tab icon (optional — missing file must not reload the app) -->
     <link id="usertypo-favicon" rel="icon" type="image/png" href="/logo-assets/favicon-o.png" />
-    <script src="js/favicon.js?v=6"></script>
+    <script src="js/favicon.js?v=7" defer></script>
     <link rel="apple-touch-icon" href="/logo-assets/favicon-o.png" />
-    <link rel="preload" href="/logo-assets/typ_.png" as="image" />
-    <link rel="preload" href="/logo-assets/user.png" as="image" />
-    <link rel="preload" href="/logo-assets/o.png" as="image" />
-    <link rel="preload" href="/js/boot-typing.js?v=5" as="script" />
+    <link rel="preload" href="/logo-assets/typ_.png" as="image" fetchpriority="high" />
+    <link rel="preload" href="/logo-assets/user.png" as="image" fetchpriority="high" />
+    <link rel="preload" href="/logo-assets/o.png" as="image" fetchpriority="high" />
+    <link rel="preload" href="/js/boot-typing.js?v=6" as="script" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <script type="application/ld+json" id="json-ld-website">
     {
@@ -119,8 +172,7 @@
                 // Optional chrome — never reload the whole app for these
                 if (/favicon/i.test(url.pathname) || /\/logo-assets\/favicon/i.test(url.pathname)) return;
                 const isLocal = url.origin === location.origin;
-                const isCriticalCdn = target.tagName === 'SCRIPT' && url.hostname === 'cdn.tailwindcss.com';
-                if ((!isLocal && !isCriticalCdn) || reloadScheduled) return;
+                if (!isLocal || reloadScheduled) return;
 
                 const attempts = Number(sessionStorage.getItem(retryKey) || 0);
                 if (attempts >= 2) return;
@@ -131,96 +183,17 @@
         })();
     </script>
 
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap"
+    <!-- Critical fonts only; optional typing fonts load on demand via js/fonts.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0..1,-50..200&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Cutive&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Cutive+Mono&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=SUSE:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Xanh+Mono&display=swap" rel="stylesheet" />
-    <script src="https://unpkg.com/modern-screenshot@4.6.8/dist/index.js"></script>
-    <link href="css/test-activity.css?v=5" rel="stylesheet" />
-    <link href="css/global.css?v=14" rel="stylesheet" />
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'on-primary': '#000000',
-                        'on-surface-variant': '#aaabb0',
-                        'on-surface': '#f3f3f9',
-                        'surface-container-highest': '#23262c',
-                        'surface-container-low': '#111318',
-                        'surface-container': '#171a1e',
-                        'tertiary-container': '#ff3333',
-                        tertiary: '#ff7166',
-                        /* Solid hex only — CSS vars break Tailwind opacity modifiers (@apply bg-surface/40, bg-primary/20, …) */
-                        primary: '#ffffff',
-                        'primary-dark': '#cccccc',
-                        'primary-light': '#dddddd',
-                        background: '#000000',
-                        'background-dark': '#000000',
-                        surface: '#1a1d23',
-                        'surface-light': '#252932',
-                        error: '#ff4444',
-                    },
-                    fontFamily: {
-                        display: ['Space Grotesk'],
-                        body: ['Inter'],
-                        mono: ['"Roboto Mono"', 'monospace'],
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    keyframes: {
-                        blink: {
-                            '0%, 100%': { opacity: '1' },
-                            '50%': { opacity: '0' },
-                        },
-                        breath: {
-                            '0%, 100%': { opacity: '1', textShadow: '0 0 10px rgba(255,255,255,0.45)' },
-                            '50%': { opacity: '0.2', textShadow: '0 0 2px rgba(255,255,255,0.1)' },
-                        },
-                        boxFadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        'fade-in-up': {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        'fade-in': {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        }
-                    },
-                    animation: {
-                        blink: 'blink 1s step-end infinite',
-                        breath: 'breath 2s ease-in-out infinite',
-                        boxFadeIn: 'boxFadeIn 0.5s ease-out forwards',
-                        'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'fade-in': 'fade-in 1s ease-out forwards',
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="css/tailwind.css?v=1" rel="stylesheet" />
+    <link href="css/global.css?v=18" rel="stylesheet" />
+    <link href="css/test-activity.css?v=6" rel="stylesheet" />
     <style id="shell-surface-fix">
         #spa-content { background-color: var(--theme-bg) !important; }
         #spa-page-root, #spa-shell-footer { background-color: transparent !important; }
     </style>
-    <style type="text/tailwindcss">
+    <style>
 
         /* Custom Scrollbar for inner elements like the leaderboard */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; display: block !important; }
@@ -309,15 +282,10 @@
         }
 
         .glass-panel {
-            @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            /* Styles live in css/tailwind.css (@layer components) */
         }
         .glass-card {
-            @apply bg-surface/20 backdrop-blur-sm border border-white/5;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            /* Styles live in css/tailwind.css (@layer components) */
         }
         
         .menu-btn { 
@@ -838,6 +806,10 @@
             cursor: pointer;
             color: #cbd5e1;
             transition: color 0.2s ease, background-color 0.2s ease;
+            background: transparent;
+            border: none;
+            font: inherit;
+            text-align: inherit;
         }
         .bubble-nav-link:hover {
             color: #ffffff;
@@ -1059,14 +1031,14 @@
                                 <span class="material-symbols-outlined nav-icon text-[1.066rem]">emoji_events</span>
                                 <span class="font-bold text-sm tracking-wide">Leaderboards</span>
                             </a>
-                            <a href="javascript:void(0)" onclick="openNotifications()"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
+                            <button type="button" onclick="openNotifications()"
+                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left">
                                 <div class="relative flex items-center justify-center">
-                                    <span class="material-symbols-outlined nav-icon text-[1.066rem]">notifications</span>
+                                    <span class="material-symbols-outlined nav-icon text-[1.066rem]" aria-hidden="true">notifications</span>
                                     <span id="notifications-bell-dot" class="hidden absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] border border-surface"></span>
                                 </div>
                                 <span class="font-bold text-sm tracking-wide">Notifications</span>
-                            </a>
+                            </button>
 
                             <div class="h-px bg-white/10 w-full my-1 mx-auto" style="width: calc(100% - 2rem);"></div>
 
@@ -1112,7 +1084,7 @@
         </div>
 
         <div class="flex items-center justify-center w-1/3">
-            <a href="/" data-spa-link class="header-logo-link" id="header-logo-link">
+            <a href="/" data-spa-link class="header-logo-link" id="header-logo-link" aria-label="usertypo_ home">
                 <div class="header-logo-container logo-assets-ready">
                     <div class="header-logo-layer header-typ-wrapper">
                         <div class="header-logo-layer header-dynamic-layer header-typ-layer"></div>
@@ -1120,7 +1092,7 @@
                     <div class="header-logo-layer header-user-wrapper">
                         <div class="header-logo-layer header-dynamic-layer header-user-layer"></div>
                     </div>
-                    <img src="logo-assets/o.png" class="header-logo-layer header-static-layer">
+                    <img src="logo-assets/o.png" class="header-logo-layer header-static-layer" alt="usertypo_" width="426" height="426" decoding="async" fetchpriority="high">
                 </div>
             </a>
         </div>
@@ -1155,7 +1127,7 @@
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
-            <div class="footer-nav-links text-[0.48rem] text-slate-600 font-mono footer-nav-weight" aria-label="Footer links">
+            <div class="footer-nav-links text-[0.48rem] text-slate-500 font-mono footer-nav-weight" aria-label="Footer links">
                 <span class="footer-socials" aria-label="Social links">
                     <button type="button" class="footer-social-btn" aria-label="X" title="X">
                         <svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -1205,7 +1177,7 @@
             </div>
         </div>
     </div>
-    <script src="js/boot-typing.js?v=5"></script>
+    <script src="js/boot-typing.js?v=6"></script>
 
     <!-- Global modals (shared across all routes) -->
     <div id="notifications-modal" class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
@@ -1552,18 +1524,19 @@
     </div>
 
     <script src="languages.js?v=8"></script>
+    <script src="js/fonts.js?v=1"></script>
     <script src="js/keymap-layouts.js?v=3"></script>
     <script src="audio.js"></script>
-    <script src="screenshot.js"></script>
+    <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=32"></script>
+    <script src="settings.js?v=33"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Auth + data API (before router) -->
     <script src="js/ui/analytics.js?v=3"></script>
     <script src="js/ui/cookie-consent.js?v=4"></script>
-    <script src="js/auth/clerk.js?v=10"></script>
+    <script src="js/auth/clerk.js?v=11"></script>
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js?v=8"></script>
     <script src="js/api/sessions.js?v=10"></script>
@@ -1572,7 +1545,6 @@
     <script src="js/api/site-stats.js?v=1"></script>
     <script src="js/util/escape.js?v=1"></script>
     <script src="js/ui/player-avatar.js?v=3"></script>
-    <script src="js/ui/avatar-editor.js?v=2"></script>
     <script src="js/api/public-profile.js?v=2"></script>
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
@@ -1580,32 +1552,17 @@
     <script src="js/auth/header.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
-    <script src="js/api/performance-chart.js?v=9"></script>
     <script src="js/api/test-activity.js?v=3"></script>
     <script src="js/api/leaderboards.js?v=12"></script>
     <script src="js/api/friends.js?v=3"></script>
     <script src="js/api/presence.js"></script>
     <script src="js/api/notifications.js?v=5"></script>
-    <!-- Socket.IO client from the multiplayer host (Pages does not serve /socket.io). -->
-    <script>
-    (function loadSocketIoClient() {
-        var cfg = window.USERTYPO_CONFIG || {};
-        var base = String(
-            (cfg.multiplayer && cfg.multiplayer.url)
-            || (cfg.backend && cfg.backend.url)
-            || ''
-        ).replace(/\/+$/, '');
-        // Local `npm run dev`: same-origin Express/Socket.IO. Production: mp.usertypo.com.
-        var src = (base || '') + '/socket.io/socket.io.js';
-        document.write('<script src="' + src + '"><\/script>');
-    })();
-    </script>
-    <script src="js/api/multiplayer.js?v=25"></script>
-    <script src="js/pages/dual-race.js?v=24"></script>
-    <script src="js/pages/room-race.js?v=32"></script>
-    <script src="dual.js?v=9"></script>
-    <script src="js/page-fragments.js?v=114"></script>
-    <script src="js/router.js?v=18"></script>
+    <!-- Socket.IO is loaded on demand by js/api/multiplayer.js (ensureSocketIoClient). -->
+    <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
+    <script src="js/api/multiplayer.js?v=26"></script>
+    <script src="dual.js?v=10"></script>
+    <script src="js/page-fragments.js?v=117"></script>
+    <script src="js/router.js?v=19"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;

@@ -1,4 +1,20 @@
-/* HIDE MAIN WINDOW SCROLLBAR PERMANENTLY (Native CSS) */
+/* Material Symbols — ensure icon font renders even before stylesheet finishes */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.5rem;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
     display: none !important;
@@ -207,7 +223,6 @@ html {
     box-shadow: none !important;
     transition: none !important;
     -webkit-tap-highlight-color: transparent;
-    color: #475569 !important;
 }
 
 .footer-mute-btn:hover,
@@ -216,7 +231,30 @@ html {
 .footer-mute-btn:active {
     outline: none !important;
     box-shadow: none !important;
-    color: #475569 !important;
+}
+
+/* Remap muted Tailwind slate colors to WCAG AA on black (≥4.5:1 at small footer sizes) */
+.text-slate-600,
+.text-slate-500 {
+    color: #7c8591 !important;
+}
+
+.footer-nav-links,
+.footer-nav-links a,
+.footer-nav-links button,
+.footer-nav-links span {
+    color: #7c8591;
+}
+
+.footer-mute-btn {
+    color: #7c8591 !important;
+}
+
+.footer-mute-btn:hover,
+.footer-mute-btn:focus,
+.footer-mute-btn:focus-visible,
+.footer-mute-btn:active {
+    color: #7c8591 !important;
 }
 
 /* Footer link weight — mono fonts only ship 400/700, so 700 is the visible bump; pill stays regular */
@@ -672,7 +710,7 @@ html {
     margin: 0;
     font-size: 0.8rem;
     line-height: 1.45;
-    color: var(--theme-text-muted, #888);
+    color: #9ca3af;
 }
 .usertypo-cookie-banner__text--tight {
     margin-top: 0.5rem;

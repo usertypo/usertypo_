@@ -13,6 +13,53 @@
     const SITE_ORIGIN = 'https://usertypo.com';
     const DEFAULT_DESCRIPTION = 'Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer.';
 
+    var scriptLoadCache = Object.create(null);
+
+    function loadScriptOnce(src) {
+        if (scriptLoadCache[src]) return scriptLoadCache[src];
+        scriptLoadCache[src] = new Promise(function (resolve, reject) {
+            var existing = document.querySelector('script[data-usertypo-lazy="' + src + '"]');
+            if (existing) {
+                if (existing.dataset.loaded === '1') return resolve();
+                existing.addEventListener('load', function () { resolve(); });
+                existing.addEventListener('error', function () { reject(new Error('Failed to load ' + src)); });
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = src;
+            script.async = false;
+            script.dataset.usertypoLazy = src;
+            script.onload = function () {
+                script.dataset.loaded = '1';
+                resolve();
+            };
+            script.onerror = function () {
+                delete scriptLoadCache[src];
+                reject(new Error('Failed to load ' + src));
+            };
+            document.body.appendChild(script);
+        });
+        return scriptLoadCache[src];
+    }
+
+    function ensureRouteScripts(path) {
+        var jobs = [];
+        if (path === '/room') {
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=33'));
+        }
+        if (path === '/dual') {
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=25'));
+        }
+        if (path === '/userstats') {
+            jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
+            jobs.push(loadScriptOnce('js/ui/avatar-editor.js?v=3'));
+        }
+        if (path === '/settings') {
+            jobs.push(loadScriptOnce('js/ui/avatar-editor.js?v=3'));
+        }
+        return Promise.all(jobs);
+    }
+
     const routes = {
         '/': {
             page: 'pages/home.html',
@@ -678,6 +725,7 @@
             window.__usertypoBootAwaited = true;
 
             var html = await htmlPromise;
+            await ensureRouteScripts(path);
 
             // Post-auth welcome (new / back) — overlay stays until page ready
             var welcomePhrase = null;
