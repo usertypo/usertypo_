@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Shared component styles previously defined via Tailwind CDN
+ * `type="text/tailwindcss"` + @apply. Kept here so runtime CDN is unnecessary.
+ */
+@layer components {
+  .glass-panel {
+    @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
+    background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-card {
+    @apply bg-surface/20 backdrop-blur-sm border border-white/5;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .player-pill {
+    @apply flex items-center gap-2 px-3 py-3 rounded-full border border-white/5 cursor-default;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .rank-tag {
+    @apply text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full;
+  }
+}

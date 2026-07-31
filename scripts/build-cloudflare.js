@@ -64,7 +64,11 @@ function copyDir(src, dest) {
 }
 
 function main() {
-    // Ensure page fragments are fresh before packaging.
+    // Ensure CSS + page fragments are fresh before packaging.
+    require('child_process').execSync('npm run build:css', {
+        cwd: ROOT,
+        stdio: 'inherit',
+    });
     require('./build-page-fragments.js');
 
     rimraf(DIST);

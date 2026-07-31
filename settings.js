@@ -1198,6 +1198,9 @@ function applyThemeSettings(settings) {
 
     // ── Font Family ──
     const fontFamily = settings.lookFeel?.fontFamily || 'Roboto Mono';
+    if (typeof window.usertypoEnsureFontLoaded === 'function') {
+        window.usertypoEnsureFontLoaded(fontFamily);
+    }
 
     // Derived colors
     const accentDark = _darkenColor(p.accentPrimary, 30);

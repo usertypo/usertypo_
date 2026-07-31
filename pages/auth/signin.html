@@ -121,12 +121,9 @@
         .side-o-wrapper { z-index: 5; animation: glow-o 0s calc(var(--typing-delay) + 0.54s) forwards; }
 </style>
 
-<style type="text/tailwindcss">
+<style type="text/css">
         .glass-panel {
-            @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
-            background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            /* Styles live in css/tailwind.css (@layer components) */
         }
 
         #spa-content {
