@@ -138,13 +138,14 @@
             max-width: 100%;
             min-width: 0;
             border-radius: var(--settings-box-radius) !important;
-            transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        opacity 0.4s ease,
-                        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        margin 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        padding 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                        border-width 0.5s ease;
+            transition: flex 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                        max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.35s ease,
+                        transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #settings-panel .panel-body-inner {
+            content-visibility: auto;
+            contain-intrinsic-size: auto 480px;
         }
         /* When two tabs are open: left ~1/3, right ~2/3 — animate both edges */
         #settings-panel.has-sub > .settings-panel-card.is-primary:not(.panel-away) {
@@ -4822,6 +4823,8 @@ window.__spaPageInit = function() {
 
             activeSubCards.push(subCard);
 
+            // Move nodes when possible instead of serializing huge HTML (e.g. Languages).
+            // Fall back to innerHTML clone when content must stay in the source card too.
             const contentHTML = subContent.innerHTML;
             const panel = createSubPanelCard(pathTitles, title, icon, contentHTML, isSearchable);
             const settingsPanel = document.getElementById('settings-panel');
@@ -4829,7 +4832,14 @@ window.__spaPageInit = function() {
             settingsPanel.appendChild(panel);
             panelDepth.push(panel);
 
-            if (typeof initTooltips === 'function') initTooltips(panel);
+            // Defer tooltip wiring / heavy widget init until after the open animation starts
+            const schedule = window.requestIdleCallback
+                ? function (fn) { window.requestIdleCallback(fn, { timeout: 250 }); }
+                : function (fn) { setTimeout(fn, 0); };
+
+            if (typeof initTooltips === 'function') {
+                schedule(function () { initTooltips(panel); });
+            }
 
             // Start split: keep primary at full width for one frame, then animate to 1/3
             settingsPanel.classList.add('has-sub');
@@ -4856,39 +4866,32 @@ window.__spaPageInit = function() {
                     panel.classList.remove('panel-growing');
                     panel.classList.add('is-detail');
                     syncVisiblePanels();
-                    if (window.usertypoAccountSettingsPage) {
-                        if (title === 'Account' && typeof window.usertypoAccountSettingsPage.loadAccount === 'function') {
-                            window.usertypoAccountSettingsPage.loadAccount(panel);
+                    schedule(function () {
+                        if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
+                        if (window.usertypoAccountSettingsPage) {
+                            if (title === 'Account' && typeof window.usertypoAccountSettingsPage.loadAccount === 'function') {
+                                window.usertypoAccountSettingsPage.loadAccount(panel);
+                            }
+                            if (title === 'Blocked Users' && typeof window.usertypoAccountSettingsPage.loadBlocked === 'function') {
+                                window.usertypoAccountSettingsPage.loadBlocked(panel);
+                            }
                         }
-                        if (title === 'Blocked Users' && typeof window.usertypoAccountSettingsPage.loadBlocked === 'function') {
-                            window.usertypoAccountSettingsPage.loadBlocked(panel);
+                        if (title === 'Keymap' && typeof window.renderKeymap === 'function') {
+                            window.renderKeymap(true, true);
+                            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.applyKeymapDisplay === 'function') {
+                                window.usertypo_settingsApi.applyKeymapDisplay();
+                            }
                         }
-                    }
+                        if (title === 'Custom Theme' && window.usertypo_settingsApi) {
+                            try {
+                                window.usertypo_settingsApi.syncCustomThemeEditor?.();
+                            } catch (e) { /* ignore */ }
+                        }
+                    });
+                    const searchInput = panel.querySelector('input.search-input');
+                    if (searchInput) searchInput.focus();
                 });
             });
-
-            requestAnimationFrame(() => {
-                if (typeof updatePageScrollbar === 'function') window.updatePageScrollbar();
-                const searchInput = panel.querySelector('input.search-input');
-                if (searchInput) searchInput.focus();
-            });
-
-            if (title === 'Keymap' && typeof window.renderKeymap === 'function') {
-                requestAnimationFrame(() => {
-                    window.renderKeymap(true, true);
-                    if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.applyKeymapDisplay === 'function') {
-                        window.usertypo_settingsApi.applyKeymapDisplay();
-                    }
-                });
-            }
-
-            if (title === 'Custom Theme' && window.usertypo_settingsApi) {
-                requestAnimationFrame(() => {
-                    try {
-                        window.usertypo_settingsApi.syncCustomThemeEditor?.();
-                    } catch (e) { /* ignore */ }
-                });
-            }
         }
 
         function clearSubPanelsDOM() {

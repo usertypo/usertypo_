@@ -423,10 +423,14 @@
     }
 
     function restartAnimations(container) {
+        // Prefer class toggle over reading offsetWidth (forced reflow) for every animated node.
         container.querySelectorAll('.animate-fade-in-up, .animate-fade-in, [class*="animate-"]').forEach(function (el) {
-            el.style.animation = 'none';
-            void el.offsetWidth;
-            el.style.animation = '';
+            el.classList.add('usertypo-anim-restart');
+        });
+        requestAnimationFrame(function () {
+            container.querySelectorAll('.usertypo-anim-restart').forEach(function (el) {
+                el.classList.remove('usertypo-anim-restart');
+            });
         });
     }
 

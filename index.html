@@ -97,7 +97,7 @@
     <link rel="preload" href="/logo-assets/typ_.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/user.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/o.png" as="image" fetchpriority="high" />
-    <link rel="preload" href="/js/boot-typing.js?v=6" as="script" />
+    <link rel="preload" href="/css/fonts/material-symbols.ttf" as="font" type="font/ttf" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -183,12 +183,14 @@
         })();
     </script>
 
-    <!-- Critical fonts only; optional typing fonts load on demand via js/fonts.js -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0..1,-50..200&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    <!-- Critical text fonts only — Material Symbols is a local ~29KB subset (was ~2.3MB CDN VF) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-    <link href="css/tailwind.css?v=1" rel="stylesheet" />
-    <link href="css/global.css?v=18" rel="stylesheet" />
-    <link href="css/test-activity.css?v=6" rel="stylesheet" />
+    <link href="css/tailwind.css?v=2" rel="stylesheet" />
+    <link href="css/global.css?v=19" rel="stylesheet" />
+    <link href="css/material-symbols.css?v=1" rel="stylesheet" />
+    <link href="css/test-activity.css?v=6" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="css/test-activity.css?v=6" rel="stylesheet" /></noscript>
     <style id="shell-surface-fix">
         #spa-content { background-color: var(--theme-bg) !important; }
         #spa-page-root, #spa-shell-footer { background-color: transparent !important; }
@@ -1092,7 +1094,7 @@
                     <div class="header-logo-layer header-user-wrapper">
                         <div class="header-logo-layer header-dynamic-layer header-user-layer"></div>
                     </div>
-                    <img src="logo-assets/o.png" class="header-logo-layer header-static-layer" alt="usertypo_" width="426" height="426" decoding="async" fetchpriority="high">
+                    <img src="logo-assets/o.png" class="header-logo-layer header-static-layer" alt="usertypo_" width="512" height="512" decoding="async" fetchpriority="high">
                 </div>
             </a>
         </div>
@@ -1177,7 +1179,7 @@
             </div>
         </div>
     </div>
-    <script src="js/boot-typing.js?v=6"></script>
+    <script src="js/boot-typing.js?v=7" defer></script>
 
     <!-- Global modals (shared across all routes) -->
     <div id="notifications-modal" class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
@@ -1548,7 +1550,7 @@
     <script src="js/api/public-profile.js?v=2"></script>
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
-    <script src="js/ui/contact.js?v=3"></script>
+    <script src="js/ui/contact.js?v=4"></script>
     <script src="js/auth/header.js?v=3"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
@@ -1561,8 +1563,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=26"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=117"></script>
-    <script src="js/router.js?v=19"></script>
+    <script src="js/page-fragments.js?v=118"></script>
+    <script src="js/router.js?v=20"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;

@@ -2022,7 +2022,7 @@ window.setTimeout = function(handler, timeout) {
                 const charEl = document.createElement('span');
                 charEl.innerText = char;
                 charEl.id = `char-${wIdx}-${cIdx}`;
-                charEl.className = 'char text-slate-500 transition-all duration-150';
+                charEl.className = 'char text-slate-500 transition-colors duration-75';
                 wordEl.appendChild(charEl);
             });
             textContainer.appendChild(wordEl);
@@ -2279,7 +2279,7 @@ window.setTimeout = function(handler, timeout) {
                     if (charEl.classList.contains('extra')) {
                         charEl.remove();
                     } else {
-                        charEl.className = 'char text-slate-500 transition-all duration-150';
+                        charEl.className = 'char text-slate-500 transition-colors duration-75';
                         // Reset Indicate Typos
                         const origChar = generatedWords[currentWordIndex][currentCharIndex];
                         charEl.innerText = origChar;
@@ -2517,7 +2517,7 @@ window.setTimeout = function(handler, timeout) {
                     const compareKey = lazyMode ? normalizeLazy(e.key) : e.key;
                     const compareExpected = lazyMode ? normalizeLazy(expectedChar) : expectedChar;
 
-                    charEl.className = 'char transition-all duration-150';
+                    charEl.className = 'char transition-colors duration-75';
 
                     if (compareKey === compareExpected) {
                         if (window.playKeystrokeSound) window.playKeystrokeSound(e.key);
@@ -2578,7 +2578,7 @@ window.setTimeout = function(handler, timeout) {
                         // â”€â”€ Stop on Error: Letter â”€â”€ don't advance, user must backspace and retype
                         if (getTestRule('stopOnError') === 'Letter') {
                             // Reset the char to untyped (don't advance)
-                            charEl.className = 'char text-slate-500 transition-all duration-150';
+                            charEl.className = 'char text-slate-500 transition-colors duration-75';
                             updateLineLayout();
                             updateCaretPosition();
                             updateStats();
@@ -2591,7 +2591,7 @@ window.setTimeout = function(handler, timeout) {
                     const extraCharEl = document.createElement('span');
                     extraCharEl.innerText = e.key;
                     extraCharEl.id = `char-${currentWordIndex}-${currentCharIndex}`;
-                    extraCharEl.className = 'char extra text-error drop-shadow-[0_0_7px_rgba(255,80,80,0.75)] transition-all duration-150';
+                    extraCharEl.className = 'char extra text-error drop-shadow-[0_0_7px_rgba(255,80,80,0.75)] transition-colors duration-75';
                     wordEl.appendChild(extraCharEl);
                     errorsMade++;
                     const errSec = startTime ? (ksNow - startTime) / 1000 : 0;
