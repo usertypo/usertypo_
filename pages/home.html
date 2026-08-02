@@ -3269,10 +3269,10 @@ window.setTimeout = function(handler, timeout) {
             }
 
             function podiumClass(rank) {
-                if (rank === 1) return 'bg-amber-500/10 rounded border border-amber-500/20';
-                if (rank === 2) return 'bg-slate-400/5 rounded border border-slate-400/10';
-                if (rank === 3) return 'bg-amber-700/5 rounded border border-amber-700/10';
-                return 'bg-white/5 rounded border border-white/5';
+                if (rank === 1) return 'bg-amber-500/10 rounded-full border border-amber-500/20';
+                if (rank === 2) return 'bg-slate-400/5 rounded-full border border-slate-400/10';
+                if (rank === 3) return 'bg-amber-700/5 rounded-full border border-amber-700/10';
+                return 'bg-white/5 rounded-full border border-white/5';
             }
 
             function podiumRankColor(rank) {
@@ -3293,44 +3293,32 @@ window.setTimeout = function(handler, timeout) {
                     top = rows.slice(0, 3);
                 }
 
-                function friendAvatar(entry, isMeRow) {
-                    var source = entry || {};
-                    if (isMeRow && !source.avatarUrl) {
+                function friendAvatarUrl(entry, isMeRow) {
+                    var url = entry && entry.avatarUrl;
+                    if (!url && isMeRow) {
                         try {
                             if (window.__USERTYPO_PROFILE__ && window.__USERTYPO_PROFILE__.avatar_url) {
-                                source = Object.assign({}, source, {
-                                    avatarUrl: window.__USERTYPO_PROFILE__.avatar_url,
-                                    level: source.level || window.__USERTYPO_PROFILE__.level,
-                                });
+                                url = window.__USERTYPO_PROFILE__.avatar_url;
                             } else if (window.usertypoAuth) {
                                 var user = window.usertypoAuth.getState().user;
-                                if (user && user.hasImage === true && user.imageUrl) {
-                                    source = Object.assign({}, source, { avatarUrl: user.imageUrl });
-                                }
+                                if (user && user.hasImage === true && user.imageUrl) url = user.imageUrl;
                             }
                         } catch (e) { /* ignore */ }
                     }
-                    if (window.usertypoPlayerAvatar) {
-                        return window.usertypoPlayerAvatar.fromPlayer({
-                            avatarUrl: source.avatarUrl,
-                            name: isMeRow ? 'You' : (source.username || 'Player'),
-                            level: source.level,
-                            percentToNext: source.percentToNext,
-                            userId: source.userId || myUserId,
-                        }, {
-                            size: 'xs',
-                            className: 'shrink-0',
-                            clickable: false,
-                        });
+                    if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.resolveAvatarUrl === 'function') {
+                        return window.usertypoPlayerAvatar.resolveAvatarUrl(url);
                     }
-                    return '';
+                    return url || '';
                 }
 
-                function friendFlag(entry) {
-                    if (!entry || !entry.countryCode || !lb || typeof lb.flagHtml !== 'function') return '';
-                    return lb.flagHtml(entry.countryCode, {
-                        className: 'w-[1.1rem] h-[0.825rem] object-cover rounded-[2px] shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]',
-                    });
+                function friendAvatar(entry, isMeRow) {
+                    var url = friendAvatarUrl(entry, isMeRow);
+                    var name = isMeRow ? 'You' : ((entry && entry.username) || 'Player');
+                    if (!url) {
+                        return '<span class="w-4 h-4 rounded-full bg-white/10 border border-white/10 shrink-0 inline-block" aria-hidden="true"></span>';
+                    }
+                    return '<img src="' + escapeStatsHtml(url) + '" alt="' + escapeStatsHtml(name) +
+                        '" class="w-4 h-4 rounded-full object-cover border border-white/10 shrink-0" loading="lazy" decoding="async" />';
                 }
 
                 var html = '';
@@ -3343,12 +3331,11 @@ window.setTimeout = function(handler, timeout) {
                         var isMeRow = !!(myUserId && entry.userId === myUserId);
                         var name = isMeRow ? 'You' : (entry.username || 'Player');
                         var wpmVal = lb && lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm || 0));
-                        html += '<div class="grid grid-cols-[1.4rem_minmax(0,1fr)_2.25rem] items-center gap-1.5 px-2 py-1.5 text-[0.533rem] ' +
+                        html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] ' +
                             podiumClass(rank) + '">' +
-                            '<div class="' + podiumRankColor(rank) + ' font-black text-center">' + escapeStatsHtml(String(rank)) + '</div>' +
-                            '<div class="text-slate-200 font-bold min-w-0 flex items-center gap-1.5">' +
+                            '<div class="' + podiumRankColor(rank) + ' font-black">' + escapeStatsHtml(String(rank)) + '</div>' +
+                            '<div class="text-slate-200 font-bold truncate flex items-center gap-1.5 min-w-0">' +
                             friendAvatar(entry, isMeRow) +
-                            friendFlag(entry) +
                             '<span class="truncate">' + escapeStatsHtml(name) + '</span></div>' +
                             '<div class="text-right ' + podiumRankColor(rank) + ' font-mono">' + escapeStatsHtml(wpmVal) + '</div>' +
                             '</div>';
@@ -3359,12 +3346,11 @@ window.setTimeout = function(handler, timeout) {
                     var myWpm = me && me.wpm != null
                         ? (lb && lb.formatWpm ? lb.formatWpm(me.wpm) : String(Math.round(me.wpm)))
                         : String(fallbackWpm != null ? fallbackWpm : '—');
-                    html += '<div class="grid grid-cols-[1.4rem_minmax(0,1fr)_2.25rem] items-center gap-1.5 px-2 py-2 text-[0.533rem] bg-primary/10 rounded border border-primary/30 relative overflow-hidden mt-1">' +
+                    html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] bg-primary/10 rounded-full border border-primary/30 relative overflow-hidden mt-1">' +
                         '<div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>' +
-                        '<div class="text-primary font-black text-center">' + escapeStatsHtml(myRankLabel) + '</div>' +
-                        '<div class="text-white font-bold min-w-0 flex items-center gap-1.5">' +
+                        '<div class="text-primary font-black">' + escapeStatsHtml(myRankLabel) + '</div>' +
+                        '<div class="text-white font-bold truncate flex items-center gap-1.5 min-w-0">' +
                         friendAvatar(me || { username: 'You', userId: myUserId }, true) +
-                        friendFlag(me) +
                         '<span class="truncate uppercase tracking-tighter">You</span></div>' +
                         '<div class="text-right text-primary font-mono font-bold" id="stats-rank-wpm">' +
                         escapeStatsHtml(myWpm) + '</div></div>';
