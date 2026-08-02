@@ -206,6 +206,37 @@
         return String.fromCodePoint(a, b);
     }
 
+    function flagImageUrl(code) {
+        var normalized = normalizeCountryCode(code);
+        if (!normalized) return '';
+        return 'https://flagcdn.com/w40/' + normalized.toLowerCase() + '.png';
+    }
+
+    /**
+     * Reliable flag markup (CDN image). Prefer this over emoji — Windows often
+     * renders regional-indicator pairs as letters instead of a flag.
+     */
+    function flagHtml(code, options) {
+        var normalized = normalizeCountryCode(code);
+        if (!normalized) return '';
+        var opts = options || {};
+        var label = countryName(normalized) || normalized;
+        var cls = opts.className || 'lb-user-flag';
+        var url = flagImageUrl(normalized);
+        function esc(value) {
+            if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
+                return window.usertypoEscape.html(value);
+            }
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        return '<img class="' + esc(cls) + '" src="' + esc(url) + '" alt="' + esc(label) +
+            '" title="' + esc(label) + '" width="20" height="15" loading="lazy" decoding="async" />';
+    }
+
     function mapEntry(row) {
         var rawWpm = row.raw_wpm != null ? row.raw_wpm : row.rawWpm;
         var consistency = row.consistency;
@@ -229,6 +260,7 @@
             countryCode: country,
             countryName: country ? countryName(country) : '',
             flagEmoji: country ? flagEmoji(country) : '',
+            flagUrl: country ? flagImageUrl(country) : '',
         };
     }
 
@@ -270,6 +302,7 @@
                 entry.countryCode = code;
                 entry.countryName = countryName(code);
                 entry.flagEmoji = flagEmoji(code);
+                entry.flagUrl = flagImageUrl(code);
             });
         } catch (e) { /* ignore — flags optional */ }
     }
@@ -494,6 +527,7 @@
                 users: Number(row.users) || 0,
                 name: code ? countryName(code) : '',
                 flagEmoji: code ? flagEmoji(code) : '',
+                flagUrl: code ? flagImageUrl(code) : '',
             };
         }).filter(function (row) { return !!row.code; });
     }
@@ -847,5 +881,7 @@
         normalizeCountryCode: normalizeCountryCode,
         countryName: countryName,
         flagEmoji: flagEmoji,
+        flagImageUrl: flagImageUrl,
+        flagHtml: flagHtml,
     };
 })();

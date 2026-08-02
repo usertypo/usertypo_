@@ -166,9 +166,20 @@
             font-family: ui-monospace, monospace;
         }
         .lb-user-flag {
-            font-size: 0.95rem;
-            line-height: 1;
+            width: 1.1rem;
+            height: 0.825rem;
+            object-fit: cover;
+            border-radius: 2px;
             flex-shrink: 0;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+        .lb-country-flag {
+            width: 1.35rem;
+            height: 1rem;
+            object-fit: cover;
+            border-radius: 2px;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
         }
 </style>
 
@@ -481,10 +492,11 @@ window.__spaPageInit = function() {
             }
 
             function renderFlag(entry) {
-                if (!entry || !entry.flagEmoji) return '';
-                var title = escapeHtml(entry.countryName || entry.countryCode || '');
-                return '<span class="lb-user-flag" title="' + title + '" aria-label="' + title + '">' +
-                    escapeHtml(entry.flagEmoji) + '</span>';
+                if (!entry || !entry.countryCode || !window.usertypoLeaderboards) return '';
+                if (typeof window.usertypoLeaderboards.flagHtml === 'function') {
+                    return window.usertypoLeaderboards.flagHtml(entry.countryCode, { className: 'lb-user-flag' });
+                }
+                return '';
             }
 
             function renderLoading() {
@@ -610,10 +622,13 @@ window.__spaPageInit = function() {
                 list.innerHTML = rows.map(function (c) {
                     var selected = c.code === lbState.countryCode ? ' is-selected' : '';
                     var usersLabel = c.users === 1 ? '1 player' : (c.users + ' players');
+                    var flag = window.usertypoLeaderboards && typeof window.usertypoLeaderboards.flagHtml === 'function'
+                        ? window.usertypoLeaderboards.flagHtml(c.code, { className: 'lb-country-flag' })
+                        : '';
                     return '<button type="button" class="lb-country-row' + selected + '" data-country="' +
                         escapeHtml(c.code) + '" role="option" aria-selected="' +
                         (c.code === lbState.countryCode ? 'true' : 'false') + '">' +
-                        '<span class="lb-country-flag">' + escapeHtml(c.flagEmoji || '') + '</span>' +
+                        flag +
                         '<span class="lb-country-meta">' +
                         '<span class="lb-country-name">' + escapeHtml(c.name || c.code) + '</span>' +
                         '<span class="lb-country-users">' + escapeHtml(c.code) + ' · ' + escapeHtml(usersLabel) + '</span>' +
