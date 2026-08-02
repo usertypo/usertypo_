@@ -63,6 +63,113 @@
 
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         /* Header Logo */
+
+        #lb-country-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            pointer-events: none;
+        }
+        #lb-country-modal.is-open {
+            display: flex;
+            pointer-events: auto;
+        }
+        #lb-country-modal .lb-country-panel {
+            width: min(22rem, 100%);
+            max-height: min(28rem, 78vh);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            border-radius: 1.25rem;
+            padding: 1rem 1rem 0.85rem;
+            transform: scale(0.96);
+            opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        #lb-country-modal.is-open .lb-country-panel {
+            transform: scale(1);
+            opacity: 1;
+        }
+        #lb-country-search {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+            font-size: 0.8rem;
+            padding: 0.55rem 0.75rem;
+            outline: none;
+        }
+        #lb-country-search:focus {
+            border-color: rgba(var(--theme-primary-rgb), 0.55);
+        }
+        #lb-country-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-height: 8rem;
+            max-height: 18rem;
+            padding-right: 0.15rem;
+        }
+        .lb-country-row {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            width: 100%;
+            text-align: left;
+            border: 1px solid transparent;
+            border-radius: 0.75rem;
+            background: transparent;
+            color: #cbd5e1;
+            padding: 0.55rem 0.65rem;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        .lb-country-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+        .lb-country-row.is-selected {
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            color: #fff;
+        }
+        .lb-country-flag {
+            font-size: 1.15rem;
+            line-height: 1;
+            width: 1.5rem;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .lb-country-meta {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+        .lb-country-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lb-country-users {
+            font-size: 0.65rem;
+            color: #64748b;
+            font-family: ui-monospace, monospace;
+        }
+        .lb-user-flag {
+            font-size: 0.95rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
 </style>
 
 <aside id="config-bar"
@@ -229,6 +336,26 @@
         </div>
     </main>
 
+    <!-- Country picker (menu-bubble glass, no page dim) -->
+    <div id="lb-country-modal" aria-hidden="true">
+        <div class="lb-country-panel glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+            role="dialog" aria-modal="true" aria-labelledby="lb-country-title">
+            <div class="flex items-center justify-between gap-3 px-1">
+                <div>
+                    <h2 id="lb-country-title" class="text-sm font-bold text-white tracking-wide">Select country</h2>
+                    <p class="text-[0.7rem] text-slate-500 mt-0.5">Only countries with usertypo_ players</p>
+                </div>
+                <button type="button" id="lb-country-close"
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                    aria-label="Close">
+                    <span class="material-symbols-outlined text-[1.1rem]">close</span>
+                </button>
+            </div>
+            <input id="lb-country-search" type="search" placeholder="Search countries…" autocomplete="off" />
+            <div id="lb-country-list" role="listbox" aria-label="Countries"></div>
+        </div>
+    </div>
+
     <!-- Footer (matching testpage) -->
 
 <script>
@@ -272,8 +399,11 @@ window.__spaPageInit = function() {
                 scope: 'global',
                 timeframe: 'alltime',
                 amount: 30,
+                countryCode: null,
             };
             var lbRequestId = 0;
+            var countryCache = null;
+            var countryModalOpen = false;
 
             function getCurrentUserId() {
                 if (!window.usertypoAuth) return null;
@@ -302,6 +432,28 @@ window.__spaPageInit = function() {
                 if (el) el.textContent = text;
             }
 
+            function setActive(selector, clickedEl) {
+                if (!clickedEl) return;
+                document.querySelectorAll(selector).forEach(function (b) {
+                    b.classList.remove('text-primary', 'font-bold');
+                    b.classList.add('text-slate-400');
+                    b.querySelectorAll('.drop-shadow-\\[0_0_5px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\]').forEach(function (s) {
+                        s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                    });
+                });
+                clickedEl.classList.add('text-primary', 'font-bold');
+                clickedEl.classList.remove('text-slate-400');
+            }
+
+            function forceAlltime30() {
+                lbState.timeframe = 'alltime';
+                lbState.amount = 30;
+                var alltimeBtn = document.getElementById('cfg-alltime');
+                var dur30 = document.getElementById('cfg-30');
+                if (alltimeBtn) setActive('.is-time', alltimeBtn);
+                if (dur30) setActive('.is-dur', dur30);
+            }
+
             function renderAvatar(entry, colorClass, isMe) {
                 if (window.usertypoPlayerAvatar) {
                     return window.usertypoPlayerAvatar.fromPlayer({
@@ -326,6 +478,13 @@ window.__spaPageInit = function() {
                         '</div>';
                 }
                 return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center font-sans font-bold text-xs' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : ' border border-transparent group-hover:border-white/10 transition-colors') + '">' + letter + '</div>';
+            }
+
+            function renderFlag(entry) {
+                if (!entry || !entry.flagEmoji) return '';
+                var title = escapeHtml(entry.countryName || entry.countryCode || '');
+                return '<span class="lb-user-flag" title="' + title + '" aria-label="' + title + '">' +
+                    escapeHtml(entry.flagEmoji) + '</span>';
             }
 
             function renderLoading() {
@@ -360,12 +519,14 @@ window.__spaPageInit = function() {
                     var cons = escapeHtml(lb.formatConsistency ? lb.formatConsistency(entry.consistency) : lb.formatAccuracy(entry.consistency));
                     var date = escapeHtml(lb.formatRelativeTime(entry.createdAt));
                     var username = escapeHtml(entry.username || 'Player');
+                    var flag = renderFlag(entry);
 
                     if (isMe) {
                         return '<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">' +
                             '<td class="py-2.5 px-5 font-bold text-primary">' + rank + '</td>' +
                             '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
                             renderAvatar(entry, colorClass, true) +
+                            flag +
                             '<span class="font-sans font-bold text-white tracking-wide">' + username + '</span>' +
                             '<span class="material-symbols-outlined text-primary text-sm" title="You">person</span>' +
                             '</div></td>' +
@@ -381,6 +542,7 @@ window.__spaPageInit = function() {
                         '<td class="py-2.5 px-5 text-slate-400">' + rank + '</td>' +
                         '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
                         renderAvatar(entry, colorClass, false) +
+                        flag +
                         '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + username + '</span>' +
                         '</div></td>' +
                         '<td class="py-2.5 px-5 text-right font-bold text-primary/80">' + wpm + '</td>' +
@@ -392,15 +554,95 @@ window.__spaPageInit = function() {
                 }).join('');
             }
 
+            function countryLabel(code) {
+                var lb = window.usertypoLeaderboards;
+                if (!lb || !code) return code || '';
+                return lb.countryName(code) || code;
+            }
+
+            async function ensureCountries() {
+                if (countryCache) return countryCache;
+                if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.listLeaderboardCountries !== 'function') {
+                    return [];
+                }
+                countryCache = await window.usertypoLeaderboards.listLeaderboardCountries();
+                return countryCache;
+            }
+
+            async function resolveDefaultCountry() {
+                var countries = await ensureCountries();
+                if (!countries.length) return null;
+                try {
+                    if (window.usertypoProfiles && typeof window.usertypoProfiles.getMyProfile === 'function') {
+                        var profile = await window.usertypoProfiles.getMyProfile();
+                        var mine = window.usertypoLeaderboards.normalizeCountryCode(profile && profile.country_code);
+                        if (mine && countries.some(function (c) { return c.code === mine; })) {
+                            return mine;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+                return countries[0].code;
+            }
+
+            function closeCountryModal() {
+                var modal = document.getElementById('lb-country-modal');
+                if (!modal) return;
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                countryModalOpen = false;
+            }
+
+            function renderCountryList(filterText) {
+                var list = document.getElementById('lb-country-list');
+                if (!list) return;
+                var q = String(filterText || '').trim().toLowerCase();
+                var rows = (countryCache || []).filter(function (c) {
+                    if (!q) return true;
+                    return (
+                        (c.name && c.name.toLowerCase().indexOf(q) !== -1)
+                        || (c.code && c.code.toLowerCase().indexOf(q) !== -1)
+                    );
+                });
+                if (!rows.length) {
+                    list.innerHTML = '<p class="text-xs text-slate-500 text-center py-8 px-2">No matching countries.</p>';
+                    return;
+                }
+                list.innerHTML = rows.map(function (c) {
+                    var selected = c.code === lbState.countryCode ? ' is-selected' : '';
+                    var usersLabel = c.users === 1 ? '1 player' : (c.users + ' players');
+                    return '<button type="button" class="lb-country-row' + selected + '" data-country="' +
+                        escapeHtml(c.code) + '" role="option" aria-selected="' +
+                        (c.code === lbState.countryCode ? 'true' : 'false') + '">' +
+                        '<span class="lb-country-flag">' + escapeHtml(c.flagEmoji || '') + '</span>' +
+                        '<span class="lb-country-meta">' +
+                        '<span class="lb-country-name">' + escapeHtml(c.name || c.code) + '</span>' +
+                        '<span class="lb-country-users">' + escapeHtml(c.code) + ' · ' + escapeHtml(usersLabel) + '</span>' +
+                        '</span></button>';
+                }).join('');
+            }
+
+            async function openCountryModal() {
+                var modal = document.getElementById('lb-country-modal');
+                var search = document.getElementById('lb-country-search');
+                if (!modal) return;
+                try {
+                    await ensureCountries();
+                } catch (err) {
+                    console.error('[usertypo leaderboards] countries failed', err);
+                    setStatus('Could not load countries.');
+                    return;
+                }
+                if (search) search.value = '';
+                renderCountryList('');
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                countryModalOpen = true;
+                if (search) setTimeout(function () { search.focus(); }, 50);
+            }
+
             async function loadLeaderboard() {
                 if (!window.usertypoLeaderboards) {
                     renderMessage('Leaderboard module is not loaded.');
-                    return;
-                }
-
-                if (lbState.scope !== 'global') {
-                    setStatus(lbState.scope === 'country' ? 'Country leaderboards are coming soon.' : 'Friends leaderboards are coming soon.');
-                    renderMessage('This leaderboard view is coming soon. Switch back to Global for now.');
                     return;
                 }
 
@@ -413,77 +655,108 @@ window.__spaPageInit = function() {
                         await window.usertypoAuth.ready();
                     }
 
-                    var result = await window.usertypoLeaderboards.getLeaderboard({
+                    var result;
+                    if (lbState.scope === 'country') {
+                        forceAlltime30();
+                        if (!lbState.countryCode) {
+                            lbState.countryCode = await resolveDefaultCountry();
+                        }
+                        if (!lbState.countryCode) {
+                            if (reqId !== lbRequestId) return;
+                            setStatus('No countries with players yet.');
+                            renderMessage('No players have a country set yet. Complete a test while signed in to record yours.');
+                            openCountryModal();
+                            return;
+                        }
+                        result = await window.usertypoLeaderboards.getLeaderboard({
+                            scope: 'country',
+                            countryCode: lbState.countryCode,
+                            mode: 'time',
+                            amount: 30,
+                            timeframe: 'alltime',
+                            limit: 50,
+                        });
+                        if (reqId !== lbRequestId) return;
+                        setStatus('All-time timed 30s · ' + countryLabel(lbState.countryCode));
+                        renderTable(result.entries, getCurrentUserId());
+                        return;
+                    }
+
+                    if (lbState.scope === 'friends') {
+                        forceAlltime30();
+                        if (!getCurrentUserId()) {
+                            if (reqId !== lbRequestId) return;
+                            setStatus('Sign in to see friends leaderboards.');
+                            renderMessage('Sign in to view the friends leaderboard.');
+                            return;
+                        }
+                        result = await window.usertypoLeaderboards.getLeaderboard({
+                            scope: 'friends',
+                            mode: 'time',
+                            amount: 30,
+                            timeframe: 'alltime',
+                            limit: 50,
+                        });
+                        if (reqId !== lbRequestId) return;
+                        setStatus('All-time timed 30s · Friends');
+                        if (!result.entries.length) {
+                            renderMessage('No friend scores yet. Add friends and complete all-time qualifying 30s tests.');
+                            return;
+                        }
+                        renderTable(result.entries, getCurrentUserId());
+                        return;
+                    }
+
+                    result = await window.usertypoLeaderboards.getLeaderboard({
                         mode: 'time',
                         amount: lbState.amount,
                         timeframe: lbState.timeframe,
                         limit: 50,
                     });
-
                     if (reqId !== lbRequestId) return;
-
-                    var labels = {
-                        daily: 'Daily',
-                        weekly: 'Weekly',
-                        alltime: 'All-time',
-                    };
+                    var labels = { daily: 'Daily', weekly: 'Weekly', alltime: 'All-time' };
                     setStatus((labels[lbState.timeframe] || 'All-time') + ' timed ' + lbState.amount + 's leaderboard');
                     renderTable(result.entries, getCurrentUserId());
                 } catch (err) {
                     if (reqId !== lbRequestId) return;
                     console.error('[usertypo leaderboards] load failed', err);
+                    var msg = (err && (err.message || err.code)) || '';
+                    if (String(msg).indexOf('guest') !== -1 || String(msg).indexOf('not_authenticated') !== -1) {
+                        setStatus('Sign in to see friends leaderboards.');
+                        renderMessage('Sign in to view the friends leaderboard.');
+                        return;
+                    }
                     setStatus('Could not load leaderboard.');
                     renderMessage('Could not load leaderboard. Please refresh and try again.');
                 }
             }
 
-            loadLeaderboard();
-
-            // Ã¢â€â‚¬Ã¢â€â‚¬ CONFIG BAR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-            const configBar = document.getElementById('config-bar');
-
-            // Flash-open on page load (matches index behaviour)
-            if (configBar) {
-                configBar.classList.add('is-open');
-                setTimeout(() => { configBar.classList.remove('is-open'); }, 2000);
-            }
-
-            // Config bar: only enable clicks after expansion animation finishes
-            const innerConfigContent = document.getElementById('inner-config-content');
-            let configExpandTimer = null;
-            if (configBar) {
-                configBar.addEventListener('mouseenter', () => {
-                    clearTimeout(configExpandTimer);
-                    configExpandTimer = setTimeout(() => {
-                        if (innerConfigContent) innerConfigContent.style.pointerEvents = 'auto';
-                    }, 500);
-                });
-                configBar.addEventListener('mouseleave', () => {
-                    clearTimeout(configExpandTimer);
-                    if (innerConfigContent) innerConfigContent.style.pointerEvents = 'none';
-                });
-            }
-
-            function setActive(selector, clickedEl) {
-                document.querySelectorAll(selector).forEach(b => {
-                    b.classList.remove('text-primary', 'font-bold');
-                    b.classList.add('text-slate-400');
-                    b.querySelectorAll('.drop-shadow-\\[0_0_5px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\]').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'));
-                });
-                clickedEl.classList.add('text-primary', 'font-bold');
-                clickedEl.classList.remove('text-slate-400');
-            }
             function setScope(v, el) {
                 setActive('.is-scope', el);
                 lbState.scope = v;
+                if (v === 'country') {
+                    forceAlltime30();
+                    loadLeaderboard().then(function () { openCountryModal(); });
+                    return;
+                }
+                if (v === 'friends') forceAlltime30();
+                closeCountryModal();
                 loadLeaderboard();
             }
             function setTime(v, el) {
+                if (lbState.scope === 'country' || lbState.scope === 'friends') {
+                    forceAlltime30();
+                    return;
+                }
                 setActive('.is-time', el);
                 lbState.timeframe = v;
                 loadLeaderboard();
             }
             function setDur(v, el) {
+                if (lbState.scope === 'country' || lbState.scope === 'friends') {
+                    forceAlltime30();
+                    return;
+                }
                 setActive('.is-dur', el);
                 lbState.amount = Number(v) || 30;
                 loadLeaderboard();
@@ -493,14 +766,87 @@ window.__spaPageInit = function() {
             window.setTime = setTime;
             window.setDur = setDur;
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ SIDEBAR MENU Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                var wantedScope = params.get('scope') || sessionStorage.getItem('usertypo_lb_scope');
+                sessionStorage.removeItem('usertypo_lb_scope');
+                if (wantedScope === 'friends' || wantedScope === 'country' || wantedScope === 'global') {
+                    lbState.scope = wantedScope;
+                    var scopeBtn = document.getElementById('cfg-' + wantedScope);
+                    if (scopeBtn) setActive('.is-scope', scopeBtn);
+                }
+                var wantedCountry = params.get('country') || sessionStorage.getItem('usertypo_lb_country');
+                sessionStorage.removeItem('usertypo_lb_country');
+                if (wantedCountry && window.usertypoLeaderboards) {
+                    lbState.countryCode = window.usertypoLeaderboards.normalizeCountryCode(wantedCountry);
+                }
+            } catch (e) { /* ignore */ }
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ PAGE-LEVEL CUSTOM SCROLLBAR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+            loadLeaderboard();
+            if (lbState.scope === 'country') openCountryModal();
+
+            const configBar = document.getElementById('config-bar');
+            if (configBar) {
+                configBar.classList.add('is-open');
+                setTimeout(function () { configBar.classList.remove('is-open'); }, 2000);
+            }
+
+            const innerConfigContent = document.getElementById('inner-config-content');
+            let configExpandTimer = null;
+            if (configBar) {
+                configBar.addEventListener('mouseenter', function () {
+                    clearTimeout(configExpandTimer);
+                    configExpandTimer = setTimeout(function () {
+                        if (innerConfigContent) innerConfigContent.style.pointerEvents = 'auto';
+                    }, 500);
+                });
+                configBar.addEventListener('mouseleave', function () {
+                    clearTimeout(configExpandTimer);
+                    if (innerConfigContent) innerConfigContent.style.pointerEvents = 'none';
+                });
+            }
+
+            var countryClose = document.getElementById('lb-country-close');
+            var countrySearch = document.getElementById('lb-country-search');
+            var countryList = document.getElementById('lb-country-list');
+            var countryModal = document.getElementById('lb-country-modal');
+            if (countryClose) countryClose.addEventListener('click', closeCountryModal, { signal: __pageSignal });
+            if (countrySearch) {
+                countrySearch.addEventListener('input', function () {
+                    renderCountryList(countrySearch.value);
+                }, { signal: __pageSignal });
+            }
+            if (countryList) {
+                countryList.addEventListener('click', function (e) {
+                    var btn = e.target.closest('[data-country]');
+                    if (!btn) return;
+                    lbState.countryCode = btn.getAttribute('data-country');
+                    closeCountryModal();
+                    loadLeaderboard();
+                }, { signal: __pageSignal });
+            }
+            if (countryModal) {
+                countryModal.addEventListener('click', function (e) {
+                    if (e.target === countryModal) closeCountryModal();
+                }, { signal: __pageSignal });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && countryModalOpen) closeCountryModal();
+            }, { signal: __pageSignal });
+
+            var cfgCountry = document.getElementById('cfg-country');
+            if (cfgCountry) {
+                cfgCountry.addEventListener('click', function () {
+                    if (lbState.scope === 'country') openCountryModal();
+                }, { signal: __pageSignal });
+            }
+
             const pageTrack = document.getElementById('page-scroll-track');
             const pageThumb = document.getElementById('page-scroll-thumb');
             let isDragging = false, startY, startScrollTop;
 
             function updatePageScrollbar() {
+                if (!pageTrack || !pageThumb) return;
                 const docH = document.documentElement.scrollHeight;
                 const winH = window.innerHeight;
                 const scrollable = docH - winH;
@@ -513,8 +859,8 @@ window.__spaPageInit = function() {
                 pageThumb.style.top = (pct * (trackH - thumbH)) + 'px';
             }
 
-            // Show on mouse near right edge
-            document.addEventListener('mousemove', e => {
+            document.addEventListener('mousemove', function (e) {
+                if (!pageTrack) return;
                 if (isDragging || window.innerWidth - e.clientX < 40) {
                     pageTrack.classList.remove('opacity-0', 'translate-x-4', 'pointer-events-none');
                     pageTrack.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
@@ -527,15 +873,17 @@ window.__spaPageInit = function() {
             window.addEventListener('scroll', updatePageScrollbar);
             window.addEventListener('resize', updatePageScrollbar);
 
-            pageThumb.addEventListener('mousedown', e => {
-                isDragging = true;
-                startY = e.clientY;
-                startScrollTop = window.scrollY;
-                document.body.style.userSelect = 'none';
-                pageThumb.classList.add('bg-primary');
-            });
-            document.addEventListener('mousemove', e => {
-                if (!isDragging) return;
+            if (pageThumb) {
+                pageThumb.addEventListener('mousedown', function (e) {
+                    isDragging = true;
+                    startY = e.clientY;
+                    startScrollTop = window.scrollY;
+                    document.body.style.userSelect = 'none';
+                    pageThumb.classList.add('bg-primary');
+                });
+            }
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging || !pageTrack || !pageThumb) return;
                 const docH = document.documentElement.scrollHeight;
                 const winH = window.innerHeight;
                 const maxScroll = docH - winH;
@@ -544,16 +892,14 @@ window.__spaPageInit = function() {
                 const deltaY = e.clientY - startY;
                 window.scrollTo(0, startScrollTop + (deltaY / maxThumbTop) * maxScroll);
             });
-            document.addEventListener('mouseup', () => {
+            document.addEventListener('mouseup', function () {
                 if (!isDragging) return;
                 isDragging = false;
                 document.body.style.userSelect = '';
-                pageThumb.classList.remove('bg-primary');
+                if (pageThumb) pageThumb.classList.remove('bg-primary');
             });
 
-
-            // Global Spacebar Scroll Prevention
-            window.addEventListener('keydown', (e) => {
+            window.addEventListener('keydown', function (e) {
                 if (e.key === ' ' || e.key === 'Spacebar') {
                     const activeEl = document.activeElement;
                     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {

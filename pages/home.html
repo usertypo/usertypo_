@@ -902,38 +902,10 @@
                                         Ranking</span>
                                 </div>
 
-                                <div class="flex-1 flex flex-col">
-                                    <div class="px-3 pt-2 pb-1 overflow-y-auto custom-scrollbar flex flex-col gap-2">
-                                        <div class="space-y-1">
-                                            <div
-                                                class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] bg-amber-500/10 rounded border border-amber-500/20">
-                                                <div class="text-amber-500 font-black">1</div>
-                                                <div class="text-slate-200 font-bold truncate">SpeedRunner_X</div>
-                                                <div class="text-right text-amber-500 font-mono">142</div>
-                                            </div>
-                                            <div
-                                                class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] bg-slate-400/5 rounded border border-slate-400/10">
-                                                <div class="text-slate-400 font-black">2</div>
-                                                <div class="text-slate-300 truncate">TypeMaster99</div>
-                                                <div class="text-right text-slate-300 font-mono">138</div>
-                                            </div>
-                                            <div
-                                                class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] bg-amber-700/5 rounded border border-amber-700/10">
-                                                <div class="text-amber-700 font-black">3</div>
-                                                <div class="text-slate-300 truncate">GhostKey</div>
-                                                <div class="text-right text-slate-300 font-mono">124</div>
-                                            </div>
-                                        </div>
-
-                                        <div
-                                            class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-2 text-[0.533rem] bg-primary/10 rounded border border-primary/30 relative overflow-hidden">
-                                            <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>
-                                            <div class="text-primary font-black">#8</div>
-                                            <div class="text-white font-bold uppercase tracking-tighter">You</div>
-                                            <div class="text-right text-primary font-mono font-bold"
-                                                id="stats-rank-wpm">105
-                                            </div>
-                                        </div>
+                                <div class="flex-1 flex flex-col min-h-0">
+                                    <div id="stats-friends-list"
+                                        class="px-3 pt-2 pb-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 flex-1 min-h-0">
+                                        <p class="text-[0.6rem] text-slate-500 text-center py-6">Loading…</p>
                                     </div>
 
                                     <div class="mt-auto">
@@ -950,7 +922,7 @@
                                 </div>
 
                                 <div class="py-2.5 flex justify-center items-center">
-                                    <button
+                                    <button type="button" id="stats-friends-view-all"
                                         class="text-[0.48rem] font-bold text-white uppercase tracking-widest transition-all duration-300 [text-shadow:0_0_8px_rgba(255,255,255,0.6)] hover:text-primary hover:[text-shadow:0_0_10px_rgba(0,208,255,0.8)]">View
                                         All</button>
                                 </div>
@@ -3285,7 +3257,113 @@ window.setTimeout = function(handler, timeout) {
             document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
             document.getElementById('stats-total-chars').innerText = failedReason ? '--' : rawChars;
 
-            document.getElementById('stats-rank-wpm').innerText = wpm;
+            function escapeStatsHtml(value) {
+                if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
+                    return window.usertypoEscape.html(value);
+                }
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function podiumClass(rank) {
+                if (rank === 1) return 'bg-amber-500/10 rounded border border-amber-500/20';
+                if (rank === 2) return 'bg-slate-400/5 rounded border border-slate-400/10';
+                if (rank === 3) return 'bg-amber-700/5 rounded border border-amber-700/10';
+                return 'bg-white/5 rounded border border-white/5';
+            }
+
+            function podiumRankColor(rank) {
+                if (rank === 1) return 'text-amber-500';
+                if (rank === 2) return 'text-slate-400';
+                if (rank === 3) return 'text-amber-700';
+                return 'text-slate-400';
+            }
+
+            function renderFriendsRankingCard(entries, myUserId, fallbackWpm) {
+                var listEl = document.getElementById('stats-friends-list');
+                if (!listEl) return;
+                var lb = window.usertypoLeaderboards;
+                var rows = Array.isArray(entries) ? entries : [];
+                var me = rows.find(function (e) { return myUserId && e.userId === myUserId; }) || null;
+                var top = rows.filter(function (e) { return !(myUserId && e.userId === myUserId); }).slice(0, 3);
+                // If fewer than 3 others, fill from full list (may include me in podium)
+                if (top.length < 3) {
+                    top = rows.slice(0, 3);
+                }
+
+                var html = '';
+                if (!rows.length) {
+                    html = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">No friend scores yet for all-time 30s.</p>';
+                } else {
+                    html += '<div class="space-y-1">';
+                    top.forEach(function (entry) {
+                        var rank = Number(entry.rank) || 0;
+                        var isMeRow = !!(myUserId && entry.userId === myUserId);
+                        var name = isMeRow ? 'You' : (entry.username || 'Player');
+                        var wpmVal = lb && lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm || 0));
+                        var flag = entry.flagEmoji
+                            ? '<span class="mr-1" title="' + escapeStatsHtml(entry.countryName || entry.countryCode || '') + '">' +
+                                escapeStatsHtml(entry.flagEmoji) + '</span>'
+                            : '';
+                        html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] ' +
+                            podiumClass(rank) + '">' +
+                            '<div class="' + podiumRankColor(rank) + ' font-black">' + escapeStatsHtml(String(rank)) + '</div>' +
+                            '<div class="text-slate-200 font-bold truncate flex items-center min-w-0">' + flag +
+                            '<span class="truncate">' + escapeStatsHtml(name) + '</span></div>' +
+                            '<div class="text-right ' + podiumRankColor(rank) + ' font-mono">' + escapeStatsHtml(wpmVal) + '</div>' +
+                            '</div>';
+                    });
+                    html += '</div>';
+
+                    var myRankLabel = me && me.rank != null ? '#' + me.rank : '—';
+                    var myWpm = me && me.wpm != null
+                        ? (lb && lb.formatWpm ? lb.formatWpm(me.wpm) : String(Math.round(me.wpm)))
+                        : String(fallbackWpm != null ? fallbackWpm : '—');
+                    html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-2 text-[0.533rem] bg-primary/10 rounded border border-primary/30 relative overflow-hidden mt-1">' +
+                        '<div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>' +
+                        '<div class="text-primary font-black">' + escapeStatsHtml(myRankLabel) + '</div>' +
+                        '<div class="text-white font-bold uppercase tracking-tighter">You</div>' +
+                        '<div class="text-right text-primary font-mono font-bold" id="stats-rank-wpm">' +
+                        escapeStatsHtml(myWpm) + '</div></div>';
+                }
+                listEl.innerHTML = html;
+            }
+
+            function loadStatsFriendsRanking(fallbackWpm) {
+                var listEl = document.getElementById('stats-friends-list');
+                if (!listEl) return;
+                if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getFriendsLeaderboard !== 'function') {
+                    listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6">Unavailable</p>';
+                    return;
+                }
+
+                var myId = null;
+                try {
+                    var st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
+                    myId = st && st.isSignedIn && st.user ? st.user.id : null;
+                } catch (e) { /* ignore */ }
+
+                if (!myId) {
+                    listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">Sign in to see friends ranking.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6">Loading…</p>';
+                window.usertypoLeaderboards.getFriendsLeaderboard({
+                    mode: 'time',
+                    amount: 30,
+                    timeframe: 'alltime',
+                    limit: 50,
+                }).then(function (result) {
+                    renderFriendsRankingCard((result && result.entries) || [], myId, fallbackWpm);
+                }).catch(function (err) {
+                    console.error('[usertypo leaderboards] friends ranking failed', err);
+                    listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">Could not load friends ranking.</p>';
+                });
+            }
 
             function loadStatsGlobalRank() {
                 var rankEl = document.getElementById('stats-global-rank');
@@ -3305,6 +3383,19 @@ window.setTimeout = function(handler, timeout) {
                 }).catch(function (err) {
                     console.error('[usertypo leaderboards] stats rank failed', err);
                     rankEl.textContent = '—';
+                });
+            }
+
+            loadStatsFriendsRanking(wpm);
+            loadStatsGlobalRank();
+
+            var viewAllBtn = document.getElementById('stats-friends-view-all');
+            if (viewAllBtn && !viewAllBtn.dataset.wired) {
+                viewAllBtn.dataset.wired = '1';
+                viewAllBtn.addEventListener('click', function () {
+                    try { sessionStorage.setItem('usertypo_lb_scope', 'friends'); } catch (e) { /* ignore */ }
+                    if (window.navigateTo) window.navigateTo('/leaderboards?scope=friends');
+                    else window.location.href = '/leaderboards?scope=friends';
                 });
             }
 
@@ -3373,6 +3464,7 @@ window.setTimeout = function(handler, timeout) {
                     diagnostics: diagnosticsSummary,
                 }).then(function (saveResult) {
                     loadStatsGlobalRank();
+                    loadStatsFriendsRanking(wpm);
                     if (useAdaptRefine && window.usertypoAdaptRefine) {
                         window.usertypoAdaptRefine.refresh({ words: wordList }).catch(function () {});
                     }
@@ -3382,9 +3474,11 @@ window.setTimeout = function(handler, timeout) {
                 }).catch(function (err) {
                     console.error('[usertypo sessions] save failed', err);
                     loadStatsGlobalRank();
+                    loadStatsFriendsRanking(wpm);
                 });
             } else {
                 loadStatsGlobalRank();
+                loadStatsFriendsRanking(wpm);
             }
 
             // SPA Transition â€” INSTANT, no delay
