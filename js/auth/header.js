@@ -59,11 +59,11 @@
             if (resolved) {
                 img.src = resolved;
                 img.alt = (name || 'Profile') + ' avatar';
-                img.classList.remove('hidden');
+                img.className = 'w-full h-full object-cover';
                 if (icon) icon.classList.add('hidden');
             } else {
                 img.removeAttribute('src');
-                img.classList.add('hidden');
+                img.className = 'hidden w-full h-full object-cover';
                 if (icon) icon.classList.remove('hidden');
             }
         } else if (icon) {

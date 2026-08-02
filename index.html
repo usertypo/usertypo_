@@ -5,6 +5,32 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <!-- Boot overlay: first-paint center (before any other CSS/JS) -->
+    <style id="usertypo-boot-overlay-critical">
+        #spa-boot-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            z-index: 15 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            pointer-events: none !important;
+            background-color: var(--theme-bg, #000000) !important;
+        }
+        #spa-boot-overlay[hidden] {
+            display: none !important;
+        }
+        body[data-boot-typing="1"] #spa-content {
+            visibility: hidden !important;
+        }
+    </style>
     <title>Home - Typing Test | usertypo_</title>
     <meta name="description" id="meta-description"
         content="Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer." />
@@ -187,7 +213,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=2" rel="stylesheet" />
-    <link href="css/global.css?v=20" rel="stylesheet" />
+    <link href="css/global.css?v=21" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=6" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=6" rel="stylesheet" /></noscript>
@@ -906,6 +932,9 @@
             visibility: hidden;
             pointer-events: none;
         }
+        body[data-boot-typing="1"] #spa-content {
+            visibility: hidden !important;
+        }
         body[data-boot-typing="1"] .header-logo-container {
             opacity: 1;
         }
@@ -983,6 +1012,20 @@
     data-boot-typing="1">
 
     <div id="app-backdrop" class="fixed inset-0 z-0"></div>
+
+    <div id="spa-boot-overlay" aria-hidden="false"
+        style="position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;margin:0;padding:0;z-index:15;display:flex;align-items:center;justify-content:center;pointer-events:none;background-color:var(--theme-bg,#000000)">
+        <div id="spa-boot-typing" class="spa-boot-typing-inner" aria-live="polite" aria-label="loading">
+            <div class="spa-boot-line font-mono">
+                <div id="spa-boot-text" class="spa-boot-text">
+                    <span id="spa-boot-caret" class="text-primary" aria-hidden="true"></span>
+                    <div class="word">
+                        <span class="char text-slate-500" data-boot-char="0">l</span><span class="char text-slate-500" data-boot-char="1">o</span><span class="char text-slate-500" data-boot-char="2">a</span><span class="char text-slate-500" data-boot-char="3">d</span><span class="char text-slate-500" data-boot-char="4">i</span><span class="char text-slate-500" data-boot-char="5">n</span><span class="char text-slate-500" data-boot-char="6">g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Page-level custom scrollbar (fixed, right edge) -->
     <div id="page-scroll-track"
@@ -1116,7 +1159,7 @@
                         style="stroke-dasharray: 113.097; stroke-dashoffset: 113.097;"></circle>
                 </svg>
                 <span class="relative z-[1] header-account-photo flex items-center justify-center rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] transition-all">
-                    <img id="header-account-avatar" alt="" class="hidden" width="32" height="32" decoding="async" />
+                    <img id="header-account-avatar" alt="" class="hidden w-full h-full object-cover" width="32" height="32" decoding="async" />
                     <span id="header-account-icon"
                         class="material-symbols-outlined text-[0.959rem] text-primary group-hover:text-white transition-colors relative z-[1]">person</span>
                 </span>
@@ -1167,19 +1210,7 @@
         </footer>
     </div>
 
-    <div id="spa-boot-overlay" aria-hidden="false">
-        <div id="spa-boot-typing" class="spa-boot-typing-inner" aria-live="polite" aria-label="loading">
-            <div class="spa-boot-line font-mono">
-                <div id="spa-boot-text" class="spa-boot-text">
-                    <span id="spa-boot-caret" class="text-primary" aria-hidden="true"></span>
-                    <div class="word">
-                        <span class="char text-slate-500" data-boot-char="0">l</span><span class="char text-slate-500" data-boot-char="1">o</span><span class="char text-slate-500" data-boot-char="2">a</span><span class="char text-slate-500" data-boot-char="3">d</span><span class="char text-slate-500" data-boot-char="4">i</span><span class="char text-slate-500" data-boot-char="5">n</span><span class="char text-slate-500" data-boot-char="6">g</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="js/boot-typing.js?v=7" defer></script>
+    <script src="js/boot-typing.js?v=8" defer></script>
 
     <!-- Global modals (shared across all routes) -->
     <div id="notifications-modal" class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
@@ -1551,7 +1582,7 @@
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
     <script src="js/ui/contact.js?v=4"></script>
-    <script src="js/auth/header.js?v=3"></script>
+    <script src="js/auth/header.js?v=4"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
