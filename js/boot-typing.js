@@ -98,7 +98,15 @@
         if (overlay) return overlay;
         overlay = document.createElement('div');
         overlay.id = 'spa-boot-overlay';
-        document.body.appendChild(overlay);
+        overlay.setAttribute('style',
+            'position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;margin:0;padding:0;z-index:15;display:flex;align-items:center;justify-content:center;pointer-events:none;background-color:var(--theme-bg,#000000)'
+        );
+        var anchor = document.getElementById('app-backdrop');
+        if (anchor && anchor.parentNode) {
+            anchor.parentNode.insertBefore(overlay, anchor.nextSibling);
+        } else {
+            document.body.insertBefore(overlay, document.body.firstChild);
+        }
         return overlay;
     }
 
