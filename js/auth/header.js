@@ -1,6 +1,9 @@
 /**
  * Shell header ↔ auth state binding.
  * Account bubble: shared player-level-avatar (photo + XP ring + level) + transient +XP toast.
+ *
+ * Important: do NOT remount the avatar DOM on every XP tick — replacing <img> makes the
+ * photo disappear until it reloads (noticeable after finishing a test).
  */
 (function () {
     var xpToastTimer = null;
@@ -35,36 +38,118 @@
         if (el) el.textContent = text;
     }
 
+    function sameAvatarSrc(a, b) {
+        return String(a || '') === String(b || '');
+    }
+
+    function applyEagerHeaderImg(root) {
+        if (!root) return;
+        var img = root.querySelector('img.player-level-avatar__img, img');
+        if (!img) return;
+        img.loading = 'eager';
+        img.removeAttribute('loading');
+        img.decoding = 'async';
+        img.fetchPriority = 'high';
+    }
+
+    function updateAccountInPlace(root, opts) {
+        var pla = root.querySelector('.player-level-avatar');
+        if (!pla) return false;
+
+        var showLevel = !!opts.showLevel;
+        var level = Math.max(1, Math.floor(Number(opts.level) || 1));
+        var pct = Number(opts.percentToNext) || 0;
+
+        if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.ringOffset === 'function') {
+            var offset = window.usertypoPlayerAvatar.ringOffset(showLevel ? pct : 0);
+            var progress = pla.querySelector('.player-level-avatar__progress');
+            var track = pla.querySelector('.player-level-avatar__track');
+            if (progress) {
+                progress.style.strokeDashoffset = String(offset);
+                progress.classList.toggle('opacity-0', !showLevel);
+            }
+            if (track) track.classList.toggle('opacity-0', !showLevel);
+        }
+
+        var levelEl = pla.querySelector('.player-level-avatar__level');
+        if (showLevel) {
+            if (levelEl) {
+                levelEl.textContent = String(level);
+            } else {
+                return false; // need remount to add badge
+            }
+        } else if (levelEl) {
+            levelEl.remove();
+        }
+
+        pla.setAttribute('data-level', String(level));
+        pla.setAttribute('data-xp-percent', String(pct));
+        if (opts.name) {
+            pla.setAttribute('title', opts.name);
+            pla.setAttribute('aria-label', opts.name + (showLevel ? (', level ' + level) : ''));
+        }
+
+        var img = pla.querySelector('img.player-level-avatar__img');
+        var nextSrc = opts.avatarUrl || '';
+        if (img && nextSrc && img.getAttribute('src') !== nextSrc) {
+            img.src = nextSrc;
+            img.alt = (opts.name || 'Profile') + ' avatar';
+            applyEagerHeaderImg(pla);
+        } else if (img && !nextSrc) {
+            // Switching to default — remount so default SVG renders cleanly
+            return false;
+        } else if (!img && nextSrc) {
+            return false; // need remount to add photo
+        }
+
+        return true;
+    }
+
     function mountAccountAvatar(opts) {
         var mount = document.getElementById('header-account-btn');
         if (!mount) return;
-        lastAccountOpts = opts || lastAccountOpts || {
+
+        var merged = Object.assign({}, lastAccountOpts || {
             avatarUrl: '',
             name: 'Guest',
             level: 1,
             percentToNext: 0,
             showLevel: false,
-        };
-        var o = Object.assign({}, lastAccountOpts, opts || {});
-        lastAccountOpts = o;
+        }, opts || {});
+
+        var prev = lastAccountOpts;
+        lastAccountOpts = merged;
+
+        var existing = mount.querySelector('.player-level-avatar');
+        var canInPlace = !!(existing && prev
+            && sameAvatarSrc(prev.avatarUrl, merged.avatarUrl)
+            && !!prev.showLevel === !!merged.showLevel
+            && (merged.avatarUrl || !prev.avatarUrl) // both empty or both set
+        );
+
+        // Prefer in-place ring/level updates when the photo identity is unchanged
+        if (canInPlace && updateAccountInPlace(mount, merged)) {
+            return;
+        }
 
         if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.render === 'function') {
             mount.innerHTML = window.usertypoPlayerAvatar.render({
                 id: 'header-account-pla',
-                avatarUrl: o.avatarUrl || '',
-                name: o.name || 'Guest',
-                level: o.level || 1,
-                percentToNext: o.percentToNext || 0,
+                avatarUrl: merged.avatarUrl || '',
+                name: merged.name || 'Guest',
+                level: merged.level || 1,
+                percentToNext: merged.percentToNext || 0,
                 size: 'md',
-                showLevel: !!o.showLevel,
+                showLevel: !!merged.showLevel,
                 clickable: false,
                 className: 'header-account-pla',
             });
+            applyEagerHeaderImg(mount);
             return;
         }
 
         // Fallback before player-avatar.js loads
-        var src = o.avatarUrl || '';
+        var src = merged.avatarUrl || '';
         mount.innerHTML =
             '<span class="header-account-fallback" aria-hidden="true">' +
             (src
@@ -95,12 +180,13 @@
         toast.classList.remove('hidden', 'opacity-0', 'translate-y-1');
         toast.classList.add('opacity-100');
 
-        if (award && award.percentToNext != null) {
-            setXpRingPercent(award.percentToNext);
-        }
+        var patch = {};
+        if (award && award.percentToNext != null) patch.percentToNext = award.percentToNext;
         if (award && award.newLevel != null) {
-            setAccountLevel(award.newLevel, true);
+            patch.level = award.newLevel;
+            patch.showLevel = true;
         }
+        if (Object.keys(patch).length) mountAccountAvatar(patch);
 
         if (xpToastTimer) clearTimeout(xpToastTimer);
         xpToastTimer = setTimeout(function () {
@@ -193,8 +279,10 @@
                 accountBtn.title = name;
                 accountBtn.setAttribute('aria-label', 'Your profile');
             }
+            // Keep last known photo if this update somehow has no URL (avoids blank flash mid-sync)
+            var nextPhoto = photo || (lastAccountOpts && lastAccountOpts.avatarUrl) || '';
             mountAccountAvatar({
-                avatarUrl: photo || '',
+                avatarUrl: nextPhoto,
                 name: name,
                 level: progression && progression.level || 1,
                 percentToNext: progression && progression.percentToNext || 0,
@@ -250,6 +338,7 @@
 
         window.addEventListener('usertypo:progression-updated', function (ev) {
             try {
+                // In-place ring/level updates — does not recreate the photo <img>
                 updateHeader(window.usertypoAuth.getState());
                 var award = ev && ev.detail && ev.detail.award;
                 if (award && !award.skipped && award.xpGained > 0) {
