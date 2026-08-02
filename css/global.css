@@ -19,13 +19,23 @@
 }
 
 #header-account-avatar {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
+    object-position: center;
     display: block;
 }
 #header-account-avatar.hidden {
     display: none !important;
+}
+#header-account-btn .header-account-photo {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
 }
 
 html::-webkit-scrollbar,

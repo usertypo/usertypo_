@@ -876,8 +876,6 @@
                                     <span class="text-3xl font-bold text-white block">WPM</span>
                                     <div class="flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm"
                                         id="stats-wpm-diff-container">
-                                        <span class="material-symbols-outlined text-sm"
-                                            id="stats-wpm-diff-icon">trending_up</span>
                                         <span id="stats-wpm-diff">+4.2 PB</span>
                                     </div>
                                 </div>
@@ -3291,36 +3289,33 @@ window.setTimeout = function(handler, timeout) {
             document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
             document.getElementById('stats-total-chars').innerText = failedReason ? '--' : rawChars;
 
-            // WPM comparison: percentage difference vs previous test
+            // WPM comparison: percentage difference vs previous test (text only — no trend icons)
             const diffSpan = document.getElementById('stats-wpm-diff');
-            const diffIcon = document.getElementById('stats-wpm-diff-icon');
             const diffContainer = document.getElementById('stats-wpm-diff-container');
             const previousWpm = localStorage.getItem('usertypo_previous_wpm');
 
-            if (previousWpm !== null) {
-                const prevWpm = parseFloat(previousWpm);
-                if (prevWpm > 0) {
-                    const pctDiff = ((wpm - prevWpm) / prevWpm) * 100;
-                    const absPct = Math.abs(pctDiff).toFixed(0);
-                    if (wpm >= prevWpm) {
-                        diffIcon.innerText = 'trending_up';
-                        diffSpan.innerText = '+' + absPct + '%';
-                        diffContainer.className = 'flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm';
+            if (diffSpan && diffContainer) {
+                if (previousWpm !== null) {
+                    const prevWpm = parseFloat(previousWpm);
+                    if (prevWpm > 0) {
+                        const pctDiff = ((wpm - prevWpm) / prevWpm) * 100;
+                        const absPct = Math.abs(pctDiff).toFixed(0);
+                        if (wpm >= prevWpm) {
+                            diffSpan.innerText = '+' + absPct + '%';
+                            diffContainer.className = 'flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm';
+                        } else {
+                            diffSpan.innerText = '-' + absPct + '%';
+                            diffContainer.className = 'flex items-center text-red-400 text-sm font-bold gap-1 drop-shadow-sm';
+                        }
                     } else {
-                        diffIcon.innerText = 'trending_down';
-                        diffSpan.innerText = '-' + absPct + '%';
-                        diffContainer.className = 'flex items-center text-red-400 text-sm font-bold gap-1 drop-shadow-sm';
+                        diffSpan.innerText = 'NEW';
+                        diffContainer.className = 'flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm';
                     }
                 } else {
+                    // First test ever — no previous data
                     diffSpan.innerText = 'NEW';
-                    diffIcon.innerText = 'trending_up';
                     diffContainer.className = 'flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm';
                 }
-            } else {
-                // First test ever â€” no previous data
-                diffSpan.innerText = 'NEW';
-                diffIcon.innerText = 'trending_up';
-                diffContainer.className = 'flex items-center text-emerald-400 text-sm font-bold gap-1 drop-shadow-sm';
             }
 
             // Save current WPM as previous for next test

@@ -1746,7 +1746,7 @@
                     gradient: 'from-primary', avatarBg: 'bg-primary/20 border-primary/30 text-primary',
                     avatarShadow: 'shadow-[0_0_12px_rgba(0,208,255,0.25)]',
                     wpmClass: 'text-primary', wpmShadow: '0 0 30px rgba(var(--theme-primary-rgb), 0.4)', glow: true,
-                    badge: 'bg-primary/10 border-primary/25', badgeText: 'text-primary', label: '1st', trophy: true,
+                    badge: 'bg-primary/10 border-primary/25', badgeText: 'text-primary', label: '1st', trophy: false,
                 },
                 2: {
                     delay: '200ms', border: 'rgba(192,192,192,0.15)', boxShadow: '',
