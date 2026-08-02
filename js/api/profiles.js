@@ -409,17 +409,13 @@
                 return;
             }
 
-            var fingerprint = userFingerprint(state.user);
-            if (cachedProfile && cachedProfile.user_id === state.user.id && lastFingerprint === fingerprint) {
-                return;
-            }
-
             ensureMyProfile(state.user)
                 .then(function (profile) {
                     console.info(
                         '[usertypo profiles] synced',
                         profile && profile.username ? profile.username : '(no username)',
-                        profile && profile.user_id ? '(' + profile.user_id + ')' : ''
+                        profile && profile.user_id ? '(' + profile.user_id + ')' : '',
+                        profile && profile.country_code ? '[' + profile.country_code + ']' : '[no country]'
                     );
                     if (window.usertypoProgression && typeof window.usertypoProgression.getMine === 'function') {
                         return window.usertypoProgression.getMine({ force: true }).catch(function (err) {

@@ -3305,40 +3305,83 @@ window.setTimeout = function(handler, timeout) {
                             }
                         } catch (e) { /* ignore */ }
                     }
-                    if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.resolveAvatarUrl === 'function') {
-                        return window.usertypoPlayerAvatar.resolveAvatarUrl(url);
-                    }
                     return url || '';
                 }
 
-                function friendAvatar(entry, isMeRow) {
-                    var url = friendAvatarUrl(entry, isMeRow);
+                function friendPlayerAvatar(entry, isMeRow) {
                     var name = isMeRow ? 'You' : ((entry && entry.username) || 'Player');
-                    if (!url) {
-                        return '<span class="w-4 h-4 rounded-full bg-white/10 border border-white/10 shrink-0 inline-block" aria-hidden="true"></span>';
+                    var url = friendAvatarUrl(entry, isMeRow);
+                    var level = entry && entry.level != null ? entry.level : 1;
+                    var pct = entry && entry.percentToNext != null ? entry.percentToNext : 0;
+                    if (isMeRow && window.usertypoProgression && typeof window.usertypoProgression.getCached === 'function') {
+                        try {
+                            var mine = window.usertypoProgression.getCached();
+                            if (mine) {
+                                if (mine.level != null) level = mine.level;
+                                if (mine.percentToNext != null) pct = mine.percentToNext;
+                            }
+                        } catch (e) { /* ignore */ }
                     }
-                    return '<img src="' + escapeStatsHtml(url) + '" alt="' + escapeStatsHtml(name) +
-                        '" class="w-4 h-4 rounded-full object-cover border border-white/10 shrink-0" loading="lazy" decoding="async" />';
+                    if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.fromPlayer === 'function') {
+                        return window.usertypoPlayerAvatar.fromPlayer({
+                            avatarUrl: url,
+                            name: name,
+                            level: level,
+                            percentToNext: pct,
+                            userId: entry && entry.userId,
+                        }, {
+                            size: 'sm',
+                            clickable: false,
+                            className: 'shrink-0',
+                        });
+                    }
+                    var resolved = window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.resolveAvatarUrl === 'function'
+                        ? window.usertypoPlayerAvatar.resolveAvatarUrl(url)
+                        : url;
+                    if (!resolved) {
+                        return '<span class="w-9 h-9 rounded-full bg-white/10 border border-white/10 shrink-0 inline-block" aria-hidden="true"></span>';
+                    }
+                    return '<img src="' + escapeStatsHtml(resolved) + '" alt="' + escapeStatsHtml(name) +
+                        '" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0" loading="lazy" decoding="async" />';
+                }
+
+                function friendRow(opts) {
+                    var rankLabel = opts.rankLabel;
+                    var rankColor = opts.rankColor;
+                    var nameHtml = opts.nameHtml;
+                    var wpmHtml = opts.wpmHtml;
+                    var avatarHtml = opts.avatarHtml;
+                    var rowClass = opts.rowClass;
+                    var wpmId = opts.wpmId ? ' id="' + opts.wpmId + '"' : '';
+                    return '<div class="flex items-center gap-2 px-2.5 py-1.5 text-[0.533rem] ' + rowClass + '">' +
+                        '<span class="' + rankColor + ' font-black w-5 text-center shrink-0 tabular-nums leading-none">' +
+                        escapeStatsHtml(rankLabel) + '</span>' +
+                        avatarHtml +
+                        '<span class="min-w-0 flex-1 truncate font-bold leading-none">' + nameHtml + '</span>' +
+                        '<span class="shrink-0 font-mono font-bold leading-none' + (opts.wpmExtraClass ? ' ' + opts.wpmExtraClass : '') + '"' +
+                        wpmId + '>' + wpmHtml + '</span>' +
+                        '</div>';
                 }
 
                 var html = '';
                 if (!rows.length) {
                     html = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">No friend scores yet for all-time 30s.</p>';
                 } else {
-                    html += '<div class="space-y-1">';
+                    html += '<div class="space-y-1.5">';
                     top.forEach(function (entry) {
                         var rank = Number(entry.rank) || 0;
                         var isMeRow = !!(myUserId && entry.userId === myUserId);
                         var name = isMeRow ? 'You' : (entry.username || 'Player');
                         var wpmVal = lb && lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm || 0));
-                        html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] ' +
-                            podiumClass(rank) + '">' +
-                            '<div class="' + podiumRankColor(rank) + ' font-black">' + escapeStatsHtml(String(rank)) + '</div>' +
-                            '<div class="text-slate-200 font-bold truncate flex items-center gap-1.5 min-w-0">' +
-                            friendAvatar(entry, isMeRow) +
-                            '<span class="truncate">' + escapeStatsHtml(name) + '</span></div>' +
-                            '<div class="text-right ' + podiumRankColor(rank) + ' font-mono">' + escapeStatsHtml(wpmVal) + '</div>' +
-                            '</div>';
+                        html += friendRow({
+                            rankLabel: String(rank),
+                            rankColor: podiumRankColor(rank),
+                            avatarHtml: friendPlayerAvatar(entry, isMeRow),
+                            nameHtml: '<span class="text-slate-200">' + escapeStatsHtml(name) + '</span>',
+                            wpmHtml: escapeStatsHtml(wpmVal),
+                            wpmExtraClass: podiumRankColor(rank),
+                            rowClass: podiumClass(rank),
+                        });
                     });
                     html += '</div>';
 
@@ -3346,14 +3389,14 @@ window.setTimeout = function(handler, timeout) {
                     var myWpm = me && me.wpm != null
                         ? (lb && lb.formatWpm ? lb.formatWpm(me.wpm) : String(Math.round(me.wpm)))
                         : String(fallbackWpm != null ? fallbackWpm : '—');
-                    html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] bg-primary/10 rounded-full border border-primary/30 relative overflow-hidden mt-1">' +
-                        '<div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>' +
-                        '<div class="text-primary font-black">' + escapeStatsHtml(myRankLabel) + '</div>' +
-                        '<div class="text-white font-bold truncate flex items-center gap-1.5 min-w-0">' +
-                        friendAvatar(me || { username: 'You', userId: myUserId }, true) +
-                        '<span class="truncate uppercase tracking-tighter">You</span></div>' +
-                        '<div class="text-right text-primary font-mono font-bold" id="stats-rank-wpm">' +
-                        escapeStatsHtml(myWpm) + '</div></div>';
+                    html += '<div class="mt-1.5 flex items-center gap-2 px-2.5 py-1.5 text-[0.533rem] bg-primary/10 rounded-full border border-primary/30 relative overflow-hidden">' +
+                        '<span class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" aria-hidden="true"></span>' +
+                        '<span class="text-primary font-black w-5 text-center shrink-0 tabular-nums leading-none">' +
+                        escapeStatsHtml(myRankLabel) + '</span>' +
+                        friendPlayerAvatar(me || { username: 'You', userId: myUserId }, true) +
+                        '<span class="min-w-0 flex-1 truncate font-bold text-white uppercase tracking-tighter leading-none">You</span>' +
+                        '<span class="shrink-0 font-mono font-bold text-primary leading-none" id="stats-rank-wpm">' +
+                        escapeStatsHtml(myWpm) + '</span></div>';
                 }
                 listEl.innerHTML = html;
             }

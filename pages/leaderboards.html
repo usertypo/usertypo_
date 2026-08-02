@@ -166,12 +166,14 @@
             font-family: ui-monospace, monospace;
         }
         .lb-user-flag {
-            width: 1.1rem;
-            height: 0.825rem;
+            width: 1.25rem;
+            height: 0.94rem;
             object-fit: cover;
             border-radius: 2px;
             flex-shrink: 0;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+            display: inline-block;
+            vertical-align: middle;
         }
         .lb-country-flag {
             width: 1.35rem;
@@ -533,14 +535,20 @@ window.__spaPageInit = function() {
                     var username = escapeHtml(entry.username || 'Player');
                     var flag = renderFlag(entry);
 
+                    var nameBlock = '<span class="inline-flex items-center gap-1.5 min-w-0">' +
+                        '<span class="font-sans tracking-wide truncate ' +
+                        (isMe ? 'font-bold text-white' : 'font-medium text-slate-200 group-hover:text-white transition-colors') +
+                        '">' + username + '</span>' +
+                        flag +
+                        (isMe ? '<span class="material-symbols-outlined text-primary text-sm shrink-0" title="You">person</span>' : '') +
+                        '</span>';
+
                     if (isMe) {
                         return '<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">' +
                             '<td class="py-2.5 px-5 font-bold text-primary">' + rank + '</td>' +
-                            '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
+                            '<td class="py-2.5 px-5"><div class="flex items-center gap-2.5 min-w-0">' +
                             renderAvatar(entry, colorClass, true) +
-                            '<span class="font-sans font-bold text-white tracking-wide">' + username + '</span>' +
-                            flag +
-                            '<span class="material-symbols-outlined text-primary text-sm" title="You">person</span>' +
+                            nameBlock +
                             '</div></td>' +
                             '<td class="py-2.5 px-5 text-right font-bold text-white text-base">' + wpm + '</td>' +
                             '<td class="py-2.5 px-4 text-right text-white/80 hidden md:table-cell">' + raw + '</td>' +
@@ -552,10 +560,9 @@ window.__spaPageInit = function() {
 
                     return '<tr class="hover:bg-white/5 transition-colors group border-l-4 border-transparent">' +
                         '<td class="py-2.5 px-5 text-slate-400">' + rank + '</td>' +
-                        '<td class="py-2.5 px-5"><div class="flex items-center gap-3">' +
+                        '<td class="py-2.5 px-5"><div class="flex items-center gap-2.5 min-w-0">' +
                         renderAvatar(entry, colorClass, false) +
-                        '<span class="font-sans font-medium text-slate-200 group-hover:text-white transition-colors">' + username + '</span>' +
-                        flag +
+                        nameBlock +
                         '</div></td>' +
                         '<td class="py-2.5 px-5 text-right font-bold text-primary/80">' + wpm + '</td>' +
                         '<td class="py-2.5 px-4 text-right text-slate-400 hidden md:table-cell">' + raw + '</td>' +
