@@ -242,6 +242,7 @@ async function hydrateProfiles(userIds: string[]) {
       username: string | null;
       avatar_url: string | null;
       show_on_leaderboard: boolean;
+      country_code: string | null;
     }>();
   }
 
@@ -250,7 +251,7 @@ async function hydrateProfiles(userIds: string[]) {
   // so Redis leaderboard edge stays cheap on free-tier limits.
   const result = await sb
     .from("profiles")
-    .select("user_id, username, display_name, avatar_url, show_on_leaderboard")
+    .select("user_id, username, display_name, avatar_url, show_on_leaderboard, country_code")
     .in("user_id", userIds);
 
   if (result.error) throw result.error;
@@ -259,13 +260,16 @@ async function hydrateProfiles(userIds: string[]) {
     username: string | null;
     avatar_url: string | null;
     show_on_leaderboard: boolean;
+    country_code: string | null;
   }>();
 
   for (const row of result.data || []) {
+    const rawCode = row.country_code ? String(row.country_code).trim().toUpperCase() : "";
     map.set(row.user_id, {
       username: row.username || row.display_name || "Player",
       avatar_url: row.avatar_url || null,
       show_on_leaderboard: row.show_on_leaderboard !== false,
+      country_code: /^[A-Z]{2}$/.test(rawCode) ? rawCode : null,
     });
   }
   return map;
@@ -509,6 +513,7 @@ async function handleTop(body: Record<string, unknown>) {
       user_id: entry.user_id,
       username: (profile && profile.username) || "Player",
       avatar_url: (profile && profile.avatar_url) || null,
+      country_code: (profile && profile.country_code) || null,
       wpm: entry.wpm,
       accuracy: entry.accuracy,
       raw_wpm: entry.raw_wpm,

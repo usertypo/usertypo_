@@ -149,6 +149,22 @@ window.__spaPageInit = function () {
                 goTo(result.redirectTo || '/', inferWelcomeKind());
                 return;
             }
+            if (result && result.status === 'email_exists') {
+                if (titleEl) titleEl.textContent = 'Account already exists';
+                if (msgEl) {
+                    msgEl.textContent = result.message
+                        || 'An account with this email already exists. Sign in with the method you used originally.';
+                }
+                if (errEl) {
+                    errEl.textContent = '';
+                    errEl.classList.add('hidden');
+                }
+                if (formEl) formEl.classList.add('hidden');
+                setTimeout(function () {
+                    goTo(result.redirectTo || '/signin');
+                }, 2800);
+                return;
+            }
             if (result && result.status === 'needs_username') {
                 showUsernameForm(result.suggestedUsername || '');
                 return;
@@ -156,7 +172,14 @@ window.__spaPageInit = function () {
             showError('Google sign-in did not complete. Please try again.');
         })
         .catch(function (err) {
-            showError(window.usertypoAuth.formatError(err));
+            var msg = window.usertypoAuth.formatError(err);
+            showError(msg);
+            if (err && (err.code === 'email_already_exists' || /already exists/i.test(msg))) {
+                if (titleEl) titleEl.textContent = 'Account already exists';
+                setTimeout(function () {
+                    goTo('/signin');
+                }, 2800);
+            }
         });
 
     if (formEl) {
@@ -184,7 +207,16 @@ window.__spaPageInit = function () {
                 })
                 .catch(function (err) {
                     if (submitEl) submitEl.disabled = false;
-                    showError(window.usertypoAuth.formatError(err));
+                    var msg = window.usertypoAuth.formatError(err);
+                    showError(msg);
+                    if (err && (err.code === 'email_already_exists' || /already exists/i.test(msg))) {
+                        if (titleEl) titleEl.textContent = 'Account already exists';
+                        if (formEl) formEl.classList.add('hidden');
+                        setTimeout(function () {
+                            goTo('/signin');
+                        }, 2800);
+                        return;
+                    }
                     if (formEl) formEl.classList.remove('hidden');
                     if (titleEl) titleEl.textContent = 'Almost done';
                     if (msgEl) msgEl.textContent = 'Pick a username to finish creating your account.';

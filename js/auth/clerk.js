@@ -45,6 +45,12 @@
     function formatError(err) {
         if (!err) return 'Something went wrong. Please try again.';
         if (typeof err === 'string') return err;
+        if (err.code === 'email_already_exists' && err.message) {
+            return err.message;
+        }
+        if (isIdentifierExistsError(err)) {
+            return EMAIL_EXISTS_MESSAGE;
+        }
         if (err.errors && err.errors.length) {
             return err.errors.map(function (e) { return e.longMessage || e.message; }).join(' ');
         }
@@ -306,16 +312,127 @@
     }
 
     function isUsernameTakenError(err) {
-        var text = formatError(err).toLowerCase();
         var code = '';
+        var param = '';
+        var message = '';
         if (err && err.errors && err.errors[0]) {
             code = String(err.errors[0].code || '').toLowerCase();
+            message = String(err.errors[0].longMessage || err.errors[0].message || '');
+            if (err.errors[0].meta) {
+                param = String(err.errors[0].meta.paramName || err.errors[0].meta.name || '').toLowerCase();
+            }
         }
+        if (param === 'email_address' || param === 'email') return false;
+        if (code === 'form_username_exists') return true;
+        if (code === 'form_identifier_exists' && param === 'username') return true;
+        return /username.*(already|taken|exists)|already (been )?taken|is taken/i.test(message);
+    }
+
+    function isIdentifierExistsError(err) {
+        var code = '';
+        var message = '';
+        var longMessage = '';
+        var param = '';
+        if (err && err.code) {
+            code = String(err.code || '').toLowerCase();
+        }
+        if (err && err.errors && err.errors[0]) {
+            code = code || String(err.errors[0].code || '').toLowerCase();
+            message = String(err.errors[0].message || '');
+            longMessage = String(err.errors[0].longMessage || '');
+            if (err.errors[0].meta) {
+                param = String(err.errors[0].meta.paramName || err.errors[0].meta.name || '').toLowerCase();
+            }
+        }
+        if (err && err.message) {
+            message = message || String(err.message);
+        }
+        if (param === 'username') return false;
+        if (code === 'email_already_exists') return true;
+        if (param === 'email_address' || param === 'email') {
+            return code === 'form_identifier_exists' || code === 'identifier_exists';
+        }
+        var text = (message + ' ' + longMessage).toLowerCase();
         return (
             code === 'form_identifier_exists'
-            || code === 'form_username_exists'
-            || /already (been )?taken|already exists|is taken|username.*exists/i.test(text)
+            || code === 'identifier_exists'
+            || /email.*(already|taken|exists)|account with this email already exists/i.test(text)
         );
+    }
+
+    var EMAIL_EXISTS_MESSAGE =
+        'An account with this email already exists. Sign in with the method you used originally.';
+
+    function emailExistsError() {
+        var err = new Error(EMAIL_EXISTS_MESSAGE);
+        err.code = 'email_already_exists';
+        return err;
+    }
+
+    /**
+     * True when Clerk already has a user for this email (password and/or OAuth).
+     * Used to block OAuth from creating a second account for the same Gmail.
+     */
+    async function accountExistsForEmail(email) {
+        var clerk = getClerk();
+        var normalized = String(email || '').trim().toLowerCase();
+        if (!clerk || !clerk.client || !clerk.client.signIn || !normalized) {
+            return { exists: false };
+        }
+
+        try {
+            var signIn = await clerk.client.signIn.create({ identifier: normalized });
+            var factors = signIn && signIn.supportedFirstFactors
+                ? signIn.supportedFirstFactors
+                : [];
+            var hasPassword = factors.some(function (f) {
+                return f && (f.strategy === 'password' || f.strategy === 'email_code');
+            });
+            var hasGoogle = factors.some(function (f) {
+                return f && f.strategy === 'oauth_google';
+            });
+            // Any successful identifier lookup means an account already exists.
+            if (
+                signIn
+                && (
+                    signIn.status === 'needs_first_factor'
+                    || signIn.status === 'needs_second_factor'
+                    || signIn.status === 'complete'
+                    || factors.length > 0
+                )
+            ) {
+                return { exists: true, hasPassword: hasPassword, hasGoogle: hasGoogle };
+            }
+            return { exists: false };
+        } catch (err) {
+            var code = '';
+            if (err && err.errors && err.errors[0]) {
+                code = String(err.errors[0].code || '').toLowerCase();
+            }
+            if (
+                code === 'form_identifier_not_found'
+                || code === 'identifier_not_found'
+                || /couldn't find|could not find|not found/i.test(formatError(err))
+            ) {
+                return { exists: false };
+            }
+            // Unknown error — do not block OAuth completion on a flaky check.
+            return { exists: false, uncertain: true };
+        }
+    }
+
+    /**
+     * Before finishing a Google OAuth *sign-up*, refuse if that email is
+     * already registered via password (or another method). Existing duplicate
+     * accounts are left alone; this only stops new ones.
+     */
+    async function assertOAuthEmailAvailable(signUp) {
+        var email = emailFromSignUp(signUp);
+        if (!email) return;
+        var existing = await accountExistsForEmail(email);
+        if (existing.exists) {
+            throw emailExistsError();
+        }
     }
 
     /**
@@ -328,6 +445,9 @@
         if (!signUp || !signUp.status) {
             return { status: 'none' };
         }
+
+        // Never create a second Clerk user for an email that already has an account.
+        await assertOAuthEmailAvailable(signUp);
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
@@ -387,6 +507,9 @@
                 if (updates.username && isUsernameTakenError(err)) {
                     attempts += 1;
                     continue;
+                }
+                if (isIdentifierExistsError(err)) {
+                    throw emailExistsError();
                 }
                 throw err;
             }
@@ -466,11 +589,12 @@
 
         var homePath = config.afterSignInUrl || '/';
         var continuePath = config.ssoCallbackUrl || '/sso-callback';
+        var signInPath = config.signInUrl || '/signin';
 
         // Swallow Clerk's navigate callback — we decide where to go after the
         // pending OAuth sign-up is fully completed (username / legal, etc.).
         await clerk.handleRedirectCallback({
-            signInUrl: window.location.origin + (config.signInUrl || '/signin'),
+            signInUrl: window.location.origin + signInPath,
             signUpUrl: window.location.origin + (config.signUpUrl || '/signin'),
             afterSignInUrl: homePath,
             afterSignUpUrl: homePath,
@@ -486,7 +610,38 @@
             return { status: 'complete', redirectTo: homePath };
         }
 
-        var finished = await completePendingOAuthSignUp();
+        // OAuth transferred to sign-up (no Google-linked user yet). If this
+        // email already belongs to a password/other account, stop — do not
+        // create a second user.
+        var pendingSignUp = clerk.client && clerk.client.signUp;
+        if (pendingSignUp && pendingSignUp.status) {
+            try {
+                await assertOAuthEmailAvailable(pendingSignUp);
+            } catch (err) {
+                if (isIdentifierExistsError(err) || (err && err.code === 'email_already_exists')) {
+                    return {
+                        status: 'email_exists',
+                        message: EMAIL_EXISTS_MESSAGE,
+                        redirectTo: signInPath,
+                    };
+                }
+                throw err;
+            }
+        }
+
+        var finished;
+        try {
+            finished = await completePendingOAuthSignUp();
+        } catch (err) {
+            if (isIdentifierExistsError(err) || (err && err.code === 'email_already_exists')) {
+                return {
+                    status: 'email_exists',
+                    message: EMAIL_EXISTS_MESSAGE,
+                    redirectTo: signInPath,
+                };
+            }
+            throw err;
+        }
         notify(getState());
 
         if (finished.status === 'complete' || getState().isSignedIn) {

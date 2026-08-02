@@ -179,9 +179,37 @@
         return String(entry.userId) === String(userId);
     }
 
+    function normalizeCountryCode(value) {
+        var code = String(value || '').trim().toUpperCase();
+        return /^[A-Z]{2}$/.test(code) ? code : null;
+    }
+
+    function countryName(code) {
+        var normalized = normalizeCountryCode(code);
+        if (!normalized) return '';
+        try {
+            if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+                var names = new Intl.DisplayNames(['en'], { type: 'region' });
+                var label = names.of(normalized);
+                if (label) return label;
+            }
+        } catch (e) { /* fall through */ }
+        return normalized;
+    }
+
+    /** ISO 3166-1 alpha-2 → regional-indicator flag emoji (e.g. US → 🇺🇸). */
+    function flagEmoji(code) {
+        var normalized = normalizeCountryCode(code);
+        if (!normalized) return '';
+        var a = normalized.charCodeAt(0) - 65 + 0x1F1E6;
+        var b = normalized.charCodeAt(1) - 65 + 0x1F1E6;
+        return String.fromCodePoint(a, b);
+    }
+
     function mapEntry(row) {
         var rawWpm = row.raw_wpm != null ? row.raw_wpm : row.rawWpm;
         var consistency = row.consistency;
+        var country = normalizeCountryCode(row.country_code || row.countryCode);
         return {
             rank: Number(row.rank) || 0,
             userId: row.user_id,
@@ -198,7 +226,52 @@
                 ? null
                 : Number(consistency),
             createdAt: row.session_created_at || null,
+            countryCode: country,
+            countryName: country ? countryName(country) : '',
+            flagEmoji: country ? flagEmoji(country) : '',
         };
+    }
+
+    async function finalizeEntries(entries) {
+        var list = entries || [];
+        await blankBlockedAvatars(list);
+        await enrichMissingCountryCodes(list);
+        if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+            await window.usertypoProgression.attachToList(list, 'userId');
+        }
+        return list;
+    }
+
+    /** Redis top lists may omit country_code until the edge function is redeployed. */
+    async function enrichMissingCountryCodes(entries) {
+        if (!entries || !entries.length || !window.usertypoDb) return;
+        var missingIds = [];
+        var seen = Object.create(null);
+        entries.forEach(function (entry) {
+            if (!entry || !entry.userId || entry.countryCode || seen[entry.userId]) return;
+            seen[entry.userId] = true;
+            missingIds.push(entry.userId);
+        });
+        if (!missingIds.length) return;
+        try {
+            var client = await getClient();
+            var result = await client.rpc('get_profile_country_codes', {
+                p_ids: missingIds,
+            });
+            if (result.error || !Array.isArray(result.data)) return;
+            var byId = Object.create(null);
+            result.data.forEach(function (row) {
+                var code = normalizeCountryCode(row.country_code);
+                if (code) byId[row.user_id] = code;
+            });
+            entries.forEach(function (entry) {
+                if (!entry || entry.countryCode || !byId[entry.userId]) return;
+                var code = byId[entry.userId];
+                entry.countryCode = code;
+                entry.countryName = countryName(code);
+                entry.flagEmoji = flagEmoji(code);
+            });
+        } catch (e) { /* ignore — flags optional */ }
     }
 
     async function blankBlockedAvatars(entries) {
@@ -316,11 +389,7 @@
 
         if (result.error) throw result.error;
 
-        var entries = (result.data || []).map(mapEntry);
-        await blankBlockedAvatars(entries);
-        if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
-            await window.usertypoProgression.attachToList(entries, 'userId');
-        }
+        var entries = await finalizeEntries((result.data || []).map(mapEntry));
 
         return {
             entries: entries,
@@ -328,6 +397,7 @@
             amount: amount,
             timeframe: timeframe,
             limit: limit,
+            scope: 'global',
             source: 'postgres',
         };
     }
@@ -376,6 +446,14 @@
         var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
         var timeframe = normalizeTimeframe(options && options.timeframe);
         var limit = Math.max(1, Math.min(100, Number(options && options.limit) || 50));
+        var scope = String((options && options.scope) || 'global').toLowerCase();
+
+        if (scope === 'country') {
+            return getCountryLeaderboard(options);
+        }
+        if (scope === 'friends') {
+            return getFriendsLeaderboard(options);
+        }
 
         try {
             var redisResult = await callLeaderboardFunction({
@@ -387,17 +465,14 @@
             }, false);
 
             if (redisResult.ok && redisResult.data && Array.isArray(redisResult.data.entries)) {
-                var entries = redisResult.data.entries.map(mapEntry);
-                await blankBlockedAvatars(entries);
-                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
-                    await window.usertypoProgression.attachToList(entries, 'userId');
-                }
+                var entries = await finalizeEntries(redisResult.data.entries.map(mapEntry));
                 return {
                     entries: entries,
                     mode: mode,
                     amount: amount,
                     timeframe: timeframe,
                     limit: limit,
+                    scope: 'global',
                     source: 'redis',
                 };
             }
@@ -406,6 +481,88 @@
         }
 
         return getLeaderboardFromPostgres({ mode: mode, amount: amount, timeframe: timeframe, limit: limit });
+    }
+
+    async function listLeaderboardCountries() {
+        var client = await getClient();
+        var result = await client.rpc('list_leaderboard_countries');
+        if (result.error) throw result.error;
+        return (result.data || []).map(function (row) {
+            var code = normalizeCountryCode(row.code);
+            return {
+                code: code,
+                users: Number(row.users) || 0,
+                name: code ? countryName(code) : '',
+                flagEmoji: code ? flagEmoji(code) : '',
+            };
+        }).filter(function (row) { return !!row.code; });
+    }
+
+    async function getCountryLeaderboard(options) {
+        var client = await getClient();
+        var country = normalizeCountryCode(options && (options.countryCode || options.country));
+        if (!country) {
+            throw new Error('country_required');
+        }
+        var mode = normalizeMode(options && options.mode);
+        var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
+        var timeframe = normalizeTimeframe(options && options.timeframe);
+        var limit = Math.max(1, Math.min(100, Number(options && options.limit) || 50));
+
+        var result = await client.rpc('get_country_leaderboard', {
+            p_country_code: country,
+            p_mode: mode,
+            p_amount: amount,
+            p_timeframe: timeframe,
+            p_limit: limit,
+        });
+        if (result.error) throw result.error;
+
+        var entries = await finalizeEntries((result.data || []).map(mapEntry));
+        return {
+            entries: entries,
+            mode: mode,
+            amount: amount,
+            timeframe: timeframe,
+            limit: limit,
+            scope: 'country',
+            countryCode: country,
+            countryName: countryName(country),
+            source: 'postgres',
+        };
+    }
+
+    async function getFriendsLeaderboard(options) {
+        var client = await getClient();
+        var mode = normalizeMode(options && options.mode);
+        var amount = Math.max(1, Math.round(Number(options && options.amount) || 30));
+        var timeframe = normalizeTimeframe(options && options.timeframe);
+        var limit = Math.max(1, Math.min(100, Number(options && options.limit) || 50));
+
+        if (!getSignedInUserId()) {
+            var guestErr = new Error('guest');
+            guestErr.code = 'guest';
+            throw guestErr;
+        }
+
+        var result = await client.rpc('get_friends_leaderboard', {
+            p_mode: mode,
+            p_amount: amount,
+            p_timeframe: timeframe,
+            p_limit: limit,
+        });
+        if (result.error) throw result.error;
+
+        var entries = await finalizeEntries((result.data || []).map(mapEntry));
+        return {
+            entries: entries,
+            mode: mode,
+            amount: amount,
+            timeframe: timeframe,
+            limit: limit,
+            scope: 'friends',
+            source: 'postgres',
+        };
     }
 
     /**
@@ -672,6 +829,9 @@
 
     window.usertypoLeaderboards = {
         getLeaderboard: getLeaderboard,
+        getCountryLeaderboard: getCountryLeaderboard,
+        getFriendsLeaderboard: getFriendsLeaderboard,
+        listLeaderboardCountries: listLeaderboardCountries,
         getMyRank: getMyRank,
         ingestScore: ingestScore,
         syncVisibility: syncVisibility,
@@ -684,5 +844,8 @@
         formatRank: formatRank,
         formatGlobalRankLabel: formatGlobalRankLabel,
         renderRankStat: renderRankStat,
+        normalizeCountryCode: normalizeCountryCode,
+        countryName: countryName,
+        flagEmoji: flagEmoji,
     };
 })();
