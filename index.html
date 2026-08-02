@@ -80,7 +80,7 @@
         var onPrimary = isLight ? '#ffffff' : '#000000';
         var fgStrong = isLight ? '#333333' : '#ffffff';
         var ringTrack = isLight ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.12)';
-        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}';
+        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}#spa-boot-overlay{position:fixed!important;inset:0!important;z-index:15!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0!important;pointer-events:none!important;}#spa-boot-overlay[hidden]{display:none!important;}.spa-boot-typing-inner{pointer-events:none;user-select:none;}';
         var style = document.createElement('style');
         style.id = 'usertypo-boot-theme';
         style.textContent = css;
@@ -187,7 +187,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=2" rel="stylesheet" />
-    <link href="css/global.css?v=19" rel="stylesheet" />
+    <link href="css/global.css?v=20" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=6" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=6" rel="stylesheet" /></noscript>
@@ -1115,10 +1115,10 @@
                         class="opacity-0 transition-[stroke-dashoffset,opacity] duration-700 ease-out"
                         style="stroke-dasharray: 113.097; stroke-dashoffset: 113.097;"></circle>
                 </svg>
-                <span class="relative z-[1] flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] transition-all">
-                    <img id="header-account-avatar" alt="" class="hidden w-full h-full object-cover" />
+                <span class="relative z-[1] header-account-photo flex items-center justify-center rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] transition-all">
+                    <img id="header-account-avatar" alt="" class="hidden" width="32" height="32" decoding="async" />
                     <span id="header-account-icon"
-                        class="material-symbols-outlined text-[0.959rem] text-primary group-hover:text-white transition-colors">person</span>
+                        class="material-symbols-outlined text-[0.959rem] text-primary group-hover:text-white transition-colors relative z-[1]">person</span>
                 </span>
                 <span id="header-account-level"
                     class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-on-primary text-[0.48rem] font-black leading-[1.1rem] text-center shadow-md">1</span>
@@ -1563,8 +1563,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=26"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=118"></script>
-    <script src="js/router.js?v=20"></script>
+    <script src="js/page-fragments.js?v=119"></script>
+    <script src="js/router.js?v=21"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;
