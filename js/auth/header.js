@@ -1,10 +1,10 @@
 /**
  * Shell header ↔ auth state binding.
- * Account bubble: avatar + XP ring + level badge + transient +XP toast.
+ * Account bubble: shared player-level-avatar (photo + XP ring + level) + transient +XP toast.
  */
 (function () {
-    var XP_RING_CIRCUMFERENCE = 2 * Math.PI * 18; // r=18 in 40x40 viewBox
     var xpToastTimer = null;
+    var lastAccountOpts = null;
 
     function displayName(user, profile) {
         if (profile && profile.username) return profile.username;
@@ -30,61 +30,60 @@
         return null;
     }
 
-    function defaultAvatarUrl() {
-        if (window.usertypoPlayerAvatar && window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL) {
-            return window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL;
-        }
-        return null;
-    }
-
     function setText(id, text) {
         var el = document.getElementById(id);
         if (el) el.textContent = text;
     }
 
-    function setXpRingPercent(percent) {
-        var ring = document.getElementById('header-account-xp-ring');
-        if (!ring) return;
-        var pct = Math.min(100, Math.max(0, Number(percent) || 0));
-        var offset = XP_RING_CIRCUMFERENCE * (1 - pct / 100);
-        ring.style.strokeDasharray = String(XP_RING_CIRCUMFERENCE);
-        ring.style.strokeDashoffset = String(offset);
+    function mountAccountAvatar(opts) {
+        var mount = document.getElementById('header-account-btn');
+        if (!mount) return;
+        lastAccountOpts = opts || lastAccountOpts || {
+            avatarUrl: '',
+            name: 'Guest',
+            level: 1,
+            percentToNext: 0,
+            showLevel: false,
+        };
+        var o = Object.assign({}, lastAccountOpts, opts || {});
+        lastAccountOpts = o;
+
+        if (window.usertypoPlayerAvatar && typeof window.usertypoPlayerAvatar.render === 'function') {
+            mount.innerHTML = window.usertypoPlayerAvatar.render({
+                id: 'header-account-pla',
+                avatarUrl: o.avatarUrl || '',
+                name: o.name || 'Guest',
+                level: o.level || 1,
+                percentToNext: o.percentToNext || 0,
+                size: 'md',
+                showLevel: !!o.showLevel,
+                clickable: false,
+                className: 'header-account-pla',
+            });
+            return;
+        }
+
+        // Fallback before player-avatar.js loads
+        var src = o.avatarUrl || '';
+        mount.innerHTML =
+            '<span class="header-account-fallback" aria-hidden="true">' +
+            (src
+                ? '<img src="' + String(src).replace(/"/g, '&quot;') + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:9999px;display:block;" />'
+                : '<span class="material-symbols-outlined" style="font-size:1rem;color:var(--theme-primary,#fff);">person</span>') +
+            '</span>';
     }
 
-    function setAccountAvatar(url, name, useDefault) {
-        var img = document.getElementById('header-account-avatar');
-        var icon = document.getElementById('header-account-icon');
-        var resolved = url || (useDefault === false ? null : defaultAvatarUrl());
-        if (img) {
-            if (resolved) {
-                img.src = resolved;
-                img.alt = (name || 'Profile') + ' avatar';
-                img.className = 'w-full h-full object-cover';
-                if (icon) icon.classList.add('hidden');
-            } else {
-                img.removeAttribute('src');
-                img.className = 'hidden w-full h-full object-cover';
-                if (icon) icon.classList.remove('hidden');
-            }
-        } else if (icon) {
-            icon.classList.remove('hidden');
-        }
+    function setXpRingPercent(percent) {
+        if (!lastAccountOpts) return;
+        mountAccountAvatar({ percentToNext: percent });
     }
 
     function setAccountLevel(level, visible) {
-        var badge = document.getElementById('header-account-level');
-        var ringTrack = document.getElementById('header-account-xp-track');
-        var ringFg = document.getElementById('header-account-xp-ring');
-        if (badge) {
-            if (visible) {
-                badge.textContent = String(Math.max(1, Math.floor(Number(level) || 1)));
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-        if (ringTrack) ringTrack.classList.toggle('opacity-0', !visible);
-        if (ringFg) ringFg.classList.toggle('opacity-0', !visible);
+        if (!lastAccountOpts) return;
+        mountAccountAvatar({
+            level: level,
+            showLevel: !!visible,
+        });
     }
 
     function showXpGain(amount, award) {
@@ -164,7 +163,6 @@
         var authAction = document.getElementById('shell-auth-action');
         var authIcon = document.getElementById('shell-auth-action-icon');
         var accountBtn = document.getElementById('header-account-btn');
-        var accountIcon = document.getElementById('header-account-icon');
         var userStatsLink = document.getElementById('nav-userstats');
 
         if (isSignedIn) {
@@ -195,15 +193,13 @@
                 accountBtn.title = name;
                 accountBtn.setAttribute('aria-label', 'Your profile');
             }
-            if (accountIcon) accountIcon.textContent = 'person';
-            setAccountAvatar(photo, name);
-            if (progression) {
-                setAccountLevel(progression.level, true);
-                setXpRingPercent(progression.percentToNext || 0);
-            } else {
-                setAccountLevel(1, true);
-                setXpRingPercent(0);
-            }
+            mountAccountAvatar({
+                avatarUrl: photo || '',
+                name: name,
+                level: progression && progression.level || 1,
+                percentToNext: progression && progression.percentToNext || 0,
+                showLevel: true,
+            });
             if (userStatsLink) userStatsLink.setAttribute('href', '/userstats');
         } else {
             if (authAction) {
@@ -219,15 +215,27 @@
                 accountBtn.title = 'Sign in';
                 accountBtn.setAttribute('aria-label', 'Sign in');
             }
-            if (accountIcon) accountIcon.textContent = 'login';
-            setAccountAvatar(null, null, false);
-            setAccountLevel(1, false);
-            setXpRingPercent(0);
+            mountAccountAvatar({
+                avatarUrl: '',
+                name: 'Guest',
+                level: 1,
+                percentToNext: 0,
+                showLevel: false,
+            });
             if (userStatsLink) userStatsLink.setAttribute('href', '/signin');
         }
     }
 
     function boot() {
+        // Paint a correct avatar shell immediately (before auth resolves)
+        mountAccountAvatar({
+            avatarUrl: '',
+            name: 'Guest',
+            level: 1,
+            percentToNext: 0,
+            showLevel: false,
+        });
+
         if (!window.usertypoAuth) {
             updateHeader({ isSignedIn: false, user: null });
             return;

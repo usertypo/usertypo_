@@ -99,7 +99,7 @@
         overlay = document.createElement('div');
         overlay.id = 'spa-boot-overlay';
         overlay.setAttribute('style',
-            'position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;margin:0;padding:0;z-index:15;display:flex;align-items:center;justify-content:center;pointer-events:none;background-color:var(--theme-bg,#000000)'
+            'position:fixed;top:0;right:0;bottom:0;left:0;width:100vw;height:100vh;margin:0;padding:0;z-index:40;display:block;pointer-events:none;background-color:var(--theme-bg,#000000)'
         );
         var anchor = document.getElementById('app-backdrop');
         if (anchor && anchor.parentNode) {
@@ -122,7 +122,8 @@
         }
         return (
             '<div id="spa-boot-typing" class="spa-boot-typing-inner" aria-live="polite" aria-label="' +
-            text.replace(/"/g, '&quot;') + '">' +
+            text.replace(/"/g, '&quot;') +
+            '" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:41;pointer-events:none;text-align:center;margin:0">' +
             '<div class="spa-boot-line font-mono">' +
             '<div id="spa-boot-text" class="spa-boot-text">' +
             '<span id="spa-boot-caret" class="text-primary" aria-hidden="true"></span>' +
@@ -281,18 +282,7 @@
 
     function startInitial() {
         var phrase = resolveInitialPhrase();
-        var overlay = document.getElementById('spa-boot-overlay');
-        if (!overlay) {
-            overlay = showOverlay(phrase);
-        } else {
-            overlay.hidden = false;
-            overlay.removeAttribute('hidden');
-            overlay.setAttribute('aria-hidden', 'false');
-            overlay.innerHTML = buildInner(phrase);
-            overlay.classList.add('is-visible');
-            overlayVisible = true;
-            setBootChrome(true);
-        }
+        var overlay = showOverlay(phrase);
 
         var pageRoot = document.getElementById('spa-page-root');
         if (pageRoot) {
