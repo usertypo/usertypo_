@@ -18,26 +18,20 @@
     animation: none !important;
 }
 
-/* Match profile page avatar fill — beat Tailwind img { height:auto; max-width:100% } */
-#header-account-avatar {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    object-fit: cover !important;
-    object-position: center center !important;
-    display: block;
-    border-radius: 9999px;
-}
-#header-account-avatar.hidden {
-    display: none !important;
-}
-#header-account-btn .header-account-photo {
-    position: relative;
+/* Header account uses shared .player-level-avatar — keep a tiny fallback if JS is late */
+#header-account-btn .header-account-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 2rem;
     height: 2rem;
-    flex-shrink: 0;
-    overflow: hidden;
     border-radius: 9999px;
+    overflow: hidden;
+    background: rgba(26, 29, 35, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+#header-account-btn .header-account-pla {
+    pointer-events: none;
 }
 
 html::-webkit-scrollbar,

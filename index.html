@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <!-- Boot overlay: first-paint center (before any other CSS/JS) -->
+    <!-- Boot overlay: first-paint full-screen cover (text injected centered by JS — no FOUC) -->
     <style id="usertypo-boot-overlay-critical">
         #spa-boot-overlay {
             position: fixed !important;
@@ -13,22 +13,33 @@
             right: 0 !important;
             bottom: 0 !important;
             left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
             margin: 0 !important;
             padding: 0 !important;
-            z-index: 15 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            z-index: 40 !important;
+            display: block !important;
             pointer-events: none !important;
             background-color: var(--theme-bg, #000000) !important;
         }
         #spa-boot-overlay[hidden] {
             display: none !important;
         }
-        body[data-boot-typing="1"] #spa-content {
+        #spa-boot-typing {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            margin: 0 !important;
+            z-index: 41 !important;
+            pointer-events: none !important;
+            text-align: center !important;
+        }
+        body[data-boot-typing="1"] #spa-content,
+        body[data-boot-typing="1"] #header-left,
+        body[data-boot-typing="1"] #header-right {
             visibility: hidden !important;
+            pointer-events: none !important;
         }
     </style>
     <title>Home - Typing Test | usertypo_</title>
@@ -106,7 +117,7 @@
         var onPrimary = isLight ? '#ffffff' : '#000000';
         var fgStrong = isLight ? '#333333' : '#ffffff';
         var ringTrack = isLight ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.12)';
-        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}#spa-boot-overlay{position:fixed!important;inset:0!important;z-index:15!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0!important;pointer-events:none!important;}#spa-boot-overlay[hidden]{display:none!important;}.spa-boot-typing-inner{pointer-events:none;user-select:none;}';
+        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}#spa-boot-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:40!important;display:block!important;margin:0!important;padding:0!important;pointer-events:none!important;}#spa-boot-overlay[hidden]{display:none!important;}#spa-boot-typing,.spa-boot-typing-inner{position:fixed!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;z-index:41!important;pointer-events:none;user-select:none;text-align:center;}';
         var style = document.createElement('style');
         style.id = 'usertypo-boot-theme';
         style.textContent = css;
@@ -213,7 +224,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=2" rel="stylesheet" />
-    <link href="css/global.css?v=21" rel="stylesheet" />
+    <link href="css/global.css?v=22" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=6" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=6" rel="stylesheet" /></noscript>
@@ -867,23 +878,28 @@
         .header-logo-link { display: flex; align-items: center; justify-content: center; height: 2.557rem; width: 9.592rem; }
         .header-logo-container { position: relative; width: 26.644rem; height: 26.644rem; transform: scale(0.5); margin: -13.322rem; flex-shrink: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
         .header-logo-container.logo-assets-ready { opacity: 1; }
-        /* Boot / welcome typing overlay — true viewport center */
+        /* Boot / welcome typing overlay — solid cover; text is fixed-centered via #spa-boot-typing */
         #spa-boot-overlay {
             position: fixed;
             inset: 0;
-            z-index: 15;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            z-index: 40;
+            display: block;
             background-color: var(--theme-bg, #000000);
             pointer-events: none;
         }
         #spa-boot-overlay[hidden] {
             display: none !important;
         }
+        #spa-boot-typing,
         .spa-boot-typing-inner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 41;
             pointer-events: none;
             user-select: none;
+            text-align: center;
         }
         .spa-boot-line {
             font-size: clamp(24px, 2.4vw, 30px);
@@ -1013,19 +1029,9 @@
 
     <div id="app-backdrop" class="fixed inset-0 z-0"></div>
 
+    <!-- Boot overlay: solid cover only — typing text injected centered by boot-typing.js (avoids off-center FOUC) -->
     <div id="spa-boot-overlay" aria-hidden="false"
-        style="position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;margin:0;padding:0;z-index:15;display:flex;align-items:center;justify-content:center;pointer-events:none;background-color:var(--theme-bg,#000000)">
-        <div id="spa-boot-typing" class="spa-boot-typing-inner" aria-live="polite" aria-label="loading">
-            <div class="spa-boot-line font-mono">
-                <div id="spa-boot-text" class="spa-boot-text">
-                    <span id="spa-boot-caret" class="text-primary" aria-hidden="true"></span>
-                    <div class="word">
-                        <span class="char text-slate-500" data-boot-char="0">l</span><span class="char text-slate-500" data-boot-char="1">o</span><span class="char text-slate-500" data-boot-char="2">a</span><span class="char text-slate-500" data-boot-char="3">d</span><span class="char text-slate-500" data-boot-char="4">i</span><span class="char text-slate-500" data-boot-char="5">n</span><span class="char text-slate-500" data-boot-char="6">g</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        style="position:fixed;top:0;right:0;bottom:0;left:0;width:100vw;height:100vh;margin:0;padding:0;z-index:40;display:block;pointer-events:none;background-color:var(--theme-bg,#000000)"></div>
 
     <!-- Page-level custom scrollbar (fixed, right edge) -->
     <div id="page-scroll-track"
@@ -1148,24 +1154,8 @@
                 style="text-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.55);"
                 aria-live="polite">+0</span>
             <a href="/signin" data-spa-link id="header-account-btn"
-                class="relative flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
-                title="Sign in" aria-label="Sign in">
-                <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 40 40" aria-hidden="true">
-                    <circle id="header-account-xp-track" cx="20" cy="20" r="18" fill="none"
-                        stroke="var(--theme-ring-track, rgba(255,255,255,0.12))" stroke-width="2.5" class="opacity-0 transition-opacity"></circle>
-                    <circle id="header-account-xp-ring" cx="20" cy="20" r="18" fill="none"
-                        stroke="rgb(var(--theme-primary-rgb))" stroke-width="2.5" stroke-linecap="round"
-                        class="opacity-0 transition-[stroke-dashoffset,opacity] duration-700 ease-out"
-                        style="stroke-dasharray: 113.097; stroke-dashoffset: 113.097;"></circle>
-                </svg>
-                <span class="relative z-[1] header-account-photo flex items-center justify-center rounded-full overflow-hidden bg-surface/60 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.25)] group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(0,208,255,0.25)] transition-all">
-                    <img id="header-account-avatar" alt="" class="hidden w-full h-full object-cover" width="32" height="32" decoding="async" />
-                    <span id="header-account-icon"
-                        class="material-symbols-outlined text-[0.959rem] text-primary group-hover:text-white transition-colors relative z-[1]">person</span>
-                </span>
-                <span id="header-account-level"
-                    class="hidden absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-primary text-on-primary text-[0.48rem] font-black leading-[1.1rem] text-center shadow-md">1</span>
-            </a>
+                class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
+                title="Sign in" aria-label="Sign in"></a>
         </div>
     </header>
 
@@ -1210,7 +1200,7 @@
         </footer>
     </div>
 
-    <script src="js/boot-typing.js?v=8" defer></script>
+    <script src="js/boot-typing.js?v=9" defer></script>
 
     <!-- Global modals (shared across all routes) -->
     <div id="notifications-modal" class="fixed inset-0 z-[250] flex items-center justify-center pointer-events-none">
@@ -1582,7 +1572,7 @@
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
     <script src="js/ui/contact.js?v=4"></script>
-    <script src="js/auth/header.js?v=4"></script>
+    <script src="js/auth/header.js?v=5"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
@@ -1594,8 +1584,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=26"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=119"></script>
-    <script src="js/router.js?v=21"></script>
+    <script src="js/page-fragments.js?v=120"></script>
+    <script src="js/router.js?v=22"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;
