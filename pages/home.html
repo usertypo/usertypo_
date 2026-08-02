@@ -3289,9 +3289,48 @@ window.setTimeout = function(handler, timeout) {
                 var rows = Array.isArray(entries) ? entries : [];
                 var me = rows.find(function (e) { return myUserId && e.userId === myUserId; }) || null;
                 var top = rows.filter(function (e) { return !(myUserId && e.userId === myUserId); }).slice(0, 3);
-                // If fewer than 3 others, fill from full list (may include me in podium)
                 if (top.length < 3) {
                     top = rows.slice(0, 3);
+                }
+
+                function friendAvatar(entry, isMeRow) {
+                    var source = entry || {};
+                    if (isMeRow && !source.avatarUrl) {
+                        try {
+                            if (window.__USERTYPO_PROFILE__ && window.__USERTYPO_PROFILE__.avatar_url) {
+                                source = Object.assign({}, source, {
+                                    avatarUrl: window.__USERTYPO_PROFILE__.avatar_url,
+                                    level: source.level || window.__USERTYPO_PROFILE__.level,
+                                });
+                            } else if (window.usertypoAuth) {
+                                var user = window.usertypoAuth.getState().user;
+                                if (user && user.hasImage === true && user.imageUrl) {
+                                    source = Object.assign({}, source, { avatarUrl: user.imageUrl });
+                                }
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                    if (window.usertypoPlayerAvatar) {
+                        return window.usertypoPlayerAvatar.fromPlayer({
+                            avatarUrl: source.avatarUrl,
+                            name: isMeRow ? 'You' : (source.username || 'Player'),
+                            level: source.level,
+                            percentToNext: source.percentToNext,
+                            userId: source.userId || myUserId,
+                        }, {
+                            size: 'xs',
+                            className: 'shrink-0',
+                            clickable: false,
+                        });
+                    }
+                    return '';
+                }
+
+                function friendFlag(entry) {
+                    if (!entry || !entry.countryCode || !lb || typeof lb.flagHtml !== 'function') return '';
+                    return lb.flagHtml(entry.countryCode, {
+                        className: 'w-[1.1rem] h-[0.825rem] object-cover rounded-[2px] shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]',
+                    });
                 }
 
                 var html = '';
@@ -3304,14 +3343,12 @@ window.setTimeout = function(handler, timeout) {
                         var isMeRow = !!(myUserId && entry.userId === myUserId);
                         var name = isMeRow ? 'You' : (entry.username || 'Player');
                         var wpmVal = lb && lb.formatWpm ? lb.formatWpm(entry.wpm) : String(Math.round(entry.wpm || 0));
-                        var flag = entry.flagEmoji
-                            ? '<span class="mr-1" title="' + escapeStatsHtml(entry.countryName || entry.countryCode || '') + '">' +
-                                escapeStatsHtml(entry.flagEmoji) + '</span>'
-                            : '';
-                        html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-1.5 text-[0.533rem] ' +
+                        html += '<div class="grid grid-cols-[1.4rem_minmax(0,1fr)_2.25rem] items-center gap-1.5 px-2 py-1.5 text-[0.533rem] ' +
                             podiumClass(rank) + '">' +
-                            '<div class="' + podiumRankColor(rank) + ' font-black">' + escapeStatsHtml(String(rank)) + '</div>' +
-                            '<div class="text-slate-200 font-bold truncate flex items-center min-w-0">' + flag +
+                            '<div class="' + podiumRankColor(rank) + ' font-black text-center">' + escapeStatsHtml(String(rank)) + '</div>' +
+                            '<div class="text-slate-200 font-bold min-w-0 flex items-center gap-1.5">' +
+                            friendAvatar(entry, isMeRow) +
+                            friendFlag(entry) +
                             '<span class="truncate">' + escapeStatsHtml(name) + '</span></div>' +
                             '<div class="text-right ' + podiumRankColor(rank) + ' font-mono">' + escapeStatsHtml(wpmVal) + '</div>' +
                             '</div>';
@@ -3322,10 +3359,13 @@ window.setTimeout = function(handler, timeout) {
                     var myWpm = me && me.wpm != null
                         ? (lb && lb.formatWpm ? lb.formatWpm(me.wpm) : String(Math.round(me.wpm)))
                         : String(fallbackWpm != null ? fallbackWpm : '—');
-                    html += '<div class="grid grid-cols-[0.5fr_2fr_1fr] items-center px-2 py-2 text-[0.533rem] bg-primary/10 rounded border border-primary/30 relative overflow-hidden mt-1">' +
+                    html += '<div class="grid grid-cols-[1.4rem_minmax(0,1fr)_2.25rem] items-center gap-1.5 px-2 py-2 text-[0.533rem] bg-primary/10 rounded border border-primary/30 relative overflow-hidden mt-1">' +
                         '<div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>' +
-                        '<div class="text-primary font-black">' + escapeStatsHtml(myRankLabel) + '</div>' +
-                        '<div class="text-white font-bold uppercase tracking-tighter">You</div>' +
+                        '<div class="text-primary font-black text-center">' + escapeStatsHtml(myRankLabel) + '</div>' +
+                        '<div class="text-white font-bold min-w-0 flex items-center gap-1.5">' +
+                        friendAvatar(me || { username: 'You', userId: myUserId }, true) +
+                        friendFlag(me) +
+                        '<span class="truncate uppercase tracking-tighter">You</span></div>' +
                         '<div class="text-right text-primary font-mono font-bold" id="stats-rank-wpm">' +
                         escapeStatsHtml(myWpm) + '</div></div>';
                 }
