@@ -408,13 +408,16 @@
         /* â”€â”€â”€ Toggle Switch â”€â”€â”€ */
         .toggle-track {
             width: 2.5rem; height: 1.375rem;
-            background: rgba(255,255,255,0.08);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
             border-radius: 9999px;
             position: relative;
             cursor: pointer;
             transition: background 0.25s ease;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             flex-shrink: 0;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .toggle-track.on {
             background: var(--theme-primary);

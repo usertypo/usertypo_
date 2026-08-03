@@ -34,9 +34,12 @@
         .hiw-math {
             margin: 1rem 0 1.25rem;
             padding: 1.15rem 1.25rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 0.9rem;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             overflow-x: auto;
         }
         .hiw-eq {
@@ -165,7 +168,7 @@
             are awarded.
         </p>
 
-        <nav class="hiw-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.03]" aria-label="Table of contents">
+        <nav class="hiw-toc mb-8 sm:mb-12 p-4 sm:p-5 rounded-2xl border border-white/10 glass-panel" aria-label="Table of contents">
             <p class="text-[0.586rem] font-bold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
             <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm list-decimal list-inside">
                 <li><a href="#overview" data-hiw-toc>Overview</a></li>

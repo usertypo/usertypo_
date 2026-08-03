@@ -1395,8 +1395,34 @@ function applyThemeSettings(settings) {
         .bg-primary\\/50 { background-color: rgba(${accentRGB}, 0.5) !important; }
         .bg-primary\\/60 { background-color: rgba(${accentRGB}, 0.6) !important; }
         .bg-primary\\/80 { background-color: rgba(${accentRGB}, 0.8) !important; }
-        .bg-surface\\/40 { background-color: rgba(${bgSecRGB}, 0.4) !important; }
-        .bg-surface\\/85 { background-color: rgba(${bgSecRGB}, 0.85) !important; }
+        .bg-surface\\/40 { background-color: var(--theme-menu-bg) !important; }
+        .bg-surface\\/60 { background-color: var(--theme-menu-bg) !important; }
+        .bg-surface\\/80 { background-color: var(--theme-menu-bg) !important; }
+        .bg-surface\\/85 { background-color: var(--theme-menu-bg) !important; }
+        .bg-surface\\/90 { background-color: var(--theme-menu-bg) !important; }
+        /* Nested UI chrome (inputs, chips, rows) — same menu glass, not darker black washes */
+        .bg-black\\/10,
+        .bg-black\\/20,
+        .bg-black\\/25,
+        .bg-black\\/30,
+        .bg-black\\/40,
+        .bg-white\\/\\[0\\.03\\],
+        .bg-white\\/\\[0\\.035\\],
+        .bg-white\\/\\[0\\.04\\],
+        .bg-slate-900,
+        .bg-slate-900\\/40,
+        .bg-slate-950 {
+            background-color: var(--theme-menu-bg) !important;
+            background-image: none !important;
+        }
+        /* Never keep Tailwind blur-md (12px) on chrome — menu uses 4px */
+        .backdrop-blur-md,
+        .backdrop-blur-lg,
+        .backdrop-blur-xl {
+            --tw-backdrop-blur: blur(4px) !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
         .border-primary\\/20 { border-color: rgba(${accentRGB}, 0.2) !important; }
         .border-primary\\/30 { border-color: rgba(${accentRGB}, 0.3) !important; }
         .border-primary\\/40 { border-color: rgba(${accentRGB}, 0.4) !important; }
@@ -1593,11 +1619,38 @@ function applyThemeSettings(settings) {
         .theme-color-hex,
         .custom-preset-card,
         .about-math,
+        .about-toc,
+        .hiw-toc,
+        .hiw-card,
+        .hiw-step,
+        .privacy-toc,
+        .terms-toc,
+        .security-toc,
         #lb-country-search,
         #friends-filter-input,
         #add-friends-search-input,
+        #custom-prompt-input,
+        #contact-modal .contact-pill-input,
+        #contact-modal .contact-pill-textarea,
+        #contact-modal input[type="text"],
+        #contact-modal input[type="email"],
+        #contact-modal textarea,
+        #contact-modal #contact-problem-btn,
         .testActivity .yearSelectButton,
-        .testActivity .yearSelectMenu {
+        .testActivity .yearSelectMenu,
+        .pot-tab-pill,
+        .pot-preset-chip:not(.is-active),
+        .graph-tab-pill,
+        #back-to-top-btn,
+        #back-to-top-btn:hover,
+        #shell-user-card,
+        .player-pill:not(.me),
+        #live-leaderboard .lb-pill:not(.me),
+        .toggle-track:not(.on),
+        thead.bg-surface\\/80,
+        #leaderboards-table thead,
+        .custom-popover input,
+        .custom-popover button {
             background: var(--theme-menu-bg) !important;
             background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
@@ -1642,15 +1695,15 @@ function applyThemeSettings(settings) {
         .quick-btn-tooltip {
             color: ${p.textPrimary} !important;
         }
-        /* Contact fields — beat Tailwind forms plugin white defaults */
+        /* Contact fields — same menu glass (not darker nested black) */
         #contact-modal .contact-pill-input,
         #contact-modal .contact-pill-textarea,
         #contact-modal input[type="text"],
         #contact-modal input[type="email"],
-        #contact-modal textarea {
-            background-color: ${themeIsLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.35)'} !important;
+        #contact-modal textarea,
+        #contact-modal #contact-problem-btn {
             color: ${themeIsLight ? '#222222' : '#ffffff'} !important;
-            border-color: ${panelBorder} !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
         }
         #contact-modal .contact-pill-input::placeholder,
         #contact-modal .contact-pill-textarea::placeholder {
@@ -2043,7 +2096,8 @@ function applyThemeSettings(settings) {
         #settings-panel .setting-card.active {
             border-color: rgba(${accentRGB}, 0.3) !important;
             box-shadow: 0 0 15px rgba(${accentRGB}, 0.08), inset 0 0 0 1px rgba(${accentRGB}, 0.05) !important;
-            background: linear-gradient(145deg, rgba(${accentRGB}, 0.04) 0%, rgba(${bgSecRGB}, 0.3) 100%) !important;
+            background: var(--theme-menu-bg) !important;
+            background-image: none !important;
         }
         .opt-btn,
         .setting-select,
@@ -3603,13 +3657,16 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             margin-left: 8px !important;
         }
 
-        /* Glass-style input — subtle translucent look */
+        /* Glass-style input — same menu fill as popover shell */
         .custom-popover input {
-            background: rgba(0, 0, 0, 0.20) !important;
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: #fff !important;
             -moz-appearance: textfield !important;
             appearance: textfield !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
         }
         .custom-popover input:focus {
             border-color: rgba(255, 255, 255, 0.15) !important;
@@ -3626,7 +3683,8 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 
         /* Glass-style Apply button */
         .custom-popover button {
-            background: rgba(255, 255, 255, 0.03) !important;
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: #fff !important;
         }
