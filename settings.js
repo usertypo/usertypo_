@@ -1318,6 +1318,8 @@ function applyThemeSettings(settings) {
             --theme-bg-secondary: ${p.bgSecondary};
             --theme-bg-secondary-rgb: ${bgSecRGB};
             --theme-menu-bg: rgba(${bgSecRGB}, 0.4);
+            --theme-box-radius: 1.375rem;
+            --settings-box-radius: 1.375rem;
             --theme-text: ${p.textPrimary};
             --theme-text-muted: ${p.textMuted};
             --theme-error: ${p.error};
@@ -1711,7 +1713,7 @@ function applyThemeSettings(settings) {
         }
 
         #save-toast-inner {
-            border-radius: 9999px !important;
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
         }
         .setting-select {
             padding-right: 0.7rem !important;
@@ -1727,6 +1729,161 @@ function applyThemeSettings(settings) {
             -webkit-backdrop-filter: none !important;
             border-radius: 0 !important;
             padding: 0 !important;
+        }
+
+        /*
+         * ── Shared box radius (source of truth: settings tabs = 1.375rem) ──
+         * Rectangular chrome uses --theme-box-radius.
+         * Circles / expanding bubbles are restored below and must stay circular.
+         */
+        .rounded,
+        .rounded-md,
+        .rounded-lg,
+        .rounded-xl,
+        .rounded-2xl,
+        .rounded-3xl,
+        .rounded-\\[1\\.25rem\\],
+        .rounded-\\[1\\.15rem\\],
+        .glass-panel,
+        .glass-card,
+        .panel-surface,
+        #settings-nav-pill,
+        .settings-panel-card,
+        #panel-card,
+        .card-label,
+        .search-input,
+        .quick-btn,
+        .quick-btn-tooltip,
+        .search-result-item,
+        .setting-info-popover,
+        #info-portal,
+        .setting-select,
+        .sub-card-header,
+        .opt-btn,
+        .danger-btn,
+        .danger-zone,
+        .footer-pill,
+        #footer-picker-box,
+        .footer-picker-search,
+        .footer-picker-pill,
+        .footer-picker-theme-preview,
+        .footer-picker-list-item,
+        .lb-country-panel,
+        #lb-country-search,
+        #contact-box,
+        #system-confirm-box,
+        #custom-prompt-box,
+        #player-profile-box,
+        #avatar-editor-box,
+        .contact-problem-menu,
+        .contact-problem-option,
+        .contact-pill-input,
+        .contact-pill-textarea,
+        #contact-modal #contact-problem-btn,
+        #custom-prompt-input,
+        #graph-tooltip,
+        .pot-graph-tooltip,
+        .custom-popover,
+        .usertypo-menu-pill-tip,
+        .notification-toast,
+        .notification-row,
+        #dual-pending-inner,
+        #save-toast > div,
+        #save-toast-inner,
+        #shell-user-card,
+        .player-pill,
+        #live-leaderboard .lb-pill,
+        .about-toc,
+        .about-math,
+        .hiw-toc,
+        .hiw-math,
+        .hiw-card,
+        .hiw-step,
+        .hiw-table-wrap,
+        .privacy-toc,
+        .terms-toc,
+        .security-toc,
+        .theme-color-hex,
+        .theme-color-swatch,
+        .custom-theme-preview,
+        .custom-preset-card,
+        .pot-tab-pill,
+        .pot-preset-chip,
+        .graph-tab-pill,
+        .testActivity .yearSelectButton,
+        .testActivity .yearSelectMenu,
+        .testActivity .yearSelectOption,
+        .usertypo-cookie-banner__inner,
+        .usertypo-cookie-btn,
+        .coming-soon-setting[data-coming-soon]:hover::after,
+        #lobby-chat-toggle-btn[data-coming-soon]:hover::after,
+        #orbit-tooltip-portal,
+        .bubble-nav-link,
+        [data-ppc-best],
+        .profile-stat-card,
+        .keymap-key {
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
+        }
+        .rounded-l-2xl,
+        .rounded-l-xl,
+        .rounded-l-lg {
+            border-top-left-radius: var(--theme-box-radius, 1.375rem) !important;
+            border-bottom-left-radius: var(--theme-box-radius, 1.375rem) !important;
+        }
+        .rounded-r-2xl,
+        .rounded-r-xl,
+        .rounded-r-lg {
+            border-top-right-radius: var(--theme-box-radius, 1.375rem) !important;
+            border-bottom-right-radius: var(--theme-box-radius, 1.375rem) !important;
+        }
+        /* True circles / expanding bubbles — never use box radius */
+        #expanding-bubble,
+        .expanding-bubble,
+        .pot-filter-bubble,
+        #menu-unread-dot,
+        .player-level-avatar,
+        .player-level-avatar__photo,
+        .player-level-avatar__ring,
+        .toggle-thumb,
+        .header-account-fallback,
+        #avatar-crop-stage,
+        #back-to-top-btn {
+            border-radius: 50% !important;
+        }
+        #expanding-bubble,
+        .expanding-bubble {
+            border-radius: 1.066rem !important;
+        }
+        .pot-filter-bubble {
+            border-radius: 1.066rem !important;
+        }
+        .toggle-track,
+        .toggle-thumb,
+        .bg-spectrum-thumb,
+        .panel-back-btn,
+        .setting-info-btn,
+        .search-clear-btn,
+        .rounded-full {
+            border-radius: 9999px !important;
+        }
+        /* But wide rounded-full controls (inputs/CTAs/chips) still use box radius */
+        input.rounded-full,
+        textarea.rounded-full,
+        .contact-pill-input,
+        .contact-pill-textarea,
+        .footer-pill.rounded-full,
+        .opt-btn.rounded-full,
+        .setting-select.rounded-full,
+        button.rounded-full.px-4,
+        button.rounded-full.px-5,
+        button.rounded-full.px-6,
+        button.rounded-full.px-7,
+        button.rounded-full.px-8,
+        a.rounded-full.px-4,
+        a.rounded-full.px-5,
+        a.rounded-full.px-6,
+        .usertypo-cookie-btn {
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
         }
 
         /* ── Scrollbar thumb ── */
@@ -2102,7 +2259,7 @@ function applyThemeSettings(settings) {
         .opt-btn,
         .setting-select,
         .sub-card-header {
-            border-radius: 9999px !important;
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
         }
         .quick-btn:hover {
             background: rgba(${accentRGB}, 0.1) !important;
@@ -2162,6 +2319,8 @@ function applyThemeSettings(settings) {
             `--theme-bg-secondary:${p.bgSecondary};`,
             `--theme-bg-secondary-rgb:${bgSecRGB};`,
             `--theme-menu-bg:rgba(${bgSecRGB}, 0.4);`,
+            `--theme-box-radius:1.375rem;`,
+            `--settings-box-radius:1.375rem;`,
             `--theme-text:${p.textPrimary};`,
             `--theme-text-muted:${p.textMuted};`,
             `--theme-error:${p.error};`,

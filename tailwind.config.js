@@ -8,6 +8,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      borderRadius: {
+        DEFAULT: 'var(--theme-box-radius, 1.375rem)',
+        md: 'var(--theme-box-radius, 1.375rem)',
+        lg: 'var(--theme-box-radius, 1.375rem)',
+        xl: 'var(--theme-box-radius, 1.375rem)',
+        '2xl': 'var(--theme-box-radius, 1.375rem)',
+        '3xl': 'var(--theme-box-radius, 1.375rem)',
+      },
       colors: {
         'on-primary': '#000000',
         'on-surface-variant': '#aaabb0',

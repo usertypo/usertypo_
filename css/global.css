@@ -53,6 +53,9 @@ body::-webkit-scrollbar {
     --theme-on-primary: #000000;
     --theme-fg-strong: #ffffff;
     --theme-ring-track: rgba(255, 255, 255, 0.12);
+    /* Same as settings nav tabs / pill (--settings-box-radius) */
+    --settings-box-radius: 1.375rem;
+    --theme-box-radius: 1.375rem;
 }
 
 @media (prefers-color-scheme: light) {
@@ -611,7 +614,7 @@ html {
     padding: 0.35rem;
     background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 1rem;
+    border-radius: var(--theme-box-radius, 1.375rem);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -624,7 +627,7 @@ html {
 .contact-problem-option {
     width: 100%;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--theme-box-radius, 1.375rem);
     padding: 0.55rem 0.85rem;
     background: transparent;
     color: #94a3b8;
@@ -681,7 +684,7 @@ html {
 
 .contact-pill-textarea::-webkit-scrollbar-thumb {
     background: transparent;
-    border-radius: 999px;
+    border-radius: var(--theme-box-radius, 1.375rem);
 }
 
 .contact-pill-textarea:hover::-webkit-scrollbar-thumb {
@@ -715,7 +718,7 @@ html {
     max-width: 40rem;
     margin: 0 auto;
     padding: 1rem 1.15rem;
-    border-radius: 1rem;
+    border-radius: var(--theme-box-radius, 1.375rem);
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
     backdrop-filter: blur(4px) !important;
@@ -760,7 +763,7 @@ html {
 }
 .usertypo-cookie-btn {
     appearance: none;
-    border-radius: 999px;
+    border-radius: var(--theme-box-radius, 1.375rem);
     padding: 0.45rem 0.9rem;
     font-size: 0.75rem;
     font-weight: 600;
