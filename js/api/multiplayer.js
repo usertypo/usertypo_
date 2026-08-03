@@ -416,7 +416,6 @@
         }
         return [
             config.amount + ' seconds',
-            config.lang || 'english',
             flagOn(config.punct) ? 'punctuation' : '',
             flagOn(config.nums) ? 'numbers' : '',
         ].filter(Boolean).join(' · ');
