@@ -276,8 +276,11 @@
             align-items: center;
             gap: 0.1rem;
             border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             overflow: hidden;
         }
         .pot-preset-chip .pot-btn {
@@ -348,12 +351,15 @@
         }
         .pot-tab-pill {
             display: flex;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 9999px;
             padding: 4px;
             gap: 2px;
             position: relative;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .pot-tab-pill .pot-btn {
             position: relative;

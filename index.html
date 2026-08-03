@@ -223,8 +223,8 @@
     <!-- Critical text fonts only ? Material Symbols is a local ~29KB subset (was ~2.3MB CDN VF) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-    <link href="css/tailwind.css?v=3" rel="stylesheet" />
-    <link href="css/global.css?v=24" rel="stylesheet" />
+    <link href="css/tailwind.css?v=4" rel="stylesheet" />
+    <link href="css/global.css?v=25" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=7" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=7" rel="stylesheet" /></noscript>
@@ -980,12 +980,13 @@
             align-items: center;
             justify-content: center;
             border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
             color: #cbd5e1;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             cursor: pointer;
             opacity: 0;
             pointer-events: none;
@@ -1000,7 +1001,7 @@
         #back-to-top-btn:hover {
             color: var(--theme-primary, #00d0ff);
             border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
-            background: rgba(15, 23, 42, 0.88);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
         }
         #back-to-top-btn:focus-visible {
             outline: 2px solid rgba(var(--theme-primary-rgb, 0, 208, 255), 0.7);
@@ -1110,7 +1111,8 @@
                         <!-- User Card -->
                         <div class="px-2 pb-2 pt-1">
                             <div id="shell-user-card"
-                                class="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+                                class="border border-white/5 rounded-xl p-2.5 flex items-center justify-between"
+                                style="background:var(--theme-menu-bg, rgba(68, 68, 68, 0.4));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);">
                                 <a href="/userstats" data-spa-link id="nav-userstats"
                                     class="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90 transition-opacity">
                                     <div id="shell-user-avatar"
@@ -1253,7 +1255,8 @@
                 <span id="custom-prompt-title">Custom Amount</span>
             </div>
             <input type="number" id="custom-prompt-input"
-                class="bg-black/30 border border-white/10 rounded-lg p-3 text-white font-mono outline-none focus:border-primary transition-colors text-sm w-full"
+                class="w-full border border-white/10 rounded-lg p-3 text-white font-mono outline-none focus:border-primary transition-colors text-sm"
+                style="background:var(--theme-menu-bg, rgba(68, 68, 68, 0.4));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);"
                 placeholder="Enter number..." onkeydown="if(event.key === 'Enter') applyCustomPrompt()" />
             <div class="flex justify-end gap-3 mt-2 font-mono text-xs">
                 <button type="button"
@@ -1324,7 +1327,7 @@
                         class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Name</label>
                     <input id="contact-name" name="name" type="text" autocomplete="name" required maxlength="80"
                         placeholder="Your name"
-                        class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors" />
+                        class="contact-pill-input w-full border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 transition-colors" />
                 </div>
 
                 <div>
@@ -1332,13 +1335,13 @@
                         class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Email</label>
                     <input id="contact-email" name="email" type="email" autocomplete="email" required maxlength="120"
                         placeholder="you@example.com"
-                        class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors" />
+                        class="contact-pill-input w-full border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 transition-colors" />
                 </div>
 
                 <div class="relative" id="contact-problem-picker">
                     <span class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Problem</span>
                     <button type="button" id="contact-problem-btn"
-                        class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-left text-white outline-none focus:border-primary/60 focus:bg-black/40 transition-colors flex items-center justify-between gap-2"
+                        class="contact-pill-input w-full border border-white/10 rounded-full px-4 py-2.5 text-sm text-left text-white outline-none focus:border-primary/60 transition-colors flex items-center justify-between gap-2"
                         aria-haspopup="listbox" aria-expanded="false" aria-controls="contact-problem-menu">
                         <span id="contact-problem-label" class="truncate text-slate-400">Select a topic?</span>
                         <span class="material-symbols-outlined text-[0.959rem] text-slate-400 shrink-0 contact-problem-chevron"
@@ -1361,7 +1364,7 @@
                         class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Description</label>
                     <textarea id="contact-description" name="description" required maxlength="4000"
                         rows="2" placeholder="Tell us what's going on? (Shift+Enter for a new line)"
-                        class="contact-pill-textarea w-full bg-black/30 border border-white/10 rounded-[1.25rem] px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors resize-none"></textarea>
+                        class="contact-pill-textarea w-full border border-white/10 rounded-[1.25rem] px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 transition-colors resize-none"></textarea>
                 </div>
 
                 <p id="contact-status" class="text-xs text-slate-500 hidden leading-relaxed" role="status" aria-live="polite"></p>
@@ -1552,7 +1555,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=35"></script>
+    <script src="settings.js?v=36"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=5"></script>
     <!-- Auth + data API (before router) -->
@@ -1583,7 +1586,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=28"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=135"></script>
+    <script src="js/page-fragments.js?v=136"></script>
     <script src="js/router.js?v=29"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {

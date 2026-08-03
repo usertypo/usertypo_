@@ -29,7 +29,10 @@
 
   .player-pill {
     @apply flex items-center gap-2 px-3 py-3 rounded-full border border-white/5 cursor-default;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+    background-image: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .rank-tag {

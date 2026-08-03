@@ -651,9 +651,11 @@ html {
 .contact-pill-textarea {
     -webkit-appearance: none !important;
     appearance: none !important;
-    background-color: rgba(0, 0, 0, 0.35) !important;
+    background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
 .contact-pill-textarea {
