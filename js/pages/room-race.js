@@ -74,6 +74,7 @@
         var countdownTapeLocked = false;
         var countdownTapeTransform = '';
         var countdownTapeBaseX = 0;
+        var countdownEndsAtTarget = 0;
         var intentionalLeave = false;
         var prevInRoomIds = {};
 
@@ -811,10 +812,18 @@
             return match ? Number(match[1]) || 0 : 0;
         }
 
+        function raceUnlockDelayMs(payload) {
+            if (!payload) return 0;
+            if (payload.startsInMs != null && Number.isFinite(Number(payload.startsInMs))) {
+                return Math.max(0, Number(payload.startsInMs));
+            }
+            if (payload.startsAt) return Math.max(0, Number(payload.startsAt) - Date.now());
+            return 0;
+        }
+
         function racePayloadStartsAt(payload) {
             if (!payload) return Date.now();
-            if (payload.startsAt) return Number(payload.startsAt);
-            return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            return Date.now() + raceUnlockDelayMs(payload);
         }
 
         function beginRaceIfAlreadyLive() {
@@ -931,26 +940,41 @@
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
-            await delay(650);
-            if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
+            var endsAt = countdownEndsAtTarget > Date.now()
+                ? countdownEndsAtTarget
+                : (Date.now() + digits.length * 1000);
+            var leadIn = Math.min(400, Math.max(0, endsAt - Date.now() - digits.length * 900));
+            if (leadIn > 0) {
+                await delay(leadIn);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+            }
+
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+                var remainingSlots = digits.length - i;
+                var remainingMs = Math.max(0, endsAt - Date.now());
+                var slotMs = Math.max(500, Math.floor(remainingMs / remainingSlots));
+                var slotEnd = Date.now() + slotMs;
+
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                await delay(1000);
+
+                var holdMs = Math.max(0, slotEnd - Date.now() - 200);
+                if (holdMs > 0) await delay(holdMs);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
-                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
@@ -989,11 +1013,8 @@
             if (payload.bot) {
                 room.bot = Object.assign({}, room.bot || {}, payload.bot, { isBot: true });
             }
-            if (payload.startsAt) {
-                startedAt = Number(payload.startsAt);
-            } else {
-                startedAt = Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
-            }
+            var unlockDelay = raceUnlockDelayMs(payload);
+            startedAt = Date.now() + unlockDelay;
             var self = room.players.find(function (player) { return player.userId === selfUserId; });
             selfIndex = self ? self.index : 0;
             currentWordIndex = 0;
@@ -1020,8 +1041,8 @@
             renderText();
             renderLeaderboard();
             showTestChrome();
-            var wait = Math.max(0, startedAt - Date.now());
-            setTimeout(function () {
+
+            function unlockTyping() {
                 state = 'racing';
                 if (window.usertypo_settingsApi) {
                     try {
@@ -1046,17 +1067,25 @@
                 }, ROOM_PROGRESS_INTERVAL_MS);
                 updateLive();
                 sendProgress(false);
-            }, wait);
+            }
+
+            var wait = Math.max(0, startedAt - Date.now());
+            if (wait <= 0) unlockTyping();
+            else setTimeout(unlockTyping, wait);
         }
 
         function startRace(payload) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'finished' || state === 'closed') return;
             pendingRacePayload = payload;
-            // Backgrounded / late tabs: if the server race is already live, skip the intro.
             if (beginRaceIfAlreadyLive()) return;
-            ensureCountdownSequence();
-            if (!introBusy) tryBeginRaceAfterIntro();
+            // Don't wait for leftover local intro — unlock on the shared start clock.
+            abortCountdownIntro();
+            countdownSequenceStarted = true;
+            introBusy = false;
+            var ready = pendingRacePayload;
+            pendingRacePayload = null;
+            beginActualRace(ready);
         }
 
         function applyJoinOrResumeState(response) {
@@ -1065,6 +1094,9 @@
             config = room.config;
             roomCode = room.roomCode || roomCode;
             isHost = room.hostUserId === selfUserId;
+            if (response.countdownEndsAt) {
+                countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
+            }
             if (response.state === 'finished') {
                 applyFinishedFromResume(response);
                 return true;
@@ -2004,7 +2036,8 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished' || state === 'closed') return;
-                // Local 3→2→1 tape animation; ignore server tick values (no "Go").
+                if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                if (Number(payload[1]) === 0) return;
                 ensureCountdownSequence();
             });
             listen('race-start', function (event) {
