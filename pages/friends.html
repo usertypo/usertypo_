@@ -541,24 +541,6 @@
                             class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all">
                     </div>
 
-                    <!-- Language Selection -->
-                    <div class="relative">
-                        <label
-                            class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Language</label>
-                        <select
-                            class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all appearance-none cursor-pointer font-semibold">
-                            <option value="english">English</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="python">Python</option>
-                            <option value="html">HTML / CSS</option>
-                            <option value="cpp">C++</option>
-                            <option value="java">Java</option>
-                            <option value="rust">Rust</option>
-                        </select>
-                        <span
-                            class="material-symbols-outlined absolute right-4 bottom-2.5 text-slate-400 pointer-events-none">expand_more</span>
-                    </div>
-
                     <!-- Amount Selection -->
                     <div>
                         <label id="room-amount-label"
@@ -656,23 +638,6 @@
                 </div>
 
                 <div class="flex flex-col gap-5">
-                    <div class="relative">
-                        <label
-                            class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Language</label>
-                        <select id="dual-language-select"
-                            class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all appearance-none cursor-pointer font-semibold">
-                            <option value="english">English</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="python">Python</option>
-                            <option value="html">HTML / CSS</option>
-                            <option value="cpp">C++</option>
-                            <option value="java">Java</option>
-                            <option value="rust">Rust</option>
-                        </select>
-                        <span
-                            class="material-symbols-outlined absolute right-4 bottom-2.5 text-slate-400 pointer-events-none">expand_more</span>
-                    </div>
-
                     <div>
                         <label id="dual-amount-label"
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
@@ -782,23 +747,6 @@
                 </div>
 
                 <div class="flex flex-col gap-5">
-                    <div class="relative">
-                        <label
-                            class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Language</label>
-                        <select id="fm-language-select"
-                            class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-slate-200 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all appearance-none cursor-pointer font-semibold">
-                            <option value="english">English</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="python">Python</option>
-                            <option value="html">HTML / CSS</option>
-                            <option value="cpp">C++</option>
-                            <option value="java">Java</option>
-                            <option value="rust">Rust</option>
-                        </select>
-                        <span
-                            class="material-symbols-outlined absolute right-4 bottom-2.5 text-slate-400 pointer-events-none">expand_more</span>
-                    </div>
-
                     <div>
                         <label id="fm-amount-label"
                             class="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Test Timer
@@ -2007,10 +1955,6 @@ window.__spaPageInit = function() {
                         });
                     }
 
-                    // Get language
-                    const langSelect = document.getElementById('create-room-language') || createRoomForm.querySelector('select');
-                    const selectedLang = langSelect ? langSelect.value : 'english';
-
                     // Get punctuation and numbers state
                     const punctBtn = document.getElementById('btn-punct');
                     const numBtn = document.getElementById('btn-num');
@@ -2030,7 +1974,7 @@ window.__spaPageInit = function() {
                             config: {
                                 mode: 'time',
                                 amount: selectedAmount,
-                                lang: selectedLang,
+                                lang: 'english',
                                 punct: usePunct,
                                 nums: useNums,
                             },
@@ -2102,7 +2046,6 @@ window.__spaPageInit = function() {
             const dualAmountContainer = document.getElementById('dual-amount-container');
             const dualBtnPunct = document.getElementById('dual-btn-punct');
             const dualBtnNum = document.getElementById('dual-btn-num');
-            const dualLangSelect = document.getElementById('dual-language-select');
             let dualTargetFriend = null;
             let dualTargetAvatar = '';
 
@@ -2124,8 +2067,6 @@ window.__spaPageInit = function() {
                         toggleModalSetting(btn);
                     }
                 });
-
-                if (dualLangSelect) dualLangSelect.value = 'english';
             }
 
             function openConfigureDualModal(friendUserId, friendName, avatar) {
@@ -2163,7 +2104,7 @@ window.__spaPageInit = function() {
                 return {
                     mode: 'time',
                     amount: selectedAmount,
-                    lang: dualLangSelect ? dualLangSelect.value : 'english',
+                    lang: 'english',
                     punct: usePunct,
                     nums: useNums,
                     avatar: dualTargetAvatar || ''
@@ -2242,7 +2183,6 @@ window.__spaPageInit = function() {
             const fmAmountContainer = document.getElementById('fm-amount-container');
             const fmBtnPunct = document.getElementById('fm-btn-punct');
             const fmBtnNum = document.getElementById('fm-btn-num');
-            const fmLangSelect = document.getElementById('fm-language-select');
             let dualChoiceKeyboardTarget = 'join';
 
             function resetFindMatchForm() {
@@ -2261,8 +2201,6 @@ window.__spaPageInit = function() {
                 [fmBtnPunct, fmBtnNum].forEach(btn => {
                     if (btn && btn.classList.contains('text-primary')) toggleModalSetting(btn);
                 });
-
-                if (fmLangSelect) fmLangSelect.value = 'english';
             }
 
             function openFindMatchModal() {
@@ -2370,7 +2308,7 @@ window.__spaPageInit = function() {
                 return {
                     mode: 'time',
                     amount: selectedAmount,
-                    lang: fmLangSelect ? fmLangSelect.value : 'english',
+                    lang: 'english',
                     punct: usePunct,
                     nums: useNums,
                     avatar: ''
