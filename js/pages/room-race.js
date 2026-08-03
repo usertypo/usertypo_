@@ -940,41 +940,26 @@
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
+            await delay(650);
+            if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
-            var endsAt = countdownEndsAtTarget > Date.now()
-                ? countdownEndsAtTarget
-                : (Date.now() + digits.length * 1000);
-            var leadIn = Math.min(400, Math.max(0, endsAt - Date.now() - digits.length * 900));
-            if (leadIn > 0) {
-                await delay(leadIn);
-                if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
-            }
-
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                var remainingSlots = digits.length - i;
-                var remainingMs = Math.max(0, endsAt - Date.now());
-                var slotMs = Math.max(500, Math.floor(remainingMs / remainingSlots));
-                var slotEnd = Date.now() + slotMs;
-
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-
-                var holdMs = Math.max(0, slotEnd - Date.now() - 200);
-                if (holdMs > 0) await delay(holdMs);
+                await delay(1000);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
+                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;

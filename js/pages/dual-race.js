@@ -1137,7 +1137,7 @@
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(digit);
             syncCountdownLayout(true);
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1',location:'dual-race.js:typeCountdownDigit',message:'type-digit',data:{digit:digit,token:token},timestamp:Date.now()})}).catch(()=>{});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-post',hypothesisId:'H1',location:'dual-race.js:typeCountdownDigit',message:'type-digit',data:{digit:digit,token:token},timestamp:Date.now()})}).catch(()=>{});
             try { console.warn('[dbg-countdown] type', digit); } catch (_) {}
             // #endregion
         }
@@ -1157,7 +1157,7 @@
             el.className = 'char text-slate-500 transition-colors duration-75';
             syncCountdownLayout(false);
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3',location:'dual-race.js:backspaceCountdownDigit',message:'backspace-ok',data:{token:token},timestamp:Date.now()})}).catch(()=>{});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-post',hypothesisId:'H1-H3',location:'dual-race.js:backspaceCountdownDigit',message:'backspace-ok',data:{token:token},timestamp:Date.now()})}).catch(()=>{});
             try { console.warn('[dbg-countdown] backspace ok'); } catch (_) {}
             // #endregion
         }
@@ -1177,7 +1177,8 @@
             return true;
         }
 
-        // Pace local 3→2→1 so the last digit clears near the server countdown end.
+        // Fixed local 3→2→1 tape animation (type → hold → backspace → gap).
+        // Race unlock still uses shared startsAt via startRace / beginRaceIfAlreadyLive.
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
@@ -1185,49 +1186,34 @@
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-post',hypothesisId:'H1-H3',location:'dual-race.js:runCountdownIntroSequence',message:'intro-start-fixed',data:{token:token,holdMs:1000,gapAfterBackspace:280,leadIn:650},timestamp:Date.now()})}).catch(()=>{});
+            try { console.warn('[dbg-countdown] intro-start-fixed', { holdMs: 1000, gapAfterBackspace: 280 }); } catch (_) {}
+            // #endregion
+            await delay(650);
+            if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
-            var endsAt = countdownEndsAtTarget > Date.now()
-                ? countdownEndsAtTarget
-                : (Date.now() + digits.length * 1000);
-            var leadIn = Math.min(400, Math.max(0, endsAt - Date.now() - digits.length * 900));
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3-H5',location:'dual-race.js:runCountdownIntroSequence',message:'intro-start',data:{token:token,endsAt:endsAt,leadIn:leadIn,remainingMs:endsAt-Date.now(),countdownEndsAtTarget:countdownEndsAtTarget},timestamp:Date.now()})}).catch(()=>{});
-            try { console.warn('[dbg-countdown] intro-start', { endsAt: endsAt, leadIn: leadIn, remainingMs: endsAt - Date.now() }); } catch (_) {}
-            // #endregion
-            if (leadIn > 0) {
-                await delay(leadIn);
-                if (token !== countdownAnimToken) return;
-                if (beginRaceIfAlreadyLive()) return;
-            }
-
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                var remainingSlots = digits.length - i;
-                var remainingMs = Math.max(0, endsAt - Date.now());
-                var slotMs = Math.max(500, Math.floor(remainingMs / remainingSlots));
-                var slotEnd = Date.now() + slotMs;
-
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-
-                var holdMs = Math.max(0, slotEnd - Date.now() - 200);
                 // #region agent log
-                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3',location:'dual-race.js:runCountdownIntroSequence',message:'digit-slot',data:{i:i,digit:digits[i],slotMs:slotMs,holdMs:holdMs,remainingMs:remainingMs,gapAfterBackspace:0},timestamp:Date.now()})}).catch(()=>{});
-                try { console.warn('[dbg-countdown] digit-slot', { i: i, digit: digits[i], slotMs: slotMs, holdMs: holdMs }); } catch (_) {}
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-post',hypothesisId:'H1-H3',location:'dual-race.js:runCountdownIntroSequence',message:'digit-slot',data:{i:i,digit:digits[i],holdMs:1000,gapAfterBackspace:280},timestamp:Date.now()})}).catch(()=>{});
+                try { console.warn('[dbg-countdown] digit-slot', { i: i, digit: digits[i], holdMs: 1000, gapAfterBackspace: 280 }); } catch (_) {}
                 // #endregion
-                if (holdMs > 0) await delay(holdMs);
+                await delay(1000);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
+                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
