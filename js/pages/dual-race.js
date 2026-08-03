@@ -1125,22 +1125,41 @@
 
         async function typeCountdownDigit(digit, token) {
             var el = document.getElementById('char-0-0');
-            if (!el || token !== countdownAnimToken) return;
+            if (!el || token !== countdownAnimToken) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H2',location:'dual-race.js:typeCountdownDigit',message:'type-skipped',data:{digit:digit,token:token,animToken:countdownAnimToken,hasEl:!!el},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                return;
+            }
             el.style.opacity = '1';
             el.textContent = digit;
             el.className = 'char text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] transition-colors duration-75';
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(digit);
             syncCountdownLayout(true);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1',location:'dual-race.js:typeCountdownDigit',message:'type-digit',data:{digit:digit,token:token},timestamp:Date.now()})}).catch(()=>{});
+            try { console.warn('[dbg-countdown] type', digit); } catch (_) {}
+            // #endregion
         }
 
         async function backspaceCountdownDigit(token) {
             var el = document.getElementById('char-0-0');
-            if (!el || token !== countdownAnimToken) return;
+            if (!el || token !== countdownAnimToken) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H2',location:'dual-race.js:backspaceCountdownDigit',message:'backspace-skipped',data:{token:token,animToken:countdownAnimToken,hasEl:!!el},timestamp:Date.now()})}).catch(()=>{});
+                try { console.warn('[dbg-countdown] backspace SKIPPED', { token: token, animToken: countdownAnimToken, hasEl: !!el }); } catch (_) {}
+                // #endregion
+                return;
+            }
             if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
             el.style.opacity = '0';
             el.textContent = '0';
             el.className = 'char text-slate-500 transition-colors duration-75';
             syncCountdownLayout(false);
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3',location:'dual-race.js:backspaceCountdownDigit',message:'backspace-ok',data:{token:token},timestamp:Date.now()})}).catch(()=>{});
+            try { console.warn('[dbg-countdown] backspace ok'); } catch (_) {}
+            // #endregion
         }
 
         function beginRaceIfAlreadyLive() {
@@ -1173,6 +1192,10 @@
                 ? countdownEndsAtTarget
                 : (Date.now() + digits.length * 1000);
             var leadIn = Math.min(400, Math.max(0, endsAt - Date.now() - digits.length * 900));
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3-H5',location:'dual-race.js:runCountdownIntroSequence',message:'intro-start',data:{token:token,endsAt:endsAt,leadIn:leadIn,remainingMs:endsAt-Date.now(),countdownEndsAtTarget:countdownEndsAtTarget},timestamp:Date.now()})}).catch(()=>{});
+            try { console.warn('[dbg-countdown] intro-start', { endsAt: endsAt, leadIn: leadIn, remainingMs: endsAt - Date.now() }); } catch (_) {}
+            // #endregion
             if (leadIn > 0) {
                 await delay(leadIn);
                 if (token !== countdownAnimToken) return;
@@ -1193,6 +1216,10 @@
                 if (beginRaceIfAlreadyLive()) return;
 
                 var holdMs = Math.max(0, slotEnd - Date.now() - 200);
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H1-H3',location:'dual-race.js:runCountdownIntroSequence',message:'digit-slot',data:{i:i,digit:digits[i],slotMs:slotMs,holdMs:holdMs,remainingMs:remainingMs,gapAfterBackspace:0},timestamp:Date.now()})}).catch(()=>{});
+                try { console.warn('[dbg-countdown] digit-slot', { i: i, digit: digits[i], slotMs: slotMs, holdMs: holdMs }); } catch (_) {}
+                // #endregion
                 if (holdMs > 0) await delay(holdMs);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
@@ -1236,6 +1263,10 @@
             if (state === 'finished') return;
             pendingRacePayload = payload;
             if (beginRaceIfAlreadyLive()) return;
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5f6ae'},body:JSON.stringify({sessionId:'a5f6ae',runId:'countdown-pre',hypothesisId:'H2-H4',location:'dual-race.js:startRace',message:'startRace-abort-intro',data:{introBusy:introBusy,animToken:countdownAnimToken,startsInMs:payload&&payload.startsInMs},timestamp:Date.now()})}).catch(()=>{});
+            try { console.warn('[dbg-countdown] startRace abort intro', { introBusy: introBusy, animToken: countdownAnimToken }); } catch (_) {}
+            // #endregion
             // Don't wait for leftover local intro frames — unlock on the shared start clock.
             abortCountdownIntro();
             countdownSequenceStarted = true;
