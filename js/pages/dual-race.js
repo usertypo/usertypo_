@@ -63,6 +63,7 @@
         var countdownTapeTransform = '';
         var countdownTapeBaseX = 0;
         var countdownEndsAtTarget = 0;
+        var closingDual = false;
 
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
@@ -627,7 +628,14 @@
                     state = 'waiting-result';
                     clearInterval(updateTimer);
                     sendThreeWordPacket(true);
-                    showMessage('Finished', 'Calculating race results.');
+                    if (!isBotMatch()) {
+                        showMessage(
+                            'Finished',
+                            opponentLeft
+                                ? 'Opponent left. Calculating race results.'
+                                : 'Calculating race results.'
+                        );
+                    }
                 }
             } else {
                 progressDisplay.innerHTML = completedCorrectWords + '<span class="text-slate-500">/</span>' + config.amount;
@@ -635,8 +643,25 @@
             }
         }
 
+        function isBotMatch() {
+            return matchReason === 'bot' || !!(bot && (bot.isBot !== false));
+        }
+
+        function closeDualToFriends(toastMessage, toastIcon) {
+            if (closingDual) return;
+            closingDual = true;
+            if (toastMessage && window.usertypoNotifications) {
+                window.usertypoNotifications.showToast(toastMessage, toastIcon || 'person_remove');
+            }
+            leaveDual();
+        }
+
         function sendThreeWordPacket(forceFinal) {
-            if (!window.usertypoMultiplayer || (state !== 'racing' && state !== 'waiting-result')) return;
+            if (state !== 'racing' && state !== 'waiting-result') return;
+            if (!window.usertypoMultiplayer) return;
+            // Bot matches: never stream live progress — only the final packet so the
+            // server can settle results / rematch. No intermediate race:progress traffic.
+            if (isBotMatch() && forceFinal !== true) return;
             var shouldSend = (completedCorrectWords > 0 && completedCorrectWords % 3 === 0)
                 || forceFinal === true;
             if (!shouldSend) return;
@@ -698,7 +723,14 @@
                 localFinished = true;
                 localFinishTime = Date.now();
                 state = 'waiting-result';
-                showMessage('Finished', 'Waiting for your opponent to complete the test.');
+                showMessage(
+                    'Finished',
+                    opponentLeft
+                        ? 'Opponent left. Calculating race results.'
+                        : (isBotMatch()
+                            ? 'Calculating race results.'
+                            : 'Waiting for your opponent to complete the test.')
+                );
                 return;
             }
             updateCaret();
@@ -1493,6 +1525,11 @@
             rematchNeeded = bot ? 1 : 2;
             selfRematchVoted = false;
             updateRematchButton();
+            var rematchBtn = document.getElementById('rematch-btn');
+            if (rematchBtn && opponentLeft && !bot) {
+                rematchBtn.disabled = true;
+                rematchBtn.setAttribute('aria-disabled', 'true');
+            }
             testView.classList.add('hidden');
             testView.style.display = 'none';
             statsView.classList.remove('hidden', 'opacity-0');
@@ -1506,6 +1543,7 @@
         }
 
         async function leaveDual() {
+            if (!closingDual) closingDual = true;
             try {
                 if (roomId && window.usertypoMultiplayer) {
                     await window.usertypoMultiplayer.leaveRace(roomId);
@@ -1516,6 +1554,10 @@
 
         async function requestRematch() {
             if (state !== 'finished' || !config || selfRematchVoted) return;
+            if (opponentLeft && !isBotMatch()) {
+                window.usertypoNotifications?.showToast('Your opponent left — rematch is unavailable.', 'person_remove');
+                return;
+            }
             var button = document.getElementById('rematch-btn');
             if (button) button.disabled = true;
             try {
@@ -1603,12 +1645,52 @@
             listen('race-player-left', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId || payload[1] === selfIndex) return;
+                if (isBotMatch()) return;
+                var reason = String(payload[2] || 'left');
                 opponentLeft = true;
+
+                // Stats view (or explicit stats leave): close dual immediately.
+                if (state === 'finished' || reason === 'stats-left') {
+                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    return;
+                }
+
+                // Waiting / countdown: auto-close — no race to finish.
+                if (state === 'joining' || state === 'countdown') {
+                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    return;
+                }
+
+                // Mid-race / waiting-result: keep typing, notify, show banner on stats.
                 if (window.usertypoNotifications) {
-                    window.usertypoNotifications.showToast('Your opponent left. Finish the test normally.', 'person_remove');
+                    window.usertypoNotifications.showToast(
+                        'Your opponent left. Finish the test normally.',
+                        'person_remove'
+                    );
+                }
+                if (state === 'waiting-result') {
+                    showMessage('Finished', 'Opponent left. Calculating race results.');
                 }
             });
-            listen('race-finished', function (event) { showResults(event.detail); });
+            listen('race-finished', function (event) {
+                var detail = event.detail;
+                if (closingDual) return;
+                // Pre-race opponent leave finishes the room — close instead of stats.
+                if (
+                    Array.isArray(detail)
+                    && detail[0] === roomId
+                    && detail[1] === 'opponent-left'
+                    && state !== 'racing'
+                    && state !== 'waiting-result'
+                    && state !== 'finished'
+                ) {
+                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    return;
+                }
+                // Bot matches may still receive a server finished after the local UI settled.
+                if (isBotMatch() && state === 'finished') return;
+                showResults(detail);
+            });
             listen('race-rematch-state', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
