@@ -193,7 +193,7 @@
             border-width: 0 !important;
         }
 
-        /* Unified corner radius — pills for controls, capsule radius for panels */
+        /* Unified corner radius — settings tabs (1.375rem) for panels + controls */
         .search-result-item,
         .danger-zone,
         .setting-info-popover,
@@ -202,16 +202,12 @@
         #save-toast > div,
         #info-portal,
         #settings-nav-pill,
-        .settings-panel-card {
-            border-radius: var(--settings-box-radius) !important;
-        }
-        #save-toast-inner {
-            border-radius: 9999px !important;
-        }
+        .settings-panel-card,
+        #save-toast-inner,
         .setting-select,
         .opt-btn,
         .sub-card-header {
-            border-radius: 9999px !important;
+            border-radius: var(--settings-box-radius, 1.375rem) !important;
         }
 
         /* Flat glass — same recipe as menu sidebar (no light→dark gradient) */
@@ -251,7 +247,7 @@
         /* Navigable row header = same pill as setting-select */
         #settings-panel .sub-card-header,
         #panel-main-content .sub-card-header {
-            border-radius: 9999px !important;
+            border-radius: var(--settings-box-radius, 1.375rem) !important;
             padding: 0.55rem 0.85rem !important;
         }
         /* No CSS dropdown arrow — buttons already have their own chevron */
@@ -679,7 +675,7 @@
             font-weight: 700;
             font-family: 'Roboto Mono', monospace;
             padding: 0.4rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
             border: 1px solid rgba(255,51,51,0.3);
             color: #ff3333;
             background: rgba(255,51,51,0.06);
@@ -812,7 +808,7 @@
             min-width: 0;
             height: 2.35rem;
             padding: 0 0.85rem;
-            border-radius: 9999px;
+            border-radius: var(--settings-box-radius, 1.375rem);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -839,7 +835,7 @@
         .bg-spectrum-wrap {
             position: relative;
             height: 2.15rem;
-            border-radius: 9999px;
+            border-radius: var(--settings-box-radius, 1.375rem);
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
@@ -884,7 +880,7 @@
             grid-template-columns: 1.4fr 1fr 1fr;
             gap: 0.35rem;
             height: 2.5rem;
-            border-radius: 0.85rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -896,7 +892,7 @@
             gap: 0.35rem;
             height: 2.15rem;
             padding: 0 0.95rem;
-            border-radius: 9999px;
+            border-radius: var(--settings-box-radius, 1.375rem);
             font-size: 0.65rem;
             font-weight: 700;
             letter-spacing: 0.04em;
@@ -945,7 +941,7 @@
             align-items: center;
             gap: 0.65rem;
             padding: 0.55rem 0.7rem;
-            border-radius: 0.9rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);
