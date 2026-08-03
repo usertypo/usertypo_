@@ -918,8 +918,9 @@
                     : 'Rematch';
             }
             if (button) {
-                button.disabled = !!selfRematchVoted;
-                if (selfRematchVoted) button.setAttribute('aria-disabled', 'true');
+                var disabled = !!selfRematchVoted || (!!opponentLeft && !isBotMatch());
+                button.disabled = disabled;
+                if (disabled) button.setAttribute('aria-disabled', 'true');
                 else button.removeAttribute('aria-disabled');
             }
         }
@@ -1511,6 +1512,7 @@
             }
             var label = document.getElementById('stats-race-label');
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
+            if (payload[3]) opponentLeft = true;
             if (payload[3] || opponentLeft) {
                 var capture = document.getElementById('stats-capture-area') || statsView;
                 var existingNotice = capture.querySelector('[data-dual-opponent-left-notice]');
@@ -1525,11 +1527,6 @@
             rematchNeeded = bot ? 1 : 2;
             selfRematchVoted = false;
             updateRematchButton();
-            var rematchBtn = document.getElementById('rematch-btn');
-            if (rematchBtn && opponentLeft && !bot) {
-                rematchBtn.disabled = true;
-                rematchBtn.setAttribute('aria-disabled', 'true');
-            }
             testView.classList.add('hidden');
             testView.style.display = 'none';
             statsView.classList.remove('hidden', 'opacity-0');
@@ -1651,6 +1648,7 @@
 
                 // Stats view (or explicit stats leave): close dual immediately.
                 if (state === 'finished' || reason === 'stats-left') {
+                    updateRematchButton();
                     closeDualToFriends('Your opponent left the dual.', 'person_remove');
                     return;
                 }
@@ -1662,6 +1660,7 @@
                 }
 
                 // Mid-race / waiting-result: keep typing, notify, show banner on stats.
+                updateRematchButton();
                 if (window.usertypoNotifications) {
                     window.usertypoNotifications.showToast(
                         'Your opponent left. Finish the test normally.',
