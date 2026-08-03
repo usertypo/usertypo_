@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- SPA Shell: For direct URL access / refresh on any route, configure the server to serve this file for all paths. See _redirects. -->
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <!-- Boot overlay: first-paint full-screen cover (text injected centered by JS — no FOUC) -->
+    <!-- Boot overlay: first-paint full-screen cover (text injected centered by JS ? no FOUC) -->
     <style id="usertypo-boot-overlay-critical">
         #spa-boot-overlay {
             position: fixed !important;
@@ -58,7 +58,7 @@
     <meta property="og:image" content="https://usertypo.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="usertypo_ — free typing test, WPM, multiplayer" />
+    <meta property="og:image:alt" content="usertypo_ ? free typing test, WPM, multiplayer" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -67,7 +67,7 @@
         content="Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer." />
     <meta name="twitter:image" content="https://usertypo.com/og-image.png" />
 
-    <!-- Google AdSense account meta only — script loads after idle to avoid blocking first paint -->
+    <!-- Google AdSense account meta only ? script loads after idle to avoid blocking first paint -->
     <meta name="google-adsense-account" content="ca-pub-4215657077722335">
     <script>
     (function loadAdSenseWhenIdle() {
@@ -127,7 +127,7 @@
         window.__usertypoBootPalette = { name: name, bgMain: p.bgMain, accentPrimary: p.accentPrimary, isLight: isLight };
     })();
     </script>
-    <!-- Theme-aware tab icon (optional — missing file must not reload the app) -->
+    <!-- Theme-aware tab icon (optional ? missing file must not reload the app) -->
     <link id="usertypo-favicon" rel="icon" type="image/png" href="/logo-assets/favicon-o.png" />
     <script src="js/favicon.js?v=7" defer></script>
     <link rel="apple-touch-icon" href="/logo-assets/favicon-o.png" />
@@ -198,7 +198,7 @@
 
             window.addEventListener('error', function (event) {
                 const target = event.target;
-                // Only recover from failed scripts/styles — never from avatars or other images.
+                // Only recover from failed scripts/styles ? never from avatars or other images.
                 // Empty/broken <img src> (e.g. lobby host before profile loads) would otherwise
                 // trigger an endless reload loop with usertypoMarkAssetBootSuccessful.
                 if (!target || !['SCRIPT', 'LINK'].includes(target.tagName)) return;
@@ -206,7 +206,7 @@
                 if (!resource) return;
                 let url;
                 try { url = new URL(resource, location.href); } catch (_) { return; }
-                // Optional chrome — never reload the whole app for these
+                // Optional chrome ? never reload the whole app for these
                 if (/favicon/i.test(url.pathname) || /\/logo-assets\/favicon/i.test(url.pathname)) return;
                 const isLocal = url.origin === location.origin;
                 if (!isLocal || reloadScheduled) return;
@@ -220,11 +220,11 @@
         })();
     </script>
 
-    <!-- Critical text fonts only — Material Symbols is a local ~29KB subset (was ~2.3MB CDN VF) -->
+    <!-- Critical text fonts only ? Material Symbols is a local ~29KB subset (was ~2.3MB CDN VF) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=2" rel="stylesheet" />
-    <link href="css/global.css?v=22" rel="stylesheet" />
+    <link href="css/global.css?v=23" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=6" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=6" rel="stylesheet" /></noscript>
@@ -252,7 +252,7 @@
             opacity: 1;
             pointer-events: auto;
         }
-        /* Hide native scrollbar on info content â€” we use a custom JS scrollbar */
+        /* Hide native scrollbar on info content ? we use a custom JS scrollbar */
         .graph-info-content::-webkit-scrollbar { display: none !important; width: 0 !important; }
         .graph-info-content { -ms-overflow-style: none !important; scrollbar-width: none !important; }
         .graph-info-section-title {
@@ -381,7 +381,7 @@
             border-radius: 9999px;
         }
 
-        /* --- PACE CARET (ghost caret — styled via settings.js) --- */
+        /* --- PACE CARET (ghost caret ? styled via settings.js) --- */
         #pace-caret {
             position: absolute;
             pointer-events: none;
@@ -413,7 +413,7 @@
             white-space: nowrap; 
         }
 
-        /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
+        /* RTL typing languages (Arabic, etc.) ? words + caret flow right ? left */
         body.typing-rtl #text-container,
         body.typing-rtl #typing-area,
         body.typing-rtl #room-text-container,
@@ -474,7 +474,7 @@
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
         }
         
-        /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
+        /* When Config Bar is Collapsed ? hide ALL buttons so bar stays a fixed thin strip */
         aside:not(:hover):not(.is-open) .modifier-btn,
         aside:not(:hover):not(.is-open) .mode-btn,
         aside:not(:hover):not(.is-open) .amt-btn,
@@ -539,7 +539,7 @@
             margin: 0;
         }
         #custom-prompt-input { -moz-appearance: textfield; }
-        /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
+        /* Expanding Bubble Menu ? width/height animated via JS (same path open & close) */
         .expanding-bubble {
             position: absolute;
             top: 0;
@@ -878,7 +878,7 @@
         .header-logo-link { display: flex; align-items: center; justify-content: center; height: 2.557rem; width: 9.592rem; }
         .header-logo-container { position: relative; width: 26.644rem; height: 26.644rem; transform: scale(0.5); margin: -13.322rem; flex-shrink: 0; pointer-events: none; opacity: 0; transition: opacity 120ms ease; }
         .header-logo-container.logo-assets-ready { opacity: 1; }
-        /* Boot / welcome typing overlay — solid cover; text is fixed-centered via #spa-boot-typing */
+        /* Boot / welcome typing overlay ? solid cover; text is fixed-centered via #spa-boot-typing */
         #spa-boot-overlay {
             position: fixed;
             inset: 0;
@@ -930,7 +930,7 @@
             z-index: 10;
             pointer-events: none;
             will-change: transform;
-            /* transform only — width changes are instant (no stretchy slide) */
+            /* transform only ? width changes are instant (no stretchy slide) */
             transition: transform 0.12s cubic-bezier(0.2, 0, 0.2, 1);
         }
         #spa-boot-caret::after {
@@ -1029,7 +1029,7 @@
 
     <div id="app-backdrop" class="fixed inset-0 z-0"></div>
 
-    <!-- Boot overlay: solid cover only — typing text injected centered by boot-typing.js (avoids off-center FOUC) -->
+    <!-- Boot overlay: solid cover only ? typing text injected centered by boot-typing.js (avoids off-center FOUC) -->
     <div id="spa-boot-overlay" aria-hidden="false"
         style="position:fixed;top:0;right:0;bottom:0;left:0;width:100vw;height:100vh;margin:0;padding:0;z-index:40;display:block;pointer-events:none;background-color:var(--theme-bg,#000000)"></div>
 
@@ -1340,7 +1340,7 @@
                     <button type="button" id="contact-problem-btn"
                         class="contact-pill-input w-full bg-black/30 border border-white/10 rounded-full px-4 py-2.5 text-sm text-left text-white outline-none focus:border-primary/60 focus:bg-black/40 transition-colors flex items-center justify-between gap-2"
                         aria-haspopup="listbox" aria-expanded="false" aria-controls="contact-problem-menu">
-                        <span id="contact-problem-label" class="truncate text-slate-400">Select a topic…</span>
+                        <span id="contact-problem-label" class="truncate text-slate-400">Select a topic?</span>
                         <span class="material-symbols-outlined text-[0.959rem] text-slate-400 shrink-0 contact-problem-chevron"
                             aria-hidden="true">expand_more</span>
                     </button>
@@ -1360,7 +1360,7 @@
                     <label for="contact-description"
                         class="block text-slate-400 text-[0.533rem] font-bold mb-1.5 uppercase tracking-widest">Description</label>
                     <textarea id="contact-description" name="description" required maxlength="4000"
-                        rows="2" placeholder="Tell us what's going on… (Shift+Enter for a new line)"
+                        rows="2" placeholder="Tell us what's going on? (Shift+Enter for a new line)"
                         class="contact-pill-textarea w-full bg-black/30 border border-white/10 rounded-[1.25rem] px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary/60 focus:bg-black/40 transition-colors resize-none"></textarea>
                 </div>
 
@@ -1418,45 +1418,45 @@
                     <div data-ppc-best="time:15" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">15 Seconds</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="time:30" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">30 Seconds</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="time:60" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">60 Seconds</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="time:120" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">120 Seconds</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                 </div>
@@ -1464,7 +1464,7 @@
                 <div class="flex flex-col items-center order-1 lg:order-2">
                     <div id="ppc-avatar-host" class="mb-4 flex items-center justify-center"></div>
                     <h2 id="ppc-username" class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 mb-1 text-center">Player</h2>
-                    <p id="ppc-public-id" class="text-[0.7rem] font-mono tracking-wider text-slate-500 mb-1">—</p>
+                    <p id="ppc-public-id" class="text-[0.7rem] font-mono tracking-wider text-slate-500 mb-1">?</p>
                     <p id="ppc-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
                     <div class="flex items-center gap-4 mb-5 text-[0.586rem] font-bold text-slate-500">
                         <span id="ppc-xp-progress" class="tracking-wide">0 / 100 XP</span>
@@ -1477,19 +1477,19 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
                         <div class="glass-panel p-3 rounded-lg text-center">
                             <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
-                            <span id="ppc-stat-tests" class="font-headline text-base font-semibold text-slate-100">—</span>
+                            <span id="ppc-stat-tests" class="font-headline text-base font-semibold text-slate-100">?</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
                             <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
-                            <span id="ppc-stat-time" class="font-headline text-base font-semibold text-slate-100">—</span>
+                            <span id="ppc-stat-time" class="font-headline text-base font-semibold text-slate-100">?</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
                             <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
-                            <span id="ppc-stat-words" class="font-headline text-base font-semibold text-slate-100">—</span>
+                            <span id="ppc-stat-words" class="font-headline text-base font-semibold text-slate-100">?</span>
                         </div>
                         <div class="glass-panel p-3 rounded-lg text-center">
                             <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
-                            <span id="ppc-stat-rank" class="font-headline text-base font-semibold text-primary">—</span>
+                            <span id="ppc-stat-rank" class="font-headline text-base font-semibold text-primary">?</span>
                         </div>
                     </div>
                     <div id="ppc-friend-slot" class="w-full flex justify-center"></div>
@@ -1500,45 +1500,45 @@
                     <div data-ppc-best="words:10" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">10 Words</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="words:25" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">25 Words</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="words:50" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">50 Words</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                     <div data-ppc-best="words:100" class="glass-panel p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <span class="font-headline text-slate-400 text-sm block">100 Words</span>
-                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">—</span>
+                            <span data-ppc-wpm class="font-headline text-3xl font-bold text-primary">?</span>
                             <span class="text-xs text-primary ml-1">WPM</span>
                         </div>
                         <div class="text-right">
                             <span class="text-slate-500 text-xs block">Accuracy</span>
-                            <span data-ppc-acc class="font-headline text-lg text-slate-500">—</span>
+                            <span data-ppc-acc class="font-headline text-lg text-slate-500">?</span>
                         </div>
                     </div>
                 </div>
@@ -1553,7 +1553,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=33"></script>
+    <script src="settings.js?v=34"></script>
     <script src="footer-picker.js?v=6"></script>
     <script src="settings-search.js?v=4"></script>
     <!-- Auth + data API (before router) -->
@@ -1584,7 +1584,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=26"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=125"></script>
+    <script src="js/page-fragments.js?v=133"></script>
     <script src="js/router.js?v=22"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
@@ -1683,12 +1683,14 @@
         window.closeCustomPrompt = window.closeCustomPrompt || function() {
             var modal = document.getElementById('custom-prompt-modal');
             var box = document.getElementById('custom-prompt-box');
+            var input = document.getElementById('custom-prompt-input');
             if (!modal || !box) return;
             modal.classList.add('opacity-0', 'pointer-events-none');
             modal.classList.remove('opacity-100', 'pointer-events-auto');
             modal.setAttribute('aria-hidden', 'true');
             box.classList.remove('scale-100', 'opacity-100');
             box.classList.add('scale-95', 'opacity-0');
+            if (input) input.blur();
         };
         window.applyCustomPrompt = window.applyCustomPrompt || function() {
             if (typeof window.closeCustomPrompt === 'function') window.closeCustomPrompt();

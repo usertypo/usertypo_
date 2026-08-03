@@ -1341,6 +1341,8 @@ function applyThemeSettings(settings) {
         }
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined' !important;
+            font-feature-settings: 'liga' !important;
+            -webkit-font-feature-settings: 'liga' !important;
         }
         /* ── Tailwind color class overrides ── */
         /* Primary / Accent */
@@ -2561,6 +2563,12 @@ function applyCursorSettings(settings) {
         document.getElementById('spa-boot-caret')?.style.removeProperty('transition');
         document.getElementById('pace-caret')?.style.removeProperty('transition');
     }
+
+    try {
+        window.dispatchEvent(new CustomEvent('usertypo:theme-applied', {
+            detail: { theme: themeName, accentPrimary: p.accentPrimary },
+        }));
+    } catch (e) { /* ignore */ }
 }
 
 

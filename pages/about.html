@@ -680,7 +680,67 @@ const __pageAbort = new AbortController();
 const __pageSignal = __pageAbort.signal;
 
 function initAboutCommunityStats() {
-    var COUNTRY_COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#94a3b8'];
+    var lastCountries = null;
+
+    function clampByte(n) {
+        return Math.max(0, Math.min(255, Math.round(n)));
+    }
+
+    function parseRgbCss(value) {
+        var parts = String(value || '').trim().split(/[,\s]+/).map(Number);
+        if (parts.length >= 3 && parts.slice(0, 3).every(function (n) { return isFinite(n); })) {
+            return [clampByte(parts[0]), clampByte(parts[1]), clampByte(parts[2])];
+        }
+        return null;
+    }
+
+    function parseHex(hex) {
+        var raw = String(hex || '').trim();
+        if (raw.charAt(0) === '#') raw = raw.slice(1);
+        if (raw.length === 3) {
+            raw = raw.split('').map(function (c) { return c + c; }).join('');
+        }
+        if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null;
+        return [
+            parseInt(raw.slice(0, 2), 16),
+            parseInt(raw.slice(2, 4), 16),
+            parseInt(raw.slice(4, 6), 16),
+        ];
+    }
+
+    function rgbToHex(rgb) {
+        return '#' + rgb.map(function (n) {
+            var h = clampByte(n).toString(16);
+            return h.length === 1 ? '0' + h : h;
+        }).join('');
+    }
+
+    function mixRgb(a, b, t) {
+        return [
+            a[0] + (b[0] - a[0]) * t,
+            a[1] + (b[1] - a[1]) * t,
+            a[2] + (b[2] - a[2]) * t,
+        ];
+    }
+
+    /** Theme-aware donut palette — first slice follows --theme-primary. */
+    function countryColors() {
+        var styles = getComputedStyle(document.documentElement);
+        var primary = parseRgbCss(styles.getPropertyValue('--theme-primary-rgb'))
+            || parseHex(styles.getPropertyValue('--theme-primary'))
+            || [0, 208, 255];
+        var white = [255, 255, 255];
+        var black = [0, 0, 0];
+        var muted = [148, 163, 184];
+        return [
+            rgbToHex(primary),
+            rgbToHex(mixRgb(primary, white, 0.28)),
+            rgbToHex(mixRgb(primary, black, 0.18)),
+            rgbToHex(mixRgb(primary, [52, 211, 153], 0.45)),
+            rgbToHex(mixRgb(primary, [251, 191, 36], 0.5)),
+            rgbToHex(mixRgb(primary, muted, 0.55)),
+        ];
+    }
 
     function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -776,8 +836,12 @@ function initAboutCommunityStats() {
         var center = document.getElementById('about-country-center');
         if (!svg || !legend) return;
 
-        var items = (countries && countries.items ? countries.items.slice() : []);
-        var other = countries && countries.other ? Number(countries.other) : 0;
+        if (countries) lastCountries = countries;
+        var source = countries || lastCountries;
+        var palette = countryColors();
+
+        var items = (source && source.items ? source.items.slice() : []);
+        var other = source && source.other ? Number(source.other) : 0;
         if (other > 0) items.push({ code: 'OTHER', users: other });
         var total = items.reduce(function (sum, item) { return sum + (Number(item.users) || 0); }, 0);
 
@@ -789,7 +853,8 @@ function initAboutCommunityStats() {
         }
 
         var topPct = Math.round((Number(items[0].users) / total) * 1000) / 10;
-        if (center) animateCount(center, topPct, 'percent', 900);
+        if (center && countries) animateCount(center, topPct, 'percent', 900);
+        else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
 
         var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
         var offset = 0;
@@ -798,7 +863,7 @@ function initAboutCommunityStats() {
             var pct = (Number(item.users) / total) * 100;
             var arc = Math.max(0.5, pct - gap);
             rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
-                + COUNTRY_COLORS[index % COUNTRY_COLORS.length]
+                + palette[index % palette.length]
                 + '" stroke-linecap="round" stroke-dasharray="0 100'
                 + '" stroke-dashoffset="' + (-offset)
                 + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
@@ -816,7 +881,7 @@ function initAboutCommunityStats() {
             var label = item.code === 'OTHER' ? 'Other' : countryName(item.code);
             return '<div class="flex items-center justify-between gap-3 min-w-0">'
                 + '<div class="flex items-center gap-2 min-w-0">'
-                + '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + COUNTRY_COLORS[index % COUNTRY_COLORS.length] + '"></span>'
+                + '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + palette[index % palette.length] + '"></span>'
                 + '<span class="text-xs text-slate-300 truncate">' + escapeHtml(label) + '</span>'
                 + '</div>'
                 + '<span class="text-xs text-slate-500 font-mono shrink-0">' + pct + '%</span>'
@@ -944,6 +1009,11 @@ function initAboutCommunityStats() {
             var legendFail = document.getElementById('about-country-legend');
             if (legendFail) legendFail.innerHTML = '<div class="text-xs text-slate-500">Could not load live stats.</div>';
         });
+
+    window.addEventListener('usertypo:theme-applied', function () {
+        if (__pageAbort.signal.aborted || !lastCountries) return;
+        renderCountries(null);
+    }, { signal: __pageSignal });
 }
 
 window.__spaPageInit = function () {
