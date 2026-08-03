@@ -972,15 +972,29 @@ function createMultiplayerServer(httpServer, options) {
             player.socketId = null;
             userToRoom.delete(userId);
             if (room.rematchVotes) room.rematchVotes.delete(userId);
+            // Tell the remaining dual player to close stats immediately.
+            if (room.type !== 'custom') {
+                io.to(roomChannel(room.id)).emit('race:player-left', [
+                    room.id,
+                    player.index,
+                    explicit ? 'stats-left' : 'disconnected',
+                ]);
+            }
             disposeDualIfNoHumans(room);
-            if (rooms.has(room.id)) emitRematchState(room);
+            if (rooms.has(room.id) && room.type !== 'custom') {
+                // Room still has a human — no rematch once the peer left from stats.
+                emitRematchState(room);
+            }
             return;
         }
         player.status = 'left';
         player.leftMidGame = room.state === 'racing' || room.state === 'countdown';
         player.joined = false;
         player.socketId = null;
-        room.opponentLeft = room.opponentLeft || player.leftMidGame;
+        // Any dual leave before/during the race counts as opponent-left for the remaining player.
+        room.opponentLeft = room.opponentLeft
+            || player.leftMidGame
+            || (room.type !== 'custom' && (room.state === 'waiting' || room.state === 'countdown'));
         userToRoom.delete(userId);
         if (room.type === 'custom' && (room.state === 'waiting' || room.state === 'countdown')) {
             if (userId === room.hostUserId) {

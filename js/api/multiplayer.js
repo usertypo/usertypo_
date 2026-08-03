@@ -12,6 +12,7 @@
     var listings = [];
     var pendingMatches = {};
     var activeRoomId = '';
+    var activeRoomIsBot = false;
     var pendingLeaveRoomId = null;
     var lastAuthIdentity = null;
 
@@ -485,11 +486,21 @@
     function joinMatch(roomId) {
         return emitAck('match:join', roomId).then(function (response) {
             activeRoomId = String(roomId || '');
+            var room = response && response.room;
+            activeRoomIsBot = !!(room && (
+                room.reason === 'bot'
+                || room.type === 'bot'
+                || room.bot
+            ));
             return response;
         });
     }
 
     function sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket, finalStats) {
+        // Bot duals: allow only the final settle packet (no live progress spam).
+        if (activeRoomIsBot && !finalPacket) {
+            return Promise.resolve({ ok: true, skipped: true });
+        }
         return emitAck('race:progress', [
             roomId,
             sequence,
@@ -502,6 +513,7 @@
 
     function leaveRace(roomId) {
         activeRoomId = '';
+        activeRoomIsBot = false;
         if (!socket || !socket.connected) {
             // Queue so reconnect can clear server membership (avoids "already in a match").
             pendingLeaveRoomId = roomId || pendingLeaveRoomId || '';
