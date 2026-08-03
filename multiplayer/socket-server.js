@@ -841,7 +841,7 @@ function createMultiplayerServer(httpServer, options) {
     function beginRace(room) {
         if (!room || room.state !== 'countdown') return;
         room.state = 'racing';
-        room.startsAt = Date.now() + 250;
+        room.startsAt = Date.now();
         room.players.forEach((player) => {
             if (player.status !== 'left') player.status = 'racing';
             player.lastSnapshotAt = room.startsAt;

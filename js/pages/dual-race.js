@@ -5,8 +5,8 @@
 (function () {
     'use strict';
 
-    var initialDocumentPath = window.location.pathname;
     var refreshHandledKey = 'usertypo:dual-refresh-handled-room';
+    var dualMemberKey = 'usertypo:dual-member-room';
 
     function createController() {
         var abort = new AbortController();
@@ -62,6 +62,7 @@
         var countdownTapeLocked = false;
         var countdownTapeTransform = '';
         var countdownTapeBaseX = 0;
+        var countdownEndsAtTarget = 0;
 
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
@@ -154,14 +155,34 @@
                 .replace(/"/g, '&quot;');
         }
 
+        function getSessionFlag(key) {
+            try { return sessionStorage.getItem(key) || ''; } catch (_) { return ''; }
+        }
+
+        function setSessionFlag(key, value) {
+            try {
+                if (value == null || value === '') sessionStorage.removeItem(key);
+                else sessionStorage.setItem(key, value);
+            } catch (_) { /* ignore */ }
+        }
+
+        function markDualMembership(active) {
+            setSessionFlag(dualMemberKey, active ? roomId : '');
+        }
+
         function isReloadNavigation() {
             try {
                 var entries = performance.getEntriesByType('navigation');
-                var handledRoom = '';
-                try { handledRoom = sessionStorage.getItem(refreshHandledKey) || ''; } catch (_) { /* ignore */ }
-                return initialDocumentPath === '/dual'
+                // Use the real document boot path from the router — not the path when this
+                // lazy script first evaluated (always /dual) — so SPA joins after a refresh
+                // elsewhere are not treated as dual-page reloads.
+                var bootPath = window.__usertypoBootPath || '';
+                var handledRoom = getSessionFlag(refreshHandledKey);
+                var memberRoom = getSessionFlag(dualMemberKey);
+                return bootPath === '/dual'
                     && entries.length
                     && entries[0].type === 'reload'
+                    && memberRoom === roomId
                     && handledRoom !== roomId;
             } catch (_) {
                 return false;
@@ -169,7 +190,11 @@
         }
 
         function redirectAfterRefresh() {
-            try { sessionStorage.setItem(refreshHandledKey, roomId); } catch (_) { /* ignore */ }
+            setSessionFlag(refreshHandledKey, roomId);
+            markDualMembership(false);
+            if (roomId && window.usertypoMultiplayer) {
+                try { window.usertypoMultiplayer.leaveRace(roomId); } catch (_) { /* ignore */ }
+            }
             if (window.usertypoNotifications) {
                 window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
             }
@@ -907,10 +932,19 @@
             return match ? Number(match[1]) || 0 : 0;
         }
 
+        function raceUnlockDelayMs(payload) {
+            if (!payload) return 0;
+            // Prefer relative delay so clock skew cannot delay typing unlock.
+            if (payload.startsInMs != null && Number.isFinite(Number(payload.startsInMs))) {
+                return Math.max(0, Number(payload.startsInMs));
+            }
+            if (payload.startsAt) return Math.max(0, Number(payload.startsAt) - Date.now());
+            return 0;
+        }
+
         function racePayloadStartsAt(payload) {
             if (!payload) return Date.now();
-            if (payload.startsAt) return Number(payload.startsAt);
-            return Date.now() + Math.max(0, Number(payload.startsInMs) || 0);
+            return Date.now() + raceUnlockDelayMs(payload);
         }
 
         function racePayloadEndsAt(payload) {
@@ -1124,7 +1158,7 @@
             return true;
         }
 
-        // Same fixed local 3→2→1 intro as rooms — race unlock still uses shared startsAt.
+        // Pace local 3→2→1 so the last digit clears near the server countdown end.
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
@@ -1132,26 +1166,41 @@
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
             if (caret) caret.classList.add('animate-breath');
-            await delay(650);
-            if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
             var digits = ['3', '2', '1'];
+            var endsAt = countdownEndsAtTarget > Date.now()
+                ? countdownEndsAtTarget
+                : (Date.now() + digits.length * 1000);
+            var leadIn = Math.min(400, Math.max(0, endsAt - Date.now() - digits.length * 900));
+            if (leadIn > 0) {
+                await delay(leadIn);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+            }
+
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+                var remainingSlots = digits.length - i;
+                var remainingMs = Math.max(0, endsAt - Date.now());
+                var slotMs = Math.max(500, Math.floor(remainingMs / remainingSlots));
+                var slotEnd = Date.now() + slotMs;
+
                 if (caret) caret.classList.remove('animate-breath');
                 await typeCountdownDigit(digits[i], token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                await delay(1000);
+
+                var holdMs = Math.max(0, slotEnd - Date.now() - 200);
+                if (holdMs > 0) await delay(holdMs);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.add('animate-breath');
-                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
@@ -1187,8 +1236,13 @@
             if (state === 'finished') return;
             pendingRacePayload = payload;
             if (beginRaceIfAlreadyLive()) return;
-            ensureCountdownSequence();
-            if (!introBusy) tryBeginRaceAfterIntro();
+            // Don't wait for leftover local intro frames — unlock on the shared start clock.
+            abortCountdownIntro();
+            countdownSequenceStarted = true;
+            introBusy = false;
+            var ready = pendingRacePayload;
+            pendingRacePayload = null;
+            beginActualRace(ready);
         }
 
         function beginActualRace(payload) {
@@ -1204,8 +1258,9 @@
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            // Always use the shared server clock — never reset when the tab becomes visible.
-            startTime = racePayloadStartsAt(payload);
+            // Local unlock clock from relative delay — avoids skew delaying typing.
+            var unlockDelay = raceUnlockDelayMs(payload);
+            startTime = Date.now() + unlockDelay;
             selfUserId = window.usertypoMultiplayer.getReadyState()
                 && window.usertypoMultiplayer.getReadyState().userId || '';
             var self = players.find(function (player) { return player.userId === selfUserId; });
@@ -1267,8 +1322,7 @@
                 return;
             }
 
-            var wait = Math.max(0, startTime - Date.now());
-            setTimeout(function () {
+            function unlockTyping() {
                 if (token !== raceStartToken) return;
                 state = 'racing';
                 hideMessage();
@@ -1286,7 +1340,11 @@
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
-            }, wait);
+            }
+
+            var wait = Math.max(0, startTime - Date.now());
+            if (wait <= 0) unlockTyping();
+            else setTimeout(unlockTyping, wait);
         }
 
         function updateConfigUi() {
@@ -1541,7 +1599,9 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
-                // Local 3→2→1 tape animation; ignore server tick values (same as rooms).
+                if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                // Local 3→2→1 tape animation paced to countdownEndsAt.
+                if (Number(payload[1]) === 0) return;
                 ensureCountdownSequence();
             });
             listen('race-start', function (event) {
@@ -1632,12 +1692,17 @@
             }, { signal: signal });
             try {
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
+                markDualMembership(true);
+                setSessionFlag(refreshHandledKey, '');
                 config = response.room && response.room.config;
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
                 matchReason = response.room && response.room.reason || '';
                 selfUserId = window.usertypoMultiplayer.getReadyState()
                     && window.usertypoMultiplayer.getReadyState().userId || '';
+                if (response.countdownEndsAt) {
+                    countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
+                }
                 if (response.state === 'racing' && response.race) {
                     countdownSequenceStarted = true;
                     introBusy = false;
@@ -1650,6 +1715,7 @@
                 }
                 prepareWaitingTestView();
             } catch (error) {
+                markDualMembership(false);
                 showMessage('Could not join dual', error.message);
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
@@ -1668,6 +1734,7 @@
             if (roomId && window.usertypoMultiplayer) {
                 window.usertypoMultiplayer.leaveRace(roomId);
             }
+            markDualMembership(false);
             abort.abort();
             if (window.updateKeymapHighlight === updateKeymapHighlight) {
                 window.updateKeymapHighlight = null;

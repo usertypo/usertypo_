@@ -45,10 +45,10 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=34'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=35'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=25'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=26'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
