@@ -562,7 +562,7 @@
                                 <div id="btn-num"
                                     class="modifier-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                                     onclick="toggleModifier('num')">
-                                    <span class="material-symbols-outlined text-[0.959rem] shrink-0">123</span>
+                                    <span class="shrink-0 inline-flex leading-none" aria-hidden="true" style="width:1.45rem;height:1.45rem"><svg viewBox="0 0 24 24" fill="currentColor" style="width:1.45rem;height:1.45rem;display:block"><path d="M5.5 15v-4.5H4V9h3v6zM9 15v-2.5q0-.425.288-.712T10 11.5h2v-1H9V9h3.5q.425 0 .713.288T13.5 10v1.5q0 .425-.288.713t-.712.287h-2v1h3V15zm6 0v-1.5h3v-1h-2v-1h2v-1h-3V9h3.5q.425 0 .713.288T19.5 10v4q0 .425-.288.713T18.5 15z"/></svg></span>
                                     <span
                                         class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">numbers</span>
                                 </div>
@@ -669,8 +669,7 @@
                             <div id="aci-num"
                                 class="flex items-center overflow-hidden transition-all duration-500 max-w-0 opacity-0">
                                 <div class="flex items-center pl-3">
-                                    <span
-                                        class="material-symbols-outlined text-[1.066rem] text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">123</span>
+                                    <span class="shrink-0 inline-flex text-primary leading-none drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]" aria-hidden="true" style="width:1.45rem;height:1.45rem"><svg viewBox="0 0 24 24" fill="currentColor" style="width:1.45rem;height:1.45rem;display:block"><path d="M5.5 15v-4.5H4V9h3v6zM9 15v-2.5q0-.425.288-.712T10 11.5h2v-1H9V9h3.5q.425 0 .713.288T13.5 10v1.5q0 .425-.288.713t-.712.287h-2v1h3V15zm6 0v-1.5h3v-1h-2v-1h2v-1h-3V9h3.5q.425 0 .713.288T19.5 10v4q0 .425-.288.713T18.5 15z"/></svg></span>
                                     <div class="w-px h-3 bg-white/10 ml-3"></div>
                                 </div>
                             </div>
@@ -984,7 +983,7 @@
                                         class="inline-block w-5 h-0.5 bg-primary rounded"></span><span
                                         class="text-slate-400">WPM</span></span>
                                 <span class="flex items-center gap-1.5"><span class="inline-block w-5"
-                                        style="border-top: 2px solid #64748b; height:0; display:inline-block;"></span><span
+                                        style="border-top: 2px dashed #64748b; height:0; display:inline-block;"></span><span
                                         class="text-slate-500">Raw</span></span>
                                 <span class="flex items-center gap-1.5" style="color:#ff3333;">&#9679;<span
                                         class="text-slate-500" style="font-size:0.48rem;">Errors</span></span>
@@ -1764,6 +1763,7 @@ window.setTimeout = function(handler, timeout) {
         function closeCustomPrompt() {
             const modal = document.getElementById('custom-prompt-modal');
             const box = document.getElementById('custom-prompt-box');
+            const input = document.getElementById('custom-prompt-input');
             if (!modal || !box) return;
 
             modal.classList.add('opacity-0', 'pointer-events-none');
@@ -1771,6 +1771,8 @@ window.setTimeout = function(handler, timeout) {
             modal.setAttribute('aria-hidden', 'true');
             box.classList.remove('scale-100', 'opacity-100');
             box.classList.add('scale-95', 'opacity-0');
+            // Blur so document keydown can drive the typing test again.
+            if (input) input.blur();
         }
 
         function openNotifications() {
@@ -3246,6 +3248,10 @@ window.setTimeout = function(handler, timeout) {
                         }, 3500);
                     }
                 }
+            } else {
+                // Ultra-short custom tests often finish before the 500ms sampler records
+                // a full second — seed/pad real series so the graph never falls back to demo data.
+                finalizeGraphHistory(exactWpm, exactRawWpm);
             }
 
             document.getElementById('stats-wpm').innerHTML = wpmDisplay;
@@ -3330,7 +3336,7 @@ window.setTimeout = function(handler, timeout) {
                             percentToNext: pct,
                             userId: entry && entry.userId,
                         }, {
-                            size: 'sm',
+                            size: 'xs',
                             clickable: false,
                             className: 'shrink-0',
                         });
@@ -3339,10 +3345,10 @@ window.setTimeout = function(handler, timeout) {
                         ? window.usertypoPlayerAvatar.resolveAvatarUrl(url)
                         : url;
                     if (!resolved) {
-                        return '<span class="w-9 h-9 rounded-full bg-white/10 border border-white/10 shrink-0 inline-block" aria-hidden="true"></span>';
+                        return '<span class="w-7 h-7 rounded-full bg-white/10 border border-white/10 shrink-0 inline-block" aria-hidden="true"></span>';
                     }
                     return '<img src="' + escapeStatsHtml(resolved) + '" alt="' + escapeStatsHtml(name) +
-                        '" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0" loading="lazy" decoding="async" />';
+                        '" class="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0" loading="lazy" decoding="async" />';
                 }
 
                 function friendRow(opts) {
@@ -3416,7 +3422,7 @@ window.setTimeout = function(handler, timeout) {
                 } catch (e) { /* ignore */ }
 
                 if (!myId) {
-                    listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">Sign in to see friends ranking.</p>';
+                    listEl.innerHTML = '<p class="text-[0.6rem] text-slate-500 text-center py-6 px-2">Sign in to see your rank.</p>';
                     return;
                 }
 
@@ -3437,6 +3443,15 @@ window.setTimeout = function(handler, timeout) {
             function loadStatsGlobalRank() {
                 var rankEl = document.getElementById('stats-global-rank');
                 if (!rankEl) return;
+                var myId = null;
+                try {
+                    var st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
+                    myId = st && st.isSignedIn && st.user ? st.user.id : null;
+                } catch (e) { /* ignore */ }
+                if (!myId) {
+                    rankEl.textContent = '—';
+                    return;
+                }
                 if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
                     rankEl.textContent = '—';
                     return;
@@ -4126,6 +4141,45 @@ window.setTimeout = function(handler, timeout) {
         // ─────────────────────────────────────────────────────────────
         //  BASIC PERFORMANCE GRAPH
         // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        /** Ensure wpm/raw histories have at least one real sample for short tests. */
+        function finalizeGraphHistory(finalWpm, finalRawWpm) {
+            const avg = Math.max(0, Math.round(Number(finalWpm) || 0));
+            const raw = Math.max(0, Math.round(Number(finalRawWpm) || 0));
+            if (!startTime || graphEndTime == null) {
+                if (!wpmHistory.length) {
+                    wpmHistory.push(avg);
+                    rawHistory.push(raw);
+                }
+                return;
+            }
+            const buckets = Math.max(1, Math.ceil((graphEndTime - startTime) / 1000 - 1e-9));
+            while (wpmHistory.length < buckets) {
+                wpmHistory.push(avg);
+                rawHistory.push(rawHistory.length ? rawHistory[rawHistory.length - 1] : raw);
+            }
+            while (rawHistory.length < wpmHistory.length) {
+                rawHistory.push(rawHistory.length ? rawHistory[rawHistory.length - 1] : raw);
+            }
+            while (rawHistory.length > wpmHistory.length) rawHistory.pop();
+            if (wpmHistory.length) {
+                wpmHistory[wpmHistory.length - 1] = avg;
+                if (rawHistory.length === 1) rawHistory[0] = raw;
+            }
+        }
+
+        function getGraphHistoryBases() {
+            const demoW = [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
+            const demoR = [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
+            if (window.testFailedThreshold || !wpmHistory.length) {
+                return { wBase: demoW.slice(), rBase: demoR.slice(), isDemo: true };
+            }
+            const wBase = wpmHistory.slice();
+            const rBase = rawHistory.length ? rawHistory.slice() : wBase.slice();
+            while (rBase.length < wBase.length) rBase.push(rBase[rBase.length - 1] || 0);
+            if (rBase.length > wBase.length) rBase.length = wBase.length;
+            return { wBase: wBase, rBase: rBase, isDemo: false };
+        }
+
         function renderBasicGraph(isUpdate = false) {
             const container = document.getElementById('graph-container');
             const tooltip = document.getElementById('graph-tooltip');
@@ -4145,9 +4199,9 @@ window.setTimeout = function(handler, timeout) {
 
             if (window.testFailedThreshold) return;
 
-            // Fallback demo data
-            const wBase = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
-            const rBase = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
+            const series = getGraphHistoryBases();
+            const wBase = series.wBase;
+            const rBase = series.rBase;
             const latestWordEnd = wordTimestamps.length > 0
                 ? Math.max(...wordTimestamps.map(wt => Number(wt.endTime) || startTime))
                 : null;
@@ -4497,7 +4551,7 @@ window.setTimeout = function(handler, timeout) {
             if (mode === 'basic') {
                 legend.innerHTML = `
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-primary rounded"></span><span class="text-slate-400">WPM</span></span>
-                    <span class="flex items-center gap-1.5"><span class="inline-block w-5" style="border-top: 2px solid #64748b; height:0; display:inline-block;"></span><span class="text-slate-500">Raw</span></span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-5" style="border-top: 2px dashed #64748b; height:0; display:inline-block;"></span><span class="text-slate-500">Raw</span></span>
                     <span class="flex items-center gap-1.5" style="color:#ff3333;">&#9679;<span class="text-slate-500" style="font-size:0.48rem;">Errors</span></span>
                     <span class="flex items-center gap-1.5"><span class="inline-block w-5 h-2 rounded-sm" style="background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span class="text-slate-500" style="font-size:0.48rem;">Difficulty</span></span>`;
             } else {
@@ -4960,8 +5014,9 @@ window.setTimeout = function(handler, timeout) {
                 }, { passive: false });
             }
 
-            const wBase = wpmHistory.length >= 2 ? wpmHistory : [40, 55, 70, 85, 95, 102, 98, 110, 108, 115];
-            const rBase = rawHistory.length >= 2 ? rawHistory : [50, 70, 65, 100, 90, 118, 105, 130, 120, 128];
+            const series = getGraphHistoryBases();
+            const wBase = series.wBase;
+            const rBase = series.rBase;
 
             const latestWordEnd = wordTimestamps.length > 0
                 ? Math.max(...wordTimestamps.map(wt => Number(wt.endTime) || startTime))
