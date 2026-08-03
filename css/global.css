@@ -609,12 +609,12 @@ html {
     display: grid;
     gap: 0.2rem;
     padding: 0.35rem;
-    background: rgba(26, 29, 35, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 1rem;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .contact-problem-menu.hidden {

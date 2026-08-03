@@ -226,8 +226,9 @@
         .setting-select,
         .sub-card-header,
         .opt-btn:not(.active):not(.highlighted) {
-            background: rgba(26, 29, 35, 0.4) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-image: none !important;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
@@ -496,8 +497,9 @@
             bottom: calc(100% + 8px);
             left: 0;
             white-space: nowrap;
-            background-color: rgba(26, 29, 35, 0.92);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             color: #f1f5f9;
             font-size: 0.6875rem;
             font-weight: 700;
@@ -505,6 +507,8 @@
             padding: 4px 10px;
             border-radius: 8px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             pointer-events: none;
             z-index: 40;
         }
@@ -600,9 +604,11 @@
             transform: translateX(-50%) translateY(4px);
             padding: 4px 10px;
             border-radius: 8px;
-            background: rgba(26, 29, 35, 0.92);
-            border: 1px solid rgba(var(--theme-primary-rgb),0.2);
-            backdrop-filter: blur(12px);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             font-size: 0.625rem;
             font-weight: 600;
             color: #94a3b8;
@@ -610,7 +616,7 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
         .quick-btn:hover .quick-btn-tooltip {
             opacity: 1;
@@ -804,20 +810,23 @@
             height: 2.35rem;
             padding: 0 0.85rem;
             border-radius: 9999px;
-            background: rgba(26, 29, 35, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             color: #cbd5e1;
             font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
             letter-spacing: 0.04em;
             outline: none;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .theme-color-hex:focus {
             border-color: rgba(var(--theme-primary-rgb), 0.45);
             box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.2),
                         0 0 12px rgba(var(--theme-primary-rgb), 0.12);
-            background: rgba(26, 29, 35, 0.75);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
         }
         .bg-spectrum-field {
             display: flex;
@@ -934,8 +943,11 @@
             gap: 0.65rem;
             padding: 0.55rem 0.7rem;
             border-radius: 0.9rem;
-            background: rgba(26, 29, 35, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .custom-preset-card.is-active {

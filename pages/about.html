@@ -187,9 +187,12 @@
         .about-math {
             margin: 0.85rem 0 1.1rem;
             padding: 1rem 1.15rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 0.9rem;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             overflow-x: auto;
         }
         .about-eq {
