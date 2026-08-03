@@ -1542,47 +1542,105 @@ function applyThemeSettings(settings) {
             stroke-width: 2.75 !important;
         }
 
-        /* ── Glass panels — flat translucent (no light→dark gradient) ── */
+        /*
+         * ── Shared menu-bubble glass (source of truth: #expanding-bubble.is-open) ──
+         * Fill: --theme-menu-bg (bgSecondary @ 0.4). Blur: 4px. No gradient.
+         * Every surface, modal, toast, tip, and panel uses this exact material.
+         */
         .glass-panel,
         .glass-card,
+        .panel-surface,
         #sidebar-menu,
         #expanding-bubble,
         .pot-filter-bubble,
-        #usertypo-cookie-banner .usertypo-cookie-banner__inner {
-            background: var(--theme-menu-bg) !important;
-            background-image: none !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
-        }
-        /*
-         * Hover pills share the EXACT open-menu chrome as #expanding-bubble.is-open:
-         * theme-menu-bg fill, 4px blur, 0.05 border, 20/50 shadow.
-         */
+        #usertypo-cookie-banner .usertypo-cookie-banner__inner,
+        #contact-box,
+        #system-confirm-box,
+        #custom-prompt-box,
+        #player-profile-box,
+        #avatar-editor-box,
+        .contact-problem-menu,
+        #graph-tooltip,
+        .pot-graph-tooltip,
+        .custom-popover,
         .usertypo-menu-pill-tip,
-        .score-distribution-column::after,
-        .testActivity .activity div[aria-label]:hover::after,
-        #expanding-bubble.is-open,
-        .pot-filter-bubble.is-open {
+        .notification-toast,
+        #dual-pending-inner,
+        #settings-nav-pill,
+        .settings-panel-card,
+        #panel-card,
+        .search-input,
+        .quick-btn,
+        .quick-btn-tooltip,
+        .search-result-item,
+        .setting-info-popover,
+        #save-toast > div,
+        #info-portal,
+        .setting-select,
+        .sub-card-header,
+        .opt-btn:not(.active):not(.highlighted),
+        .footer-pill,
+        #footer-picker-box,
+        .footer-picker-search,
+        .footer-picker-pill,
+        .footer-picker-theme-preview,
+        .footer-picker-list-item:not(.is-active),
+        .lb-country-panel,
+        #global-settings-search-overlay .quick-btn-tooltip,
+        .coming-soon-setting[data-coming-soon]:hover::after,
+        #lobby-chat-toggle-btn[data-coming-soon]:hover::after,
+        #orbit-tooltip-portal,
+        .theme-color-hex,
+        .custom-preset-card,
+        .about-math,
+        #lb-country-search,
+        #friends-filter-input,
+        #add-friends-search-input,
+        .testActivity .yearSelectButton,
+        .testActivity .yearSelectMenu {
             background: var(--theme-menu-bg) !important;
             background-color: var(--theme-menu-bg) !important;
             background-image: none !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            color: ${p.textPrimary} !important;
         }
-        /* Modal / floating boxes need stronger fill so page content doesn't bleed through */
+        /*
+         * Open / floating chrome — same border + shadow as #expanding-bubble.is-open.
+         * (Fill + blur already set above; this adds the open-menu outline.)
+         */
+        .usertypo-menu-pill-tip,
+        .score-distribution-column::after,
+        .testActivity .activity div[aria-label]:hover::after,
+        #expanding-bubble.is-open,
+        .pot-filter-bubble.is-open,
         #contact-box,
         #system-confirm-box,
         #custom-prompt-box,
         #player-profile-box,
-        #avatar-editor-box {
-            background: rgba(${bgSecRGB}, 0.92) !important;
-            background-image: none !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border-color: ${panelBorder} !important;
+        #avatar-editor-box,
+        .contact-problem-menu,
+        #graph-tooltip,
+        .pot-graph-tooltip,
+        .lb-country-panel,
+        .custom-popover,
+        #global-settings-search-overlay .quick-btn-tooltip,
+        .coming-soon-setting[data-coming-soon]:hover::after,
+        #lobby-chat-toggle-btn[data-coming-soon]:hover::after,
+        #orbit-tooltip-portal,
+        .quick-btn-tooltip,
+        .testActivity .yearSelectMenu {
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+        }
+        .usertypo-menu-pill-tip,
+        .score-distribution-column::after,
+        .testActivity .activity div[aria-label]:hover::after,
+        #global-settings-search-overlay .quick-btn-tooltip,
+        .coming-soon-setting[data-coming-soon]:hover::after,
+        #lobby-chat-toggle-btn[data-coming-soon]:hover::after,
+        #orbit-tooltip-portal,
+        .quick-btn-tooltip {
+            color: ${p.textPrimary} !important;
         }
         /* Contact fields — beat Tailwind forms plugin white defaults */
         #contact-modal .contact-pill-input,
@@ -1599,41 +1657,8 @@ function applyThemeSettings(settings) {
             color: ${p.textMuted} !important;
         }
 
-        /* Settings surfaces — same flat glass as menu sidebar */
-        #settings-nav-pill,
-        .settings-panel-card,
-        #panel-card,
-        .search-input,
-        .quick-btn,
-        .search-result-item,
-        .setting-info-popover,
-        #save-toast > div,
-        #info-portal,
-        .setting-select,
-        .sub-card-header,
-        .opt-btn:not(.active):not(.highlighted) {
-            background: rgba(${bgSecRGB}, 0.4) !important;
-            background-image: none !important;
-            border-color: ${panelBorder} !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, ${themeIsLight ? '0.06' : '0.1'}) !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
-        }
         #save-toast-inner {
             border-radius: 9999px !important;
-        }
-        .footer-pill,
-        #footer-picker-box,
-        .footer-picker-search,
-        .footer-picker-pill,
-        .footer-picker-theme-preview,
-        .footer-picker-list-item:not(.is-active) {
-            background: rgba(${bgSecRGB}, 0.4) !important;
-            background-image: none !important;
-            border-color: ${panelBorder} !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, ${themeIsLight ? '0.06' : '0.1'}) !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
         }
         .setting-select {
             padding-right: 0.7rem !important;
@@ -3559,14 +3584,15 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
     const style = document.createElement('style');
     style.id = 'custom-popover-override-css';
     style.textContent = `
-        /* Force glass-card style popover — matches menu bar glassmorphism */
+        /* Force open-menu glass — matches #expanding-bubble.is-open */
         .custom-popover {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-image: none !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1),
-                        0 8px 32px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
             /* Open to the RIGHT of the button, not below */
             top: 50% !important;
             left: 100% !important;

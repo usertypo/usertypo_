@@ -10,12 +10,13 @@
             /* Styles live in css/tailwind.css (@layer components) */
         }
 
-        /* Exact match for open header sidebar menu */
+        /* Exact match for open header sidebar menu (#expanding-bubble.is-open) */
         .panel-surface {
-            background-color: rgba(26, 29, 35, 0.85) !important;
+            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+            background-image: none !important;
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
 
@@ -181,8 +182,9 @@
             bottom: calc(100% + 8px);
             right: 0;
             white-space: nowrap;
-            background-color: rgba(26, 29, 35, 0.92);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             color: #f1f5f9;
             font-size: 0.6875rem;
             font-weight: 700;
@@ -190,6 +192,8 @@
             padding: 4px 10px;
             border-radius: 8px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             pointer-events: none;
         }
 
@@ -297,10 +301,11 @@
             opacity: 0;
             transform: translate(-50%, calc(-100% - 8px));
             transition: opacity 0.18s ease;
-            background-color: rgba(26, 29, 35, 0.85);
+            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             color: #f1f5f9;
             font-size: 0.6875rem;
             font-weight: 700;

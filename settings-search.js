@@ -158,9 +158,11 @@
                 transform: translateX(-50%) translateY(0.25rem);
                 padding: 0.25rem 0.625rem;
                 border-radius: 0.5rem;
-                background: rgba(26, 29, 35, 0.92);
-                border: 1px solid rgba(var(--theme-primary-rgb, 0, 208, 255), 0.2);
-                backdrop-filter: blur(12px);
+                background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+                background-image: none;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
                 font-size: 0.625rem;
                 font-weight: 600;
                 color: #94a3b8;
@@ -168,7 +170,7 @@
                 opacity: 0;
                 pointer-events: none;
                 transition: all 0.2s ease;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             }
             #global-settings-search-overlay .quick-btn:hover .quick-btn-tooltip {
                 opacity: 1;

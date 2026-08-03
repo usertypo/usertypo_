@@ -9,15 +9,22 @@
 @layer components {
   .glass-panel {
     @apply bg-surface/40 backdrop-blur-md border border-white/10 shadow-lg;
-    background: linear-gradient(145deg, rgba(26, 29, 35, 0.4) 0%, rgba(26, 29, 35, 0.2) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Flat menu-bubble glass — theme runtime overrides to --theme-menu-bg */
+    background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .glass-card {
     @apply bg-surface/20 backdrop-blur-sm border border-white/5;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+    background-image: none;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .player-pill {
