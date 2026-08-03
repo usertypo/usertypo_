@@ -170,33 +170,106 @@
             setSessionFlag(dualMemberKey, active ? roomId : '');
         }
 
+        // #region agent log
+        function dbgDual(hypothesisId, location, message, data) {
+            var payload = {
+                sessionId: 'a5f6ae',
+                runId: 'pre-fix',
+                hypothesisId: hypothesisId,
+                location: location,
+                message: message,
+                data: data || {},
+                timestamp: Date.now(),
+            };
+            try {
+                var prev = [];
+                try { prev = JSON.parse(sessionStorage.getItem('usertypo:dbg-a5f6ae') || '[]'); } catch (_) { prev = []; }
+                prev.push(payload);
+                sessionStorage.setItem('usertypo:dbg-a5f6ae', JSON.stringify(prev.slice(-40)));
+            } catch (_) { /* ignore */ }
+            try { console.warn('[dbg-a5f6ae]', message, data); } catch (_) { /* ignore */ }
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'a5f6ae' },
+                body: JSON.stringify(payload),
+            }).catch(function () { /* ignore */ });
+            return payload;
+        }
+
+        function reloadProbe() {
+            var entries = [];
+            try { entries = performance.getEntriesByType('navigation') || []; } catch (_) { entries = []; }
+            var nav = entries[0] || null;
+            return {
+                codeVersion: 'dual-race-v27-dbg',
+                roomId: roomId,
+                bootPath: window.__usertypoBootPath || '',
+                pathname: window.location.pathname || '',
+                navType: nav ? nav.type : (performance.navigation && performance.navigation.type),
+                navTypeLegacy: (typeof performance !== 'undefined' && performance.navigation)
+                    ? performance.navigation.type
+                    : null,
+                memberRoom: getSessionFlag(dualMemberKey),
+                handledRoom: getSessionFlag(refreshHandledKey),
+                entriesLen: entries.length,
+            };
+        }
+        // #endregion
+
         function isReloadNavigation() {
             try {
-                var entries = performance.getEntriesByType('navigation');
+                var probe = reloadProbe();
                 // Use the real document boot path from the router — not the path when this
                 // lazy script first evaluated (always /dual) — so SPA joins after a refresh
                 // elsewhere are not treated as dual-page reloads.
-                var bootPath = window.__usertypoBootPath || '';
-                var handledRoom = getSessionFlag(refreshHandledKey);
-                var memberRoom = getSessionFlag(dualMemberKey);
-                return bootPath === '/dual'
-                    && entries.length
-                    && entries[0].type === 'reload'
+                var bootPath = probe.bootPath;
+                var handledRoom = probe.handledRoom;
+                var memberRoom = probe.memberRoom;
+                var navType = probe.navType;
+                var result = bootPath === '/dual'
+                    && probe.entriesLen
+                    && navType === 'reload'
                     && memberRoom === roomId
                     && handledRoom !== roomId;
+                // #region agent log
+                dbgDual('H1-H2-H4', 'dual-race.js:isReloadNavigation', 'reload-check', {
+                    result: result,
+                    probe: probe,
+                    checks: {
+                        bootIsDual: bootPath === '/dual',
+                        isReload: navType === 'reload',
+                        memberMatches: memberRoom === roomId,
+                        notHandled: handledRoom !== roomId,
+                    },
+                });
+                // #endregion
+                return result;
             } catch (_) {
                 return false;
             }
         }
 
         function redirectAfterRefresh() {
+            // #region agent log
+            var probe = reloadProbe();
+            dbgDual('H1-H5', 'dual-race.js:redirectAfterRefresh', 'leaving-due-to-refresh', { probe: probe });
+            // #endregion
             setSessionFlag(refreshHandledKey, roomId);
             markDualMembership(false);
             if (roomId && window.usertypoMultiplayer) {
                 try { window.usertypoMultiplayer.leaveRace(roomId); } catch (_) { /* ignore */ }
             }
             if (window.usertypoNotifications) {
-                window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
+                window.usertypoNotifications.showToast(
+                    'You left the dual because the page was refreshed. [dbg '
+                    + 'boot=' + (probe.bootPath || '?')
+                    + ' type=' + (probe.navType || '?')
+                    + ' member=' + (probe.memberRoom || '-')
+                    + ' room=' + (roomId || '-')
+                    + ' ver=' + probe.codeVersion
+                    + ']',
+                    'cancel'
+                );
             }
             if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
             else window.location.replace('/friends');
@@ -1669,11 +1742,20 @@
         }
 
         async function init() {
+            // #region agent log
+            dbgDual('H3-H5', 'dual-race.js:init', 'init-enter', {
+                probe: reloadProbe(),
+                hasMultiplayer: !!window.usertypoMultiplayer,
+            });
+            // #endregion
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
                 return;
             }
             if (isReloadNavigation()) {
+                // #region agent log
+                dbgDual('H1-H2-H4', 'dual-race.js:init', 'init-blocked-as-reload', { probe: reloadProbe() });
+                // #endregion
                 redirectAfterRefresh();
                 return;
             }
@@ -1694,6 +1776,13 @@
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 markDualMembership(true);
                 setSessionFlag(refreshHandledKey, '');
+                // #region agent log
+                dbgDual('H2-H3', 'dual-race.js:init', 'join-success-membership-set', {
+                    roomId: roomId,
+                    state: response && response.state,
+                    memberRoom: getSessionFlag(dualMemberKey),
+                });
+                // #endregion
                 config = response.room && response.room.config;
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
@@ -1716,6 +1805,12 @@
                 prepareWaitingTestView();
             } catch (error) {
                 markDualMembership(false);
+                // #region agent log
+                dbgDual('H5', 'dual-race.js:init', 'join-failed', {
+                    roomId: roomId,
+                    error: String(error && error.message || error),
+                });
+                // #endregion
                 showMessage('Could not join dual', error.message);
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
