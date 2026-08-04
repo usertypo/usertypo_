@@ -82,9 +82,11 @@
         @keyframes color-o { to { background-color: #ff3344; } }
         @keyframes glow-o { to { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); } }
         
+        /* Caret left/% must track the rem-sized logo box — never use px
+           (html font-size is clamp'd; theme CSS must not override these keyframes). */
         .side-underscore {
             position: absolute;
-            left: 26.4%; /* Start position — % of logo box so it scales */
+            left: 26.4%; /* Start — beside first letter; % of logo box */
             top: 58.8%;
             width: 8%;
             height: 1.6%;
@@ -95,12 +97,13 @@
             animation: side-caret-typing 0.72s linear var(--typing-delay) forwards, side-underscore-breath 2s ease-in-out calc(var(--typing-delay) + 0.72s) infinite;
         }
 
+        /* Position-only keyframes so theme glow overrides can't shift the caret. */
         @keyframes side-caret-typing {
-            0% { left: 26.4%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            20%, 25% { left: 35.2%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            45%, 50% { left: 45%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            70%, 75% { left: 54.8%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            95%, 100% { left: 65.2%; opacity: 1; box-shadow: 0 0 12px rgba(149, 239, 255, 0.7); }
+            0% { left: 26.4%; animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            20%, 25% { left: 35.2%; animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            45%, 50% { left: 45%; animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            70%, 75% { left: 54.8%; animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
+            95%, 100% { left: 65.2%; }
         }
 
         @keyframes side-underscore-breath {
@@ -291,6 +294,27 @@
         .field-wrap input:focus {
             border-bottom-color: rgba(0,208,255,.5) !important;
         }
+        /* Kill Chrome/Edge autofill's opaque white/blue fill — keep underline look */
+        .field-wrap input:-webkit-autofill,
+        .field-wrap input:-webkit-autofill:hover,
+        .field-wrap input:-webkit-autofill:focus,
+        .field-wrap input:-webkit-autofill:active,
+        .field-wrap input:autofill {
+            -webkit-text-fill-color: var(--theme-text, #e2e8f0) !important;
+            caret-color: var(--theme-text, #e2e8f0);
+            color: var(--theme-text, #e2e8f0) !important;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(255,255,255,.15) !important;
+            border-radius: 0 !important;
+            /* Paint over UA autofill bg; transparent inputs sit on page/theme bg */
+            -webkit-box-shadow: 0 0 0 1000px var(--theme-bg, #020016) inset !important;
+            box-shadow: 0 0 0 1000px var(--theme-bg, #020016) inset !important;
+            transition: background-color 99999s ease-out, background-image 99999s ease-out;
+            background-color: transparent !important;
+            background-image: none !important;
+        }
         .field-wrap label {
             position: absolute;
             left: 0;
@@ -301,7 +325,9 @@
             transition: top .25s cubic-bezier(0.16,1,0.3,1), font-size .25s cubic-bezier(0.16,1,0.3,1), color .25s cubic-bezier(0.16,1,0.3,1);
         }
         .field-wrap input:focus ~ label,
-        .field-wrap input:not(:placeholder-shown) ~ label {
+        .field-wrap input:not(:placeholder-shown) ~ label,
+        .field-wrap input:-webkit-autofill ~ label,
+        .field-wrap input:autofill ~ label {
             top: 0;
             font-size: .85rem;
             color: #00d0ff;

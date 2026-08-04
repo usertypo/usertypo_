@@ -2556,8 +2556,21 @@ function applyThemeSettings(settings) {
         /* ── Sign-in field styles ── */
         .field-wrap input:focus { border-bottom-color: rgba(${accentRGB}, 0.5) !important; }
         .field-wrap input:focus ~ label,
-        .field-wrap input:not(:placeholder-shown) ~ label { color: ${p.accentPrimary} !important; }
+        .field-wrap input:not(:placeholder-shown) ~ label,
+        .field-wrap input:-webkit-autofill ~ label,
+        .field-wrap input:autofill ~ label { color: ${p.accentPrimary} !important; }
         .field-wrap::after { background: ${p.accentPrimary} !important; box-shadow: 0 0 8px rgba(${accentRGB}, 0.6) !important; }
+        .field-wrap input:-webkit-autofill,
+        .field-wrap input:-webkit-autofill:hover,
+        .field-wrap input:-webkit-autofill:focus,
+        .field-wrap input:-webkit-autofill:active,
+        .field-wrap input:autofill {
+            -webkit-text-fill-color: ${p.textPrimary} !important;
+            caret-color: ${p.textPrimary};
+            color: ${p.textPrimary} !important;
+            -webkit-box-shadow: 0 0 0 1000px ${p.bgMain} inset !important;
+            box-shadow: 0 0 0 1000px ${p.bgMain} inset !important;
+        }
 
         /* ── Sign-in primary button ── */
         .btn-primary { border-color: rgba(${accentRGB}, 0.5) !important; }
@@ -2571,17 +2584,10 @@ function applyThemeSettings(settings) {
         .white-link.accent { color: ${p.accentPrimary} !important; }
         .white-link.accent:hover { text-shadow: 0 0 14px rgba(${accentRGB}, 0.8) !important; }
 
-        /* ── Sign-in side underscore ── */
+        /* ── Sign-in side underscore (color/glow only — never override caret left) ── */
         .side-underscore {
             background-color: ${logoTypColor} !important;
             box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7) !important;
-        }
-        @keyframes side-caret-typing {
-            0% { left: 132px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            20%, 25% { left: 176px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            45%, 50% { left: 225px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            70%, 75% { left: 274px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1); }
-            95%, 100% { left: 326px; opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); }
         }
         @keyframes side-underscore-breath {
             0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(${logoTypRGB}, 0.7); }
