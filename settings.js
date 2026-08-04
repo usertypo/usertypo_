@@ -749,6 +749,23 @@ function forEachCustomThemeEditor(callback) {
     document.querySelectorAll('[data-custom-theme-editor]').forEach(callback);
 }
 
+/** True while programmatically syncing editor DOM — blocks commit from synthetic input events. */
+let __customThemeSyncLock = 0;
+/** Smoothly animate theme color changes for ~500ms (user switches only — never first paint). */
+let __lastAppliedThemeKey = null;
+
+function beginCustomThemeSync() {
+    __customThemeSyncLock += 1;
+}
+
+function endCustomThemeSync() {
+    __customThemeSyncLock = Math.max(0, __customThemeSyncLock - 1);
+}
+
+function isCustomThemeSyncLocked() {
+    return __customThemeSyncLock > 0;
+}
+
 function syncOneCustomThemeEditor(editor, settings, cfg) {
     if (!editor) return;
     const modeBox = editor.querySelector('[data-custom-theme-mode]');
@@ -775,7 +792,9 @@ function syncOneCustomThemeEditor(editor, settings, cfg) {
         if (track) track.style.background = getBgSpectrumGradient(cfg.mode);
         const slider = spectrum.querySelector('[data-custom-bg-spectrum]');
         const pos = spectrumPosFromBgColor(cfg.mode, cfg.bgColor);
-        if (slider && document.activeElement !== slider) {
+        // Always write the slider during sync so a focused clone/source copy
+        // cannot keep a stale value that later commits over a just-applied preset.
+        if (slider) {
             slider.value = String(Math.round(pos * 100));
         }
         const thumb = spectrum.querySelector('[data-bg-spectrum-thumb]');
@@ -801,8 +820,14 @@ function syncOneCustomThemeEditor(editor, settings, cfg) {
 
 function syncCustomThemeEditor(settings) {
     if (!settings) settings = loadSettings();
-    const cfg = getCustomThemeConfig(settings, 'custom');
-    forEachCustomThemeEditor((editor) => syncOneCustomThemeEditor(editor, settings, cfg));
+    // Sync from the active theme (custom / custom:N), not always the live draft.
+    const cfg = getCustomThemeConfig(settings, settings.lookFeel?.colorTheme || 'custom');
+    beginCustomThemeSync();
+    try {
+        forEachCustomThemeEditor((editor) => syncOneCustomThemeEditor(editor, settings, cfg));
+    } finally {
+        endCustomThemeSync();
+    }
 }
 
 function renderCustomThemePresets(settings) {
@@ -907,6 +932,11 @@ function readCustomThemeFromEditor(editor) {
 
 /** Persist custom theme config and apply it site-wide immediately. */
 function commitCustomTheme(partial, options = {}) {
+    // Ignore synthetic input/change events fired while we programmatically sync
+    // cloned + source Custom Theme editors (SPA panel copies). Those events used
+    // to overwrite a just-applied preset and make play appear to do nothing.
+    if (isCustomThemeSyncLocked() && !options.force) return null;
+
     const settings = loadSettings();
     if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
 
@@ -940,7 +970,7 @@ function commitCustomTheme(partial, options = {}) {
 }
 
 function applyCustomThemeFromEditor() {
-    return commitCustomTheme(readCustomThemeFromEditor());
+    return commitCustomTheme(readCustomThemeFromEditor(), { force: true });
 }
 
 function saveCustomThemePreset() {
@@ -969,10 +999,13 @@ function saveCustomThemePreset() {
 }
 
 function applyCustomThemePreset(index) {
+    const idx = Number.parseInt(index, 10);
+    if (!Number.isFinite(idx) || idx < 0) return false;
+
     const settings = loadSettings();
     const presets = settings.lookFeel?.customPresets;
-    if (!Array.isArray(presets) || !presets[index]) return;
-    const preset = presets[index];
+    if (!Array.isArray(presets) || !presets[idx]) return false;
+    const preset = presets[idx];
     settings.lookFeel.customTheme = {
         mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
         mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
@@ -982,12 +1015,18 @@ function applyCustomThemePreset(index) {
             CUSTOM_THEME_DEFAULT.bgColor
         ),
     };
-    settings.lookFeel.colorTheme = `custom:${index}`;
+    settings.lookFeel.colorTheme = `custom:${idx}`;
     saveSettings(settings);
+    // Force a visible transition even when switching between similar custom presets.
+    __lastAppliedThemeKey = null;
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    // Re-apply after sync so any suppressed editor noise cannot leave the site
+    // on the previous palette. Sync lock prevents commits during the sync above.
+    applyThemeSettings(settings);
     if (typeof window.triggerSave === 'function') window.triggerSave();
+    return true;
 }
 
 function deleteCustomThemePreset(index) {
@@ -1046,8 +1085,18 @@ function initCustomThemeEditor() {
     if (!window.__usertypoCustomThemeDelegated) {
         window.__usertypoCustomThemeDelegated = true;
 
+        const eventEl = (e) => {
+            const t = e && e.target;
+            if (!t) return null;
+            return t.nodeType === 1 ? t : t.parentElement;
+        };
+
         document.addEventListener('input', (e) => {
-            const spectrumSlider = e.target.closest?.('[data-custom-bg-spectrum]');
+            if (isCustomThemeSyncLocked()) return;
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+
+            const spectrumSlider = el.closest?.('[data-custom-bg-spectrum]');
             if (spectrumSlider && spectrumSlider.closest('[data-custom-theme-editor]')) {
                 const editor = spectrumSlider.closest('[data-custom-theme-editor]');
                 const modeBtn = editor.querySelector('[data-custom-theme-mode] .opt-btn.active');
@@ -1067,7 +1116,7 @@ function initCustomThemeEditor() {
                 return;
             }
 
-            const input = e.target.closest?.('[data-custom-color]');
+            const input = el.closest?.('[data-custom-color]');
             if (!input || !input.closest('[data-custom-theme-editor]')) return;
             const key = input.dataset.customColor;
             const hex = normalizeHexColor(input.value, input.value);
@@ -1080,7 +1129,10 @@ function initCustomThemeEditor() {
         }, true);
 
         document.addEventListener('change', (e) => {
-            const input = e.target.closest?.('[data-custom-hex]');
+            if (isCustomThemeSyncLocked()) return;
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+            const input = el.closest?.('[data-custom-hex]');
             if (!input || !input.closest('[data-custom-theme-editor]')) return;
             const key = input.dataset.customHex;
             const hex = normalizeHexColor(input.value, CUSTOM_THEME_DEFAULT[key]);
@@ -1095,7 +1147,9 @@ function initCustomThemeEditor() {
 
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
-            const input = e.target.closest?.('[data-custom-hex]');
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+            const input = el.closest?.('[data-custom-hex]');
             if (!input || !input.closest('[data-custom-theme-editor]')) return;
             e.preventDefault();
             input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1103,28 +1157,36 @@ function initCustomThemeEditor() {
         }, true);
 
         document.addEventListener('click', (e) => {
-            const applyBtn = e.target.closest?.('[data-custom-theme-apply]');
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+
+            const applyBtn = el.closest('[data-custom-theme-apply]');
             if (applyBtn) {
                 e.preventDefault();
+                e.stopPropagation();
                 applyCustomThemeFromEditor();
                 return;
             }
-            const saveBtn = e.target.closest?.('[data-custom-theme-save]');
+            const saveBtn = el.closest('[data-custom-theme-save]');
             if (saveBtn) {
                 e.preventDefault();
+                e.stopPropagation();
                 saveCustomThemePreset();
                 return;
             }
-            const applyPreset = e.target.closest?.('[data-preset-apply]');
+            const applyPreset = el.closest('[data-preset-apply]');
             if (applyPreset) {
                 e.preventDefault();
-                applyCustomThemePreset(parseInt(applyPreset.dataset.presetApply, 10));
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                applyCustomThemePreset(applyPreset.getAttribute('data-preset-apply'));
                 return;
             }
-            const deletePreset = e.target.closest?.('[data-preset-delete]');
+            const deletePreset = el.closest('[data-preset-delete]');
             if (deletePreset) {
                 e.preventDefault();
-                deleteCustomThemePreset(parseInt(deletePreset.dataset.presetDelete, 10));
+                e.stopPropagation();
+                deleteCustomThemePreset(parseInt(deletePreset.getAttribute('data-preset-delete'), 10));
             }
         }, true);
     }
@@ -1174,8 +1236,6 @@ function _hexToRGB(hex) {
  *   - "o" layer     → always red (#ff3344) across all themes
  */
 /** Smoothly animate theme color changes for ~500ms (user switches only — never first paint). */
-let __lastAppliedThemeKey = null;
-
 function beginThemeColorTransition() {
     const root = document.documentElement;
     if (!root) return;
@@ -2928,9 +2988,11 @@ function selectColorTheme(themeName) {
 
     setByPath(settings, 'lookFeel.colorTheme', themeName);
     saveSettings(settings);
+    __lastAppliedThemeKey = null;
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    applyThemeSettings(settings);
 }
 
 
@@ -3528,6 +3590,10 @@ function initSettingsPage() {
     try { applyCursorSettings(); } catch { /* body not ready yet */ }
     try { applyThemeSettings(); } catch { /* body not ready yet */ }
 
+    // Wire Custom Theme preset play/save handlers as soon as settings.js loads,
+    // so play works even before /settings finishes its page-local init.
+    try { initCustomThemeEditor(); } catch { /* editors may not exist yet */ }
+
     document.addEventListener('DOMContentLoaded', () => {
         const settings = loadSettings();
 
@@ -4018,6 +4084,7 @@ window.usertypo_settingsApi = {
     isCustomThemeName,
     syncCustomThemeEditor,
     commitCustomTheme,
+    applyCustomThemePreset,
     syncColorThemeSelectLabel,
     getLanguageDisplayName,
     isDualPage,
