@@ -125,7 +125,9 @@ window.__spaPageInit = function () {
 
     function showUsernameForm(suggested) {
         if (titleEl) titleEl.textContent = 'Almost done';
-        if (msgEl) msgEl.textContent = 'Pick a username to finish creating your account.';
+        if (msgEl) {
+            msgEl.textContent = 'We could not read a name from your Google account. Pick a username to finish.';
+        }
         if (errEl) {
             errEl.textContent = '';
             errEl.classList.add('hidden');
