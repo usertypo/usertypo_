@@ -12,15 +12,15 @@
     .sso-callback-title {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #f1f5f9;
+        color: var(--theme-text, #f1f5f9);
     }
     .sso-callback-msg {
         font-size: 0.9rem;
-        color: #94a3b8;
+        color: var(--theme-text-muted, #94a3b8);
         max-width: 28rem;
     }
     .sso-callback-error {
-        color: #ff6b6b;
+        color: var(--theme-error, #ff6b6b);
         font-size: 0.85rem;
         max-width: 28rem;
     }
@@ -36,27 +36,27 @@
         font-size: 0.75rem;
         font-weight: 600;
         letter-spacing: 0.04em;
-        color: #94a3b8;
+        color: var(--theme-text-muted, #94a3b8);
     }
     .sso-continue-form input {
         width: 100%;
         border-radius: 0.85rem;
         border: 1px solid rgba(255, 255, 255, 0.12);
         background: rgba(255, 255, 255, 0.04);
-        color: #f8fafc;
+        color: var(--theme-text, #f8fafc);
         padding: 0.7rem 0.9rem;
         font-size: 0.9rem;
         outline: none;
     }
     .sso-continue-form input:focus {
-        border-color: rgba(0, 208, 255, 0.55);
-        box-shadow: 0 0 0 1px rgba(0, 208, 255, 0.25);
+        border-color: rgba(var(--theme-primary-rgb), 0.55);
+        box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.25);
     }
     .sso-continue-form button {
         margin-top: 0.25rem;
-        border: 1px solid rgba(0, 208, 255, 0.45);
-        background: rgba(0, 208, 255, 0.15);
-        color: #7ddfff;
+        border: 1px solid rgba(var(--theme-primary-rgb), 0.45);
+        background: rgba(var(--theme-primary-rgb), 0.15);
+        color: var(--theme-primary, #7ddfff);
         border-radius: 0.85rem;
         padding: 0.7rem 1rem;
         font-size: 0.8rem;
@@ -92,6 +92,12 @@ window.__spaPageInit = function () {
     var formEl = document.getElementById('sso-continue-form');
     var usernameEl = document.getElementById('sso-username');
     var submitEl = document.getElementById('sso-continue-submit');
+    var initToken = 'sso_' + Date.now().toString(36);
+    var unsubAuth = null;
+
+    // #region agent log
+    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:init',message:'spaPageInit start',data:{initToken:initToken,path:location.pathname},timestamp:Date.now()})}).catch(function(){});
+    // #endregion
 
     function showError(text) {
         if (titleEl) titleEl.textContent = 'Sign-in incomplete';
@@ -103,6 +109,9 @@ window.__spaPageInit = function () {
     }
 
     function goTo(path, welcomeKind) {
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D',location:'sso-callback.html:goTo',message:'navigating away from sso',data:{initToken:initToken,path:path||'/',formVisible:!!(formEl&&!formEl.classList.contains('hidden'))},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         if (welcomeKind && typeof window.usertypoSetAuthWelcome === 'function') {
             window.usertypoSetAuthWelcome(welcomeKind);
         }
@@ -124,6 +133,9 @@ window.__spaPageInit = function () {
     }
 
     function showUsernameForm(suggested) {
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,C',location:'sso-callback.html:showUsernameForm',message:'username form shown',data:{initToken:initToken,suggestedLen:(suggested||'').length,isSignedIn:!!(window.usertypoAuth&&window.usertypoAuth.getState&&window.usertypoAuth.getState().isSignedIn)},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         if (titleEl) titleEl.textContent = 'Almost done';
         if (msgEl) {
             msgEl.textContent = 'We could not read a name from your Google account. Pick a username to finish.';
@@ -145,8 +157,23 @@ window.__spaPageInit = function () {
         return;
     }
 
+    if (typeof window.usertypoAuth.onChange === 'function') {
+        unsubAuth = window.usertypoAuth.onChange(function (state) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D',location:'sso-callback.html:authOnChange',message:'auth state changed on sso page',data:{initToken:initToken,isSignedIn:!!(state&&state.isSignedIn),formVisible:!!(formEl&&!formEl.classList.contains('hidden')),path:location.pathname},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+        });
+        __pageAbort.signal.addEventListener('abort', function () {
+            if (typeof unsubAuth === 'function') unsubAuth();
+        }, { once: true });
+    }
+
     window.usertypoAuth.handleSsoCallback()
         .then(function (result) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,C,D',location:'sso-callback.html:handleResult',message:'handleSsoCallback resolved',data:{initToken:initToken,status:result&&result.status,suggestedLen:((result&&result.suggestedUsername)||'').length,aborted:__pageAbort.signal.aborted},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+            if (__pageAbort.signal.aborted) return;
             if (result && result.status === 'complete') {
                 goTo(result.redirectTo || '/', inferWelcomeKind());
                 return;
@@ -174,6 +201,10 @@ window.__spaPageInit = function () {
             showError('Google sign-in did not complete. Please try again.');
         })
         .catch(function (err) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A',location:'sso-callback.html:handleError',message:'handleSsoCallback rejected',data:{initToken:initToken,errCode:err&&err.code,aborted:__pageAbort.signal.aborted},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+            if (__pageAbort.signal.aborted) return;
             var msg = window.usertypoAuth.formatError(err);
             showError(msg);
             if (err && (err.code === 'email_already_exists' || /already exists/i.test(msg))) {
@@ -203,6 +234,10 @@ window.__spaPageInit = function () {
             }
             if (msgEl) msgEl.textContent = 'Creating your account…';
 
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:formSubmit',message:'user submitted username form',data:{initToken:initToken,usernameLen:username.length},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
+
             window.usertypoAuth.finishOAuthUsername(username)
                 .then(function (result) {
                     goTo((result && result.redirectTo) || '/', 'new');
@@ -228,6 +263,9 @@ window.__spaPageInit = function () {
 };
 
 window.__spaPageCleanup = function () {
+    // #region agent log
+    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:cleanup',message:'spaPageCleanup',data:{path:location.pathname},timestamp:Date.now()})}).catch(function(){});
+    // #endregion
     __pageAbort.abort();
 };
 </script>

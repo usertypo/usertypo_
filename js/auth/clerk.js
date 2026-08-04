@@ -482,6 +482,9 @@
         var clerk = getClerk();
         var signUp = clerk && clerk.client && clerk.client.signUp;
         if (!signUp || !signUp.status) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A',location:'clerk.js:completePendingOAuthSignUp',message:'no signUp object',data:{hasClerk:!!clerk,hasClient:!!(clerk&&clerk.client)},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return { status: 'none' };
         }
 
@@ -499,12 +502,19 @@
         var firstNameSnapshot = signUp.firstName || '';
         var lastNameSnapshot = signUp.lastName || '';
 
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,B',location:'clerk.js:completePending:preAssert',message:'snapshot before email assert',data:{status:signUp.status,missing:signUp.missingFields||[],hasGoogleName:!!googleName,googleNameLen:(googleName||'').length,hasFirst:!!firstNameSnapshot,hasLast:!!lastNameSnapshot,hasEmail:!!emailSnapshot,hasPreferred:!!preferredUsername},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
+
         // Never create a second Clerk user for an email that already has an account.
         // Pass email snapshot so the SignIn lookup cannot depend on a wiped signUp.
         await assertOAuthEmailAvailable(signUp, emailSnapshot);
 
         signUp = clerk.client && clerk.client.signUp;
         if (!signUp || !signUp.status) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'B',location:'clerk.js:completePending:postAssert',message:'signUp missing after email assert',data:{hadGoogleNameSnapshot:!!googleName},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return { status: 'none' };
         }
         if (typeof signUp.reload === 'function') {
@@ -514,7 +524,11 @@
         }
 
         // Prefer live fields; fall back to pre-check snapshot if SignIn lookup cleared them.
-        googleName = googleNameFromSignUp(signUp) || googleName;
+        var googleNameAfter = googleNameFromSignUp(signUp);
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'B',location:'clerk.js:completePending:afterReload',message:'name fields after email assert/reload',data:{status:signUp.status,missing:signUp.missingFields||[],googleBeforeLen:(googleName||'').length,googleAfterLen:(googleNameAfter||'').length,nameWiped:!!(googleName&&!googleNameAfter)},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
+        googleName = googleNameAfter || googleName;
         firstNameSnapshot = signUp.firstName || firstNameSnapshot;
         lastNameSnapshot = signUp.lastName || lastNameSnapshot;
 
@@ -555,6 +569,9 @@
             if (missing.indexOf('username') !== -1) {
                 if (!usernameSeed) {
                     // No Google display name and no caller-supplied username — ask the user.
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,E',location:'clerk.js:needs_username:emptySeed',message:'returning needs_username empty seed',data:{missing:missing,hasGoogleName:hasGoogleName,seedLen:0,attempt:attempts},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     return {
                         status: 'needs_username',
                         missingFields: missing,
@@ -748,10 +765,17 @@
         }
         notify(getState());
 
+        // #region agent log
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D,E',location:'clerk.js:handleSsoCallback:afterComplete',message:'finished completePendingOAuthSignUp',data:{finishedStatus:finished&&finished.status,hasGoogleName:!!(finished&&finished.hasGoogleName),missing:(finished&&finished.missingFields)||[],suggestedLen:((finished&&finished.suggestedUsername)||'').length,isSignedIn:!!getState().isSignedIn},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
+
         if (finished.status === 'complete' || getState().isSignedIn) {
             markAuthWelcome(
                 finished.status === 'complete' ? 'new' : inferWelcomeKindFromUser(getState().user)
             );
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:handleSsoCallback:returnComplete',message:'returning complete',data:{viaFinished:finished.status==='complete',viaSignedIn:!!getState().isSignedIn},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return { status: 'complete', redirectTo: homePath };
         }
 
@@ -762,6 +786,9 @@
             && missing.indexOf('username') !== -1
             && !finished.hasGoogleName
         ) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,E',location:'clerk.js:handleSsoCallback:returnNeedsUsername',message:'returning needs_username to UI',data:{finishedStatus:finished.status,missing:missing,suggestedLen:(finished.suggestedUsername||'').length},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             return {
                 status: 'needs_username',
                 missingFields: missing,
