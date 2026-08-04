@@ -2,6 +2,10 @@
  * Theme-aware favicon: pixel "o" (fixed coral) + underscore caret (accent) on theme bg.
  * Circular icon; o and _ share the same width; _ sits on the o baseline (matches logo art).
  * Call window.usertypoUpdateFavicon(bgHex, accentHex) whenever the theme changes.
+ *
+ * Static crawlable fallbacks (for Google SERP + no-JS) live in index.html as
+ * /logo-assets/favicon-abyss.png and favicon-paper.png — keep those in sync via
+ * scripts/generate-favicons.py when this paint logic changes.
  */
 (function () {
     var SIZE = 64;
@@ -24,6 +28,16 @@
             if (document.head) document.head.appendChild(linkEl);
         }
         return linkEl;
+    }
+
+    /** Drop crawlable static icons once the live theme favicon is painted. Googlebot reads the HTML source (still has Abyss) and does not run this. */
+    function removeStaticFavicons() {
+        if (!document.head) return;
+        var nodes = document.head.querySelectorAll('link[data-usertypo-static-favicon]');
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === 'usertypo-favicon') continue;
+            nodes[i].parentNode.removeChild(nodes[i]);
+        }
     }
 
     /** Fallback pixel "o" if favicon-o.png has not loaded yet. */
@@ -132,10 +146,13 @@
 
         var link = ensureLink();
         if (!link || !link.parentNode) return;
+        removeStaticFavicons();
         var next = link.cloneNode(false);
         next.id = 'usertypo-favicon';
         next.rel = 'icon';
         next.type = 'image/png';
+        next.removeAttribute('data-usertypo-static-favicon');
+        next.removeAttribute('media');
         next.href = canvas.toDataURL('image/png');
         link.parentNode.replaceChild(next, link);
         linkEl = next;
