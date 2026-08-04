@@ -1820,8 +1820,7 @@ function applyThemeSettings(settings) {
         #orbit-tooltip-portal,
         .bubble-nav-link,
         [data-ppc-best],
-        .profile-stat-card,
-        .keymap-key {
+        .profile-stat-card {
             border-radius: var(--theme-box-radius, 1.375rem) !important;
         }
         .rounded-l-2xl,
@@ -1884,6 +1883,10 @@ function applyThemeSettings(settings) {
         a.rounded-full.px-6,
         .usertypo-cookie-btn {
             border-radius: var(--theme-box-radius, 1.375rem) !important;
+        }
+        /* Keymap keys keep the original smaller radius (pre–box-radius unify) */
+        .keymap-key {
+            border-radius: 0.5rem !important;
         }
 
         /* ── Scrollbar thumb ── */
