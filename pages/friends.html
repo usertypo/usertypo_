@@ -412,19 +412,6 @@
 
             <p class="text-slate-400 text-sm mb-4">Search by username or 8-character user ID — results update as you type.</p>
 
-            <div id="my-public-id-row"
-                class="mb-5 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <div class="min-w-0">
-                    <p class="text-[0.6rem] font-bold uppercase tracking-widest text-slate-500">Your ID</p>
-                    <p id="my-public-id-value" class="font-mono text-sm font-bold tracking-wider text-slate-100 truncate">—</p>
-                </div>
-                <button id="copy-my-public-id-btn" type="button" title="Copy your ID"
-                    class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/15 px-2.5 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-background-dark transition-all">
-                    <span class="material-symbols-outlined text-[0.9rem]" id="copy-my-public-id-icon">content_copy</span>
-                    Copy
-                </button>
-            </div>
-
             <div class="relative mb-6">
                 <span
                     class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/70 text-xl">person_search</span>
@@ -885,7 +872,6 @@ window.__spaPageInit = function() {
 
             function openModal() {
                 resetAddFriendsSearchForm();
-                refreshMyPublicIdDisplay();
                 addFriendsModal.classList.remove('opacity-0', 'pointer-events-none');
                 addFriendsModal.removeAttribute('inert');
                 modalContent.classList.remove('scale-95');
@@ -1011,60 +997,6 @@ window.__spaPageInit = function() {
                 if (!profile) return '';
                 return String(profile.public_id || '').trim().toUpperCase();
             }
-
-            const myPublicIdValue = document.getElementById('my-public-id-value');
-            const copyMyPublicIdBtn = document.getElementById('copy-my-public-id-btn');
-            const copyMyPublicIdIcon = document.getElementById('copy-my-public-id-icon');
-
-            async function refreshMyPublicIdDisplay() {
-                if (!myPublicIdValue) return;
-                var profile = window.__USERTYPO_PROFILE__;
-                try {
-                    if ((!profile || !profile.public_id) && window.usertypoProfiles && window.usertypoAuth) {
-                        await window.usertypoAuth.ready();
-                        var state = window.usertypoAuth.getState();
-                        if (state && state.isSignedIn && state.user) {
-                            profile = await window.usertypoProfiles.ensureMyProfile(state.user);
-                        }
-                    }
-                } catch (e) { /* ignore */ }
-                var id = formatPublicId(profile);
-                myPublicIdValue.textContent = id || '—';
-                if (copyMyPublicIdBtn) copyMyPublicIdBtn.disabled = !id;
-            }
-
-            async function copyMyPublicId() {
-                var id = (myPublicIdValue && myPublicIdValue.textContent || '').trim();
-                if (!id || id === '—') {
-                    await refreshMyPublicIdDisplay();
-                    id = (myPublicIdValue && myPublicIdValue.textContent || '').trim();
-                }
-                if (!id || id === '—') return;
-                try {
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        await navigator.clipboard.writeText(id);
-                    } else {
-                        var ta = document.createElement('textarea');
-                        ta.value = id;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand('copy');
-                        ta.remove();
-                    }
-                    if (copyMyPublicIdIcon) copyMyPublicIdIcon.textContent = 'check';
-                    setTimeout(function () {
-                        if (copyMyPublicIdIcon) copyMyPublicIdIcon.textContent = 'content_copy';
-                    }, 1200);
-                } catch (e) {
-                    setFriendsStatus(addFriendsStatus, 'Could not copy ID.', 'error');
-                }
-            }
-
-            if (copyMyPublicIdBtn) copyMyPublicIdBtn.addEventListener('click', copyMyPublicId);
-            window.addEventListener('usertypo:profile-synced', function () {
-                refreshMyPublicIdDisplay();
-            });
-            refreshMyPublicIdDisplay();
 
             function avatarStyle(profile) {
                 var raw = profile && profile.avatar_url;
