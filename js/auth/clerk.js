@@ -340,15 +340,6 @@
         return local ? sanitizeUsername(local) : '';
     }
 
-    /**
-     * Auto username for Google OAuth: Google display name only.
-     * Email local-part is form prefill when we must ask — never silent auto-complete.
-     */
-    function autoUsernameFromGoogle(signUp) {
-        var fromName = googleNameFromSignUp(signUp);
-        return fromName ? sanitizeUsername(fromName) : '';
-    }
-
     function isUsernameTakenError(err) {
         var code = '';
         var param = '';
@@ -474,47 +465,33 @@
     }
 
     /**
-     * New Google users often land in missing_requirements (username / legal_accepted).
-     * When Google provides a display name, set username from it and never prompt.
-     * Only return needs_username when no Google name (and no explicit preferredUsername).
+     * Finish a pending Google OAuth sign-up.
+     * Without preferredUsername: accept legal/name fields only, then return
+     * needs_username_choice so the sign-up page can ask Google vs custom.
+     * With preferredUsername: set that username and activate the session.
      */
     async function completePendingOAuthSignUp(preferredUsername) {
         var clerk = getClerk();
         var signUp = clerk && clerk.client && clerk.client.signUp;
         if (!signUp || !signUp.status) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A',location:'clerk.js:completePendingOAuthSignUp',message:'no signUp object',data:{hasClerk:!!clerk,hasClient:!!(clerk&&clerk.client)},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             return { status: 'none' };
         }
 
-        // Refresh OAuth profile fields before reading the Google display name.
         if (typeof signUp.reload === 'function') {
             try {
                 signUp = await signUp.reload();
             } catch (e) { /* keep current snapshot */ }
         }
 
-        // Snapshot identity fields before assertOAuthEmailAvailable — that helper
-        // creates a SignIn lookup which can disturb client.signUp state.
         var googleName = googleNameFromSignUp(signUp);
         var emailSnapshot = emailFromSignUp(signUp);
         var firstNameSnapshot = signUp.firstName || '';
         var lastNameSnapshot = signUp.lastName || '';
 
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,B',location:'clerk.js:completePending:preAssert',message:'snapshot before email assert',data:{status:signUp.status,missing:signUp.missingFields||[],hasGoogleName:!!googleName,googleNameLen:(googleName||'').length,hasFirst:!!firstNameSnapshot,hasLast:!!lastNameSnapshot,hasEmail:!!emailSnapshot,hasPreferred:!!preferredUsername},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
-
-        // Never create a second Clerk user for an email that already has an account.
-        // Pass email snapshot so the SignIn lookup cannot depend on a wiped signUp.
         await assertOAuthEmailAvailable(signUp, emailSnapshot);
 
         signUp = clerk.client && clerk.client.signUp;
         if (!signUp || !signUp.status) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'B',location:'clerk.js:completePending:postAssert',message:'signUp missing after email assert',data:{hadGoogleNameSnapshot:!!googleName},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             return { status: 'none' };
         }
         if (typeof signUp.reload === 'function') {
@@ -523,12 +500,7 @@
             } catch (e) { /* keep current */ }
         }
 
-        // Prefer live fields; fall back to pre-check snapshot if SignIn lookup cleared them.
-        var googleNameAfter = googleNameFromSignUp(signUp);
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'B',location:'clerk.js:completePending:afterReload',message:'name fields after email assert/reload',data:{status:signUp.status,missing:signUp.missingFields||[],googleBeforeLen:(googleName||'').length,googleAfterLen:(googleNameAfter||'').length,nameWiped:!!(googleName&&!googleNameAfter)},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
-        googleName = googleNameAfter || googleName;
+        googleName = googleNameFromSignUp(signUp) || googleName;
         firstNameSnapshot = signUp.firstName || firstNameSnapshot;
         lastNameSnapshot = signUp.lastName || lastNameSnapshot;
 
@@ -542,21 +514,15 @@
             return {
                 status: signUp.status,
                 missingFields: signUp.missingFields || [],
+                googleDisplayName: googleName,
+                googleUsername: googleName ? sanitizeUsername(googleName) : '',
                 hasGoogleName: !!googleName,
             };
         }
 
-        var hasGoogleName = !!googleName;
-        var usernameSeed = preferredUsername
-            ? sanitizeUsername(preferredUsername)
-            : autoUsernameFromGoogle({
-                fullName: googleName,
-                firstName: firstNameSnapshot,
-                lastName: lastNameSnapshot,
-            }) || (googleName ? sanitizeUsername(googleName) : '');
-
+        var usernameSeed = preferredUsername ? sanitizeUsername(preferredUsername) : '';
         var attempts = 0;
-        var maxAttempts = hasGoogleName || preferredUsername ? 12 : 1;
+        var maxAttempts = usernameSeed ? 12 : 3;
 
         while (attempts < maxAttempts) {
             var missing = signUp.missingFields || [];
@@ -566,46 +532,48 @@
             if (missing.indexOf('legal_accepted') !== -1) {
                 updates.legalAccepted = true;
             }
-            if (missing.indexOf('username') !== -1) {
-                if (!usernameSeed) {
-                    // No Google display name and no caller-supplied username — ask the user.
-                    // #region agent log
-                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,E',location:'clerk.js:needs_username:emptySeed',message:'returning needs_username empty seed',data:{missing:missing,hasGoogleName:hasGoogleName,seedLen:0,attempt:attempts},timestamp:Date.now()})}).catch(function(){});
-                    // #endregion
-                    return {
-                        status: 'needs_username',
-                        missingFields: missing,
-                        suggestedUsername: emailLocalPartSuggestion(signUp) || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
-                        hasGoogleName: false,
-                    };
-                }
-                updates.username = attempts === 0
-                    ? usernameSeed
-                    : sanitizeUsername(usernameSeed.slice(0, 12) + Math.floor(Math.random() * 9000 + 1000));
-            }
             if (missing.indexOf('first_name') !== -1) {
                 updates.firstName = signUp.firstName || firstNameSnapshot || 'Player';
             }
             if (missing.indexOf('last_name') !== -1) {
                 updates.lastName = signUp.lastName || lastNameSnapshot || 'User';
             }
+            if (missing.indexOf('username') !== -1) {
+                if (!usernameSeed) {
+                    // Do not invent a username — send the user to the chooser.
+                    return {
+                        status: 'needs_username_choice',
+                        missingFields: missing,
+                        googleDisplayName: googleName,
+                        googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                        hasGoogleName: !!googleName,
+                        suggestedUsername: emailLocalPartSuggestion(signUp)
+                            || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
+                    };
+                }
+                updates.username = attempts === 0
+                    ? usernameSeed
+                    : sanitizeUsername(usernameSeed.slice(0, 12) + Math.floor(Math.random() * 9000 + 1000));
+            }
 
             if (!Object.keys(updates).length) {
-                // Unhandled missing fields — only prompt for username when that's what's left
-                // and we have no Google name to apply.
                 if (missing.indexOf('username') !== -1 && !usernameSeed) {
                     return {
-                        status: 'needs_username',
+                        status: 'needs_username_choice',
                         missingFields: missing,
-                        suggestedUsername: emailLocalPartSuggestion(signUp) || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
-                        hasGoogleName: false,
+                        googleDisplayName: googleName,
+                        googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                        hasGoogleName: !!googleName,
+                        suggestedUsername: emailLocalPartSuggestion(signUp)
+                            || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
                     };
                 }
                 return {
                     status: 'missing_requirements',
                     missingFields: missing,
-                    suggestedUsername: usernameSeed,
-                    hasGoogleName: hasGoogleName,
+                    googleDisplayName: googleName,
+                    googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                    hasGoogleName: !!googleName,
                 };
             }
 
@@ -636,22 +604,24 @@
         }
 
         var stillMissing = signUp.missingFields || [];
-        // With a Google name we should have set username — if username is still missing,
-        // treat as needs_username only when we truly have nothing to derive from Google.
         if (stillMissing.indexOf('username') !== -1 && !usernameSeed) {
             return {
-                status: 'needs_username',
+                status: 'needs_username_choice',
                 missingFields: stillMissing,
-                suggestedUsername: emailLocalPartSuggestion(signUp) || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
-                hasGoogleName: false,
+                googleDisplayName: googleName,
+                googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                hasGoogleName: !!googleName,
+                suggestedUsername: emailLocalPartSuggestion(signUp)
+                    || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
             };
         }
 
         return {
             status: 'missing_requirements',
             missingFields: stillMissing,
-            suggestedUsername: usernameSeed,
-            hasGoogleName: hasGoogleName,
+            googleDisplayName: googleName,
+            googleUsername: googleName ? sanitizeUsername(googleName) : '',
+            hasGoogleName: !!googleName,
         };
     }
 
@@ -744,15 +714,6 @@
         var finished;
         try {
             finished = await completePendingOAuthSignUp();
-            // If Google name was available but completion raced, retry once with that seed.
-            if (
-                finished
-                && finished.status === 'missing_requirements'
-                && finished.hasGoogleName
-                && finished.suggestedUsername
-            ) {
-                finished = await completePendingOAuthSignUp(finished.suggestedUsername);
-            }
         } catch (err) {
             if (isIdentifierExistsError(err) || (err && err.code === 'email_already_exists')) {
                 return {
@@ -765,60 +726,30 @@
         }
         notify(getState());
 
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D,E',location:'clerk.js:handleSsoCallback:afterComplete',message:'finished completePendingOAuthSignUp',data:{finishedStatus:finished&&finished.status,hasGoogleName:!!(finished&&finished.hasGoogleName),missing:(finished&&finished.missingFields)||[],suggestedLen:((finished&&finished.suggestedUsername)||'').length,isSignedIn:!!getState().isSignedIn},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
-
         if (finished.status === 'complete' || getState().isSignedIn) {
             markAuthWelcome(
                 finished.status === 'complete' ? 'new' : inferWelcomeKindFromUser(getState().user)
             );
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'D',location:'clerk.js:handleSsoCallback:returnComplete',message:'returning complete',data:{viaFinished:finished.status==='complete',viaSignedIn:!!getState().isSignedIn},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             return { status: 'complete', redirectTo: homePath };
         }
 
-        // Only prompt when username is still required AND we could not derive a Google name.
         var missing = finished.missingFields || [];
         if (
-            (finished.status === 'needs_username' || finished.status === 'missing_requirements')
-            && missing.indexOf('username') !== -1
-            && !finished.hasGoogleName
+            finished.status === 'needs_username_choice'
+            || (
+                (finished.status === 'needs_username' || finished.status === 'missing_requirements')
+                && missing.indexOf('username') !== -1
+            )
         ) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,E',location:'clerk.js:handleSsoCallback:returnNeedsUsername',message:'returning needs_username to UI',data:{finishedStatus:finished.status,missing:missing,suggestedLen:(finished.suggestedUsername||'').length},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             return {
-                status: 'needs_username',
+                status: 'needs_username_choice',
                 missingFields: missing,
+                googleDisplayName: finished.googleDisplayName || '',
+                googleUsername: finished.googleUsername || '',
+                hasGoogleName: !!finished.hasGoogleName,
                 suggestedUsername: finished.suggestedUsername || '',
+                redirectTo: (config.signUpUrl || signInPath) + '?oauth=username',
             };
-        }
-
-        // Last resort: Google name exists but signup still incomplete — try finishing
-        // silently with the suggested username instead of flashing the form.
-        if (
-            finished.hasGoogleName
-            && finished.suggestedUsername
-            && missing.indexOf('username') !== -1
-        ) {
-            try {
-                var retry = await completePendingOAuthSignUp(finished.suggestedUsername);
-                notify(getState());
-                if (retry.status === 'complete' || getState().isSignedIn) {
-                    markAuthWelcome('new');
-                    return { status: 'complete', redirectTo: homePath };
-                }
-            } catch (err) {
-                if (isIdentifierExistsError(err) || (err && err.code === 'email_already_exists')) {
-                    return {
-                        status: 'email_exists',
-                        message: EMAIL_EXISTS_MESSAGE,
-                        redirectTo: signInPath,
-                    };
-                }
-            }
         }
 
         throw new Error('Google sign-in did not complete. Please try again from the sign-in page.');

@@ -24,61 +24,12 @@
         font-size: 0.85rem;
         max-width: 28rem;
     }
-    .sso-continue-form {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        width: 100%;
-        max-width: 18rem;
-        text-align: left;
-    }
-    .sso-continue-form label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        color: var(--theme-text-muted, #94a3b8);
-    }
-    .sso-continue-form input {
-        width: 100%;
-        border-radius: 0.85rem;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--theme-text, #f8fafc);
-        padding: 0.7rem 0.9rem;
-        font-size: 0.9rem;
-        outline: none;
-    }
-    .sso-continue-form input:focus {
-        border-color: rgba(var(--theme-primary-rgb), 0.55);
-        box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.25);
-    }
-    .sso-continue-form button {
-        margin-top: 0.25rem;
-        border: 1px solid rgba(var(--theme-primary-rgb), 0.45);
-        background: rgba(var(--theme-primary-rgb), 0.15);
-        color: var(--theme-primary, #7ddfff);
-        border-radius: 0.85rem;
-        padding: 0.7rem 1rem;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        cursor: pointer;
-    }
-    .sso-continue-form button:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-    }
 </style>
 
 <main class="sso-callback-wrap">
     <div class="sso-callback-title" id="sso-callback-title">Finishing sign-in...</div>
     <p class="sso-callback-msg" id="sso-callback-msg">Please wait while we connect your account.</p>
     <p class="sso-callback-error hidden" id="sso-callback-error"></p>
-    <form id="sso-continue-form" class="sso-continue-form hidden">
-        <label for="sso-username">Choose a username</label>
-        <input id="sso-username" name="username" type="text" autocomplete="username" maxlength="32" />
-        <button type="submit" id="sso-continue-submit">Continue</button>
-    </form>
     <div id="clerk-captcha"></div>
 </main>
 
@@ -89,15 +40,7 @@ window.__spaPageInit = function () {
     var titleEl = document.getElementById('sso-callback-title');
     var msgEl = document.getElementById('sso-callback-msg');
     var errEl = document.getElementById('sso-callback-error');
-    var formEl = document.getElementById('sso-continue-form');
-    var usernameEl = document.getElementById('sso-username');
-    var submitEl = document.getElementById('sso-continue-submit');
-    var initToken = 'sso_' + Date.now().toString(36);
-    var unsubAuth = null;
-
-    // #region agent log
-    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:init',message:'spaPageInit start',data:{initToken:initToken,path:location.pathname},timestamp:Date.now()})}).catch(function(){});
-    // #endregion
+    var OAUTH_CHOICE_KEY = 'usertypo_oauth_username_choice';
 
     function showError(text) {
         if (titleEl) titleEl.textContent = 'Sign-in incomplete';
@@ -109,9 +52,6 @@ window.__spaPageInit = function () {
     }
 
     function goTo(path, welcomeKind) {
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D',location:'sso-callback.html:goTo',message:'navigating away from sso',data:{initToken:initToken,path:path||'/',formVisible:!!(formEl&&!formEl.classList.contains('hidden'))},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         if (welcomeKind && typeof window.usertypoSetAuthWelcome === 'function') {
             window.usertypoSetAuthWelcome(welcomeKind);
         }
@@ -126,30 +66,21 @@ window.__spaPageInit = function () {
             if (!user || !user.createdAt) return 'back';
             var created = new Date(user.createdAt).getTime();
             if (!isFinite(created)) return 'back';
-            // Brand-new accounts (created in the last 15 minutes) get the first-login welcome.
             if (Date.now() - created < 15 * 60 * 1000) return 'new';
         } catch (e) { /* ignore */ }
         return 'back';
     }
 
-    function showUsernameForm(suggested) {
-        // #region agent log
-        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,C',location:'sso-callback.html:showUsernameForm',message:'username form shown',data:{initToken:initToken,suggestedLen:(suggested||'').length,isSignedIn:!!(window.usertypoAuth&&window.usertypoAuth.getState&&window.usertypoAuth.getState().isSignedIn)},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
-        if (titleEl) titleEl.textContent = 'Almost done';
-        if (msgEl) {
-            msgEl.textContent = 'We could not read a name from your Google account. Pick a username to finish.';
-        }
-        if (errEl) {
-            errEl.textContent = '';
-            errEl.classList.add('hidden');
-        }
-        if (formEl) formEl.classList.remove('hidden');
-        if (usernameEl) {
-            usernameEl.value = suggested || '';
-            usernameEl.focus();
-            usernameEl.select();
-        }
+    function stashUsernameChoice(result) {
+        try {
+            sessionStorage.setItem(OAUTH_CHOICE_KEY, JSON.stringify({
+                googleDisplayName: (result && result.googleDisplayName) || '',
+                googleUsername: (result && result.googleUsername) || '',
+                hasGoogleName: !!(result && result.hasGoogleName),
+                suggestedUsername: (result && result.suggestedUsername) || '',
+                savedAt: Date.now(),
+            }));
+        } catch (e) { /* ignore */ }
     }
 
     if (!window.usertypoAuth) {
@@ -157,22 +88,8 @@ window.__spaPageInit = function () {
         return;
     }
 
-    if (typeof window.usertypoAuth.onChange === 'function') {
-        unsubAuth = window.usertypoAuth.onChange(function (state) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C,D',location:'sso-callback.html:authOnChange',message:'auth state changed on sso page',data:{initToken:initToken,isSignedIn:!!(state&&state.isSignedIn),formVisible:!!(formEl&&!formEl.classList.contains('hidden')),path:location.pathname},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
-        });
-        __pageAbort.signal.addEventListener('abort', function () {
-            if (typeof unsubAuth === 'function') unsubAuth();
-        }, { once: true });
-    }
-
     window.usertypoAuth.handleSsoCallback()
         .then(function (result) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A,C,D',location:'sso-callback.html:handleResult',message:'handleSsoCallback resolved',data:{initToken:initToken,status:result&&result.status,suggestedLen:((result&&result.suggestedUsername)||'').length,aborted:__pageAbort.signal.aborted},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             if (__pageAbort.signal.aborted) return;
             if (result && result.status === 'complete') {
                 goTo(result.redirectTo || '/', inferWelcomeKind());
@@ -188,22 +105,20 @@ window.__spaPageInit = function () {
                     errEl.textContent = '';
                     errEl.classList.add('hidden');
                 }
-                if (formEl) formEl.classList.add('hidden');
                 setTimeout(function () {
                     goTo(result.redirectTo || '/signin');
                 }, 2800);
                 return;
             }
-            if (result && result.status === 'needs_username') {
-                showUsernameForm(result.suggestedUsername || '');
+            if (result && (result.status === 'needs_username_choice' || result.status === 'needs_username')) {
+                stashUsernameChoice(result);
+                if (msgEl) msgEl.textContent = 'One more step — choose your username.';
+                goTo(result.redirectTo || '/signin?oauth=username');
                 return;
             }
             showError('Google sign-in did not complete. Please try again.');
         })
         .catch(function (err) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'A',location:'sso-callback.html:handleError',message:'handleSsoCallback rejected',data:{initToken:initToken,errCode:err&&err.code,aborted:__pageAbort.signal.aborted},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
             if (__pageAbort.signal.aborted) return;
             var msg = window.usertypoAuth.formatError(err);
             showError(msg);
@@ -214,58 +129,9 @@ window.__spaPageInit = function () {
                 }, 2800);
             }
         });
-
-    if (formEl) {
-        formEl.addEventListener('submit', function (event) {
-            event.preventDefault();
-            if (!window.usertypoAuth || typeof window.usertypoAuth.finishOAuthUsername !== 'function') {
-                showError('Auth helpers are unavailable.');
-                return;
-            }
-            var username = (usernameEl && usernameEl.value || '').trim();
-            if (username.length < 4) {
-                showError('Username must be at least 4 characters.');
-                return;
-            }
-            if (submitEl) submitEl.disabled = true;
-            if (errEl) {
-                errEl.textContent = '';
-                errEl.classList.add('hidden');
-            }
-            if (msgEl) msgEl.textContent = 'Creating your account…';
-
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:formSubmit',message:'user submitted username form',data:{initToken:initToken,usernameLen:username.length},timestamp:Date.now()})}).catch(function(){});
-            // #endregion
-
-            window.usertypoAuth.finishOAuthUsername(username)
-                .then(function (result) {
-                    goTo((result && result.redirectTo) || '/', 'new');
-                })
-                .catch(function (err) {
-                    if (submitEl) submitEl.disabled = false;
-                    var msg = window.usertypoAuth.formatError(err);
-                    showError(msg);
-                    if (err && (err.code === 'email_already_exists' || /already exists/i.test(msg))) {
-                        if (titleEl) titleEl.textContent = 'Account already exists';
-                        if (formEl) formEl.classList.add('hidden');
-                        setTimeout(function () {
-                            goTo('/signin');
-                        }, 2800);
-                        return;
-                    }
-                    if (formEl) formEl.classList.remove('hidden');
-                    if (titleEl) titleEl.textContent = 'Almost done';
-                    if (msgEl) msgEl.textContent = 'Pick a username to finish creating your account.';
-                });
-        }, { signal: __pageAbort.signal });
-    }
 };
 
 window.__spaPageCleanup = function () {
-    // #region agent log
-    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b090ba'},body:JSON.stringify({sessionId:'b090ba',runId:'pre-fix',hypothesisId:'C',location:'sso-callback.html:cleanup',message:'spaPageCleanup',data:{path:location.pathname},timestamp:Date.now()})}).catch(function(){});
-    // #endregion
     __pageAbort.abort();
 };
 </script>
