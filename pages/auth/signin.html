@@ -475,6 +475,44 @@
         .field-row { display: flex; gap: 1rem; width: 100%; }
         /* Expanding Bubble Menu — width/height animated via JS (same path open & close) */
         /* Header Logo */
+
+        .oauth-choice-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            width: 100%;
+        }
+        .oauth-choice-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.85rem 1rem;
+            border-radius: 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--theme-text, #e2e8f0);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+        }
+        .oauth-choice-btn:hover {
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            background: rgba(var(--theme-primary-rgb), 0.08);
+        }
+        .oauth-choice-btn.is-selected {
+            border-color: rgba(var(--theme-primary-rgb), 0.65);
+            background: rgba(var(--theme-primary-rgb), 0.14);
+            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.2);
+        }
+        .oauth-choice-btn .oauth-choice-sub {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--theme-text-muted, #94a3b8);
+        }
+        #oauth-username-wrap.hidden { display: none !important; }
 </style>
 
 <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â MAIN Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
@@ -604,11 +642,31 @@
                                 <label for="su-verify-code">Verification code</label>
                             </div>
                         </div>
+                        <div class="fields-stack hidden" id="oauth-username-panel">
+                            <p class="bottom-note" style="margin:0;text-align:left;">
+                                Google connected. How should we set your username?
+                            </p>
+                            <div class="oauth-choice-stack" role="radiogroup" aria-label="Username choice">
+                                <button type="button" class="oauth-choice-btn hidden" id="oauth-choice-google" aria-pressed="false">
+                                    Use my Google account name
+                                    <span class="oauth-choice-sub" id="oauth-choice-google-sub"></span>
+                                </button>
+                                <button type="button" class="oauth-choice-btn" id="oauth-choice-custom" aria-pressed="false">
+                                    Set my own username
+                                    <span class="oauth-choice-sub">Pick a custom username for usertypo_</span>
+                                </button>
+                            </div>
+                            <div class="field-wrap hidden" id="oauth-username-wrap">
+                                <input id="oauth-username" type="text" placeholder=" " autocomplete="username" maxlength="32" />
+                                <label for="oauth-username">Username</label>
+                            </div>
+                        </div>
                         <div id="clerk-captcha"></div>
                         <div style="display:flex;flex-direction:column;gap:.75rem;">
                             <button type="button" class="btn-primary" id="btn-signup-submit">Create Account</button>
                             <button type="button" class="btn-primary hidden" id="btn-verify-submit">Verify Email</button>
-                            <div class="divider">or</div>
+                            <button type="button" class="btn-primary hidden" id="btn-oauth-username-submit">Continue</button>
+                            <div class="divider" id="signup-or-divider">or</div>
                             <button type="button" class="btn-google" id="btn-signup-google">
                                 <svg width="15" height="15" viewBox="0 0 48 48">
                                     <path fill="#EA4335"
@@ -754,12 +812,24 @@ window.__spaPageInit = function() {
     const btnSignIn = document.getElementById('btn-signin-submit');
     const btnSignUp = document.getElementById('btn-signup-submit');
     const btnVerify = document.getElementById('btn-verify-submit');
+    const btnOAuthUsername = document.getElementById('btn-oauth-username-submit');
     const btnSignInGoogle = document.getElementById('btn-signin-google');
     const btnSignUpGoogle = document.getElementById('btn-signup-google');
     const signupFields = document.getElementById('signup-fields');
     const verifyFields = document.getElementById('verify-fields');
+    const oauthUsernamePanel = document.getElementById('oauth-username-panel');
+    const oauthChoiceGoogle = document.getElementById('oauth-choice-google');
+    const oauthChoiceCustom = document.getElementById('oauth-choice-custom');
+    const oauthChoiceGoogleSub = document.getElementById('oauth-choice-google-sub');
+    const oauthUsernameWrap = document.getElementById('oauth-username-wrap');
+    const oauthUsernameInput = document.getElementById('oauth-username');
+    const signupOrDivider = document.getElementById('signup-or-divider');
+    const signupTitle = signupPanel ? signupPanel.querySelector('.form-title') : null;
     let authBusy = false;
     let awaitingVerification = false;
+    let oauthChoiceMode = null;
+    let oauthChoiceData = null;
+    const OAUTH_CHOICE_KEY = 'usertypo_oauth_username_choice';
 
     function showError(el, message) {
         if (!el) return;
@@ -774,27 +844,134 @@ window.__spaPageInit = function() {
 
     function setAuthBusy(isBusy) {
         authBusy = isBusy;
-        [btnSignIn, btnSignUp, btnVerify, btnSignInGoogle, btnSignUpGoogle].forEach(function (btn) {
+        [btnSignIn, btnSignUp, btnVerify, btnOAuthUsername, btnSignInGoogle, btnSignUpGoogle].forEach(function (btn) {
             if (btn) btn.disabled = isBusy;
         });
     }
 
     function resetSignupForm() {
         awaitingVerification = false;
+        oauthChoiceMode = null;
+        oauthChoiceData = null;
         if (signupFields) signupFields.classList.remove('hidden');
         if (verifyFields) verifyFields.classList.add('hidden');
+        if (oauthUsernamePanel) oauthUsernamePanel.classList.add('hidden');
+        if (oauthUsernameWrap) oauthUsernameWrap.classList.add('hidden');
         if (btnSignUp) btnSignUp.classList.remove('hidden');
         if (btnSignUpGoogle) btnSignUpGoogle.classList.remove('hidden');
+        if (signupOrDivider) signupOrDivider.classList.remove('hidden');
         if (btnVerify) btnVerify.classList.add('hidden');
+        if (btnOAuthUsername) btnOAuthUsername.classList.add('hidden');
+        if (signupTitle) signupTitle.textContent = 'Welcome!';
+        if (oauthChoiceGoogle) {
+            oauthChoiceGoogle.classList.remove('is-selected');
+            oauthChoiceGoogle.setAttribute('aria-pressed', 'false');
+        }
+        if (oauthChoiceCustom) {
+            oauthChoiceCustom.classList.remove('is-selected');
+            oauthChoiceCustom.setAttribute('aria-pressed', 'false');
+        }
     }
 
     function showVerificationStep() {
         awaitingVerification = true;
         if (signupFields) signupFields.classList.add('hidden');
         if (verifyFields) verifyFields.classList.remove('hidden');
+        if (oauthUsernamePanel) oauthUsernamePanel.classList.add('hidden');
         if (btnSignUp) btnSignUp.classList.add('hidden');
         if (btnSignUpGoogle) btnSignUpGoogle.classList.add('hidden');
+        if (signupOrDivider) signupOrDivider.classList.add('hidden');
         if (btnVerify) btnVerify.classList.remove('hidden');
+        if (btnOAuthUsername) btnOAuthUsername.classList.add('hidden');
+    }
+
+    function readOAuthChoice() {
+        try {
+            var raw = sessionStorage.getItem(OAUTH_CHOICE_KEY);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return null;
+            if (parsed.savedAt && Date.now() - parsed.savedAt > 30 * 60 * 1000) {
+                sessionStorage.removeItem(OAUTH_CHOICE_KEY);
+                return null;
+            }
+            return parsed;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearOAuthChoice() {
+        try { sessionStorage.removeItem(OAUTH_CHOICE_KEY); } catch (e) { /* ignore */ }
+    }
+
+    function selectOAuthChoice(mode) {
+        oauthChoiceMode = mode;
+        var hasGoogle = !!(oauthChoiceData && oauthChoiceData.hasGoogleName && oauthChoiceData.googleUsername);
+        if (mode === 'google' && !hasGoogle) mode = 'custom';
+        oauthChoiceMode = mode;
+
+        if (oauthChoiceGoogle) {
+            var googleOn = mode === 'google';
+            oauthChoiceGoogle.classList.toggle('is-selected', googleOn);
+            oauthChoiceGoogle.setAttribute('aria-pressed', googleOn ? 'true' : 'false');
+        }
+        if (oauthChoiceCustom) {
+            var customOn = mode === 'custom';
+            oauthChoiceCustom.classList.toggle('is-selected', customOn);
+            oauthChoiceCustom.setAttribute('aria-pressed', customOn ? 'true' : 'false');
+        }
+        if (oauthUsernameWrap) {
+            if (mode === 'custom') oauthUsernameWrap.classList.remove('hidden');
+            else oauthUsernameWrap.classList.add('hidden');
+        }
+        if (mode === 'custom' && oauthUsernameInput) {
+            oauthUsernameInput.focus();
+        }
+    }
+
+    function showOAuthUsernameStep(data) {
+        oauthChoiceData = data || {};
+        if (signupTitle) signupTitle.textContent = 'Almost done';
+        if (signupFields) signupFields.classList.add('hidden');
+        if (verifyFields) verifyFields.classList.add('hidden');
+        if (oauthUsernamePanel) oauthUsernamePanel.classList.remove('hidden');
+        if (btnSignUp) btnSignUp.classList.add('hidden');
+        if (btnSignUpGoogle) btnSignUpGoogle.classList.add('hidden');
+        if (signupOrDivider) signupOrDivider.classList.add('hidden');
+        if (btnVerify) btnVerify.classList.add('hidden');
+        if (btnOAuthUsername) btnOAuthUsername.classList.remove('hidden');
+
+        var hasGoogle = !!(oauthChoiceData.hasGoogleName && oauthChoiceData.googleUsername);
+        if (oauthChoiceGoogle) {
+            if (hasGoogle) {
+                oauthChoiceGoogle.classList.remove('hidden');
+                if (oauthChoiceGoogleSub) {
+                    oauthChoiceGoogleSub.textContent = oauthChoiceData.googleUsername
+                        ? ('Username will be “' + oauthChoiceData.googleUsername + '”')
+                        : '';
+                }
+            } else {
+                oauthChoiceGoogle.classList.add('hidden');
+            }
+        }
+        if (oauthUsernameInput) {
+            oauthUsernameInput.value = oauthChoiceData.suggestedUsername || '';
+        }
+
+        // Jump straight to sign-up view (skip the pill fade) after Google return.
+        currentMode = 'signup';
+        switching = false;
+        brandSide.classList.remove('fading-out');
+        formSide.classList.remove('fading-out');
+        authStage.classList.add('show-signup');
+        if (signinPanel) signinPanel.style.display = 'none';
+        if (signupPanel) signupPanel.style.display = 'flex';
+        tabSignup.classList.add('active');
+        tabSignin.classList.remove('active');
+        updateIndicator(tabSignup);
+
+        selectOAuthChoice(hasGoogle ? 'google' : 'custom');
     }
 
     function goHomeAfterAuth(welcomeKind) {
@@ -817,6 +994,22 @@ window.__spaPageInit = function() {
         try {
             await window.usertypoAuth.ready();
             const state = window.usertypoAuth.getState();
+            var params = new URLSearchParams(window.location.search || '');
+            var wantsOAuthUsername = params.get('oauth') === 'username';
+            var choice = readOAuthChoice();
+            if (wantsOAuthUsername || choice) {
+                if (state.isSignedIn) {
+                    clearOAuthChoice();
+                    goHomeAfterAuth();
+                    return;
+                }
+                showOAuthUsernameStep(choice || {});
+                // Clean the query param without leaving the page.
+                if (wantsOAuthUsername && window.history && window.history.replaceState) {
+                    window.history.replaceState({}, '', '/signin');
+                }
+                return;
+            }
             if (state.isSignedIn) {
                 goHomeAfterAuth();
             }
@@ -958,11 +1151,51 @@ window.__spaPageInit = function() {
         }
     }
 
+    async function handleOAuthUsernameContinue() {
+        if (authBusy || !window.usertypoAuth) return;
+        showError(signupError, '');
+
+        var username = '';
+        if (oauthChoiceMode === 'google') {
+            username = (oauthChoiceData && oauthChoiceData.googleUsername) || '';
+        } else {
+            username = (oauthUsernameInput && oauthUsernameInput.value || '').trim();
+        }
+
+        if (!username || username.length < 4) {
+            showError(signupError, 'Username must be at least 4 characters.');
+            if (oauthChoiceMode !== 'custom') selectOAuthChoice('custom');
+            return;
+        }
+
+        setAuthBusy(true);
+        try {
+            var result = await window.usertypoAuth.finishOAuthUsername(username);
+            clearOAuthChoice();
+            if (result && result.status === 'complete') {
+                goHomeAfterAuth('new');
+                return;
+            }
+            showError(signupError, 'Could not finish creating your account. Try a different username.');
+        } catch (err) {
+            showError(signupError, window.usertypoAuth.formatError(err));
+        } finally {
+            setAuthBusy(false);
+        }
+    }
+
     if (btnSignIn) btnSignIn.addEventListener('click', handleSignIn, { signal: __pageSignal });
     if (btnSignUp) btnSignUp.addEventListener('click', handleSignUp, { signal: __pageSignal });
     if (btnVerify) btnVerify.addEventListener('click', handleVerifyEmail, { signal: __pageSignal });
+    if (btnOAuthUsername) btnOAuthUsername.addEventListener('click', handleOAuthUsernameContinue, { signal: __pageSignal });
     if (btnSignInGoogle) btnSignInGoogle.addEventListener('click', handleGoogleSignIn, { signal: __pageSignal });
     if (btnSignUpGoogle) btnSignUpGoogle.addEventListener('click', handleGoogleSignUp, { signal: __pageSignal });
+    if (oauthChoiceGoogle) {
+        oauthChoiceGoogle.addEventListener('click', function () { selectOAuthChoice('google'); }, { signal: __pageSignal });
+    }
+    if (oauthChoiceCustom) {
+        oauthChoiceCustom.addEventListener('click', function () { selectOAuthChoice('custom'); }, { signal: __pageSignal });
+    }
 
     document.getElementById('si-password')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') handleSignIn();
@@ -973,6 +1206,11 @@ window.__spaPageInit = function() {
     document.getElementById('su-verify-code')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') handleVerifyEmail();
     }, { signal: __pageSignal });
+    if (oauthUsernameInput) {
+        oauthUsernameInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') handleOAuthUsernameContinue();
+        }, { signal: __pageSignal });
+    }
 
     initAuthPage();
 

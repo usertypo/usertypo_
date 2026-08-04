@@ -2612,6 +2612,22 @@ function applyThemeSettings(settings) {
             color: ${p.accentPrimary} !important;
         }
 
+        /* ── Google OAuth username chooser ── */
+        .oauth-choice-btn {
+            color: ${p.textPrimary} !important;
+            border-color: rgba(${accentRGB}, 0.22) !important;
+        }
+        .oauth-choice-btn:hover {
+            border-color: rgba(${accentRGB}, 0.45) !important;
+            background: rgba(${accentRGB}, 0.08) !important;
+        }
+        .oauth-choice-btn.is-selected {
+            border-color: rgba(${accentRGB}, 0.65) !important;
+            background: rgba(${accentRGB}, 0.14) !important;
+            box-shadow: 0 0 0 1px rgba(${accentRGB}, 0.2) !important;
+        }
+        .oauth-choice-btn .oauth-choice-sub { color: ${p.textMuted} !important; }
+
         /* ── Sign-in side logo glow animation ── */
         @keyframes glow-typ {
             to { filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)); }
