@@ -868,6 +868,15 @@
                         class="absolute -bottom-1 left-1/2 -translate-x-1/2 z-[2] min-w-[1.75rem] h-7 px-2 rounded-full bg-primary text-on-primary text-sm font-black leading-7 text-center shadow-md">1</span>
                 </div>
                 <h1 id="profile-username" class="font-headline text-3xl font-bold tracking-tight text-slate-100 mb-1">Loading...</h1>
+                <div id="profile-public-id-row" class="flex items-center justify-center gap-2 mb-2">
+                    <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-500">ID</p>
+                    <p id="profile-public-id" class="font-mono text-sm font-bold tracking-wider text-slate-300">—</p>
+                    <button type="button" id="profile-public-id-copy" title="Copy your user ID"
+                        class="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-white/10 text-slate-400 hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        disabled>
+                        <span class="material-symbols-outlined text-[0.95rem]" id="profile-public-id-copy-icon">content_copy</span>
+                    </button>
+                </div>
                 <p id="profile-level-title" class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Novice</p>
                 <div class="flex items-center gap-4 mb-6 text-[0.586rem] font-bold text-slate-500">
                     <span id="profile-xp-progress" class="tracking-wide">0 / 100 XP</span>
@@ -1472,22 +1481,56 @@ if ('scrollRestoration' in history) {
             async function fillProfileIdentity() {
                 var nameEl = document.getElementById('profile-username');
                 var avatarEl = document.getElementById('profile-avatar');
+                var publicIdEl = document.getElementById('profile-public-id');
+                var publicIdCopyBtn = document.getElementById('profile-public-id-copy');
+                var publicIdCopyIcon = document.getElementById('profile-public-id-copy-icon');
 
                 function defaultAvatar() {
                     return (window.usertypoPlayerAvatar && window.usertypoPlayerAvatar.DEFAULT_AVATAR_URL)
                         || '';
                 }
 
-                function apply(name, avatarUrl) {
+                function applyPublicId(publicId) {
+                    var id = String(publicId || '').trim().toUpperCase();
+                    if (publicIdEl) publicIdEl.textContent = id || '—';
+                    if (publicIdCopyBtn) publicIdCopyBtn.disabled = !id;
+                }
+
+                function apply(name, avatarUrl, publicId) {
                     if (nameEl) nameEl.textContent = name || 'Player';
                     if (avatarEl) {
                         avatarEl.src = avatarUrl || defaultAvatar();
                         avatarEl.alt = (name || 'Player') + ' profile photo';
                     }
+                    applyPublicId(publicId);
+                }
+
+                if (publicIdCopyBtn && !publicIdCopyBtn.dataset.bound) {
+                    publicIdCopyBtn.dataset.bound = '1';
+                    publicIdCopyBtn.addEventListener('click', async function () {
+                        var id = (publicIdEl && publicIdEl.textContent || '').trim();
+                        if (!id || id === '—') return;
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                await navigator.clipboard.writeText(id);
+                            } else {
+                                var ta = document.createElement('textarea');
+                                ta.value = id;
+                                document.body.appendChild(ta);
+                                ta.select();
+                                document.execCommand('copy');
+                                ta.remove();
+                            }
+                            if (publicIdCopyIcon) publicIdCopyIcon.textContent = 'check';
+                            setTimeout(function () {
+                                if (publicIdCopyIcon) publicIdCopyIcon.textContent = 'content_copy';
+                            }, 1200);
+                        } catch (e) { /* ignore */ }
+                    });
                 }
 
                 if (!window.usertypoAuth) {
-                    apply('Guest', null);
+                    apply('Guest', null, '');
                     return;
                 }
 
@@ -1495,7 +1538,7 @@ if ('scrollRestoration' in history) {
                     await window.usertypoAuth.ready();
                     var state = window.usertypoAuth.getState();
                     if (!state.isSignedIn || !state.user) {
-                        apply('Guest', null);
+                        apply('Guest', null, '');
                         if (window.navigateTo) window.navigateTo('/signin');
                         else window.location.href = '/signin';
                         return;
@@ -1504,13 +1547,17 @@ if ('scrollRestoration' in history) {
                     var user = state.user;
                     var fallbackName = user.username || user.fullName || user.firstName || 'Player';
                     var fallbackAvatar = (user.hasImage === true && user.imageUrl) ? user.imageUrl : null;
-                    apply(fallbackName, fallbackAvatar);
+                    apply(fallbackName, fallbackAvatar, '');
 
                     if (window.usertypoProfiles && typeof window.usertypoProfiles.ensureMyProfile === 'function') {
                         var profile = window.__USERTYPO_PROFILE__ || await window.usertypoProfiles.ensureMyProfile(user);
                         window.__USERTYPO_PROFILE__ = profile;
                         if (profile) {
-                            apply(profile.username || profile.display_name || fallbackName, profile.avatar_url || fallbackAvatar);
+                            apply(
+                                profile.username || profile.display_name || fallbackName,
+                                profile.avatar_url || fallbackAvatar,
+                                profile.public_id || ''
+                            );
                             profileSignupDate = profile.created_at || null;
                         }
                     }
@@ -1518,7 +1565,7 @@ if ('scrollRestoration' in history) {
                     await fillProfileProgression();
                 } catch (err) {
                     console.error('[usertypo userstats] profile load failed', err);
-                    apply('Player', null);
+                    apply('Player', null, '');
                 }
             }
 
