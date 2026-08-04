@@ -771,7 +771,7 @@
             position: relative;
             width: 2.35rem;
             height: 2.35rem;
-            border-radius: 0.7rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
             overflow: hidden;
             cursor: pointer;
             flex-shrink: 0;
@@ -794,6 +794,8 @@
             cursor: pointer;
             border: none;
             padding: 0;
+            /* Native picker is replaced by the custom popover */
+            pointer-events: none;
         }
         .theme-color-swatch-face {
             display: block;
@@ -827,40 +829,173 @@
                         0 0 12px rgba(var(--theme-primary-rgb), 0.12);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
         }
+
+        /* Custom HSV color picker (replaces native OS color dialog) */
+        .theme-color-picker {
+            position: fixed;
+            z-index: 240;
+            width: min(13.5rem, calc(100vw - 2rem));
+            padding: 0.55rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            background-image: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .theme-color-picker.is-open {
+            display: flex;
+        }
+        .theme-color-picker-sv {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: var(--settings-box-radius, 1.375rem);
+            overflow: hidden;
+            cursor: crosshair;
+            border: none;
+            box-shadow: none;
+            outline: none;
+            touch-action: none;
+            /* Isolate paint so layered gradients clip cleanly to the radius */
+            isolation: isolate;
+            background-color: transparent;
+            background-image:
+                linear-gradient(to top, #000000, rgba(0, 0, 0, 0)),
+                linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0)),
+                linear-gradient(#ff0000, #ff0000);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+        }
+        .theme-color-picker-sv-cursor {
+            position: absolute;
+            width: 0.8rem;
+            height: 0.8rem;
+            border-radius: 9999px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.45);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            left: 100%;
+            top: 0%;
+            background: #fff;
+        }
+        .theme-color-picker-hue {
+            position: relative;
+            height: 1.15rem;
+            border-radius: var(--settings-box-radius, 1.375rem);
+            overflow: hidden;
+            cursor: pointer;
+            border: none;
+            box-shadow: none;
+            touch-action: none;
+            isolation: isolate;
+            background: linear-gradient(
+                90deg,
+                #ff0000 0%,
+                #ffff00 17%,
+                #00ff00 33%,
+                #00ffff 50%,
+                #0000ff 67%,
+                #ff00ff 83%,
+                #ff0000 100%
+            );
+        }
+        .theme-color-picker-hue-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0.575rem;
+            width: 0.85rem;
+            height: 0.85rem;
+            border-radius: 9999px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.4);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            background: #ff0000;
+        }
         .bg-spectrum-field {
             display: flex;
             flex-direction: column;
             gap: 0.55rem;
+            /* Thumb 1.15rem inside 2.15rem pill → 0.5rem pad on every side */
+            --bg-spectrum-h: 2.15rem;
+            --bg-spectrum-thumb: 1.15rem;
+            --bg-spectrum-pad: 0.5rem;
+            --bg-spectrum-thumb-center: calc(var(--bg-spectrum-pad) + (var(--bg-spectrum-thumb) / 2));
+            --bg-spectrum-travel: calc(100% - (2 * var(--bg-spectrum-pad)) - var(--bg-spectrum-thumb));
         }
         .bg-spectrum-wrap {
             position: relative;
-            height: 2.15rem;
+            height: var(--bg-spectrum-h);
             border-radius: var(--settings-box-radius, 1.375rem);
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            touch-action: none;
         }
         .bg-spectrum-track {
             position: absolute;
             inset: 0;
             pointer-events: none;
         }
+        /* Range stays for keyboard/a11y; pointer dragging is handled on the wrap
+           so the visible thumb never jumps from native range hit-testing. */
         .bg-spectrum-slider {
             position: absolute;
-            inset: 0;
-            width: 100%;
+            left: var(--bg-spectrum-pad);
+            right: var(--bg-spectrum-pad);
+            top: 0;
+            width: auto;
             height: 100%;
             margin: 0;
+            padding: 0;
             opacity: 0;
             cursor: pointer;
             z-index: 2;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+        .bg-spectrum-slider::-webkit-slider-runnable-track {
+            height: 100%;
+            background: transparent;
+            border: none;
+        }
+        .bg-spectrum-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: var(--bg-spectrum-thumb);
+            height: var(--bg-spectrum-thumb);
+            border-radius: 9999px;
+            background: transparent;
+            border: none;
+            margin-top: 0;
+        }
+        .bg-spectrum-slider::-moz-range-track {
+            height: 100%;
+            background: transparent;
+            border: none;
+        }
+        .bg-spectrum-slider::-moz-range-thumb {
+            width: var(--bg-spectrum-thumb);
+            height: var(--bg-spectrum-thumb);
+            border-radius: 9999px;
+            background: transparent;
+            border: none;
         }
         .bg-spectrum-thumb {
             position: absolute;
             top: 50%;
-            left: 0%;
-            width: 1.15rem;
-            height: 1.15rem;
+            left: var(--bg-spectrum-thumb-center);
+            width: var(--bg-spectrum-thumb);
+            height: var(--bg-spectrum-thumb);
             border-radius: 9999px;
             border: 2px solid #fff;
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -1828,7 +1963,7 @@
                                                                         style="background:linear-gradient(90deg,#000,#1a0a2e,#0a1a3a,#0a2e2a,#1a2e0a,#2e2a0a,#2e0a0a,#1c1c1c)"></div>
                                                                     <span class="bg-spectrum-thumb"
                                                                         data-bg-spectrum-thumb
-                                                                        style="left:0%;background:#000000"></span>
+                                                                        style="left:1.075rem;background:#000000"></span>
                                                                     <input type="range" min="0" max="100" value="0"
                                                                         class="bg-spectrum-slider"
                                                                         data-custom-bg-spectrum
@@ -1855,15 +1990,19 @@
                                                                     <span class="theme-color-hint">logo typ_</span>
                                                                 </div>
                                                                 <div class="theme-color-control">
-                                                                    <label class="theme-color-swatch"
-                                                                        title="Pick main color (typ_)">
+                                                                    <div class="theme-color-swatch"
+                                                                        role="button"
+                                                                        tabindex="0"
+                                                                        title="Pick main color (typ_)"
+                                                                        aria-label="Pick main color">
                                                                         <input type="color" class="theme-color-input"
                                                                             data-custom-color="mainColor"
-                                                                            value="#ffffff" />
+                                                                            value="#ffffff" tabindex="-1"
+                                                                            aria-hidden="true" />
                                                                         <span class="theme-color-swatch-face"
                                                                             data-swatch-face="mainColor"
                                                                             style="background:#ffffff"></span>
-                                                                    </label>
+                                                                    </div>
                                                                     <input type="text" class="theme-color-hex"
                                                                         data-custom-hex="mainColor" value="#ffffff"
                                                                         maxlength="7" spellcheck="false"
@@ -1878,15 +2017,19 @@
                                                                     <span class="theme-color-hint">logo user</span>
                                                                 </div>
                                                                 <div class="theme-color-control">
-                                                                    <label class="theme-color-swatch"
-                                                                        title="Pick secondary color (user)">
+                                                                    <div class="theme-color-swatch"
+                                                                        role="button"
+                                                                        tabindex="0"
+                                                                        title="Pick secondary color (user)"
+                                                                        aria-label="Pick secondary color">
                                                                         <input type="color" class="theme-color-input"
                                                                             data-custom-color="secondaryColor"
-                                                                            value="#cccccc" />
+                                                                            value="#cccccc" tabindex="-1"
+                                                                            aria-hidden="true" />
                                                                         <span class="theme-color-swatch-face"
                                                                             data-swatch-face="secondaryColor"
                                                                             style="background:#cccccc"></span>
-                                                                    </label>
+                                                                    </div>
                                                                     <input type="text" class="theme-color-hex"
                                                                         data-custom-hex="secondaryColor"
                                                                         value="#cccccc" maxlength="7" spellcheck="false"
