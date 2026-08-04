@@ -2594,6 +2594,24 @@ function applyThemeSettings(settings) {
             50% { opacity: 0.3; box-shadow: 0 0 4px rgba(${logoTypRGB}, 0.2); }
         }
 
+        /* ── SSO callback page ── */
+        .sso-callback-title { color: ${p.textPrimary} !important; }
+        .sso-callback-msg, .sso-continue-form label { color: ${p.textMuted} !important; }
+        .sso-callback-error { color: ${p.error} !important; }
+        .sso-continue-form input {
+            color: ${p.textPrimary} !important;
+            border-color: rgba(${accentRGB}, 0.22) !important;
+        }
+        .sso-continue-form input:focus {
+            border-color: rgba(${accentRGB}, 0.55) !important;
+            box-shadow: 0 0 0 1px rgba(${accentRGB}, 0.25) !important;
+        }
+        .sso-continue-form button {
+            border-color: rgba(${accentRGB}, 0.45) !important;
+            background: rgba(${accentRGB}, 0.15) !important;
+            color: ${p.accentPrimary} !important;
+        }
+
         /* ── Sign-in side logo glow animation ── */
         @keyframes glow-typ {
             to { filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)); }
