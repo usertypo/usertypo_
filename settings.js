@@ -88,6 +88,7 @@ const DEFAULTS = {
             mainColor: '#ffffff',
             secondaryColor: '#cccccc',
             bgColor: '#000000',
+            bgSpectrumPos: 0,
         },
         customPresets: [],
     }
@@ -98,6 +99,7 @@ const CUSTOM_THEME_DEFAULT = {
     mainColor: '#ffffff',
     secondaryColor: '#cccccc',
     bgColor: '#000000',
+    bgSpectrumPos: 0,
 };
 const MAX_CUSTOM_PRESETS = 3;
 
@@ -235,23 +237,38 @@ function loadSettings() {
                     || (isLightModeValue(settings.lookFeel.customTheme.mode) ? '#ffffff' : '#000000'),
                     CUSTOM_THEME_DEFAULT.bgColor
                 ),
+                bgSpectrumPos: normalizeSpectrumPos(
+                    settings.lookFeel.customTheme.bgSpectrumPos,
+                    null
+                ),
             };
+            if (settings.lookFeel.customTheme.bgSpectrumPos == null) {
+                settings.lookFeel.customTheme.bgSpectrumPos = spectrumPosFromBgColor(
+                    settings.lookFeel.customTheme.mode,
+                    settings.lookFeel.customTheme.bgColor
+                );
+            }
         }
         if (!Array.isArray(settings.lookFeel.customPresets)) {
             settings.lookFeel.customPresets = [];
         } else {
             settings.lookFeel.customPresets = settings.lookFeel.customPresets
                 .slice(0, MAX_CUSTOM_PRESETS)
-                .map((p, i) => ({
-                    name: (p && p.name) || `Custom ${i + 1}`,
-                    mode: isLightModeValue(p?.mode) ? 'Light' : 'Dark',
-                    mainColor: normalizeHexColor(p?.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
-                    secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
-                    bgColor: normalizeHexColor(
-                        p?.bgColor || (isLightModeValue(p?.mode) ? '#ffffff' : '#000000'),
+                .map((p, i) => {
+                    const mode = isLightModeValue(p?.mode) ? 'Light' : 'Dark';
+                    const bgColor = normalizeHexColor(
+                        p?.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
                         CUSTOM_THEME_DEFAULT.bgColor
-                    ),
-                }));
+                    );
+                    return {
+                        name: (p && p.name) || `Custom ${i + 1}`,
+                        mode,
+                        mainColor: normalizeHexColor(p?.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+                        secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+                        bgColor,
+                        bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+                    };
+                });
         }
         if (!settings.lookFeel.randomizeTheme) {
             settings.lookFeel.randomizeTheme = 'Off';
@@ -529,14 +546,16 @@ function getCustomThemeConfig(settings, themeName) {
         const preset = Array.isArray(lf.customPresets) ? lf.customPresets[idx] : null;
         if (preset) {
             const mode = isLightModeValue(preset.mode) ? 'Light' : 'Dark';
+            const bgColor = normalizeHexColor(
+                preset.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+                CUSTOM_THEME_DEFAULT.bgColor
+            );
             return {
                 mode,
                 mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
-                bgColor: normalizeHexColor(
-                    preset.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
-                    CUSTOM_THEME_DEFAULT.bgColor
-                ),
+                bgColor,
+                bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
                 name: preset.name || `Custom ${idx + 1}`,
                 presetIndex: idx,
             };
@@ -544,14 +563,16 @@ function getCustomThemeConfig(settings, themeName) {
     }
     const live = lf.customTheme || CUSTOM_THEME_DEFAULT;
     const mode = isLightModeValue(live.mode) ? 'Light' : 'Dark';
+    const bgColor = normalizeHexColor(
+        live.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+        CUSTOM_THEME_DEFAULT.bgColor
+    );
     return {
         mode,
         mainColor: normalizeHexColor(live.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
         secondaryColor: normalizeHexColor(live.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
-        bgColor: normalizeHexColor(
-            live.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
-            CUSTOM_THEME_DEFAULT.bgColor
-        ),
+        bgColor,
+        bgSpectrumPos: resolveSpectrumPos(mode, bgColor, live.bgSpectrumPos),
         name: 'Custom',
         presetIndex: null,
     };
@@ -616,17 +637,86 @@ function bgColorFromSpectrum(mode, t) {
     return hslToHex(h, 55, 11);
 }
 
+function normalizeSpectrumPos(value, fallback = null) {
+    if (value == null || value === '') return fallback;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(0, Math.min(1, n));
+}
+
+function resolveSpectrumPos(mode, bgColor, storedPos) {
+    const fromStore = normalizeSpectrumPos(storedPos, null);
+    if (fromStore != null) return fromStore;
+    return spectrumPosFromBgColor(mode, bgColor);
+}
+
 function spectrumPosFromBgColor(mode, hex) {
     const { h, s, l } = hexToHsl(hex);
     const light = isLightModeValue(mode);
     if (light) {
         if (l > 0.97 && s < 0.08) return 0;
         if (l > 0.9 && s < 0.08) return 1;
-    } else {
-        if (l < 0.03) return 0;
-        if (l < 0.12 && s < 0.08) return 1;
+        return 0.05 + (h / 360) * 0.9;
     }
+    if (l < 0.03) return 0;
+    if (l < 0.12 && s < 0.08) return 1;
     return 0.05 + (h / 360) * 0.9;
+}
+
+/**
+ * Visual left for the spectrum thumb center.
+ * Geometry: pad 0.5rem + thumb 1.15rem inside the 2.15rem-tall pill
+ * (even padding on every side). Value 0..1 still maps the full color range.
+ */
+function spectrumThumbLeftCss(t) {
+    const pos = Math.max(0, Math.min(1, Number(t) || 0));
+    // center = pad + halfThumb + t * (100% - 2*pad - thumb)
+    //        = 1.075rem + t * (100% - 2.15rem)
+    return `calc(1.075rem + ${pos} * (100% - 2.15rem))`;
+}
+
+function setBgSpectrumThumb(thumb, t, hex) {
+    if (!thumb) return;
+    thumb.style.left = spectrumThumbLeftCss(t);
+    if (hex) thumb.style.background = hex;
+}
+
+/** Map pointer X to 0..1 along the same inset track the visible thumb uses. */
+function spectrumTFromClientX(wrap, clientX) {
+    if (!wrap) return 0;
+    const rect = wrap.getBoundingClientRect();
+    if (!rect.width) return 0;
+    const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const pad = 0.5 * rootFs;
+    const thumb = 1.15 * rootFs;
+    const half = thumb / 2;
+    const x0 = rect.left + pad + half;
+    const x1 = rect.right - pad - half;
+    if (x1 <= x0) return 0;
+    return Math.max(0, Math.min(1, (clientX - x0) / (x1 - x0)));
+}
+
+/** Apply a spectrum position to the active custom-theme editor. */
+function applyBgSpectrumPosition(editor, t) {
+    if (!editor) return;
+    const modeBtn = editor.querySelector('[data-custom-theme-mode] .opt-btn.active');
+    const mode = modeBtn ? resolveOptValue(modeBtn) : 'Dark';
+    const pos = Math.max(0, Math.min(1, Number(t) || 0));
+    const hex = bgColorFromSpectrum(mode, pos);
+    const slider = editor.querySelector('[data-custom-bg-spectrum]');
+    if (slider) slider.value = String(Math.round(pos * 100));
+    setBgSpectrumThumb(editor.querySelector('[data-bg-spectrum-thumb]'), pos, hex);
+    const face = editor.querySelector('[data-swatch-face="bgColor"]');
+    const hexInput = editor.querySelector('[data-custom-hex="bgColor"]');
+    if (face) face.style.background = hex;
+    if (hexInput) hexInput.value = hex;
+    // Persist explicit spectrum position so sync cannot remap ambiguous edge
+    // colors (e.g. dark red near t=0.95 → remapped 0.05) back onto the thumb.
+    commitCustomTheme({
+        ...readCustomThemeFromEditor(editor),
+        bgColor: hex,
+        bgSpectrumPos: pos,
+    });
 }
 
 /**
@@ -665,6 +755,7 @@ function getModeDefaults(mode) {
             mainColor: normalizeHexColor(base?.accentPrimary, '#000000'),
             secondaryColor: normalizeHexColor(base?.textPrimary, '#333333'),
             bgColor: normalizeHexColor(base?.bgMain, '#ffffff'),
+            bgSpectrumPos: 0,
         };
     }
     const base = THEME_PALETTES['Abyss'];
@@ -673,6 +764,7 @@ function getModeDefaults(mode) {
         mainColor: normalizeHexColor(base?.accentPrimary, '#ffffff'),
         secondaryColor: normalizeHexColor(base?.textPrimary, '#cccccc'),
         bgColor: normalizeHexColor(base?.bgMain, '#000000'),
+        bgSpectrumPos: 0,
     };
 }
 
@@ -791,7 +883,7 @@ function syncOneCustomThemeEditor(editor, settings, cfg) {
         const track = spectrum.querySelector('[data-bg-spectrum-track]');
         if (track) track.style.background = getBgSpectrumGradient(cfg.mode);
         const slider = spectrum.querySelector('[data-custom-bg-spectrum]');
-        const pos = spectrumPosFromBgColor(cfg.mode, cfg.bgColor);
+        const pos = resolveSpectrumPos(cfg.mode, cfg.bgColor, cfg.bgSpectrumPos);
         // Always write the slider during sync so a focused clone/source copy
         // cannot keep a stale value that later commits over a just-applied preset.
         if (slider) {
@@ -799,8 +891,7 @@ function syncOneCustomThemeEditor(editor, settings, cfg) {
         }
         const thumb = spectrum.querySelector('[data-bg-spectrum-thumb]');
         if (thumb) {
-            thumb.style.left = `${pos * 100}%`;
-            thumb.style.background = cfg.bgColor;
+            setBgSpectrumThumb(thumb, pos, cfg.bgColor);
         }
     }
 
@@ -900,6 +991,7 @@ function readCustomThemeFromEditor(editor) {
             mainColor: fallback.mainColor,
             secondaryColor: fallback.secondaryColor,
             bgColor: fallback.bgColor,
+            bgSpectrumPos: fallback.bgSpectrumPos,
         };
     }
     const modeBtn = root.querySelector('[data-custom-theme-mode] .opt-btn.active');
@@ -922,11 +1014,16 @@ function readCustomThemeFromEditor(editor) {
         || fallback.bgColor,
         fallback.bgColor
     );
+    const slider = root.querySelector('[data-custom-bg-spectrum]');
+    const bgSpectrumPos = slider
+        ? normalizeSpectrumPos(Number(slider.value) / 100, fallback.bgSpectrumPos)
+        : fallback.bgSpectrumPos;
     return {
         mode: isLightModeValue(mode) ? 'Light' : 'Dark',
         mainColor,
         secondaryColor,
         bgColor,
+        bgSpectrumPos,
     };
 }
 
@@ -957,6 +1054,17 @@ function commitCustomTheme(partial, options = {}) {
     // Switching Light/Dark reseeds from Paper / Abyss defaults
     if (options.seedFromMode) {
         next = getModeDefaults(next.mode);
+    } else if (partial && Object.prototype.hasOwnProperty.call(partial, 'bgSpectrumPos')) {
+        next.bgSpectrumPos = normalizeSpectrumPos(partial.bgSpectrumPos, 0);
+    } else if (
+        partial
+        && partial.bgColor != null
+        && normalizeHexColor(partial.bgColor, '') !== normalizeHexColor(current.bgColor, '')
+    ) {
+        // Hex/swatch edit without an explicit slider pos — derive from color.
+        next.bgSpectrumPos = spectrumPosFromBgColor(next.mode, next.bgColor);
+    } else {
+        next.bgSpectrumPos = resolveSpectrumPos(next.mode, next.bgColor, current.bgSpectrumPos);
     }
 
     settings.lookFeel.customTheme = next;
@@ -988,6 +1096,7 @@ function saveCustomThemePreset() {
         mainColor: cfg.mainColor,
         secondaryColor: cfg.secondaryColor,
         bgColor: cfg.bgColor,
+        bgSpectrumPos: normalizeSpectrumPos(cfg.bgSpectrumPos, spectrumPosFromBgColor(cfg.mode, cfg.bgColor)),
     });
     settings.lookFeel.colorTheme = `custom:${index}`;
     saveSettings(settings);
@@ -1006,14 +1115,17 @@ function applyCustomThemePreset(index) {
     const presets = settings.lookFeel?.customPresets;
     if (!Array.isArray(presets) || !presets[idx]) return false;
     const preset = presets[idx];
+    const mode = isLightModeValue(preset.mode) ? 'Light' : 'Dark';
+    const bgColor = normalizeHexColor(
+        preset.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+        CUSTOM_THEME_DEFAULT.bgColor
+    );
     settings.lookFeel.customTheme = {
-        mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
+        mode,
         mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
         secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
-        bgColor: normalizeHexColor(
-            preset.bgColor || (isLightModeValue(preset.mode) ? '#ffffff' : '#000000'),
-            CUSTOM_THEME_DEFAULT.bgColor
-        ),
+        bgColor,
+        bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
     };
     settings.lookFeel.colorTheme = `custom:${idx}`;
     saveSettings(settings);
@@ -1079,6 +1191,219 @@ function syncColorThemeSelectLabel(settings) {
     });
 }
 
+// ── Custom HSV color picker (main / secondary swatches) ──────────────────────
+
+function hexToHsv(hex) {
+    const clean = normalizeHexColor(hex, '#ffffff').slice(1);
+    const r = parseInt(clean.slice(0, 2), 16) / 255;
+    const g = parseInt(clean.slice(2, 4), 16) / 255;
+    const b = parseInt(clean.slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0;
+    if (d) {
+        if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b - r) / d + 2) / 6;
+        else h = ((r - g) / d + 4) / 6;
+    }
+    return {
+        h: h * 360,
+        s: max === 0 ? 0 : d / max,
+        v: max,
+    };
+}
+
+function hsvToHex(h, s, v) {
+    const hue = ((Number(h) % 360) + 360) % 360;
+    const sat = Math.max(0, Math.min(1, Number(s) || 0));
+    const val = Math.max(0, Math.min(1, Number(v) || 0));
+    const c = val * sat;
+    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const m = val - c;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (hue < 60) [r, g, b] = [c, x, 0];
+    else if (hue < 120) [r, g, b] = [x, c, 0];
+    else if (hue < 180) [r, g, b] = [0, c, x];
+    else if (hue < 240) [r, g, b] = [0, x, c];
+    else if (hue < 300) [r, g, b] = [x, 0, c];
+    else [r, g, b] = [c, 0, x];
+    return `#${[r, g, b].map((n) => Math.round((n + m) * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
+let __colorPickerState = null;
+
+function ensureThemeColorPicker() {
+    let root = document.getElementById('usertypo-color-picker');
+    // Rebuild if an older picker shell (with preview/hex row) is still in the DOM
+    if (root && (root.querySelector('[data-picker-meta]') || !root.dataset.pickerV)) {
+        root.remove();
+        root = null;
+    }
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'usertypo-color-picker';
+    root.className = 'theme-color-picker';
+    root.dataset.pickerV = '2';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-label', 'Color picker');
+    root.innerHTML = `
+        <div class="theme-color-picker-sv" data-picker-sv>
+            <span class="theme-color-picker-sv-cursor" data-picker-sv-cursor></span>
+        </div>
+        <div class="theme-color-picker-hue" data-picker-hue>
+            <span class="theme-color-picker-hue-thumb" data-picker-hue-thumb></span>
+        </div>
+    `;
+    document.body.appendChild(root);
+
+    const sv = root.querySelector('[data-picker-sv]');
+    const hue = root.querySelector('[data-picker-hue]');
+
+    const setFromPointer = (target, clientX, clientY, kind) => {
+        if (!__colorPickerState) return;
+        const rect = target.getBoundingClientRect();
+        if (kind === 'hue') {
+            const t = Math.max(0, Math.min(1, (clientX - rect.left) / Math.max(1, rect.width)));
+            __colorPickerState.h = t * 360;
+        } else {
+            __colorPickerState.s = Math.max(0, Math.min(1, (clientX - rect.left) / Math.max(1, rect.width)));
+            __colorPickerState.v = Math.max(0, Math.min(1, 1 - (clientY - rect.top) / Math.max(1, rect.height)));
+        }
+        renderThemeColorPicker(true);
+    };
+
+    const bindDrag = (el, kind) => {
+        el.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            try { el.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+            __colorPickerState.drag = kind;
+            setFromPointer(el, e.clientX, e.clientY, kind);
+        });
+        el.addEventListener('pointermove', (e) => {
+            if (!__colorPickerState || __colorPickerState.drag !== kind) return;
+            setFromPointer(el, e.clientX, e.clientY, kind);
+        });
+        const end = (e) => {
+            if (!__colorPickerState || __colorPickerState.drag !== kind) return;
+            __colorPickerState.drag = null;
+            if (e && e.pointerId != null) {
+                try { el.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+            }
+        };
+        el.addEventListener('pointerup', end);
+        el.addEventListener('pointercancel', end);
+    };
+
+    bindDrag(sv, 'sv');
+    bindDrag(hue, 'hue');
+
+    return root;
+}
+
+function renderThemeColorPicker(commit) {
+    const root = ensureThemeColorPicker();
+    const state = __colorPickerState;
+    if (!state) return;
+    const hex = hsvToHex(state.h, state.s, state.v);
+    const hueHex = hsvToHex(state.h, 1, 1);
+
+    const sv = root.querySelector('[data-picker-sv]');
+    const svCursor = root.querySelector('[data-picker-sv-cursor]');
+    const hueThumb = root.querySelector('[data-picker-hue-thumb]');
+
+    if (sv) {
+        sv.style.backgroundImage = [
+            'linear-gradient(to top, #000000, rgba(0, 0, 0, 0))',
+            'linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0))',
+            `linear-gradient(${hueHex}, ${hueHex})`,
+        ].join(', ');
+    }
+    if (svCursor) {
+        svCursor.style.left = `${state.s * 100}%`;
+        svCursor.style.top = `${(1 - state.v) * 100}%`;
+        svCursor.style.background = hex;
+    }
+    if (hueThumb) {
+        hueThumb.style.left = `calc(0.575rem + ${(state.h / 360)} * (100% - 1.15rem))`;
+        hueThumb.style.background = hueHex;
+    }
+
+    const editor = state.editor;
+    if (editor) {
+        const key = state.key;
+        const colorInput = editor.querySelector(`[data-custom-color="${key}"]`);
+        const hexField = editor.querySelector(`[data-custom-hex="${key}"]`);
+        const face = editor.querySelector(`[data-swatch-face="${key}"]`);
+        if (colorInput) colorInput.value = hex;
+        if (hexField) hexField.value = hex;
+        if (face) face.style.background = hex;
+    }
+
+    if (commit && editor && state.key) {
+        commitCustomTheme({
+            ...readCustomThemeFromEditor(editor),
+            [state.key]: hex,
+        });
+    }
+}
+
+function positionThemeColorPicker(anchor) {
+    const root = ensureThemeColorPicker();
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const pad = 10;
+    const width = root.offsetWidth || 280;
+    const height = root.offsetHeight || 320;
+    let left = rect.left;
+    let top = rect.bottom + 8;
+    if (left + width > window.innerWidth - pad) left = window.innerWidth - width - pad;
+    if (left < pad) left = pad;
+    if (top + height > window.innerHeight - pad) top = Math.max(pad, rect.top - height - 8);
+    root.style.left = `${Math.round(left)}px`;
+    root.style.top = `${Math.round(top)}px`;
+}
+
+function closeThemeColorPicker() {
+    const root = document.getElementById('usertypo-color-picker');
+    if (root) root.classList.remove('is-open');
+    __colorPickerState = null;
+}
+
+function openThemeColorPicker(swatch) {
+    const editor = swatch.closest('[data-custom-theme-editor]');
+    if (!editor) return;
+    const colorInput = swatch.querySelector('[data-custom-color]');
+    if (!colorInput) return;
+    const key = colorInput.dataset.customColor;
+    if (key !== 'mainColor' && key !== 'secondaryColor') return;
+
+    const hex = normalizeHexColor(
+        colorInput.value
+        || editor.querySelector(`[data-custom-hex="${key}"]`)?.value
+        || '#ffffff',
+        '#ffffff'
+    );
+    const hsv = hexToHsv(hex);
+    __colorPickerState = {
+        editor,
+        key,
+        h: hsv.h,
+        s: hsv.s,
+        v: hsv.v,
+        drag: null,
+        anchor: swatch,
+    };
+    const root = ensureThemeColorPicker();
+    root.classList.add('is-open');
+    renderThemeColorPicker(false);
+    positionThemeColorPicker(swatch);
+}
+
 function initCustomThemeEditor() {
     // Document-level delegation so cloned Custom Theme panels (SPA sub-setting
     // copies via innerHTML) still receive events.
@@ -1091,6 +1416,50 @@ function initCustomThemeEditor() {
             return t.nodeType === 1 ? t : t.parentElement;
         };
 
+        document.addEventListener('click', (e) => {
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+
+            const picker = el.closest('#usertypo-color-picker');
+            if (picker) return;
+
+            const swatch = el.closest('.theme-color-swatch');
+            if (swatch && swatch.querySelector('[data-custom-color="mainColor"], [data-custom-color="secondaryColor"]')) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (__colorPickerState && __colorPickerState.anchor === swatch) {
+                    closeThemeColorPicker();
+                } else {
+                    openThemeColorPicker(swatch);
+                }
+                return;
+            }
+
+            if (__colorPickerState) closeThemeColorPicker();
+        }, true);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && __colorPickerState) {
+                closeThemeColorPicker();
+                return;
+            }
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+            const swatch = el.closest?.('.theme-color-swatch');
+            if (!swatch || !swatch.querySelector('[data-custom-color="mainColor"], [data-custom-color="secondaryColor"]')) return;
+            if (el.closest('input, textarea, button')) return;
+            e.preventDefault();
+            openThemeColorPicker(swatch);
+        }, true);
+
+        window.addEventListener('resize', () => {
+            if (__colorPickerState?.anchor) positionThemeColorPicker(__colorPickerState.anchor);
+        });
+        window.addEventListener('scroll', () => {
+            if (__colorPickerState?.anchor) positionThemeColorPicker(__colorPickerState.anchor);
+        }, true);
+
         document.addEventListener('input', (e) => {
             if (isCustomThemeSyncLocked()) return;
             const el = eventEl(e);
@@ -1098,21 +1467,11 @@ function initCustomThemeEditor() {
 
             const spectrumSlider = el.closest?.('[data-custom-bg-spectrum]');
             if (spectrumSlider && spectrumSlider.closest('[data-custom-theme-editor]')) {
-                const editor = spectrumSlider.closest('[data-custom-theme-editor]');
-                const modeBtn = editor.querySelector('[data-custom-theme-mode] .opt-btn.active');
-                const mode = modeBtn ? resolveOptValue(modeBtn) : 'Dark';
-                const t = Number(spectrumSlider.value) / 100;
-                const hex = bgColorFromSpectrum(mode, t);
-                const thumb = editor.querySelector('[data-bg-spectrum-thumb]');
-                if (thumb) {
-                    thumb.style.left = `${t * 100}%`;
-                    thumb.style.background = hex;
-                }
-                const face = editor.querySelector('[data-swatch-face="bgColor"]');
-                const hexInput = editor.querySelector('[data-custom-hex="bgColor"]');
-                if (face) face.style.background = hex;
-                if (hexInput) hexInput.value = hex;
-                commitCustomTheme({ ...readCustomThemeFromEditor(editor), bgColor: hex });
+                // Keyboard / a11y path — pointer dragging uses the wrap handlers below.
+                applyBgSpectrumPosition(
+                    spectrumSlider.closest('[data-custom-theme-editor]'),
+                    Number(spectrumSlider.value) / 100
+                );
                 return;
             }
 
@@ -1127,6 +1486,43 @@ function initCustomThemeEditor() {
             if (face) face.style.background = hex;
             commitCustomTheme({ ...readCustomThemeFromEditor(editor), [key]: hex });
         }, true);
+
+        // Pointer-driven spectrum: map X onto the inset thumb track so the
+        // visible circle never jumps when grabbed at either end.
+        let __spectrumDrag = null;
+        const updateSpectrumFromPointer = (wrap, clientX) => {
+            const editor = wrap.closest('[data-custom-theme-editor]');
+            if (!editor || isCustomThemeSyncLocked()) return;
+            applyBgSpectrumPosition(editor, spectrumTFromClientX(wrap, clientX));
+        };
+        document.addEventListener('pointerdown', (e) => {
+            if (e.button != null && e.button !== 0) return;
+            const el = eventEl(e);
+            if (!el || typeof el.closest !== 'function') return;
+            const wrap = el.closest('[data-bg-spectrum]');
+            if (!wrap || !wrap.closest('[data-custom-theme-editor]')) return;
+            e.preventDefault();
+            __spectrumDrag = wrap;
+            try { wrap.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+            const slider = wrap.querySelector('[data-custom-bg-spectrum]');
+            if (slider) {
+                try { slider.focus({ preventScroll: true }); } catch (_) { try { slider.focus(); } catch (__) { /* ignore */ } }
+            }
+            updateSpectrumFromPointer(wrap, e.clientX);
+        }, true);
+        document.addEventListener('pointermove', (e) => {
+            if (!__spectrumDrag) return;
+            updateSpectrumFromPointer(__spectrumDrag, e.clientX);
+        }, true);
+        const endSpectrumDrag = (e) => {
+            if (!__spectrumDrag) return;
+            if (e && e.pointerId != null) {
+                try { __spectrumDrag.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+            }
+            __spectrumDrag = null;
+        };
+        document.addEventListener('pointerup', endSpectrumDrag, true);
+        document.addEventListener('pointercancel', endSpectrumDrag, true);
 
         document.addEventListener('change', (e) => {
             if (isCustomThemeSyncLocked()) return;
@@ -2974,14 +3370,17 @@ function selectColorTheme(themeName) {
         const idx = parseInt(themeName.slice(7), 10);
         const preset = settings.lookFeel.customPresets?.[idx];
         if (preset) {
+            const mode = isLightModeValue(preset.mode) ? 'Light' : 'Dark';
+            const bgColor = normalizeHexColor(
+                preset.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+                CUSTOM_THEME_DEFAULT.bgColor
+            );
             settings.lookFeel.customTheme = {
-                mode: isLightModeValue(preset.mode) ? 'Light' : 'Dark',
+                mode,
                 mainColor: normalizeHexColor(preset.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
-                bgColor: normalizeHexColor(
-                    preset.bgColor || (isLightModeValue(preset.mode) ? '#ffffff' : '#000000'),
-                    CUSTOM_THEME_DEFAULT.bgColor
-                ),
+                bgColor,
+                bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
             };
         }
     }
