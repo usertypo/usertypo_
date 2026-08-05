@@ -105,7 +105,7 @@
             description: 'Manage friends, find opponents, and start multiplayer typing races on usertypo_.',
             robots: 'noindex, follow',
             navId: 'nav-friends',
-            compact: true,
+            compact: false,
         },
         '/room': {
             page: 'pages/room.html',
