@@ -297,25 +297,29 @@
             var currentWord = document.getElementById('word-' + currentWordIndex);
             if (!currentWord || !typingArea.clientWidth) return;
             var center = typingArea.clientWidth / 2;
-            var containerRect = textContainer.getBoundingClientRect();
             var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             if (getTapeMode() === 'word') {
-                var wordRect = currentWord.getBoundingClientRect();
-                textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
+                var wordCenter = (typeof window.getWordTapeCenterX === 'function')
+                    ? window.getWordTapeCenterX(currentWord, textContainer)
+                    : (currentWord.offsetLeft + currentWord.offsetWidth / 2);
+                textContainer.style.transform = 'translateX(' + Math.round(center - wordCenter) + 'px)';
                 return;
             }
-            var target = document.getElementById('char-' + currentWordIndex + '-' + currentCharIndex);
-            var after = false;
-            if (!target) {
-                target = document.getElementById('char-' + currentWordIndex + '-' + (currentCharIndex - 1));
-                after = true;
-            }
-            if (!target) target = currentWord;
-            var targetRect = target.getBoundingClientRect();
-            var targetLeft = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
-                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
-            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
+            var resolved = (typeof window.resolveCaretCharTarget === 'function')
+                ? window.resolveCaretCharTarget(currentWord, currentWordIndex, currentCharIndex, 'char')
+                : (function () {
+                    var target = document.getElementById('char-' + currentWordIndex + '-' + currentCharIndex);
+                    var after = false;
+                    if (!target) {
+                        target = document.getElementById('char-' + currentWordIndex + '-' + (currentCharIndex - 1));
+                        after = true;
+                    }
+                    return { target: target || currentWord, isAfter: after };
+                })();
+            var box = (typeof window.getCaretLayoutInContainer === 'function')
+                ? window.getCaretLayoutInContainer(textContainer, currentWord, resolved.target, resolved.isAfter, isRtl)
+                : { left: resolved.target.offsetLeft + (resolved.isAfter && !isRtl ? resolved.target.offsetWidth : 0) };
+            textContainer.style.transform = 'translateX(' + Math.round(center - box.left) + 'px)';
         }
 
         function handleScroll() {
@@ -340,23 +344,40 @@
             if (!element || !textContainer || !words[wordIndex]) return;
             var wordElement = document.getElementById('word-' + wordIndex);
             if (!wordElement) return;
-            var target = document.getElementById('char-' + wordIndex + '-' + charIndex);
-            var after = false;
-            if (!target) {
-                target = document.getElementById('char-' + wordIndex + '-' + (charIndex - 1));
-                after = true;
-            }
-            if (!target) target = wordElement;
-            var targetRect = target.getBoundingClientRect();
-            var containerRect = textContainer.getBoundingClientRect();
             var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+            var resolved = (typeof window.resolveCaretCharTarget === 'function')
+                ? window.resolveCaretCharTarget(wordElement, wordIndex, charIndex, 'char')
+                : (function () {
+                    var target = document.getElementById('char-' + wordIndex + '-' + charIndex);
+                    var after = false;
+                    if (!target) {
+                        target = document.getElementById('char-' + wordIndex + '-' + (charIndex - 1));
+                        after = true;
+                    }
+                    return { target: target || wordElement, isAfter: after };
+                })();
+            var left;
+            var top;
+            var width;
+            if (typeof window.getCaretLayoutInContainer === 'function') {
+                var box = window.getCaretLayoutInContainer(
+                    textContainer, wordElement, resolved.target, resolved.isAfter, isRtl
+                );
+                left = box.left;
+                top = box.top;
+                width = box.width;
+            } else {
+                var targetRect = resolved.target.getBoundingClientRect();
+                var containerRect = textContainer.getBoundingClientRect();
+                left = (typeof window.getCaretOffsetLeft === 'function')
+                    ? window.getCaretOffsetLeft(targetRect, containerRect, resolved.isAfter, isRtl)
+                    : (targetRect.left - containerRect.left + (resolved.isAfter ? targetRect.width : 0));
+                top = targetRect.top - containerRect.top;
+                width = targetRect.width;
+            }
             element.style.display = 'block';
-            var left = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
-                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
-            var top = targetRect.top - containerRect.top;
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            element.style.width = targetRect.width + 'px';
+            element.style.width = width + 'px';
         }
 
         function updateCaret() {
@@ -394,8 +415,13 @@
             var element = document.getElementById('char-' + wordIndex + '-' + charIndex);
             if (!element) return;
             if (element.classList.contains('extra')) {
+                var wordElement = document.getElementById('word-' + wordIndex);
+                var beforeWidth = wordElement ? wordElement.offsetWidth : 0;
                 element.remove();
                 extraChars = Math.max(0, extraChars - 1);
+                if (wordElement && typeof window.compensateLetterTapeWidthDelta === 'function') {
+                    window.compensateLetterTapeWidthDelta(textContainer, wordElement.offsetWidth - beforeWidth);
+                }
                 return;
             }
             element.className = 'char text-slate-500 transition-colors duration-75';
@@ -407,15 +433,23 @@
             if (!wordElement) return;
             var element = document.getElementById('char-' + wordIndex + '-' + charIndex);
             if (!element) {
+                var beforeWidth = wordElement.offsetWidth;
                 element = document.createElement('span');
                 element.id = 'char-' + wordIndex + '-' + charIndex;
                 element.className = 'char extra transition-colors duration-75';
+                element.textContent = charIndex < words[wordIndex].length
+                    ? words[wordIndex][charIndex]
+                    : typed;
                 wordElement.appendChild(element);
                 extraChars += 1;
+                if (typeof window.compensateLetterTapeWidthDelta === 'function') {
+                    window.compensateLetterTapeWidthDelta(textContainer, wordElement.offsetWidth - beforeWidth);
+                }
+            } else {
+                element.textContent = charIndex < words[wordIndex].length
+                    ? words[wordIndex][charIndex]
+                    : typed;
             }
-            element.textContent = charIndex < words[wordIndex].length
-                ? words[wordIndex][charIndex]
-                : typed;
             element.className = 'char transition-colors duration-75 ' + (
                 correct && !forcedRed
                     ? 'text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'
