@@ -2094,32 +2094,32 @@ window.setTimeout = function(handler, timeout) {
             if (tapeMode === 'word' || tapeMode === 'letter') {
                 const containerWidth = typingArea.clientWidth;
                 const centerOffset = containerWidth / 2;
-                const containerRect = textContainer.getBoundingClientRect();
                 const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
 
                 if (tapeMode === 'word') {
-                    const wordRect = currentWordEl.getBoundingClientRect();
-                    const wordLeft = wordRect.left - containerRect.left;
-                    const translateX = centerOffset - wordLeft - (wordRect.width / 2);
+                    const wordCenter = (typeof window.getWordTapeCenterX === 'function')
+                        ? window.getWordTapeCenterX(currentWordEl, textContainer)
+                        : (currentWordEl.offsetLeft + currentWordEl.offsetWidth / 2);
+                    const translateX = Math.round(centerOffset - wordCenter);
                     textContainer.style.transform = `translateX(${translateX}px)`;
                 } else if (tapeMode === 'letter') {
-                    let targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
-                    let isAfter = false;
+                    const resolved = (typeof window.resolveCaretCharTarget === 'function')
+                        ? window.resolveCaretCharTarget(currentWordEl, currentWordIndex, currentCharIndex, 'char')
+                        : (() => {
+                            let targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
+                            let isAfter = false;
+                            if (!targetEl) {
+                                targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
+                                isAfter = true;
+                            }
+                            return { target: targetEl || currentWordEl, isAfter };
+                        })();
 
-                    if (!targetEl) {
-                        targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
-                        isAfter = true;
-                    }
-                    if (!targetEl) {
-                        targetEl = currentWordEl;
-                    }
+                    const box = (typeof window.getCaretLayoutInContainer === 'function')
+                        ? window.getCaretLayoutInContainer(textContainer, currentWordEl, resolved.target, resolved.isAfter, isRtl)
+                        : { left: resolved.target.offsetLeft + (resolved.isAfter && !isRtl ? resolved.target.offsetWidth : 0) };
 
-                    const targetRect = targetEl.getBoundingClientRect();
-                    const targetLeft = (typeof window.getCaretOffsetLeft === 'function')
-                        ? window.getCaretOffsetLeft(targetRect, containerRect, isAfter, isRtl)
-                        : (targetRect.left - containerRect.left + (isAfter ? targetRect.width : 0));
-
-                    const translateX = centerOffset - targetLeft;
+                    const translateX = Math.round(centerOffset - box.left);
                     textContainer.style.transform = `translateX(${translateX}px)`;
                 }
                 return;
@@ -2252,7 +2252,11 @@ window.setTimeout = function(handler, timeout) {
                     const charEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
 
                     if (charEl.classList.contains('extra')) {
+                        const beforeWidth = wordEl ? wordEl.offsetWidth : 0;
                         charEl.remove();
+                        if (wordEl && typeof window.compensateLetterTapeWidthDelta === 'function') {
+                            window.compensateLetterTapeWidthDelta(textContainer, wordEl.offsetWidth - beforeWidth);
+                        }
                     } else {
                         charEl.className = 'char text-slate-500 transition-colors duration-75';
                         // Reset Indicate Typos
@@ -2567,7 +2571,12 @@ window.setTimeout = function(handler, timeout) {
                     extraCharEl.innerText = e.key;
                     extraCharEl.id = `char-${currentWordIndex}-${currentCharIndex}`;
                     extraCharEl.className = 'char extra text-error drop-shadow-[0_0_7px_rgba(255,80,80,0.75)] transition-colors duration-75';
+                    const beforeWidth = wordEl ? wordEl.offsetWidth : 0;
                     wordEl.appendChild(extraCharEl);
+                    const afterWidth = wordEl.offsetWidth;
+                    if (typeof window.compensateLetterTapeWidthDelta === 'function') {
+                        window.compensateLetterTapeWidthDelta(textContainer, afterWidth - beforeWidth);
+                    }
                     errorsMade++;
                     const errSec = startTime ? (ksNow - startTime) / 1000 : 0;
                     errorMarkers.push({
@@ -2649,29 +2658,42 @@ window.setTimeout = function(handler, timeout) {
             const currentWordEl = document.getElementById(`word-${currentWordIndex}`);
             if (!currentWordEl) return;
 
-            let targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
-            let isAfter = false;
-
-            if (!targetEl) {
-                targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
-                isAfter = true;
-            }
-
-            if (!targetEl) {
-                targetEl = currentWordEl;
-            }
-
-            const rect = targetEl.getBoundingClientRect();
-            const containerRect = textContainer.getBoundingClientRect();
             const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+            const resolved = (typeof window.resolveCaretCharTarget === 'function')
+                ? window.resolveCaretCharTarget(currentWordEl, currentWordIndex, currentCharIndex, 'char')
+                : (() => {
+                    let targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
+                    let isAfter = false;
+                    if (!targetEl) {
+                        targetEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
+                        isAfter = true;
+                    }
+                    return { target: targetEl || currentWordEl, isAfter };
+                })();
 
-            let left = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(rect, containerRect, isAfter, isRtl)
-                : (rect.left - containerRect.left + (isAfter ? rect.width : 0));
-            let top = rect.top - containerRect.top;
+            let left;
+            let top;
+            let width;
+
+            if (typeof window.getCaretLayoutInContainer === 'function') {
+                const box = window.getCaretLayoutInContainer(
+                    textContainer, currentWordEl, resolved.target, resolved.isAfter, isRtl
+                );
+                left = box.left;
+                top = box.top;
+                width = box.width;
+            } else {
+                const rect = resolved.target.getBoundingClientRect();
+                const containerRect = textContainer.getBoundingClientRect();
+                left = (typeof window.getCaretOffsetLeft === 'function')
+                    ? window.getCaretOffsetLeft(rect, containerRect, resolved.isAfter, isRtl)
+                    : (rect.left - containerRect.left + (resolved.isAfter ? rect.width : 0));
+                top = rect.top - containerRect.top;
+                width = rect.width;
+            }
 
             caret.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-            caret.style.width = `${rect.width}px`;
+            caret.style.width = `${width}px`;
 
             if (isTyping) {
                 caret.classList.remove('animate-breath');
@@ -2892,14 +2914,27 @@ window.setTimeout = function(handler, timeout) {
             let targetEl = document.getElementById(`char-${wordIndex}-${targetCharIndex}`);
             if (!targetEl) targetEl = currentWordEl;
 
-            const rect = targetEl.getBoundingClientRect();
-            const containerRect = textContainer.getBoundingClientRect();
             const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+            let left;
+            let top;
+            let width;
 
-            let left = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(rect, containerRect, isAfter, isRtl)
-                : (rect.left - containerRect.left + (isAfter ? rect.width : 0));
-            let top = rect.top - containerRect.top;
+            if (typeof window.getCaretLayoutInContainer === 'function') {
+                const box = window.getCaretLayoutInContainer(
+                    textContainer, currentWordEl, targetEl, isAfter, isRtl
+                );
+                left = box.left;
+                top = box.top;
+                width = box.width;
+            } else {
+                const rect = targetEl.getBoundingClientRect();
+                const containerRect = textContainer.getBoundingClientRect();
+                left = (typeof window.getCaretOffsetLeft === 'function')
+                    ? window.getCaretOffsetLeft(rect, containerRect, isAfter, isRtl)
+                    : (rect.left - containerRect.left + (isAfter ? rect.width : 0));
+                top = rect.top - containerRect.top;
+                width = rect.width;
+            }
 
             if (!animate) {
                 paceCaretEl.style.transition = 'none';
@@ -2907,7 +2942,7 @@ window.setTimeout = function(handler, timeout) {
                 paceCaretEl.style.removeProperty('transition');
             }
 
-            applyPaceCaretDimensions(rect);
+            applyPaceCaretDimensions({ width, height: targetEl.offsetHeight || 0 });
             paceCaretEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
 
             if (!animate) {

@@ -1339,25 +1339,29 @@
             var currentWord = document.getElementById('room-word-' + currentWordIndex);
             if (!currentWord || !typingArea.clientWidth) return;
             var center = typingArea.clientWidth / 2;
-            var containerRect = textContainer.getBoundingClientRect();
             var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
             if (getTapeMode() === 'word') {
-                var wordRect = currentWord.getBoundingClientRect();
-                textContainer.style.transform = 'translateX(' + (center - (wordRect.left - containerRect.left) - wordRect.width / 2) + 'px)';
+                var wordCenter = (typeof window.getWordTapeCenterX === 'function')
+                    ? window.getWordTapeCenterX(currentWord, textContainer)
+                    : (currentWord.offsetLeft + currentWord.offsetWidth / 2);
+                textContainer.style.transform = 'translateX(' + Math.round(center - wordCenter) + 'px)';
                 return;
             }
-            var target = document.getElementById('room-char-' + currentWordIndex + '-' + currentCharIndex);
-            var after = false;
-            if (!target) {
-                target = document.getElementById('room-char-' + currentWordIndex + '-' + (currentCharIndex - 1));
-                after = true;
-            }
-            if (!target) target = currentWord;
-            var targetRect = target.getBoundingClientRect();
-            var targetLeft = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
-                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
-            textContainer.style.transform = 'translateX(' + (center - targetLeft) + 'px)';
+            var resolved = (typeof window.resolveCaretCharTarget === 'function')
+                ? window.resolveCaretCharTarget(currentWord, currentWordIndex, currentCharIndex, 'room-char')
+                : (function () {
+                    var target = document.getElementById('room-char-' + currentWordIndex + '-' + currentCharIndex);
+                    var after = false;
+                    if (!target) {
+                        target = document.getElementById('room-char-' + currentWordIndex + '-' + (currentCharIndex - 1));
+                        after = true;
+                    }
+                    return { target: target || currentWord, isAfter: after };
+                })();
+            var box = (typeof window.getCaretLayoutInContainer === 'function')
+                ? window.getCaretLayoutInContainer(textContainer, currentWord, resolved.target, resolved.isAfter, isRtl)
+                : { left: resolved.target.offsetLeft + (resolved.isAfter && !isRtl ? resolved.target.offsetWidth : 0) };
+            textContainer.style.transform = 'translateX(' + Math.round(center - box.left) + 'px)';
         }
 
         function handleScroll() {
@@ -1382,27 +1386,43 @@
             if (!element || !textContainer || words[wordIndex] == null) return;
             var wordElement = document.getElementById('room-word-' + wordIndex);
             if (!wordElement) return;
-            var target = document.getElementById('room-char-' + wordIndex + '-' + charIndex);
-            var after = false;
-            if (!target) {
-                target = document.getElementById('room-char-' + wordIndex + '-' + (charIndex - 1));
-                after = true;
-            }
-            if (!target) target = wordElement;
-            var targetRect = target.getBoundingClientRect();
-            var containerRect = textContainer.getBoundingClientRect();
             var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
-            element.style.display = 'block';
-            var left = (typeof window.getCaretOffsetLeft === 'function')
-                ? window.getCaretOffsetLeft(targetRect, containerRect, after, isRtl)
-                : (targetRect.left - containerRect.left + (after ? targetRect.width : 0));
-            var top = targetRect.top - containerRect.top;
-            var caretWidth = targetRect.width;
-            if (!caretWidth) {
-                caretWidth = Math.max(10, (parseFloat(getComputedStyle(textContainer).fontSize) || 24) * 0.55);
+            var resolved = (typeof window.resolveCaretCharTarget === 'function')
+                ? window.resolveCaretCharTarget(wordElement, wordIndex, charIndex, 'room-char')
+                : (function () {
+                    var target = document.getElementById('room-char-' + wordIndex + '-' + charIndex);
+                    var after = false;
+                    if (!target) {
+                        target = document.getElementById('room-char-' + wordIndex + '-' + (charIndex - 1));
+                        after = true;
+                    }
+                    return { target: target || wordElement, isAfter: after };
+                })();
+            var left;
+            var top;
+            var width;
+            if (typeof window.getCaretLayoutInContainer === 'function') {
+                var box = window.getCaretLayoutInContainer(
+                    textContainer, wordElement, resolved.target, resolved.isAfter, isRtl
+                );
+                left = box.left;
+                top = box.top;
+                width = box.width;
+            } else {
+                var targetRect = resolved.target.getBoundingClientRect();
+                var containerRect = textContainer.getBoundingClientRect();
+                left = (typeof window.getCaretOffsetLeft === 'function')
+                    ? window.getCaretOffsetLeft(targetRect, containerRect, resolved.isAfter, isRtl)
+                    : (targetRect.left - containerRect.left + (resolved.isAfter ? targetRect.width : 0));
+                top = targetRect.top - containerRect.top;
+                width = targetRect.width;
             }
+            if (!width) {
+                width = Math.max(10, (parseFloat(getComputedStyle(textContainer).fontSize) || 24) * 0.55);
+            }
+            element.style.display = 'block';
             element.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
-            element.style.width = caretWidth + 'px';
+            element.style.width = width + 'px';
         }
 
         function updateCaret() {
@@ -1416,12 +1436,18 @@
             if (!wordElement) return;
             var element = document.getElementById('room-char-' + currentWordIndex + '-' + index);
             if (!element) {
+                var beforeWidth = wordElement.offsetWidth;
                 element = document.createElement('span');
                 element.id = 'room-char-' + currentWordIndex + '-' + index;
                 element.className = 'char extra transition-colors duration-75';
+                element.textContent = index < word.length ? word[index] : key;
                 wordElement.appendChild(element);
+                if (typeof window.compensateLetterTapeWidthDelta === 'function') {
+                    window.compensateLetterTapeWidthDelta(textContainer, wordElement.offsetWidth - beforeWidth);
+                }
+            } else {
+                element.textContent = index < word.length ? word[index] : key;
             }
-            element.textContent = index < word.length ? word[index] : key;
             element.className = 'char transition-colors duration-75 ' + (index >= word.length ? 'extra ' : '') + (
                 correct
                     ? 'text-primary drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]'
@@ -1434,7 +1460,12 @@
             var element = document.getElementById('room-char-' + currentWordIndex + '-' + index);
             if (!element) return;
             if (element.classList.contains('extra')) {
+                var wordElement = document.getElementById('room-word-' + currentWordIndex);
+                var beforeWidth = wordElement ? wordElement.offsetWidth : 0;
                 element.remove();
+                if (wordElement && typeof window.compensateLetterTapeWidthDelta === 'function') {
+                    window.compensateLetterTapeWidthDelta(textContainer, wordElement.offsetWidth - beforeWidth);
+                }
                 return;
             }
             element.className = 'char text-slate-500 transition-colors duration-75';

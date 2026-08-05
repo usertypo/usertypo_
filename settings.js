@@ -3193,8 +3193,10 @@ function buildPaceCaretCSS(style, smoothness) {
     return css;
 }
 
-function buildLayoutCSS(smoothLineScroll, tapeMode) {
+function buildLayoutCSS(smoothLineScroll, tapeMode, caretSmoothness) {
     let css = '';
+    const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
+    const smoothnessDur = SMOOTHNESS_DURATION[caretSmoothness] || SMOOTHNESS_DURATION.medium;
 
     // Scroll transition speed (same for normal + tape mode — matches index.html feel)
     if (smoothLineScroll) {
@@ -3203,7 +3205,7 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
             #room-text-container {
                 transition: filter 0.3s ease-in-out,
                             opacity 0.5s ease-in-out,
-                            transform 0.25s cubic-bezier(0.2, 0, 0.2, 1) !important;
+                            transform 0.25s ${ease} !important;
             }
         `;
     } else {
@@ -3236,6 +3238,24 @@ function buildLayoutCSS(smoothLineScroll, tapeMode) {
                 white-space: nowrap !important;
                 -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
                 mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+            }
+        `;
+
+        // Tape scroll follows caret smoothness. Caret transform uses the same
+        // duration/easing so both stay locked (no jitter) while still feeling smooth.
+        css += `
+            body[data-tape-mode="${tapeMode}"] #text-container,
+            body[data-tape-mode="${tapeMode}"] #room-text-container {
+                transition: filter 0.3s ease-in-out,
+                            opacity 0.5s ease-in-out,
+                            transform ${smoothnessDur} ${ease} !important;
+            }
+            body[data-tape-mode="${tapeMode}"] #caret,
+            body[data-tape-mode="${tapeMode}"] #pace-caret,
+            body[data-tape-mode="${tapeMode}"] #bot-caret {
+                transition: transform ${smoothnessDur} ${ease},
+                            width 0s,
+                            opacity 0.5s ease-in-out !important;
             }
         `;
     }
@@ -3279,7 +3299,7 @@ function applyCursorSettings(settings) {
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
         + buildPaceCaretCSS(settings.cursor.paceCaretStyle, settings.cursor.caretSmoothness)
-        + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode);
+        + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode, settings.cursor.caretSmoothness);
 
     // ── Data attributes on <body> ──
     if (document.body) {
@@ -3299,6 +3319,8 @@ function applyCursorSettings(settings) {
         document.getElementById('caret')?.style.removeProperty('transition');
         document.getElementById('spa-boot-caret')?.style.removeProperty('transition');
         document.getElementById('pace-caret')?.style.removeProperty('transition');
+        document.getElementById('text-container')?.style.removeProperty('transition');
+        document.getElementById('room-text-container')?.style.removeProperty('transition');
     }
 
     try {
@@ -3757,12 +3779,27 @@ function setupAdaptiveSmoothness(enabled) {
 
         const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
         const transition = `transform ${dur}ms ${ease}, width ${dur}ms ${ease}, opacity 0.5s ease-in-out`;
+        const tapeMode = document.body?.getAttribute('data-tape-mode') || '';
+        const isTape = tapeMode === 'letter' || tapeMode === 'word';
+
+        // In tape mode, keep caret + line scroll on the same duration so the
+        // caret stays visually locked while the line still feels smooth.
+        const caretTransition = isTape
+            ? `transform ${dur}ms ${ease}, width 0s, opacity 0.5s ease-in-out`
+            : transition;
+        const lineTransition = `filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform ${dur}ms ${ease}`;
 
         const caret = document.getElementById('caret');
-        if (caret) caret.style.transition = transition;
+        if (caret) caret.style.transition = caretTransition;
 
         const paceCaret = document.getElementById('pace-caret');
-        if (paceCaret) paceCaret.style.transition = transition;
+        if (paceCaret) paceCaret.style.transition = caretTransition;
+
+        if (isTape) {
+            const textContainer = document.getElementById('text-container')
+                || document.getElementById('room-text-container');
+            if (textContainer) textContainer.style.transition = lineTransition;
+        }
     }, 500);
 }
 

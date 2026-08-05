@@ -178,9 +178,160 @@ function getCaretOffsetLeft(targetRect, containerRect, isAfter, isRtl) {
     return left;
 }
 
+/**
+ * Layout offset of `el` inside `container`, ignoring CSS transforms on ancestors.
+ * Prefer this over getBoundingClientRect deltas while tape/line scroll is animating.
+ */
+function getLayoutOffsetInContainer(el, container) {
+    if (!el || !container) return { left: 0, top: 0 };
+    let left = 0;
+    let top = 0;
+    let node = el;
+    while (node && node !== container) {
+        left += node.offsetLeft;
+        top += node.offsetTop;
+        node = node.offsetParent;
+    }
+    if (node !== container) {
+        // Fallback: rect delta is still transform-invariant when both share the
+        // same transformed ancestor (caret/text live under the scrolling container).
+        const er = el.getBoundingClientRect();
+        const cr = container.getBoundingClientRect();
+        return { left: er.left - cr.left, top: er.top - cr.top };
+    }
+    return { left, top };
+}
+
+/**
+ * Resolve the character node the caret should track.
+ * @param {string} idPrefix e.g. "char" or "room-char"
+ */
+function resolveCaretCharTarget(wordEl, wordIndex, charIndex, idPrefix) {
+    let target = document.getElementById(`${idPrefix}-${wordIndex}-${charIndex}`);
+    let isAfter = false;
+    if (!target) {
+        target = document.getElementById(`${idPrefix}-${wordIndex}-${charIndex - 1}`);
+        isAfter = true;
+    }
+    if (!target) target = wordEl;
+    return { target: target || wordEl, isAfter };
+}
+
+/**
+ * Caret box in container layout coordinates (transform-stable).
+ */
+function getCaretLayoutInContainer(container, wordEl, targetEl, isAfter, isRtl) {
+    if (!container || !wordEl) return { left: 0, top: 0, width: 0 };
+    const el = targetEl || wordEl;
+    const pos = getLayoutOffsetInContainer(el, container);
+    const width = el.offsetWidth || 0;
+    let left = pos.left;
+    if (isAfter && !isRtl) left += width;
+    return { left, top: pos.top, width };
+}
+
+/**
+ * Horizontal center of the expected word (excludes .extra letters) so typing
+ * extras after a word does not yank tape-mode centering.
+ */
+function getWordTapeCenterX(wordEl, container) {
+    if (!wordEl || !container) return 0;
+    const baseChars = wordEl.querySelectorAll('.char:not(.extra)');
+    if (!baseChars.length) {
+        const pos = getLayoutOffsetInContainer(wordEl, container);
+        return pos.left + (wordEl.offsetWidth || 0) / 2;
+    }
+    const first = baseChars[0];
+    const last = baseChars[baseChars.length - 1];
+    const firstPos = getLayoutOffsetInContainer(first, container);
+    const lastPos = getLayoutOffsetInContainer(last, container);
+    return (firstPos.left + lastPos.left + (last.offsetWidth || 0)) / 2;
+}
+
+/**
+ * Live translateX from computed style (mid-transition safe).
+ */
+function getElementTranslateX(el) {
+    if (!el) return 0;
+    const t = getComputedStyle(el).transform;
+    if (!t || t === 'none') return 0;
+    try {
+        return new DOMMatrixReadOnly(t).m41;
+    } catch (e) {
+        const m = t.match(/matrix3d\(([^)]+)\)/) || t.match(/matrix\(([^)]+)\)/);
+        if (!m) return 0;
+        const parts = m[1].split(',').map((v) => parseFloat(v.trim()));
+        return m[0].startsWith('matrix3d') ? (parts[12] || 0) : (parts[4] || 0);
+    }
+}
+
+/**
+ * Letter tape: appending/removing .extra grows/shrinks the active word and
+ * instantly shifts every following word in layout. Nudge translateX (and the
+ * caret's local X) by the opposite delta with transitions frozen so upcoming
+ * text on the right does not jitter — only the intentional scroll moves.
+ *
+ * @param {HTMLElement} textContainer
+ * @param {number} widthDelta  newWidth - oldWidth (positive when an extra is added)
+ */
+function compensateLetterTapeWidthDelta(textContainer, widthDelta) {
+    if (!textContainer || !widthDelta) return;
+    const tapeMode = document.body?.getAttribute('data-tape-mode')
+        || document.body?.dataset?.tapeMode
+        || 'off';
+    if (tapeMode !== 'letter') return;
+
+    const isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+    // LTR extras extend the word to the right of the caret → following words jump
+    // right; pull the tape left by the same amount. RTL mirroring uses the opposite.
+    const tapeNudge = isRtl ? widthDelta : -widthDelta;
+    const caretNudge = isRtl ? -widthDelta : widthDelta;
+
+    const carets = [
+        document.getElementById('caret'),
+        document.getElementById('pace-caret'),
+        document.getElementById('bot-caret'),
+    ].filter(Boolean);
+    const nodes = [textContainer].concat(carets);
+
+    // Tape layout CSS uses transition !important — inline transition:none loses.
+    // Freeze with setProperty(..., 'important') so the width-delta nudge is instant.
+    nodes.forEach((n) => {
+        n.style.setProperty('transition', 'none', 'important');
+    });
+
+    const liveX = getElementTranslateX(textContainer);
+    // Commit the live visual position first, then nudge — otherwise some engines
+    // keep interpolating from the previous transition target.
+    textContainer.style.transform = `translateX(${liveX}px)`;
+    void textContainer.offsetWidth;
+    textContainer.style.transform = `translateX(${liveX + tapeNudge}px)`;
+
+    carets.forEach((caretEl) => {
+        const x = getElementTranslateX(caretEl);
+        const topMatch = /translate3d\([^,]+,\s*([-\d.]+)px/.exec(caretEl.style.transform || '');
+        const top = topMatch ? topMatch[1] : '0';
+        caretEl.style.transform = `translate3d(${x}px, ${top}px, 0)`;
+        void caretEl.offsetWidth;
+        caretEl.style.transform = `translate3d(${x + caretNudge}px, ${top}px, 0)`;
+    });
+
+    void textContainer.offsetWidth;
+
+    nodes.forEach((n) => {
+        n.style.removeProperty('transition');
+    });
+}
+
 window.isLanguageRTL = isLanguageRTL;
 window.applyTypingTextDirection = applyTypingTextDirection;
 window.getCaretOffsetLeft = getCaretOffsetLeft;
+window.getLayoutOffsetInContainer = getLayoutOffsetInContainer;
+window.resolveCaretCharTarget = resolveCaretCharTarget;
+window.getCaretLayoutInContainer = getCaretLayoutInContainer;
+window.getWordTapeCenterX = getWordTapeCenterX;
+window.getElementTranslateX = getElementTranslateX;
+window.compensateLetterTapeWidthDelta = compensateLetterTapeWidthDelta;
 window.isTypingRTL = function () {
     return document.body?.dataset?.textDirection === 'rtl' || isLanguageRTL(currentLanguageFile);
 };
