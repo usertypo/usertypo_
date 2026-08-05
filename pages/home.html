@@ -854,11 +854,14 @@
                                 class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-primary to-transparent opacity-80">
                             </div>
 
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xs font-bold tracking-widest text-slate-400 uppercase">Current
-                                    Performance
+                            <div class="flex justify-between items-start mb-2 gap-3">
+                                <h3 class="text-xs font-bold text-slate-400 flex items-center gap-2 min-w-0 flex-wrap">
+                                    <span class="uppercase tracking-widest shrink-0">Current Performance</span>
+                                    <span class="text-slate-600 font-normal tracking-normal" aria-hidden="true">|</span>
+                                    <span id="stats-test-config"
+                                        class="normal-case tracking-wide font-semibold text-slate-400/90 truncate"></span>
                                 </h3>
-                                <div class="text-right">
+                                <div class="text-right shrink-0">
                                     <p class="text-xs font-bold tracking-widest text-slate-400 uppercase">Time</p>
                                     <p class="text-4xl font-black text-white"><span id="stats-time">60</span><span
                                             class="text-xl text-slate-500 font-bold">s</span></p>
@@ -3266,6 +3269,17 @@ window.setTimeout = function(handler, timeout) {
             document.getElementById('stats-errors').innerText = failedReason ? '--' : errorsMade;
             document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
             document.getElementById('stats-total-chars').innerText = failedReason ? '--' : rawChars;
+
+            var statsTestConfigEl = document.getElementById('stats-test-config');
+            if (statsTestConfigEl) {
+                var configParts = [];
+                if (testMode === 'time') configParts.push(String(testAmount) + ' seconds');
+                else configParts.push(String(testAmount) + ' words');
+                if (usePunctuation) configParts.push('punctuation');
+                if (useNumbers) configParts.push('numbers');
+                if (useAdaptRefine) configParts.push('adapt & refine');
+                statsTestConfigEl.textContent = configParts.join(' · ');
+            }
 
             function escapeStatsHtml(value) {
                 if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
