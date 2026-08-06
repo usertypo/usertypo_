@@ -254,12 +254,14 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
         }
 
         // Default: FormSubmit.
-        // Forms are keyed by referring site. Custom domains may be unactivated even when
-        // the Render URL works — always use a known-activated origin for delivery.
+        // FormSubmit emails show the Origin/Referer URL. Prefer the public site
+        // (usertypo.com), not RENDER_EXTERNAL_URL (*.onrender.com).
+        // Override with CONTACT_FORMSUBMIT_ORIGIN if needed. First submit from a
+        // new origin may require clicking “Activate Form” in the FormSubmit email.
         const formOrigin = String(
             process.env.CONTACT_FORMSUBMIT_ORIGIN
-            || process.env.RENDER_EXTERNAL_URL
-            || 'https://usertypo.onrender.com'
+            || PUBLIC_SITE_URL
+            || 'https://usertypo.com'
         ).replace(/\/+$/, '');
         const formHeaders = {
             'Content-Type': 'application/json',
