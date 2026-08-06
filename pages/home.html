@@ -390,13 +390,13 @@
 
         .expanding-bubble:not(.is-open):hover {
             border-color: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.25 * var(--glow-intensity, 1))), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
         .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         .expanding-bubble.is-open {
@@ -448,7 +448,7 @@
             width: 1.279rem;
             height: 1.279rem;
             color: var(--theme-primary);
-            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.6 * var(--glow-intensity, 1))));
             transform-origin: center center;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                         transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
@@ -496,7 +496,7 @@
 
         #bubble-toggle:hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         .bubble-content {
@@ -528,11 +528,11 @@
         .bubble-nav-link:hover .nav-icon,
         .bubble-nav-link.is-active .nav-icon {
             color: var(--theme-primary);
-            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);
+            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.8 * var(--glow-intensity, 1)));
         }
         .bubble-user-avatar {
             background-color: var(--theme-primary);
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.4);
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));
         }
         .bubble-user-tier {
             color: var(--theme-primary);
@@ -550,7 +550,7 @@
                 <aside id="config-bar"
                     class="fixed right-0 top-1/2 -translate-y-1/2 z-30 group zen-element transition-all duration-500">
                     <div class="border border-r-0 !border-r-0 rounded-l-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[10.658rem] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm"
-                        style="border-color: rgba(var(--theme-primary-rgb), 0.4); box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.35), 0 8px 32px rgba(0,0,0,0.3);">
+                        style="border-color: rgba(var(--theme-primary-rgb), 0.4); box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), calc(0.35 * var(--glow-intensity, 1))), 0 8px 32px rgba(0,0,0,0.3);">
 
                         <div class="inner-content opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full flex flex-col min-w-[7.673rem] pointer-events-none"
                             id="inner-config-content">
@@ -711,7 +711,7 @@
                             id="word-progress-bar-container">
                             <div id="word-progress-bar"
                                 class="h-full bg-primary transition-all duration-300 ease-linear"
-                                style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);"></div>
+                                style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.8 * var(--glow-intensity, 1)));"></div>
                         </div>
                     </div>
 
@@ -873,7 +873,7 @@
                                     <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full" data-screenshot-glow></div>
                                     <h1 id="stats-wpm"
                                         class="text-9xl font-black text-primary relative z-10 leading-none tracking-tighter"
-                                        style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.4);">105</h1>
+                                        style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));">105</h1>
                                     <div id="stats-cps"
                                         class="absolute -bottom-6 left-1 text-2xl font-bold text-white tracking-wider hidden"
                                         style="text-shadow: none;"></div>
@@ -887,7 +887,7 @@
                                 <p class="text-xs font-bold tracking-widest text-slate-400 uppercase mb-0.5">Accuracy
                                 </p>
                                 <p class="text-6xl font-black text-white"
-                                    style="text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);"><span
+                                    style="text-shadow: 0 0 15px rgba(255, 255, 255, calc(0.8 * var(--glow-intensity, 1)));"><span
                                         id="stats-acc">98.4</span><span class="text-2xl text-slate-500 font-bold"
                                         style="text-shadow: none;">%</span></p>
                             </div>
@@ -918,7 +918,7 @@
                                         <div class="h-px bg-white/5 w-full"></div>
                                         <div class="flex justify-between items-center px-4 py-2">
                                             <span class="text-[0.48rem] font-bold text-primary uppercase tracking-widest"
-                                                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.6);">Global
+                                                style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.6 * var(--glow-intensity, 1)));">Global
                                                 Rank</span>
                                             <span id="stats-global-rank"
                                                 class="text-[0.533rem] font-black text-primary bg-primary/10 border border-primary/30 px-2.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,208,255,0.4)]">—</span>
@@ -943,7 +943,7 @@
                         <div class="text-center px-6">
                             <p class="text-[0.533rem] font-black uppercase tracking-[0.35em] text-primary mb-3">Level up</p>
                             <p id="level-up-number" class="font-headline text-7xl font-black text-white leading-none mb-2"
-                                style="text-shadow: 0 0 40px rgba(var(--theme-primary-rgb), 0.55);">2</p>
+                                style="text-shadow: 0 0 40px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1)));">2</p>
                             <p id="level-up-title" class="text-lg font-bold text-slate-300">Novice</p>
                         </div>
                     </div>
@@ -4390,7 +4390,7 @@ window.setTimeout = function(handler, timeout) {
                 <path id="wpm-line" class="line-wpm" d="${wpmPathD}"
                     fill="none" stroke="var(--theme-primary, #00d0ff)" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round"
-                    style="filter:drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), 0.55));"/>
+                    style="filter: drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1))));"/>
 
                 <!-- Scrubber vertical line -->
                 <line id="graph-scrubber"
@@ -4400,7 +4400,7 @@ window.setTimeout = function(handler, timeout) {
 
                 <!-- Hover balls -->
                 <circle id="ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)"
-                    style="display:none;filter:drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.9));"/>
+                    style="display:none;filter: drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), calc(0.9 * var(--glow-intensity, 1))));"/>
                 <circle id="ball-raw" r="4" fill="#64748b" opacity="0.85"
                     style="display:none;"/>
 
@@ -4466,7 +4466,7 @@ window.setTimeout = function(handler, timeout) {
                 dot.setAttribute('r', '3');
                 dot.setAttribute('fill', '#ff3333');
                 dot.setAttribute('opacity', '0.75');
-                dot.setAttribute('style', 'filter:drop-shadow(0 0 3px rgba(255,51,51,0.7));');
+                dot.setAttribute('style', 'filter: drop-shadow(0 0 3px rgba(255,51,51,0.7));');
                 errorGroup.appendChild(dot);
             });
             // Insert error dots before the hit area so they don't block hover
@@ -5236,21 +5236,21 @@ window.setTimeout = function(handler, timeout) {
                 let markerShape = '';
                 if (m.type === 'overshoot') {
                     const s = 4.5;
-                    markerShape = `<polygon points="${cx},${cy - s} ${cx - s},${cy + s} ${cx + s},${cy + s}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
+                    markerShape = `<polygon points="${cx},${cy - s} ${cx - s},${cy + s} ${cx + s},${cy + s}" fill="#ff6b6b" opacity="0.85" style="filter: drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
                 } else if (m.type === 'hesitation') {
                     const s = 3.2;
-                    markerShape = `<rect x="${cx - s}" y="${cy - s}" width="${s * 2}" height="${s * 2}" fill="#ffaa44" opacity="0.85" rx="1" style="filter:drop-shadow(0 0 2px rgba(255,170,68,0.6));"/>`;
+                    markerShape = `<rect x="${cx - s}" y="${cy - s}" width="${s * 2}" height="${s * 2}" fill="#ffaa44" opacity="0.85" rx="1" style="filter: drop-shadow(0 0 2px rgba(255,170,68,0.6));"/>`;
                 } else if (m.type === 'missed') {
                     const s = 3.5;
-                    markerShape = `<path d="M ${cx - s},${cy - s} L ${cx + s},${cy + s} M ${cx - s},${cy + s} L ${cx + s},${cy - s}" stroke="#ff4466" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,68,102,0.6));"/>`;
+                    markerShape = `<path d="M ${cx - s},${cy - s} L ${cx + s},${cy + s} M ${cx - s},${cy + s} L ${cx + s},${cy - s}" stroke="#ff4466" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter: drop-shadow(0 0 2px rgba(255,68,102,0.6));"/>`;
                 } else if (m.type === 'extra') {
                     const s = 3.5;
-                    markerShape = `<path d="M ${cx - s},${cy} L ${cx + s},${cy} M ${cx},${cy - s} L ${cx},${cy + s}" stroke="#ff3333" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
+                    markerShape = `<path d="M ${cx - s},${cy} L ${cx + s},${cy} M ${cx},${cy - s} L ${cx},${cy + s}" stroke="#ff3333" stroke-width="2.5" stroke-linecap="round" opacity="0.85" style="filter: drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
                 } else if (m.type === 'reversal') {
                     const s = 4;
-                    markerShape = `<polygon points="${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}" fill="#ff6b6b" opacity="0.85" style="filter:drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
+                    markerShape = `<polygon points="${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}" fill="#ff6b6b" opacity="0.85" style="filter: drop-shadow(0 0 2px rgba(255,107,107,0.6));"/>`;
                 } else {
-                    markerShape = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="3.2" fill="#ff3333" opacity="0.8" style="filter:drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
+                    markerShape = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="3.2" fill="#ff3333" opacity="0.8" style="filter: drop-shadow(0 0 2px rgba(255,51,51,0.6));"/>`;
                 }
                 errorSvg += `<g class="adv-error-marker" data-marker-x="${cx}" data-marker-y="${cy}">${markerShape}</g>`;
             });
@@ -5292,11 +5292,11 @@ window.setTimeout = function(handler, timeout) {
                     <path class="ribbon-fade" d="${ribbonD}" fill="url(#ribbonGrad)" stroke="rgba(100,116,139,0.3)" stroke-width="0.5"/>
                 </g>
                 <path class="ribbon-fade" d="${smoothPath(rData)}" fill="none" stroke="rgba(100,116,139,0.45)" stroke-width="1.5" stroke-dasharray="4 3" stroke-linecap="round"/>
-                <path id="adv-wpm-line" class="adv-line-wpm" d="${wpmPathD}" fill="none" stroke="var(--theme-primary, #00d0ff)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), 0.55));"/>
+                <path id="adv-wpm-line" class="adv-line-wpm" d="${wpmPathD}" fill="none" stroke="var(--theme-primary, #00d0ff)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1))));"/>
                 <g class="marker-fade">${errorSvg}</g>
 
                 <line id="adv-scrubber" x1="0" y1="${PAD.top}" x2="0" y2="${PAD.top + gH}" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 2" style="display:none;"/>
-                <circle id="adv-ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)" style="display:none;filter:drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), 0.9));"/>
+                <circle id="adv-ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)" style="display:none;filter: drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), calc(0.9 * var(--glow-intensity, 1))));"/>
                 <rect id="adv-graph-hit" x="${PAD.left}" y="${PAD.top}" width="${gW}" height="${gH}" fill="transparent"/>
             `;
             requestAnimationFrame(updateGraphScrollbar);

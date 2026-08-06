@@ -83,6 +83,7 @@ const DEFAULTS = {
         colorTheme: 'Abyss',
         fontFamily: 'JetBrains Mono',
         randomizeTheme: 'Off',
+        glowIntensity: 100, // 0–100; 100 = current site glows as authored
         customTheme: {
             mode: 'Dark',
             mainColor: '#ffffff',
@@ -273,6 +274,7 @@ function loadSettings() {
         if (!settings.lookFeel.randomizeTheme) {
             settings.lookFeel.randomizeTheme = 'Off';
         }
+        settings.lookFeel.glowIntensity = normalizeGlowIntensity(settings.lookFeel.glowIntensity);
     }
 
     window.usertypo_settings = settings;
@@ -1647,10 +1649,104 @@ function beginThemeColorTransition() {
     }, 500);
 }
 
+/** Clamp glow intensity to 0–100. Missing/invalid → 100 (current authored look). */
+function normalizeGlowIntensity(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 100;
+    return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+/**
+ * Publish --glow-intensity (0–1). Theme CSS multiplies each glow's authored
+ * alpha by this factor, so 100% matches today's look and 0% removes glows.
+ */
+function applyGlowIntensityVar(settings) {
+    if (!settings) settings = loadSettings();
+    const pct = normalizeGlowIntensity(settings.lookFeel?.glowIntensity);
+    const factor = pct / 100;
+    try {
+        const root = document.documentElement;
+        root.style.setProperty('--glow-intensity', String(factor));
+        root.setAttribute('data-glow-intensity', String(pct));
+        if (!settings.lookFeel) settings.lookFeel = {};
+        settings.lookFeel.glowIntensity = pct;
+        document.querySelectorAll('[data-glow-intensity-value]').forEach((el) => {
+            el.textContent = `${pct}%`;
+        });
+    } catch { /* ignore */ }
+    return factor;
+}
+
+/**
+ * Rewrite glow alphas in generated theme CSS to:
+ *   calc(<authored-alpha> * var(--glow-intensity, 1))
+ * so each glow keeps its relative strength while the slider scales them all.
+ * Pure-black depth shadows are left alone. Solid-color drop-shadows become
+ * rgba(..., calc(1 * var(--glow-intensity))) so they can fade to nothing.
+ */
+function embedGlowIntensityInCss(css) {
+    const wrapRgbaInValue = (value, { includeBlack = false } = {}) => value.replace(
+        /rgba\(\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*\)/g,
+        (m, r, g, b, a) => {
+            if (String(a).includes('var(--glow-intensity')) return m;
+            if (!includeBlack && +r === 0 && +g === 0 && +b === 0) return m;
+            return `rgba(${r.trim()}, ${g.trim()}, ${b.trim()}, calc(${a} * var(--glow-intensity, 1)))`;
+        }
+    );
+
+    const wrapSolidDropShadows = (value) => value.replace(
+        /drop-shadow\(\s*(0\s+0\s+[+\d.eE-]+px)\s+(#[0-9a-fA-F]{3,8})\s*\)/g,
+        (m, offsetBlur, hex) => {
+            let h = hex.slice(1);
+            if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+            if (h.length !== 6) return m;
+            const r = parseInt(h.slice(0, 2), 16);
+            const g = parseInt(h.slice(2, 4), 16);
+            const b = parseInt(h.slice(4, 6), 16);
+            if (![r, g, b].every(Number.isFinite)) return m;
+            return `drop-shadow(${offsetBlur} rgba(${r}, ${g}, ${b}, calc(1 * var(--glow-intensity, 1))))`;
+        }
+    ).replace(
+        /drop-shadow\(\s*(0\s+0\s+[+\d.eE-]+px)\s+(var\([^)]+\))\s*\)/g,
+        (m, offsetBlur, colorVar) =>
+            `drop-shadow(${offsetBlur} color-mix(in srgb, ${colorVar} calc(var(--glow-intensity, 1) * 100%), transparent))`
+    );
+
+    let out = css.replace(
+        /((?:-webkit-)?(?:box-shadow|text-shadow|filter))\s*:\s*([^;{}]+)/gi,
+        (full, prop, value) => {
+            const propL = prop.toLowerCase();
+            let next = value;
+            if (propL.includes('filter')) {
+                next = wrapSolidDropShadows(next);
+                next = wrapRgbaInValue(next, { includeBlack: true });
+            } else if (propL.includes('text-shadow')) {
+                next = wrapRgbaInValue(next, { includeBlack: true });
+            } else {
+                next = wrapRgbaInValue(next, { includeBlack: false });
+            }
+            return `${prop}: ${next}`;
+        }
+    );
+
+    // Ambient radial wash used as a page glow (not a box-shadow)
+    out = out.replace(
+        /(ellipse 70% 55% at 50% 38%, rgba\(\s*[+\d.eE-]+\s*,\s*[+\d.eE-]+\s*,\s*[+\d.eE-]+\s*,\s*)([+\d.eE-]+)(\s*\) 0%)/g,
+        (m, pre, a, post) => {
+            if (String(a).includes('var(--glow-intensity')) return m;
+            return `${pre}calc(${a} * var(--glow-intensity, 1))${post}`;
+        }
+    );
+
+    return out;
+}
+
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
     const p = resolveThemePalette(settings, themeName);
+    const glowPct = normalizeGlowIntensity(settings.lookFeel?.glowIntensity);
+    const glowFactor = glowPct / 100;
 
     // ── Font Family ──
     const fontFamily = settings.lookFeel?.fontFamily || 'Roboto Mono';
@@ -1761,7 +1857,7 @@ function applyThemeSettings(settings) {
         return `.${_escTw(cls)} { filter: ${val} !important; }`;
     }).join('\n        ');
 
-    const css = `
+    let css = `
         /* ── Theme CSS custom properties (usable by any page/JS) ── */
         :root {
             --theme-primary: ${p.accentPrimary};
@@ -1785,6 +1881,7 @@ function applyThemeSettings(settings) {
             --theme-ring-track: ${ringTrack};
             --theme-is-light: ${themeIsLight ? '1' : '0'};
             --theme-panel-border: ${panelBorder};
+            --glow-intensity: ${glowFactor};
         }
 
         /* ── Dynamic Font Family ── */
@@ -2792,7 +2889,27 @@ function applyThemeSettings(settings) {
         /* ── Find-match / dual accent widget stroke catch-alls ── */
         [stroke="rgba(0,208,255,0.18)"] { stroke: rgba(${accentRGB}, 0.18) !important; }
         [stroke="rgba(0, 208, 255, 0.18)"] { stroke: rgba(${accentRGB}, 0.18) !important; }
+
+        /* ── Glow intensity: soft backdrop blobs (avatar/podium washes) ── */
+        [data-screenshot-glow] {
+            opacity: var(--glow-intensity, 1) !important;
+            transition: opacity 0.12s ease;
+        }
+
+        /* Common white glow utilities (not remapped by accent overrides) */
+        .drop-shadow-\\[0_0_8px_rgba\\(255\\,255\\,255\\,0\\.6\\)\\] {
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1)))) !important;
+        }
+        .hover\\:drop-shadow-\\[0_0_8px_rgba\\(255\\,255\\,255\\,0\\.8\\)\\]:hover {
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, calc(0.8 * var(--glow-intensity, 1)))) !important;
+        }
+        .\\[text-shadow\\:0_0_8px_rgba\\(255\\,255\\,255\\,0\\.6\\)\\] {
+            text-shadow: 0 0 8px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))) !important;
+        }
     `;
+
+    // Bind each authored glow alpha to --glow-intensity (100% = unchanged look)
+    css = embedGlowIntensityInCss(css);
 
     let tag = document.getElementById('usertypo-theme-css');
     if (!tag) {
@@ -2803,6 +2920,8 @@ function applyThemeSettings(settings) {
     if (document.head) document.head.appendChild(tag);
 
     tag.textContent = css;
+
+    applyGlowIntensityVar(settings);
 
     // Keep boot-theme in sync with CSS variables only (no hardcoded bg hex),
     // so live theme switches update backgrounds without a full refresh.
@@ -2828,6 +2947,7 @@ function applyThemeSettings(settings) {
             `--theme-fg-strong:${fgStrong};`,
             `--theme-ring-track:${ringTrack};`,
             `--theme-is-light:${themeIsLight ? '1' : '0'};`,
+            `--glow-intensity:${glowFactor};`,
             '}',
             'html,body{background-color:var(--theme-bg) !important;}',
             '#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}',
@@ -2856,6 +2976,8 @@ function applyThemeSettings(settings) {
         root.style.setProperty('--theme-on-primary', onPrimary);
         root.style.setProperty('--theme-fg-strong', fgStrong);
         root.style.setProperty('--theme-ring-track', ringTrack);
+        root.style.setProperty('--glow-intensity', String(glowFactor));
+        root.setAttribute('data-glow-intensity', String(glowPct));
         root.style.backgroundColor = p.bgMain;
         if (document.body) document.body.style.backgroundColor = p.bgMain;
         const backdrop = document.getElementById('app-backdrop');
@@ -4032,14 +4154,27 @@ function initSettingsPage() {
 
     if (!root.dataset.usertypoSliderDelegation) {
         root.dataset.usertypoSliderDelegation = '1';
-        root.addEventListener('change', (e) => {
-            const slider = e.target;
-            if (!slider.matches || !slider.matches('input[type="range"].custom-slider')) return;
+
+        const persistSlider = (slider, { previewOnly = false } = {}) => {
             const container = slider.closest('[data-setting]');
             if (!container) return;
             const path = container.dataset.setting;
             const sets = loadSettings();
-            setByPath(sets, path, parseInt(slider.value, 10));
+            const value = parseInt(slider.value, 10);
+            setByPath(sets, path, value);
+
+            if (path === 'lookFeel.glowIntensity') {
+                // Live preview via CSS variable; persist on change (not every input tick)
+                applyGlowIntensityVar(sets);
+                if (!previewOnly) {
+                    saveSettings(sets);
+                    if (typeof window.triggerSave === 'function') window.triggerSave();
+                }
+                return;
+            }
+
+            if (previewOnly) return;
+
             saveSettings(sets);
             applySoundscapeSettings(sets);
             if (typeof window.triggerSave === 'function') window.triggerSave();
@@ -4047,6 +4182,21 @@ function initSettingsPage() {
             if (path === 'soundscape.masterVolume' && typeof window.playKeystrokeSound === 'function') {
                 window.playKeystrokeSound('a');
             }
+        };
+
+        root.addEventListener('input', (e) => {
+            const slider = e.target;
+            if (!slider.matches || !slider.matches('input[type="range"].custom-slider')) return;
+            const path = slider.closest('[data-setting]')?.dataset.setting;
+            if (path === 'lookFeel.glowIntensity') {
+                persistSlider(slider, { previewOnly: true });
+            }
+        });
+
+        root.addEventListener('change', (e) => {
+            const slider = e.target;
+            if (!slider.matches || !slider.matches('input[type="range"].custom-slider')) return;
+            persistSlider(slider, { previewOnly: false });
         });
     }
 
@@ -4543,6 +4693,9 @@ window.usertypo_settingsApi = {
     applySoundscapeSettings,
     applyLiveFeedSettings,
     applyFooterSettings,
+    applyThemeSettings,
+    applyGlowIntensityVar,
+    normalizeGlowIntensity,
     applyAllSettings,
     applyKeymapDisplay,
     syncTypingScrollForKeymap,

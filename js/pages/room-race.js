@@ -1790,34 +1790,34 @@
         function buildPodiumCard(player, place) {
             var themes = {
                 1: {
-                    delay: '0ms', border: 'rgba(var(--theme-primary-rgb), 0.15)', boxShadow: '0 0 25px rgba(var(--theme-primary-rgb), 0.1)',
+                    delay: '0ms', border: 'rgba(var(--theme-primary-rgb), 0.15)', boxShadow: '0 0 25px rgba(var(--theme-primary-rgb), calc(0.1 * var(--glow-intensity, 1)))',
                     gradient: 'from-primary', avatarBg: 'bg-primary/20 border-primary/30 text-primary',
                     avatarShadow: 'shadow-[0_0_12px_rgba(0,208,255,0.25)]',
-                    wpmClass: 'text-primary', wpmShadow: '0 0 30px rgba(var(--theme-primary-rgb), 0.4)', glow: true,
+                    wpmClass: 'text-primary', wpmShadow: '0 0 30px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)))', glow: true,
                     badge: 'bg-primary/10 border-primary/25', badgeText: 'text-primary', label: '1st', trophy: false,
                 },
                 2: {
                     delay: '200ms', border: 'rgba(192,192,192,0.15)', boxShadow: '',
                     gradient: 'from-slate-400', avatarBg: 'bg-slate-400/15 border-slate-400/25 text-slate-300',
-                    avatarShadow: '', wpmClass: 'text-slate-200', wpmShadow: '0 0 12px rgba(255,255,255,0.15)', glow: false,
+                    avatarShadow: '', wpmClass: 'text-slate-200', wpmShadow: '0 0 12px rgba(255,255,255, calc(0.15 * var(--glow-intensity, 1)))', glow: false,
                     badge: 'bg-slate-400/10 border-slate-400/20', badgeText: 'text-slate-400', label: '2nd', trophy: false,
                 },
                 3: {
                     delay: '400ms', border: 'rgba(205,127,50,0.12)', boxShadow: '',
                     gradient: 'from-amber-700', avatarBg: 'bg-amber-700/10 border-amber-700/20 text-amber-600',
-                    avatarShadow: '', wpmClass: 'text-amber-600', wpmShadow: '0 0 12px rgba(205,127,50,0.3)', glow: false,
+                    avatarShadow: '', wpmClass: 'text-amber-600', wpmShadow: '0 0 12px rgba(205,127,50, calc(0.3 * var(--glow-intensity, 1)))', glow: false,
                     badge: 'bg-amber-700/10 border-amber-700/20', badgeText: 'text-amber-700', label: '3rd', trophy: false,
                 },
             };
             var theme = themes[place];
             var cardBorderStyle = player.isMe
-                ? 'border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);'
+                ? 'border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.08 * var(--glow-intensity, 1)));'
                 : 'border:1px solid ' + theme.border + ';' + (theme.boxShadow ? ' box-shadow: ' + theme.boxShadow + ';' : '');
             var meBarHtml = player.isMe ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' : '';
             var nameHtml = escapeHtml(player.name)
                 + (player.isMe ? ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span>' : '');
             var trophyHtml = theme.trophy
-                ? '<span class="material-symbols-outlined text-amber-400 text-[28px] mb-1 block" style="text-shadow: 0 0 12px rgba(251,191,36,0.5);">emoji_events</span>'
+                ? '<span class="material-symbols-outlined text-amber-400 text-[28px] mb-1 block" style="text-shadow: 0 0 12px rgba(251,191,36, calc(0.5 * var(--glow-intensity, 1)));">emoji_events</span>'
                 : '';
             var glowHtml = theme.glow
                 ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full" data-screenshot-glow></div>'
@@ -1843,7 +1843,7 @@
                 '<div class="flex items-center gap-1.5 ' + theme.badge + ' border rounded-full px-3 py-1">' +
                 (theme.trophy ? '<span class="material-symbols-outlined text-amber-400 text-[14px]">emoji_events</span>' : '') +
                 '<span class="text-[10px] font-black ' + theme.badgeText + ' uppercase tracking-widest"' +
-                (place === 1 ? ' style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), 0.4);"' : '') + '>' + theme.label + '</span>' +
+                (place === 1 ? ' style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));"' : '') + '>' + theme.label + '</span>' +
                 '</div></div>';
         }
 
@@ -1852,13 +1852,13 @@
                 ? '<div class="mr-3">' + botAvatarHtml('w-8 h-8', 16) + '</div>'
                 : '<div class="mr-3">' + playerAvatarHtml(player, 'sm') + '</div>';
             if (player.isMe) {
-                return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center relative overflow-hidden anim-card" style="border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.08);">' +
+                return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center relative overflow-hidden anim-card" style="border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.08 * var(--glow-intensity, 1)));">' +
                     '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' +
                     '<span class="text-primary font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
                     avatar +
                     '<span class="text-white font-bold text-sm flex-1">' + escapeHtml(player.name) +
                     ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span></span>' +
-                    '<span class="text-primary font-mono font-black text-lg" style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), 0.4);">' +
+                    '<span class="text-primary font-mono font-black text-lg" style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));">' +
                     player.wpm + ' <span class="text-xs text-slate-500 font-bold">WPM</span></span></div>';
             }
             return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center hover:bg-white/5 transition-colors anim-card">' +

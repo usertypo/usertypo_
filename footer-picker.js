@@ -275,7 +275,7 @@
             }
             .footer-picker-theme-preview:hover {
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.35);
-                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.12);
+                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.12 * var(--glow-intensity, 1)));
             }
             .fp-index-preview {
                 border-radius: 0.625rem;
@@ -464,7 +464,7 @@
             .footer-picker-list-item.is-active {
                 color: var(--theme-primary, #00d0ff);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
-                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.2);
+                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.2 * var(--glow-intensity, 1)));
             }
             .footer-picker-empty {
                 font-size: 0.62rem;
