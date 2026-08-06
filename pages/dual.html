@@ -99,9 +99,9 @@ html {
         .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
         .header-typ-layer { background-color: #95efff; -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
         .header-user-layer { background-color: #ffffff; -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
-        .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); }
-        .header-typ-wrapper { z-index: 1; filter: drop-shadow(0 0 6px #95efff) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); }
-        .header-user-wrapper { z-index: 2; filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); }
+        .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1)))); }
+        .header-typ-wrapper { z-index: 1; filter: drop-shadow(0 0 6px rgba(149, 239, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); }
+        .header-user-wrapper { z-index: 2; filter: drop-shadow(0 0 6px rgba(255, 255, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); }
 
         /* --- STATS VIEW CARDS --- */
         @keyframes statsCardIn {
@@ -143,13 +143,13 @@ html {
 
         .expanding-bubble:not(.is-open):hover {
             border-color: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.25 * var(--glow-intensity, 1))), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
         .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         .expanding-bubble.is-open {
@@ -230,7 +230,7 @@ html {
             width: 24px;
             height: 24px;
             color: var(--theme-primary);
-            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.6 * var(--glow-intensity, 1))));
             transform-origin: center center;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                         transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
@@ -278,12 +278,12 @@ html {
 
         #bubble-toggle:hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         #dual-stats-bubble-toggle:hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         .bubble-content {
@@ -315,11 +315,11 @@ html {
         .bubble-nav-link:hover .nav-icon,
         .bubble-nav-link.is-active .nav-icon {
             color: var(--theme-primary);
-            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);
+            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.8 * var(--glow-intensity, 1)));
         }
         .bubble-user-avatar {
             background-color: var(--theme-primary);
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.4);
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));
         }
         .bubble-user-tier {
             color: var(--theme-primary);
@@ -364,7 +364,7 @@ html {
                                 id="word-progress-bar-container">
                                 <div id="word-progress-bar"
                                     class="h-full bg-primary transition-all duration-300 ease-linear"
-                                    style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);"></div>
+                                    style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.8 * var(--glow-intensity, 1)));"></div>
                             </div>
                         </div>
                     </div>
@@ -557,7 +557,7 @@ html {
                                 <div class="flex items-center gap-2 bg-primary/10 border border-primary/25 rounded-full px-4 py-1.5">
                                     <span class="material-symbols-outlined text-primary text-[18px] animate-crown-bounce">emoji_events</span>
                                     <span class="text-[11px] font-black text-primary uppercase tracking-widest"
-                                        style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.5);">Winner</span>
+                                        style="text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.5 * var(--glow-intensity, 1)));">Winner</span>
                                 </div>
                             </div>
                             <div class="w-8 shrink-0" aria-hidden="true"></div>
@@ -586,7 +586,7 @@ html {
                                         <div class="absolute -inset-4 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.15) 0%, transparent 70%);"></div>
                                         <span id="w-wpm"
                                             class="text-6xl font-black text-primary relative z-10 leading-none tracking-tighter"
-                                            style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.4);">0</span>
+                                            style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));">0</span>
                                     </div>
                                     <span class="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">WPM</span>
                                 </div>
@@ -625,7 +625,7 @@ html {
 
                                 <div class="flex flex-col items-center gap-0 mb-3">
                                     <span id="l-wpm" class="text-6xl font-black text-slate-300 leading-none tracking-tighter"
-                                        style="text-shadow: 0 0 15px rgba(255,255,255,0.15);">0</span>
+                                        style="text-shadow: 0 0 15px rgba(255, 255, 255, calc(0.15 * var(--glow-intensity, 1)));">0</span>
                                     <span class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">WPM</span>
                                 </div>
 

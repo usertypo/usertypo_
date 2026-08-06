@@ -230,17 +230,17 @@ html {
     z-index: 3;
     object-fit: contain;
     pointer-events: none;
-    filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55));
+    filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1))));
 }
 
 .header-typ-wrapper {
     z-index: 1;
-    filter: drop-shadow(0 0 6px #95efff) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55));
+    filter: drop-shadow(0 0 6px rgba(149, 239, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(128, 235, 255, calc(0.55 * var(--glow-intensity, 1))));
 }
 
 .header-user-wrapper {
     z-index: 2;
-    filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55));
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1))));
 }
 
 .footer-mute-btn {

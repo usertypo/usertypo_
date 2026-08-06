@@ -148,7 +148,7 @@
                 background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.1);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.3);
                 color: var(--theme-primary, #00d0ff);
-                box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.15);
+                box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.15 * var(--glow-intensity, 1)));
             }
             #global-settings-search-overlay .quick-btn .material-symbols-outlined { font-size: 1.125rem; }
             #global-settings-search-overlay .quick-btn-tooltip {
@@ -234,7 +234,7 @@
             #global-settings-search-overlay .toggle-track.on {
                 background: var(--theme-primary, #00d0ff);
                 border-color: var(--theme-primary, #00d0ff);
-                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.4);
+                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.4 * var(--glow-intensity, 1)));
             }
             #global-settings-search-overlay .toggle-thumb {
                 position: absolute;
@@ -247,7 +247,7 @@
             #global-settings-search-overlay .toggle-track.on .toggle-thumb {
                 transform: translateX(1.125rem);
                 background: #ffffff;
-                box-shadow: 0 0 6px rgba(255,255,255,0.8);
+                box-shadow: 0 0 6px rgba(255, 255, 255, calc(0.8 * var(--glow-intensity, 1)));
             }
             #global-settings-search-overlay .opt-btn {
                 padding: 0.35rem 0.7rem;
@@ -266,7 +266,7 @@
                 background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.15);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.35);
                 color: var(--theme-primary, #00d0ff);
-                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.15);
+                box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.15 * var(--glow-intensity, 1)));
             }
             #global-settings-search-overlay input[type="range"].custom-slider {
                 -webkit-appearance: none;
@@ -284,7 +284,7 @@
             }
             #global-settings-search-overlay input[type="range"].custom-slider::-webkit-slider-runnable-track {
                 -webkit-appearance: none;
-                height: 100%;
+                height: 4px;
                 background: transparent;
             }
             #global-settings-search-overlay input[type="range"].custom-slider::-webkit-slider-thumb {
@@ -295,11 +295,11 @@
                 border-radius: 50%;
                 background: var(--theme-primary, #00d0ff);
                 cursor: pointer;
-                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.8), 0 0 15px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.6);
-                margin-top: 6px;
+                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.8 * var(--glow-intensity, 1))), 0 0 15px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.6 * var(--glow-intensity, 1)));
+                margin-top: calc((4px - 12px) / 2);
             }
             #global-settings-search-overlay input[type="range"].custom-slider::-moz-range-track {
-                height: 100%;
+                height: 4px;
                 background: transparent;
             }
             #global-settings-search-overlay input[type="range"].custom-slider::-moz-range-thumb {
@@ -309,8 +309,7 @@
                 border-radius: 50%;
                 background: var(--theme-primary, #00d0ff);
                 cursor: pointer;
-                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.8);
-                transform: translateY(6px);
+                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.8 * var(--glow-intensity, 1)));
             }
             #global-settings-search-overlay .search-result-controls .flex.items-center.gap-3 {
                 display: flex;
@@ -623,13 +622,24 @@
 
         container.querySelectorAll('input[type="range"].custom-slider').forEach(slider => {
             updateSlider(slider);
-            slider.addEventListener('input', () => updateSlider(slider));
+            slider.addEventListener('input', () => {
+                updateSlider(slider);
+                const path = slider.closest('[data-setting]')?.dataset.setting;
+                if (path === 'lookFeel.glowIntensity' && settingsApi.applyGlowIntensityVar) {
+                    const sets = settingsApi.loadSettings();
+                    settingsApi.setByPath(sets, path, parseFloat(slider.value));
+                    settingsApi.applyGlowIntensityVar(sets);
+                }
+            });
             slider.addEventListener('change', () => {
                 const path = slider.closest('[data-setting]')?.dataset.setting;
                 if (path) {
                     const sets = settingsApi.loadSettings();
                     settingsApi.setByPath(sets, path, parseFloat(slider.value));
                     settingsApi.saveSettings(sets);
+                    if (path === 'lookFeel.glowIntensity' && settingsApi.applyGlowIntensityVar) {
+                        settingsApi.applyGlowIntensityVar(sets);
+                    }
                 }
                 afterSettingChange();
             });

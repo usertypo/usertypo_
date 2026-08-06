@@ -239,7 +239,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=5" rel="stylesheet" />
-    <link href="css/global.css?v=26" rel="stylesheet" />
+    <link href="css/global.css?v=27" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -331,7 +331,7 @@
         /* Info button forced-active state (mirrors hover) */
         #graph-info-btn.info-active {
             transform: scale(1.1) !important;
-            box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
+            box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1))) !important;
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
         }
 
@@ -348,8 +348,8 @@
             -webkit-tap-highlight-color: transparent;
         }
         .menu-btn:focus, .menu-btn:active { outline: none !important; background: transparent; }
-        .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
-        .menu-btn.is-active { color: var(--theme-primary, #ffffff) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.8); }
+        .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, calc(0.7 * var(--glow-intensity, 1))); }
+        .menu-btn.is-active { color: var(--theme-primary, #ffffff) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.8 * var(--glow-intensity, 1))); }
 
         .slide-ease {
             transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -485,7 +485,7 @@
 
         /* Config bar glow */
         #config-bar > div {
-            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.35), 0 8px 32px rgba(0,0,0,0.3);
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.35 * var(--glow-intensity, 1))), 0 8px 32px rgba(0,0,0,0.3);
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
         }
         
@@ -737,13 +737,13 @@
 
         .expanding-bubble:not(.is-open):hover {
             border-color: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.25), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.25 * var(--glow-intensity, 1))), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
         .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
             color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
         }
 
         .expanding-bubble.is-open {
@@ -795,7 +795,7 @@
             width: 1.279rem;
             height: 1.279rem;
             color: var(--theme-primary);
-            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), 0.6));
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.6 * var(--glow-intensity, 1))));
             transform-origin: center center;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                         transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
@@ -879,11 +879,11 @@
         .bubble-nav-link:hover .nav-icon,
         .bubble-nav-link.is-active .nav-icon {
             color: var(--theme-primary);
-            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.8);
+            text-shadow: 0 0 10px rgba(var(--theme-primary-rgb), calc(0.8 * var(--glow-intensity, 1)));
         }
         .bubble-user-avatar {
             background-color: var(--theme-primary);
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.4);
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));
         }
         .bubble-user-tier {
             color: var(--theme-primary);
@@ -935,7 +935,7 @@
             transition: color 120ms ease, text-shadow 120ms ease;
         }
         .spa-boot-text .char.is-typed {
-            text-shadow: 0 0 5px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4);
+            text-shadow: 0 0 5px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1)));
         }
         #spa-boot-caret {
             position: absolute;
@@ -980,9 +980,9 @@
         .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; animation: header-fade-o 1s ease-out 0s forwards; }
         .header-typ-wrapper { z-index: 1; animation: header-fade-typ 1s ease-out 0s forwards; }
         .header-user-wrapper { z-index: 2; animation: header-fade-user 1s ease-out 0s forwards; }
-        @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(var(--theme-primary-rgb, 255, 255, 255), 0)); } 100% { filter: drop-shadow(0 0 6px var(--theme-primary, #ffffff)) drop-shadow(0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.55)); } }
-        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px var(--theme-text, #ffffff)) drop-shadow(0 0 15px rgba(255, 255, 255, 0.55)); } }
-        @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px #ff3344) drop-shadow(0 0 15px rgba(255, 51, 68, 0.55)); } }
+        @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(var(--theme-primary-rgb, 255, 255, 255), 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-primary, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.55 * var(--glow-intensity, 1)))); } }
+        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
+        @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1)))); } }
 
         #back-to-top-btn {
             position: fixed;
@@ -1161,7 +1161,7 @@
         <div id="header-right" class="flex items-center justify-end w-1/3 gap-3 sm:gap-4 zen-element">
             <span id="header-xp-toast"
                 class="hidden opacity-0 translate-y-1 pointer-events-none select-none text-sm font-black text-primary transition-all duration-300"
-                style="text-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.55);"
+                style="text-shadow: 0 0 12px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1)));"
                 aria-live="polite">+0</span>
             <a href="/signin" data-spa-link id="header-account-btn"
                 class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
@@ -1563,9 +1563,9 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=51"></script>
-    <script src="footer-picker.js?v=7"></script>
-    <script src="settings-search.js?v=5"></script>
+    <script src="settings.js?v=53"></script>
+    <script src="footer-picker.js?v=8"></script>
+    <script src="settings-search.js?v=6"></script>
     <!-- Auth + data API (before router) -->
     <script src="js/ui/analytics.js?v=3"></script>
     <script src="js/ui/cookie-consent.js?v=4"></script>
@@ -1594,8 +1594,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=28"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=151"></script>
-    <script src="js/router.js?v=31"></script>
+    <script src="js/page-fragments.js?v=152"></script>
+    <script src="js/router.js?v=32"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;
