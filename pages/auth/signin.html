@@ -78,9 +78,9 @@
         .side-o-layer { background-color: #64748b; -webkit-mask-image: url('logo-assets/o.png'); mask-image: url('logo-assets/o.png'); animation: color-o 0s calc(var(--typing-delay) + 0.54s) forwards; }
         
         @keyframes color-typ { to { background-color: #95efff; } }
-        @keyframes glow-typ { to { filter: drop-shadow(0 0 6px rgba(149, 239, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); } }
+        @keyframes glow-typ { to { filter: drop-shadow(0 0 6px rgba(149, 239, 255, var(--gi-100, 1))) drop-shadow(0 0 15px rgba(128, 235, 255, 0.55)); } }
         @keyframes color-o { to { background-color: #ff3344; } }
-        @keyframes glow-o { to { filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1)))); } }
+        @keyframes glow-o { to { filter: drop-shadow(0 0 6px rgba(255, 51, 68, var(--gi-100, 1))) drop-shadow(0 0 15px rgba(255, 51, 68, var(--gi-55, 0.55))); } }
         
         /* Caret left/% must track the rem-sized logo box — never use px
            (html font-size is clamp'd; theme CSS must not override these keyframes). */
@@ -115,7 +115,7 @@
             100% { opacity: 1; }
         }
 
-        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, calc(0 * var(--glow-intensity, 1)))); } 100% { filter: drop-shadow(0 0 6px rgba(255, 255, 255, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
+        @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, var(--gi-0, 0))); } 100% { filter: drop-shadow(0 0 6px rgba(255, 255, 255, var(--gi-100, 1))) drop-shadow(0 0 15px rgba(255, 255, 255, var(--gi-55, 0.55))); } }
 
         .side-user-wrapper { z-index: 1; animation: header-fade-user 1s ease-out 0s forwards; }
         .side-t-wrapper { z-index: 2; animation: glow-typ 0s var(--typing-delay) forwards; }
@@ -250,7 +250,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             color: #fff;
-            text-shadow: 0 0 18px rgba(255, 255, 255, calc(.6 * var(--glow-intensity, 1))), 0 0 36px rgba(255, 255, 255, calc(.25 * var(--glow-intensity, 1)));
+            text-shadow: 0 0 18px rgba(255, 255, 255, var(--gi-60, .6)), 0 0 36px rgba(255, 255, 255, var(--gi-25, .25));
             letter-spacing: .06em;
             text-transform: uppercase;
             text-align: center;
@@ -420,7 +420,7 @@
             cursor: pointer;
             transition: color .2s, text-shadow .2s;
         }
-        .white-link:hover { color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, calc(.6 * var(--glow-intensity, 1))); }
+        .white-link:hover { color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, var(--gi-60, .6)); }
         .white-link.accent { color: var(--theme-primary, #00d0ff); }
         .white-link.accent:hover { color: var(--theme-text, #fff); text-shadow: none; }
 
@@ -503,7 +503,7 @@
         .oauth-choice-btn.is-selected {
             border-color: rgba(var(--theme-primary-rgb), 0.65);
             background: rgba(var(--theme-primary-rgb), 0.14);
-            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), calc(0.2 * var(--glow-intensity, 1)));
+            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), var(--gi-20, 0.2));
         }
         .oauth-choice-btn .oauth-choice-sub {
             display: block;

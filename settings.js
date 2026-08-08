@@ -1660,8 +1660,24 @@ function normalizeGlowIntensity(value) {
 }
 
 /**
- * Publish --glow-intensity (0–1). Theme CSS multiplies each glow's authored
- * alpha by this factor, so 100% matches today's look and 0% removes glows.
+ * Set --gi-XX CSS custom properties on :root for each glow alpha step.
+ * Each --gi-N equals (N/100) × glowFactor, giving a pre-computed alpha
+ * that can be used inside rgba() via var(--gi-N) without calc().
+ *
+ * This replaces the broken calc() inside rgba() pattern that browsers
+ * silently invalidate, causing glow to be uncontrollable.
+ */
+function setGlowAlphaProperties(root, factor) {
+    for (let step = 0; step <= 100; step++) {
+        root.style.setProperty('--gi-' + step, String(Math.round(((step / 100) * factor) * 10000) / 10000));
+    }
+    // Percentage form for color-mix() usage
+    root.style.setProperty('--glow-pct', String(Math.round(factor * 100)) + '%');
+}
+
+/**
+ * Publish --glow-intensity (0–1) and update all --gi-XX alpha properties.
+ * Theme CSS and page CSS reference var(--gi-XX) so glows update instantly.
  */
 function applyGlowIntensityVar(settings) {
     if (!settings) settings = loadSettings();
@@ -1671,6 +1687,7 @@ function applyGlowIntensityVar(settings) {
         const root = document.documentElement;
         root.style.setProperty('--glow-intensity', String(factor));
         root.setAttribute('data-glow-intensity', String(pct));
+        setGlowAlphaProperties(root, factor);
         if (!settings.lookFeel) settings.lookFeel = {};
         settings.lookFeel.glowIntensity = pct;
         document.querySelectorAll('[data-glow-intensity-value]').forEach((el) => {
@@ -1691,9 +1708,10 @@ function embedGlowIntensityInCss(css) {
     const wrapRgbaInValue = (value, { includeBlack = false } = {}) => value.replace(
         /rgba\(\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*,\s*([+\d.eE-]+)\s*\)/g,
         (m, r, g, b, a) => {
-            if (String(a).includes('var(--glow-intensity')) return m;
+            if (String(a).includes('var(--gi-')) return m;
             if (!includeBlack && +r === 0 && +g === 0 && +b === 0) return m;
-            return `rgba(${r.trim()}, ${g.trim()}, ${b.trim()}, calc(${a} * var(--glow-intensity, 1)))`;
+            const giKey = Math.round(parseFloat(a) * 100);
+            return `rgba(${r.trim()}, ${g.trim()}, ${b.trim()}, var(--gi-${giKey}, ${a}))`;
         }
     );
 
@@ -1707,12 +1725,12 @@ function embedGlowIntensityInCss(css) {
             const g = parseInt(h.slice(2, 4), 16);
             const b = parseInt(h.slice(4, 6), 16);
             if (![r, g, b].every(Number.isFinite)) return m;
-            return `drop-shadow(${offsetBlur} rgba(${r}, ${g}, ${b}, calc(1 * var(--glow-intensity, 1))))`;
+            return `drop-shadow(${offsetBlur} rgba(${r}, ${g}, ${b}, var(--gi-100, 1)))`;
         }
     ).replace(
         /drop-shadow\(\s*(0\s+0\s+[+\d.eE-]+px)\s+(var\([^)]+\))\s*\)/g,
         (m, offsetBlur, colorVar) =>
-            `drop-shadow(${offsetBlur} color-mix(in srgb, ${colorVar} calc(var(--glow-intensity, 1) * 100%), transparent))`
+            `drop-shadow(${offsetBlur} color-mix(in srgb, ${colorVar} var(--glow-pct, 100%), transparent))`
     );
 
     let out = css.replace(
@@ -1726,7 +1744,8 @@ function embedGlowIntensityInCss(css) {
             } else if (propL.includes('text-shadow')) {
                 next = wrapRgbaInValue(next, { includeBlack: true });
             } else {
-                next = wrapRgbaInValue(next, { includeBlack: false });
+                // box-shadow: include ALL colors (even black accents).
+                next = wrapRgbaInValue(next, { includeBlack: true });
             }
             return `${prop}: ${next}`;
         }
@@ -1736,8 +1755,9 @@ function embedGlowIntensityInCss(css) {
     out = out.replace(
         /(ellipse 70% 55% at 50% 38%, rgba\(\s*[+\d.eE-]+\s*,\s*[+\d.eE-]+\s*,\s*[+\d.eE-]+\s*,\s*)([+\d.eE-]+)(\s*\) 0%)/g,
         (m, pre, a, post) => {
-            if (String(a).includes('var(--glow-intensity')) return m;
-            return `${pre}calc(${a} * var(--glow-intensity, 1))${post}`;
+            if (String(a).includes('var(--gi-')) return m;
+            const giKey = Math.round(parseFloat(a) * 100);
+            return `${pre}var(--gi-${giKey}, ${a})${post}`;
         }
     );
 

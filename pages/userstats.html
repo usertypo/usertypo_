@@ -135,7 +135,7 @@
         }
         .pot-filter-bubble:not(.is-open):hover {
             border-color: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.25 * var(--glow-intensity, 1))), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), var(--gi-25, 0.25)), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
             background-image: none !important;
         }
@@ -207,7 +207,7 @@
         .pot-filter-bubble:hover .pot-filter-bubble-icon,
         .pot-filter-bubble.is-open .pot-filter-bubble-icon {
             color: var(--theme-primary, #00d0ff);
-            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.6 * var(--glow-intensity, 1))));
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), var(--gi-60, 0.6)));
         }
         .pot-filter-bubble-content {
             box-sizing: border-box;
@@ -346,8 +346,8 @@
             margin-bottom: 0.45rem;
         }
         @keyframes potPillGlow {
-            0%, 100% { box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(.35 * var(--glow-intensity, 1))); }
-            50% { box-shadow: 0 0 18px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(.6 * var(--glow-intensity, 1))); }
+            0%, 100% { box-shadow: 0 0 8px rgba(var(--theme-primary-rgb, 0, 208, 255), var(--gi-35, .35)); }
+            50% { box-shadow: 0 0 18px rgba(var(--theme-primary-rgb, 0, 208, 255), var(--gi-60, .6)); }
         }
         .pot-tab-pill {
             display: flex;
@@ -390,7 +390,7 @@
             border-radius: var(--theme-box-radius, 1.375rem);
             background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.18);
             border: 1px solid rgba(var(--theme-primary-rgb, 0, 208, 255), 0.5);
-            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.25 * var(--glow-intensity, 1)));
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), var(--gi-25, 0.25));
             transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
             animation: potPillGlow 3s ease infinite;
