@@ -25,16 +25,6 @@
             return { skipped: true, reason: 'auth_or_db_missing' };
         }
 
-        try {
-            var settings = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : null) || {};
-            if (settings.systemData && settings.systemData.saveTestStats === false) {
-                console.info('[usertypo sessions] skipped saving because Save Test Stats is disabled');
-                return { skipped: true, reason: 'user_opt_out' };
-            }
-        } catch (e) {
-            // ignore
-        }
-
         await window.usertypoAuth.ready();
         var state = window.usertypoAuth.getState();
         if (!state.isSignedIn || !state.user) {
@@ -214,15 +204,6 @@
         if (!input || input.failed) return loadPaceHistory();
         var wpm = Number(input.wpm);
         if (!isFinite(wpm) || wpm < 1) return loadPaceHistory();
-
-        try {
-            var settings = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : null) || {};
-            if (settings.systemData && settings.systemData.saveTestStats === false) {
-                return loadPaceHistory();
-            }
-        } catch (e) {
-            // ignore
-        }
 
         var entry = Object.assign(normalizePaceConfig(input), {
             wpm: round2(wpm),

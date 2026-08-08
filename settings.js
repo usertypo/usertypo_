@@ -92,9 +92,6 @@ const DEFAULTS = {
             bgSpectrumPos: 0,
         },
         customPresets: [],
-    },
-    systemData: {
-        saveTestStats: true,
     }
 };
 
