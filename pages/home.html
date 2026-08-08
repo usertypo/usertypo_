@@ -279,11 +279,17 @@
 
         /* --- Custom Error Underline --- */
         .char.error-underline {
-            text-decoration: underline;
-            text-decoration-color: #ff3333;
-            text-decoration-thickness: 2px;
-            text-underline-offset: 3px;
-            text-decoration-skip-ink: none;
+            position: relative;
+        }
+        .char.error-underline::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 2px;
+            background-color: #ff3333;
+            z-index: -1;
         }
         /* --- Error character glow (glow-intensity aware) --- */
         .error-glow {
