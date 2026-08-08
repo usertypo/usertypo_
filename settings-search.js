@@ -453,6 +453,7 @@
                 const descEl = row.querySelector('p.text-xs.text-slate-500');
                 if (!nameEl) return;
                 const name = norm(nameEl.textContent);
+                const keywords = norm(row.textContent);
                 const key = categoryId + '::' + name;
                 if (seen.has(key)) return;
                 seen.add(key);
@@ -462,6 +463,7 @@
                     categoryName,
                     categoryId,
                     subSetting: '',
+                    keywords,
                     rowKey: `${categoryId}::${rowIdx}::${name}`,
                 });
             });
@@ -475,6 +477,7 @@
                     const descEl = row.querySelector('p.text-xs.text-slate-500');
                     if (!nameEl) return;
                     const name = norm(nameEl.textContent);
+                    const keywords = norm(row.textContent);
                     const key = categoryId + '::' + subName + '::' + name;
                     if (seen.has(key)) return;
                     seen.add(key);
@@ -484,6 +487,7 @@
                         categoryName: categoryName + ' › ' + subName,
                         categoryId,
                         subSetting: subName,
+                        keywords,
                         rowKey: `${categoryId}::${subName}::${rowIdx}::${name}`,
                     });
                 });
@@ -677,6 +681,18 @@
 
             if (row) {
                 const controls = extractControls(row);
+                if (query) {
+                    const matchesTitle = item.name.toLowerCase().includes(query) ||
+                                         item.desc.toLowerCase().includes(query) ||
+                                         item.categoryName.toLowerCase().includes(query);
+                    if (!matchesTitle) {
+                        controls.querySelectorAll('.opt-btn, [data-lang], .lang-btn, .font-btn').forEach(btn => {
+                            if (!norm(btn.textContent).toLowerCase().includes(query)) {
+                                btn.style.display = 'none';
+                            }
+                        });
+                    }
+                }
                 wireControls(controls);
                 el.appendChild(controls);
             }
@@ -705,7 +721,8 @@
         const results = searchIndex.filter(item =>
             item.name.toLowerCase().includes(q) ||
             item.desc.toLowerCase().includes(q) ||
-            item.categoryName.toLowerCase().includes(q)
+            item.categoryName.toLowerCase().includes(q) ||
+            (item.keywords && item.keywords.toLowerCase().includes(q))
         );
         renderResults(results, q);
     }
