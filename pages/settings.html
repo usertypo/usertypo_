@@ -3607,6 +3607,28 @@
                                     <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
                                         <div class="flex flex-col flex-1 min-w-0 justify-center">
                                             <div class="flex items-center gap-2">
+                                                <label class="text-sm font-semibold text-slate-200 cursor-pointer">Save Test Stats</label>
+                                                <div class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                            <span class="material-symbols-outlined text-[0.746rem]">info</span>
+                                                            How it works
+                                                        </div>
+                                                        When disabled, your typing test results will not be recorded in your history or affect your overall statistics.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Record test results in your history</p>
+                                        </div>
+                                        <div class="toggle-track on" data-setting="systemData.saveTestStats" onclick="toggleSwitch(this)">
+                                            <div class="toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="section-divider"></div>
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
                                                 <p class="text-sm font-semibold text-slate-200">Export Data</p>
                                                 <div
                                                     class="info-icon-wrapper group relative flex items-center justify-center">

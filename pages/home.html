@@ -4758,13 +4758,13 @@ window.setTimeout = function(handler, timeout) {
                 container.innerHTML = `
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">show_chart</span> The Lines</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;">
-                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#94a3b8;"><span style="display:inline-block;width:20px;height:2px;background:#00d0ff;border-radius:2px;"></span><span style="color:#94a3b8;">WPM</span></span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#94a3b8;"><span style="display:inline-block;width:20px;height:2px;background:var(--theme-primary, #00d0ff);border-radius:2px;"></span><span style="color:#94a3b8;">WPM</span></span>
                         <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;color:#94a3b8;"><span style="display:inline-block;width:20px;border-top:2px dashed #64748b;height:0;"></span><span style="color:#64748b;">Raw</span></span>
                     </div>
-                    <div class="graph-info-label">Solid Blue Line (WPM)</div>
+                    <div class="graph-info-label">Solid Accent Line (WPM)</div>
                     <div class="graph-info-desc">This is your true typing speed. It shows your "Words Per Minute" as you progress through the test. Ideally, you want this line to be as high and as steady as possible.</div>
                     <div class="graph-info-label">Gray Dashed Line (Raw)</div>
-                    <div class="graph-info-desc">This represents your raw finger speed. It tracks every single keystroke, including mistakes. If this line is much higher than the blue line, it means you're moving your fingers fast but losing speed because of errors.</div>
+                    <div class="graph-info-desc">This represents your raw finger speed. It tracks every single keystroke, including mistakes. If this line is much higher than the accent line, it means you're moving your fingers fast but losing speed because of errors.</div>
 
                     <div class="graph-info-divider"></div>
 
@@ -4775,9 +4775,9 @@ window.setTimeout = function(handler, timeout) {
                     </div>
                     <div class="graph-info-label">Red Dots (Errors)</div>
                     <div class="graph-info-desc">These marks show exactly when you made a mistake. If you see a cluster of red dots, it's a sign that you were likely rushing or struggling with a specific sequence of letters at that moment.</div>
-                    <div class="graph-info-label">Blue Background (Difficulty)</div>
+                    <div class="graph-info-label">Highlighted Background (Difficulty)</div>
                     <div class="graph-info-desc">This represents the "Heat" or difficulty of the words you were typing.<br>
-                        <span style="color:#5ed4f5;">Light/Transparent Blue:</span> You were typing short, simple words.<br>
+                        <span style="color:var(--theme-primary, #00d0ff);opacity:0.6;">Light/Transparent accent:</span> You were typing short, simple words.<br>
                         <span style="color:var(--theme-primary, #00d0ff);">Deep/Vivid accent:</span> You were tackling longer, more complex words that required more focus.</div>
 
                     <div class="graph-info-divider"></div>
@@ -4792,7 +4792,7 @@ window.setTimeout = function(handler, timeout) {
 
                     <div class="graph-info-tip">
                         <div class="tip-label"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;">lightbulb</span> Pro Tip</div>
-                        <div class="graph-info-desc" style="margin-bottom:0;">Look for the gap between the blue and gray lines. The closer they are together, the more efficient and accurate your typing is!</div>
+                        <div class="graph-info-desc" style="margin-bottom:0;">Look for the gap between the accent and gray lines. The closer they are together, the more efficient and accurate your typing is!</div>
                     </div>
                 `;
             } else {
@@ -4810,8 +4810,8 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-section-title"><span class="material-symbols-outlined">gradient</span> 2. Word Difficulty Heatmap</div>
                     <div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;font-family:'Roboto Mono',monospace;margin-bottom:8px;"><span style="display:inline-block;width:20px;height:8px;border-radius:2px;background:linear-gradient(90deg,rgba(var(--theme-primary-rgb),0.12),rgba(var(--theme-primary-rgb),0.45));border:1px solid rgba(var(--theme-primary-rgb),0.15);"></span><span style="color:#64748b;font-size:10px;">Difficulty</span></div>
                     <div class="graph-info-desc">The background is divided into vertical blocks, each representing a single word you typed:<br>
-                        <span style="color:#5ed4f5;">Easy (Light):</span> Short, common words (like "the", "to").<br>
-                        <span style="color:#33b5d9;">Medium (Noticeable):</span> Average-length words.<br>
+                        <span style="color:var(--theme-primary, #00d0ff);opacity:0.4;">Light/Transparent accent:</span> Short, common words (like "the", "to").<br>
+                        <span style="color:var(--theme-primary, #00d0ff);opacity:0.75;">Medium (Noticeable) accent:</span> Average-length words.<br>
                         <span style="color:var(--theme-primary, #00d0ff);font-weight:600;">Hard (Bright/Vivid):</span> Long or complex words (6+ letters).<br>
                     This helps you see if your speed drops specifically when you hit harder words.</div>
 

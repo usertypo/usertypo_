@@ -218,6 +218,9 @@
             }
             .footer-picker-search:focus {
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.35);
+                outline: none !important;
+                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.12 * var(--glow-intensity, 1))) !important;
+                --tw-ring-shadow: 0 0 transparent !important;
             }
             .footer-picker-end-icon {
                 position: absolute;
@@ -310,8 +313,8 @@
             }
             .fp-preview-logo-box {
                 position: relative;
-                width: 2.6rem;
-                height: 0.55rem;
+                width: 8.8rem;
+                height: 2.0rem;
                 overflow: visible;
             }
             .fp-preview-logo-layer {
@@ -656,8 +659,8 @@
         return `
             <div class="footer-picker-list-scroll">
                 ${itemsHtml
-                    ? `<div class="footer-picker-list-grid">${itemsHtml}</div>`
-                    : `<p class="footer-picker-empty">No results</p>`}
+                ? `<div class="footer-picker-list-grid">${itemsHtml}</div>`
+                : `<p class="footer-picker-empty">No results</p>`}
             </div>
         `;
     }
@@ -772,12 +775,10 @@
                     <button type="button" class="footer-picker-theme-preview glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="${VIEW_DARK}">
                         ${buildIndexPreview(DEFAULT_DARK)}
                         <span class="footer-picker-preview-label">Dark</span>
-                        <span class="footer-picker-preview-sub">${DEFAULT_DARK}</span>
                     </button>
                     <button type="button" class="footer-picker-theme-preview glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="${VIEW_LIGHT}">
                         ${buildIndexPreview(DEFAULT_LIGHT)}
                         <span class="footer-picker-preview-label">Light</span>
-                        <span class="footer-picker-preview-sub">${DEFAULT_LIGHT}</span>
                     </button>
                 </div>
                 <button type="button" class="footer-picker-pill glass-panel bg-surface/85 !backdrop-blur-sm" data-go-view="custom-themes">
