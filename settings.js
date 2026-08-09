@@ -2498,7 +2498,7 @@ function applyThemeSettings(settings) {
         }
 
         /* ── Error underline ── */
-        .char.error-underline::after { background-color: ${p.error} !important; }
+        .char.error-underline { text-decoration-color: ${p.error} !important; }
 
         /* ── Logo layers (theme-aware) ── */
         .header-typ-layer  { background-color: ${logoTypColor} !important; }
