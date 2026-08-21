@@ -152,7 +152,13 @@ function allowContactRequest(ip) {
     return entry.count <= maxPerWindow;
 }
 
+app.options('/api/contact', (req, res) => {
+    applyCors(req, res);
+    res.end();
+});
+
 app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
+    applyCors(req, res);
     try {
         const ip = getClientIp(req);
         if (!allowContactRequest(ip)) {
