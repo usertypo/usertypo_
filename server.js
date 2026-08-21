@@ -288,6 +288,14 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             _captcha: 'false',
         };
 
+        console.log('[contact] FormSubmit request:', {
+            url: 'https://formsubmit.co/ajax/' + encodeURIComponent(CONTACT_TO),
+            to: CONTACT_TO,
+            formOrigin,
+            headersOrigin: formHeaders.Origin,
+            headersReferer: formHeaders.Referer,
+        });
+
         const upstream = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONTACT_TO), {
             method: 'POST',
             headers: formHeaders,
@@ -300,6 +308,12 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
         } catch {
             upstreamBody = null;
         }
+
+        console.log('[contact] FormSubmit response:', {
+            status: upstream.status,
+            ok: upstream.ok,
+            body: upstreamBody,
+        });
 
         const upstreamSuccess = upstreamBody
             && (upstreamBody.success === true || upstreamBody.success === 'true');
