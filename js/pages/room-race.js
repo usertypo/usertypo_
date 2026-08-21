@@ -731,6 +731,22 @@
                     leaveRoomAndGoFriends();
                 }, { signal: signal });
             }
+
+            var screenshotBtn = document.getElementById('screenshot-btn');
+            if (screenshotBtn) {
+                screenshotBtn.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    var captureArea = document.getElementById('stats-capture-area');
+                    if (captureArea && window.StatsScreenshot) {
+                        await window.StatsScreenshot.capture({
+                            captureArea: captureArea,
+                            button: screenshotBtn,
+                            hideSelectors: ['#stats-action-buttons'],
+                            padding: 56
+                        });
+                    }
+                }, { signal: signal });
+            }
         }
 
         function handleRoomClosed(payload) {
