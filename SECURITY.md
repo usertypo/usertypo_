@@ -8,7 +8,7 @@ Security fixes are applied to the latest `main` branch of [usertypo/usertypo](ht
 
 Please **do not** open a public GitHub issue for security problems.
 
-Email a private report to: **contactusertypo@gmail.com**
+Email a private report to: **contactus@usertypo.com**
 
 Include:
 

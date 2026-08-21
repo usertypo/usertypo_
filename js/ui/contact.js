@@ -3,7 +3,7 @@
  * Public via window.usertypoContact / openContactModal / closeContactModal.
  */
 (function () {
-    var CONTACT_TO = 'contactusertypo@gmail.com';
+    var CONTACT_TO = 'contactus@usertypo.com';
     var busy = false;
     var wired = false;
 

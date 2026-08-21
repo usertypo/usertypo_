@@ -118,7 +118,7 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
-const CONTACT_TO = process.env.CONTACT_TO_EMAIL || 'contactusertypo@gmail.com';
+const CONTACT_TO = process.env.CONTACT_TO_EMAIL || 'contactus@usertypo.com';
 const CONTACT_ALLOWED_PROBLEMS = new Set([
     'Report a User',
     'Report a Bug',
