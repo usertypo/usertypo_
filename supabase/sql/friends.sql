@@ -427,6 +427,7 @@ declare
   v_friends jsonb := '[]'::jsonb;
   v_incoming jsonb := '[]'::jsonb;
   v_outgoing jsonb := '[]'::jsonb;
+  v_online_cutoff timestamptz := now() - interval '2 minutes';
 begin
   if v_me is null then
     return jsonb_build_object(
@@ -446,6 +447,8 @@ begin
       p.display_name,
       public._visible_avatar_url(p.user_id, p.avatar_url) as avatar_url,
       f.created_at as friends_since,
+      (p.last_seen_at is not null and p.last_seen_at >= v_online_cutoff) as is_online,
+      p.last_seen_at,
       coalesce(up.level, 1) as level,
       case
         when public.xp_needed_for_level(coalesce(up.level, 1)) > 0
