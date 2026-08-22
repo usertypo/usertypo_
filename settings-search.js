@@ -453,13 +453,20 @@
                 const descEl = row.querySelector('p.text-xs.text-slate-500');
                 if (!nameEl) return;
                 const name = norm(nameEl.textContent);
-                const keywords = norm(row.textContent);
+                const descText = descEl ? norm(descEl.textContent) : '';
+                
+                const rowClone = row.cloneNode(true);
+                rowClone.querySelector('p.text-sm.font-semibold, label.text-xs.font-semibold')?.remove();
+                rowClone.querySelector('p.text-xs.text-slate-500')?.remove();
+                rowClone.querySelectorAll('.info-popover, .info-icon-wrapper').forEach(e => e.remove());
+                const keywords = norm(rowClone.textContent);
+                
                 const key = categoryId + '::' + name;
                 if (seen.has(key)) return;
                 seen.add(key);
                 index.push({
                     name,
-                    desc: descEl ? norm(descEl.textContent) : '',
+                    desc: descText,
                     categoryName,
                     categoryId,
                     subSetting: '',
@@ -477,13 +484,20 @@
                     const descEl = row.querySelector('p.text-xs.text-slate-500');
                     if (!nameEl) return;
                     const name = norm(nameEl.textContent);
-                    const keywords = norm(row.textContent);
+                    const descText = descEl ? norm(descEl.textContent) : '';
+                    
+                    const rowClone = row.cloneNode(true);
+                    rowClone.querySelector('p.text-sm.font-semibold, label.text-xs.font-semibold')?.remove();
+                    rowClone.querySelector('p.text-xs.text-slate-500')?.remove();
+                    rowClone.querySelectorAll('.info-popover, .info-icon-wrapper').forEach(e => e.remove());
+                    const keywords = norm(rowClone.textContent);
+                    
                     const key = categoryId + '::' + subName + '::' + name;
                     if (seen.has(key)) return;
                     seen.add(key);
                     index.push({
                         name,
-                        desc: descEl ? norm(descEl.textContent) : '',
+                        desc: descText,
                         categoryName: categoryName + ' › ' + subName,
                         categoryId,
                         subSetting: subName,
@@ -720,8 +734,6 @@
         await ensureSearchIndex();
         const results = searchIndex.filter(item =>
             item.name.toLowerCase().includes(q) ||
-            item.desc.toLowerCase().includes(q) ||
-            item.categoryName.toLowerCase().includes(q) ||
             (item.keywords && item.keywords.toLowerCase().includes(q))
         );
         renderResults(results, q);

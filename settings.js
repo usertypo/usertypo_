@@ -4017,6 +4017,21 @@ function restoreUI(settings) {
         }
     });
 
+    // Restore language buttons
+    const savedLang = (settings.languageContent && settings.languageContent.testLanguage) || 'english';
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-lang-file') === savedLang);
+    });
+
+    // Update language select button label
+    document.querySelectorAll('.lang-btn.active').forEach(activeBtn => {
+        const card = activeBtn.closest('.sub-setting-card');
+        if (card) {
+            const selectBtn = card.querySelector('.setting-select span.truncate');
+            if (selectBtn) selectBtn.textContent = activeBtn.textContent.trim();
+        }
+    });
+
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
 }

@@ -10,7 +10,7 @@
  *   usertypoTakeAuthWelcomePhrase()
  */
 (function () {
-    var WPM = 70;
+    var WPM = 150;
     var CHAR_MS = Math.round(60000 / (WPM * 5)); // ~171ms
     var MOVE_MS = Math.min(140, Math.max(80, CHAR_MS - 30));
     var AUTH_WELCOME_KEY = 'usertypo_auth_welcome';

@@ -479,10 +479,11 @@ function filterLangButtons(query) {
 
 // Select a language button in settings
 function selectLangOpt(btn) {
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
     const langFile = btn.getAttribute('data-lang-file');
+    document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-lang-file') === langFile);
+    });
+
     if (langFile) {
         try {
             saveLanguage(langFile);
