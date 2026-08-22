@@ -226,11 +226,48 @@
         return data;
     }
 
+    function checkRateLimit() {
+        try {
+            var raw = window.localStorage.getItem('usertypo_contact_limit');
+            if (!raw) return true;
+            var data = JSON.parse(raw);
+            if (!data || typeof data.count !== 'number' || typeof data.resetAt !== 'number') return true;
+            if (Date.now() > data.resetAt) return true;
+            return data.count < 10;
+        } catch (e) {
+            return true;
+        }
+    }
+
+    function incrementRateLimit() {
+        try {
+            var raw = window.localStorage.getItem('usertypo_contact_limit');
+            var data = { count: 0, resetAt: 0 };
+            if (raw) {
+                try { data = JSON.parse(raw); } catch (e) {}
+            }
+            if (!data || Date.now() > data.resetAt) {
+                data = { count: 0, resetAt: 0 };
+                var nextReset = new Date();
+                nextReset.setHours(24, 0, 0, 0);
+                data.resetAt = nextReset.getTime();
+            }
+            data.count += 1;
+            window.localStorage.setItem('usertypo_contact_limit', JSON.stringify(data));
+        } catch (e) {}
+    }
+
     async function onSubmit(event) {
         if (event) event.preventDefault();
         if (busy || !isOpen()) return;
 
         closeProblemMenu();
+        
+        if (!checkRateLimit()) {
+            setStatus('You have reached the limit of 10 messages per day. Please try again tomorrow.', true);
+            return;
+        }
+
         var payload = collectPayload();
         var error = validate(payload);
         if (error) {
@@ -243,6 +280,7 @@
 
         try {
             await sendContact(payload);
+            incrementRateLimit();
             toast('Message sent. Thanks for reaching out!', 'check_circle');
             setOpen(false);
             resetForm();
