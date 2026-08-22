@@ -192,8 +192,11 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
         const web3Key = String(process.env.WEB3FORMS_ACCESS_KEY || '').trim();
         const resendKey = String(process.env.RESEND_API_KEY || '').trim();
 
+        console.log('[contact] Trying to send email. Web3Key exists?', !!web3Key, 'ResendKey exists?', !!resendKey);
+
         // Preferred: Web3Forms (simple access key emailed to you).
         if (web3Key) {
+            console.log('[contact] Using Web3Forms...');
             const upstream = await fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
                 headers: {
@@ -213,6 +216,9 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             });
             let upstreamBody = null;
             try { upstreamBody = await upstream.json(); } catch { upstreamBody = null; }
+            
+            console.log('[contact] Web3Forms response status:', upstream.status, 'body:', upstreamBody);
+            
             if (!upstream.ok || !upstreamBody || upstreamBody.success !== true) {
                 const message = (upstreamBody && (upstreamBody.message || upstreamBody.error))
                     || 'Could not deliver your message right now.';
@@ -225,6 +231,7 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
 
         // Optional: Resend API.
         if (resendKey) {
+            console.log('[contact] Using Resend...');
             const from = String(process.env.RESEND_FROM_EMAIL || 'usertypo_ <onboarding@resend.dev>').trim();
             const upstream = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
@@ -249,6 +256,9 @@ app.post('/api/contact', express.json({ limit: '32kb' }), async (req, res) => {
             });
             let upstreamBody = null;
             try { upstreamBody = await upstream.json(); } catch { upstreamBody = null; }
+            
+            console.log('[contact] Resend response status:', upstream.status, 'body:', upstreamBody);
+            
             if (!upstream.ok) {
                 const message = (upstreamBody && (upstreamBody.message || upstreamBody.error || upstreamBody.name))
                     || 'Could not deliver your message right now.';
