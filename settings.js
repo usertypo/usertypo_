@@ -2492,9 +2492,22 @@ function applyThemeSettings(settings) {
         }
 
         /* ── Config bar glow ── */
-        #config-bar > div {
-            box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
-            border-color: rgba(${accentRGB}, 0.4) !important;
+        @keyframes configBarGlow {
+            0%, 100% { box-shadow: 0 0 6px rgba(${accentRGB}, 0.5), 0 0 12px rgba(${accentRGB}, 0.2), 0 8px 32px rgba(0,0,0,0.3); }
+            50%      { box-shadow: 0 0 18px rgba(${accentRGB}, 1), 0 0 35px rgba(${accentRGB}, 0.7), 0 0 55px rgba(${accentRGB}, 0.25), 0 8px 32px rgba(0,0,0,0.3); }
+        }
+        #config-bar > div,
+        #config-bar > div[style] {
+            border-color: rgba(${accentRGB}, 0.5) !important;
+            box-shadow: 0 0 6px rgba(${accentRGB}, 0.5), 0 0 12px rgba(${accentRGB}, 0.2), 0 8px 32px rgba(0,0,0,0.3);
+            animation: configBarGlow 3s ease-in-out infinite;
+        }
+        #config-bar:hover > div,
+        #config-bar:hover > div[style],
+        #config-bar.is-open > div,
+        #config-bar.is-open > div[style] {
+            box-shadow: 0 0 8px rgba(${accentRGB}, 0.3), 0 8px 32px rgba(0,0,0,0.3) !important;
+            animation: none !important;
         }
 
         /* ── Error underline ── */
@@ -2641,18 +2654,15 @@ function applyThemeSettings(settings) {
         [style*="text-shadow"][style*="0,208,255"] { text-shadow: 0 0 10px rgba(${accentRGB}, 0.6) !important; }
 
         /* ── Inline box-shadow overrides (primary-blue + light-cyan variants) ── */
-        [style*="box-shadow"][style*="0,208,255"],
-        [style*="box-shadow"][style*="0, 208, 255"],
-        [style*="box-shadow"][style*="108, 218, 255"],
-        [style*="box-shadow"][style*="108,218,255"] {
+        [style*="box-shadow"][style*="0,208,255"]:not(#config-bar > div),
+        [style*="box-shadow"][style*="0, 208, 255"]:not(#config-bar > div),
+        [style*="box-shadow"][style*="108, 218, 255"]:not(#config-bar > div),
+        [style*="box-shadow"][style*="108,218,255"]:not(#config-bar > div) {
             box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
         }
 
         /* ── Config bar inline style override ── */
-        #config-bar > div[style] {
-            box-shadow: 0 0 12px rgba(${accentRGB}, 0.35), 0 8px 32px rgba(0,0,0,0.3) !important;
-            border-color: rgba(${accentRGB}, 0.4) !important;
-        }
+        /* (Handled above in the configBarGlow block) */
 
         /* ── Progress bar glow ── */
         #word-progress-bar { box-shadow: 0 0 10px rgba(${accentRGB}, 0.8) !important; }
@@ -2945,6 +2955,8 @@ function applyThemeSettings(settings) {
     tag.textContent = css;
 
     applyGlowIntensityVar(settings);
+
+
 
     // Keep boot-theme in sync with CSS variables only (no hardcoded bg hex),
     // so live theme switches update backgrounds without a full refresh.

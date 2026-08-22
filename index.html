@@ -484,9 +484,14 @@
         }
 
         /* Config bar glow */
+        @keyframes configBarGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3); }
+            50%      { box-shadow: 0 0 12px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 25px rgba(0, 208, 255, var(--gi-80, 0.8)), 0 0 40px rgba(0, 208, 255, var(--gi-40, 0.4)), 0 8px 32px rgba(0,0,0,0.3); }
+        }
         #config-bar > div {
-            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.35 * var(--glow-intensity, 1))), 0 8px 32px rgba(0,0,0,0.3);
-            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.4) !important;
+            box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3);
+            border-color: rgba(0, 208, 255, 0.5) !important;
+            animation: configBarGlow 3s ease-in-out infinite;
         }
         
         /* When Config Bar is Collapsed ? hide ALL buttons so bar stays a fixed thin strip */
@@ -1563,7 +1568,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=59"></script>
+    <script src="settings.js?v=72"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=9"></script>
     <!-- Auth + data API (before router) -->
@@ -1594,7 +1599,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=28"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=157"></script>
+    <script src="js/page-fragments.js?v=163"></script>
     <script src="js/router.js?v=33"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
