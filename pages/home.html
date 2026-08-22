@@ -304,9 +304,14 @@
         }
 
         /* Config bar glow */
+        @keyframes configBarGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3); }
+            50%      { box-shadow: 0 0 12px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 25px rgba(0, 208, 255, var(--gi-80, 0.8)), 0 0 40px rgba(0, 208, 255, var(--gi-40, 0.4)), 0 8px 32px rgba(0,0,0,0.3); }
+        }
         #config-bar > div {
-            box-shadow: 0 0 12px rgba(0, 208, 255, 0.35), 0 8px 32px rgba(0,0,0,0.3);
-            border-color: rgba(0, 208, 255, 0.4) !important;
+            box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3);
+            border-color: rgba(0, 208, 255, 0.5) !important;
+            animation: configBarGlow 3s ease-in-out infinite;
         }
         
         /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
@@ -553,8 +558,7 @@
 
                 <aside id="config-bar"
                     class="fixed right-0 top-1/2 -translate-y-1/2 z-30 group zen-element transition-all duration-500">
-                    <div class="border border-r-0 !border-r-0 rounded-l-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[10.658rem] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm"
-                        style="border-color: rgba(var(--theme-primary-rgb), 0.4); box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), var(--gi-35, 0.35)), 0 8px 32px rgba(0,0,0,0.3);">
+                    <div class="border border-r-0 !border-r-0 rounded-l-2xl p-0 group-hover:p-4 flex flex-col w-2 group-hover:w-48 min-h-[10.658rem] transition-all duration-500 ease-in-out items-center group-hover:items-stretch overflow-x-hidden overflow-y-auto max-h-[calc(100vh-8rem)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:my-4 [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full glass-panel bg-surface/85 !backdrop-blur-sm">
 
                         <div class="inner-content opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full flex flex-col min-w-[7.673rem] pointer-events-none"
                             id="inner-config-content">
@@ -570,7 +574,7 @@
                                 <div id="btn-num"
                                     class="modifier-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                                     onclick="toggleModifier('num')">
-                                    <span class="shrink-0 inline-flex leading-none" aria-hidden="true" style="width:1.45rem;height:1.45rem"><svg viewBox="0 0 24 24" fill="currentColor" style="width:1.45rem;height:1.45rem;display:block"><path d="M5.5 15v-4.5H4V9h3v6zM9 15v-2.5q0-.425.288-.712T10 11.5h2v-1H9V9h3.5q.425 0 .713.288T13.5 10v1.5q0 .425-.288.713t-.712.287h-2v1h3V15zm6 0v-1.5h3v-1h-2v-1h2v-1h-3V9h3.5q.425 0 .713.288T19.5 10v4q0 .425-.288.713T18.5 15z"/></svg></span>
+                                    <span class="shrink-0 inline-flex leading-none justify-center items-center" aria-hidden="true" style="width:0.959rem;height:0.959rem"><svg viewBox="0 0 24 24" fill="currentColor" style="width:1.4rem;height:1.4rem;display:block;overflow:visible"><path d="M5.5 15v-4.5H4V9h3v6zM9 15v-2.5q0-.425.288-.712T10 11.5h2v-1H9V9h3.5q.425 0 .713.288T13.5 10v1.5q0 .425-.288.713t-.712.287h-2v1h3V15zm6 0v-1.5h3v-1h-2v-1h2v-1h-3V9h3.5q.425 0 .713.288T19.5 10v4q0 .425-.288.713T18.5 15z"/></svg></span>
                                     <span
                                         class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">numbers</span>
                                 </div>
