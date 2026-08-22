@@ -189,23 +189,24 @@
         };
     }
 
-    function contactApiUrl() {
-        var cfg = window.USERTYPO_CONFIG || {};
-        var base = (cfg.backend && cfg.backend.url)
-            || (cfg.multiplayer && cfg.multiplayer.url)
-            || '';
-        base = String(base || '').replace(/\/+$/, '');
-        return (base || '') + '/api/contact';
-    }
-
     async function sendContact(payload) {
-        var response = await fetch(contactApiUrl(), {
+        // Bypass backend API and send directly from browser to avoid Cloudflare datacenter IP blocks.
+        var response = await fetch('https://formsubmit.co/ajax/contactus@usertypo.com', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                name: payload.name,
+                email: payload.email,
+                _replyto: payload.email,
+                _subject: payload.problem,
+                _template: 'table',
+                _captcha: 'false',
+                problem: payload.problem,
+                description: payload.description
+            }),
         });
 
         var data = null;
@@ -215,8 +216,11 @@
             data = null;
         }
 
-        if (!response.ok) {
-            var message = (data && data.error) || 'Could not send your message. Please try again.';
+        if (!response.ok || (data && data.success !== 'true' && data.success !== true)) {
+            var message = (data && (data.message || data.error)) || 'Could not send your message. Please try again.';
+            if (/activat/i.test(message)) {
+                message = 'Almost ready: check the inbox for contactus@usertypo.com and click "Activate Form". Then try again.';
+            }
             throw new Error(message);
         }
         return data;
