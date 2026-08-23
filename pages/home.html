@@ -4,6 +4,23 @@
             font-size: clamp(13px, 1.3032vw, 24px);
         }
 
+        /* Personal Best Animation */
+        @keyframes pb-pop-in {
+            0% { transform: translate(-50%, 0) scale(0); opacity: 0; }
+            60% { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
+        @keyframes pb-pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, var(--gi-40, 0.4)); }
+            50% { box-shadow: 0 0 25px rgba(245, 158, 11, var(--gi-80, 0.8)); }
+        }
+        .pb-animate-in {
+            animation: pb-pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .pb-animate-pulse {
+            animation: pb-pulse-glow 2s ease-in-out infinite;
+        }
+
         /* Graph Custom Scrollbar */
         #graph-container {
             scrollbar-width: none !important;
@@ -885,6 +902,10 @@
                                 <div class="flex flex-col items-center justify-center mb-6 relative">
                                     <div class="flex flex-row items-baseline justify-center">
                                         <div class="relative inline-block group cursor-default">
+                                            <div id="stats-pb-badge" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-amber-500/10 text-amber-500 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 opacity-0 pointer-events-none z-20">
+                                                <span class="material-symbols-outlined text-[1.1rem]">trophy</span>
+                                                <span>Personal Best</span>
+                                            </div>
                                             <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full" data-screenshot-glow></div>
                                             <h1 id="stats-wpm" class="text-[5.5rem] sm:text-[6.5rem] font-black text-primary relative z-10 leading-none tracking-tighter" style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">105</h1>
                                             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span id="stats-wpm-tooltip"></span></div>
@@ -1792,6 +1813,10 @@ window.setTimeout = function(handler, timeout) {
                 el.style.opacity = '';
                 el.classList.add('opacity-0');
             });
+            var badge = document.getElementById('stats-pb-badge');
+            if (badge) {
+                badge.className = "absolute -top-12 left-1/2 -translate-x-1/2 bg-amber-500/10 text-amber-500 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 opacity-0 pointer-events-none z-20";
+            }
             const tpw = document.getElementById('timer-progress-wrapper');
             if (tpw) tpw.style.opacity = '';
             const lsc = document.getElementById('live-stats-container');
@@ -3226,6 +3251,25 @@ window.setTimeout = function(handler, timeout) {
                 // Ultra-short custom tests often finish before the 500ms sampler records
                 // a full second — seed/pad real series so the graph never falls back to demo data.
                 finalizeGraphHistory(exactWpm, exactRawWpm);
+                
+                // Trigger Personal Best animation
+                var badge = document.getElementById('stats-pb-badge');
+                if (badge) {
+                    var st = null;
+                    try {
+                        st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
+                    } catch(e) {}
+                    var isSignedIn = st && st.isSignedIn;
+                    
+                    if (isSignedIn && exactWpm > 0) {
+                        setTimeout(function() {
+                            badge.classList.add('pb-animate-in');
+                            setTimeout(function() {
+                                badge.classList.add('pb-animate-pulse');
+                            }, 600);
+                        }, 500);
+                    }
+                }
             }
 
             document.getElementById('stats-wpm').innerHTML = wpmDisplay;
