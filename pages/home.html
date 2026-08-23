@@ -5,20 +5,12 @@
         }
 
         /* Personal Best Animation */
-        @keyframes pb-pop-in {
-            0% { transform: translate(-50%, 0) scale(0); opacity: 0; }
-            60% { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
-            100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
-        }
-        @keyframes pb-pulse-glow {
+        @keyframes pb-breath-glow {
             0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, var(--gi-40, 0.4)); }
             50% { box-shadow: 0 0 25px rgba(245, 158, 11, var(--gi-80, 0.8)); }
         }
-        .pb-animate-in {
-            animation: pb-pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .pb-animate-pulse {
-            animation: pb-pulse-glow 2s ease-in-out infinite;
+        .pb-breath-glow {
+            animation: pb-breath-glow 2.5s ease-in-out infinite;
         }
 
         /* Graph Custom Scrollbar */
@@ -902,9 +894,10 @@
                                 <div class="flex flex-col items-center justify-center mb-6 relative">
                                     <div class="flex flex-row items-baseline justify-center">
                                         <div class="relative inline-block group cursor-default">
-                                            <div id="stats-pb-badge" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-amber-500/10 text-amber-500 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 opacity-0 pointer-events-none z-20">
-                                                <span class="material-symbols-outlined text-[1.1rem]">trophy</span>
-                                                <span>Personal Best</span>
+                                            <div id="stats-pb-badge" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out">
+                                                <span class="material-symbols-outlined text-[0.95rem] text-amber-500">trophy</span>
+                                                <div class="w-[1px] h-3.5 bg-white/10"></div>
+                                                <span class="text-slate-200 font-bold text-[0.7rem] uppercase tracking-widest mt-0.5">Personal Best</span>
                                             </div>
                                             <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full" data-screenshot-glow></div>
                                             <h1 id="stats-wpm" class="text-[5.5rem] sm:text-[6.5rem] font-black text-primary relative z-10 leading-none tracking-tighter" style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">105</h1>
@@ -1815,7 +1808,7 @@ window.setTimeout = function(handler, timeout) {
             });
             var badge = document.getElementById('stats-pb-badge');
             if (badge) {
-                badge.className = "absolute -top-12 left-1/2 -translate-x-1/2 bg-amber-500/10 text-amber-500 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 opacity-0 pointer-events-none z-20";
+                badge.className = "absolute -top-12 left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out";
             }
             const tpw = document.getElementById('timer-progress-wrapper');
             if (tpw) tpw.style.opacity = '';
@@ -3263,10 +3256,8 @@ window.setTimeout = function(handler, timeout) {
                     
                     if (isSignedIn && exactWpm > 0) {
                         setTimeout(function() {
-                            badge.classList.add('pb-animate-in');
-                            setTimeout(function() {
-                                badge.classList.add('pb-animate-pulse');
-                            }, 600);
+                            badge.classList.remove('opacity-0');
+                            badge.classList.add('opacity-100', 'pb-breath-glow');
                         }, 500);
                     }
                 }
