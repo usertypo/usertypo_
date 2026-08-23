@@ -7,28 +7,11 @@
 
         .sortable-card { position: relative; }
 
-        /* Source card stays visible, just dimmed Ã¢â‚¬â€ NEVER collapses */
-        /* Source card becomes a compact placeholder outline while dragging */
+        /* Source card stays visible, just dimmed — NEVER collapses */
         .sortable-card.is-dragging {
+            opacity: 0.25 !important;
             pointer-events: none !important;
             transition: opacity 0.15s ease !important;
-        }
-        .sortable-card.is-dragging > * {
-            visibility: hidden !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .sortable-card.is-dragging {
-            min-height: 3.5rem !important;
-            height: 3.5rem !important;
-            overflow: hidden !important;
-            border: 2px dashed rgba(0, 208, 255, 0.3) !important;
-            border-radius: var(--theme-box-radius, 1.375rem) !important;
-            background: rgba(0, 208, 255, 0.03) !important;
-            opacity: 1 !important;
-            padding: 0 !important;
         }
 
         /* Glowing drop-target indicator (not the source!) */
@@ -997,7 +980,7 @@
         <section id="sortable-container"
             class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16 opacity-0 animate-fade-in-up [animation-delay:700ms]">
             <!-- Top Graph Area: Performance Graph Full Width -->
-            <div class="col-span-12  p-6 rounded-xl pot-card" id="performance-over-time-card">
+            <div class="col-span-12  glass-panel p-6 rounded-xl pot-card" id="performance-over-time-card">
                 <div class="pot-header">
                     <h2 class="font-headline text-lg font-bold">Performance Over Time</h2>
                     <div class="pot-filter-bubble-wrap">
@@ -1126,7 +1109,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-span-12  p-6 rounded-xl" id="hand-biometrics-card">
+            <div class="col-span-12  glass-panel p-6 rounded-xl" id="hand-biometrics-card">
                 <div class="flex items-center mb-6">
                     <h2 class="font-headline text-lg font-bold">Hand Biometrics &amp; Consistency <span class="text-slate-500 font-normal text-sm">(last 50 tests)</span></h2>
                 </div>
@@ -1231,7 +1214,7 @@
                 </div>
             </div>
             <!-- Error Diagnostics -->
-            <div class="col-span-12  p-6 rounded-xl" id="error-diagnostics-card">
+            <div class="col-span-12  glass-panel p-6 rounded-xl" id="error-diagnostics-card">
                 <div class="flex items-baseline justify-between gap-4 mb-6">
                     <h2 class="font-headline text-lg font-bold">Error Diagnostics &amp; Weakness Analysis <span class="text-slate-500 font-normal text-sm">(last 50 tests)</span></h2>
                 </div>
@@ -1304,7 +1287,7 @@
                 </div>
             </div>
             <!-- Hardware Hotspots -->
-            <div class="col-span-12  p-6 rounded-xl" id="hardware-hotspots-card">
+            <div class="col-span-12  glass-panel p-6 rounded-xl" id="hardware-hotspots-card">
                 <div class="w-full flex items-center justify-between gap-4 mb-6">
                     <h2 class="font-headline text-lg font-bold">Hardware Hotspots <span class="text-slate-500 font-normal text-sm">(last 50 tests)</span></h2>
                     <div class="hotspotsHeatLegend" aria-label="Error intensity legend">
@@ -1337,7 +1320,7 @@
                 <div id="hotspot-float-tip" class="usertypo-menu-pill-tip" aria-hidden="true"></div>
             </div>
             <!-- Full Width Layout: Activity Tracker followed by Score Distribution -->
-            <div class="col-span-12  p-6 rounded-xl opacity-0 animate-fade-in-up [animation-delay:350ms]">
+            <div class="col-span-12 glass-panel p-6 rounded-xl opacity-0 animate-fade-in-up [animation-delay:350ms]">
                 <h2 class="font-headline text-lg font-bold mb-6">Activity Tracker</h2>
                 <div id="userstats-test-activity" class="testActivity hidden">
                     <div class="wrapper">
@@ -1373,7 +1356,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-span-12  p-6 rounded-xl">
+            <div class="col-span-12 glass-panel p-6 rounded-xl">
                 <div class="flex items-center justify-between gap-4 mb-6">
                     <h2 class="font-headline text-lg font-bold">Score Distribution</h2>
                     <span id="score-distribution-summary"
@@ -1395,7 +1378,7 @@
                 </div>
             </div>
             <!-- Test History Table -->
-            <div class="col-span-12  rounded-xl overflow-hidden">
+            <div class="col-span-12 glass-panel rounded-xl overflow-hidden">
                 <div class="p-6 border-b border-white/5 flex justify-between items-center">
                     <h2 class="font-headline text-lg font-bold">Comprehensive Test History</h2>
                     <div class="flex gap-3">
