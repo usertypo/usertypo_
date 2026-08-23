@@ -8,10 +8,27 @@
         .sortable-card { position: relative; }
 
         /* Source card stays visible, just dimmed Ã¢â‚¬â€ NEVER collapses */
+        /* Source card becomes a compact placeholder outline while dragging */
         .sortable-card.is-dragging {
-            opacity: 0.25 !important;
             pointer-events: none !important;
             transition: opacity 0.15s ease !important;
+        }
+        .sortable-card.is-dragging > * {
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .sortable-card.is-dragging {
+            min-height: 3.5rem !important;
+            height: 3.5rem !important;
+            overflow: hidden !important;
+            border: 2px dashed rgba(0, 208, 255, 0.3) !important;
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
+            background: rgba(0, 208, 255, 0.03) !important;
+            opacity: 1 !important;
+            padding: 0 !important;
         }
 
         /* Glowing drop-target indicator (not the source!) */
@@ -793,7 +810,7 @@
                     class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-2 opacity-0 animate-fade-in-up [animation-delay:250ms]">
                     Timed Bests</h3>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:300ms]"
                     data-best-card data-mode="time" data-amount="15">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">15 Seconds</span>
@@ -806,7 +823,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:400ms]"
                     data-best-card data-mode="time" data-amount="30">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">30 Seconds</span>
@@ -819,7 +836,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:500ms]"
                     data-best-card data-mode="time" data-amount="60">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">60 Seconds</span>
@@ -832,7 +849,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:600ms]"
                     data-best-card data-mode="time" data-amount="120">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">120 Seconds</span>
@@ -887,28 +904,28 @@
                     </span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
-                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default">
                         <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Tests</span>
                         <span id="stat-tests-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-tests-tooltip">0 Tests Taken</span>
                         </div>
                     </div>
-                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default">
                         <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Time</span>
                         <span id="stat-time-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-time-tooltip">0 Seconds of Typing</span>
                         </div>
                     </div>
-                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default">
                         <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Words</span>
                         <span id="stat-words-display" class="font-headline text-lg font-semibold text-slate-100 truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
                             <span id="stat-words-tooltip">0 Words Typed</span>
                         </div>
                     </div>
-                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default transition-colors hover:bg-white/5">
+                    <div class="profile-stat-card  p-4 rounded-lg text-center cursor-default">
                         <span class="text-[0.533rem] uppercase tracking-widest text-slate-500 block mb-1">Rank</span>
                         <span id="stat-rank-display" class="font-headline text-lg font-semibold text-primary truncate block">—</span>
                         <div class="profile-stat-tip usertypo-menu-pill-tip">
@@ -923,7 +940,7 @@
                     class="font-headline text-xs uppercase tracking-widest text-slate-500 mb-2 opacity-0 animate-fade-in-up [animation-delay:250ms]">
                     Word Bests</h3>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:300ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:300ms]"
                     data-best-card data-mode="words" data-amount="10">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">10 Words</span>
@@ -936,7 +953,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:400ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:400ms]"
                     data-best-card data-mode="words" data-amount="25">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">25 Words</span>
@@ -949,7 +966,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:500ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:500ms]"
                     data-best-card data-mode="words" data-amount="50">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">50 Words</span>
@@ -962,7 +979,7 @@
                     </div>
                 </div>
                 <div
-                    class=" p-6 rounded-lg  flex justify-between items-center group hover:bg-white/5 transition-colors opacity-0 animate-fade-in-up [animation-delay:600ms]"
+                    class=" p-6 rounded-lg  flex justify-between items-center opacity-0 animate-fade-in-up [animation-delay:600ms]"
                     data-best-card data-mode="words" data-amount="100">
                     <div>
                         <span class="font-headline text-slate-400 text-sm block">100 Words</span>
