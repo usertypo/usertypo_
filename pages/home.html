@@ -12,6 +12,15 @@
         .pb-breath-glow {
             animation: pb-breath-glow 2.5s ease-in-out infinite;
         }
+        @keyframes pb-wpm-pop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .pb-wpm-pop-anim {
+            animation: pb-wpm-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: bottom center;
+        }
 
         /* Graph Custom Scrollbar */
         #graph-container {
@@ -1814,6 +1823,10 @@ window.setTimeout = function(handler, timeout) {
                 badge.classList.remove('opacity-100', 'pb-breath-glow');
                 badge.classList.add('opacity-0');
             }
+            var wpmText = document.getElementById('stats-wpm');
+            if (wpmText) {
+                wpmText.classList.remove('pb-wpm-pop-anim');
+            }
             const tpw = document.getElementById('timer-progress-wrapper');
             if (tpw) tpw.style.opacity = '';
             const lsc = document.getElementById('live-stats-container');
@@ -3262,6 +3275,13 @@ window.setTimeout = function(handler, timeout) {
                         setTimeout(function() {
                             badge.classList.remove('opacity-0');
                             badge.classList.add('opacity-100', 'pb-breath-glow');
+                            
+                            var wpmText = document.getElementById('stats-wpm');
+                            if (wpmText) {
+                                wpmText.classList.remove('pb-wpm-pop-anim');
+                                void wpmText.offsetWidth; // Force reflow
+                                wpmText.classList.add('pb-wpm-pop-anim');
+                            }
                         }, 500);
                     }
                 }
