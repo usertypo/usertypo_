@@ -3262,7 +3262,7 @@ window.setTimeout = function(handler, timeout) {
                 // a full second — seed/pad real series so the graph never falls back to demo data.
                 finalizeGraphHistory(exactWpm, exactRawWpm);
                 
-                // Trigger Personal Best animation
+                // Check local PB cache to determine if this is a genuine personal best
                 var badge = document.getElementById('stats-pb-badge');
                 if (badge) {
                     var st = null;
@@ -3270,8 +3270,21 @@ window.setTimeout = function(handler, timeout) {
                         st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
                     } catch(e) {}
                     var isSignedIn = st && st.isSignedIn;
+
+                    var pbKey = 'usertypo_pb_' + testMode + '_' + testAmount;
+                    var localPrevBest = Number(localStorage.getItem(pbKey)) || 0;
                     
-                    if (isSignedIn && exactWpm > 0) {
+                    // We consider it a genuine PB if it's strictly greater than the previous best.
+                    // BUT, to avoid showing the badge on their literal first test ever in this mode,
+                    // we require localPrevBest > 0.
+                    var isGenuinePb = (exactWpm > localPrevBest) && (localPrevBest > 0);
+
+                    // Update local cache
+                    if (exactWpm > localPrevBest) {
+                        try { localStorage.setItem(pbKey, exactWpm); } catch(e) {}
+                    }
+                    
+                    if (isSignedIn && isGenuinePb) {
                         setTimeout(function() {
                             badge.classList.remove('opacity-0');
                             badge.classList.add('opacity-100', 'pb-breath-glow');
