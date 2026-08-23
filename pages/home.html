@@ -6,8 +6,8 @@
 
         /* Personal Best Animation */
         @keyframes pb-breath-glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, var(--gi-40, 0.4)); }
-            50% { box-shadow: 0 0 25px rgba(245, 158, 11, var(--gi-80, 0.8)); }
+            0%, 100% { box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4)); }
+            50% { box-shadow: 0 0 25px rgba(var(--theme-primary-rgb), var(--gi-80, 0.8)); }
         }
         .pb-breath-glow {
             animation: pb-breath-glow 2.5s ease-in-out infinite;
@@ -900,10 +900,10 @@
                                         </div>
                                         <div class="ml-4 text-3xl font-bold text-white tracking-widest relative">
                                             <!-- Personal Best badge - above WPM -->
-                                            <div id="stats-pb-badge" class="absolute bottom-full left-0 mb-1 bg-[#1a1a1a]/80 border border-white/[0.06] flex items-center gap-[3px] rounded-full backdrop-blur-md opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap" style="font-size: 0; padding: 2px 6px;">
-                                                <span class="material-symbols-outlined text-amber-500" style="font-size: 8px; line-height: 1;">trophy</span>
-                                                <div style="width: 1px; height: 8px; background: rgba(255,255,255,0.08);"></div>
-                                                <span class="text-slate-300 font-semibold uppercase" style="font-size: 7px; letter-spacing: 0.1em; line-height: 1;">Personal Best</span>
+                                            <div id="stats-pb-badge" class="absolute bottom-full left-0 mb-3 flex items-center h-[2.238rem] px-3 rounded-full bg-surface/40 border border-white/5 backdrop-blur-md pb-breath-glow opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap">
+                                                <span class="material-symbols-outlined text-[1.066rem] text-primary">emoji_events</span>
+                                                <div class="w-px h-3 bg-white/10 ml-3"></div>
+                                                <span class="text-[0.853rem] font-bold text-primary ml-3">Personal Best</span>
                                             </div>
                                             WPM
                                         </div>
