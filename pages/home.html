@@ -894,16 +894,18 @@
                                 <div class="flex flex-col items-center justify-center mb-6 relative">
                                     <div class="flex flex-row items-baseline justify-center">
                                         <div class="relative inline-block group cursor-default">
-                                            <div id="stats-pb-badge" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out">
-                                                <span class="material-symbols-outlined text-[0.95rem] text-amber-500">trophy</span>
-                                                <div class="w-[1px] h-3.5 bg-white/10"></div>
-                                                <span class="text-slate-200 font-bold text-[0.7rem] uppercase tracking-widest mt-0.5">Personal Best</span>
-                                            </div>
                                             <div class="absolute -inset-4 bg-primary/20 blur-2xl rounded-full" data-screenshot-glow></div>
                                             <h1 id="stats-wpm" class="text-[5.5rem] sm:text-[6.5rem] font-black text-primary relative z-10 leading-none tracking-tighter" style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">105</h1>
                                             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span id="stats-wpm-tooltip"></span></div>
                                         </div>
-                                        <div class="ml-4 text-3xl font-bold text-white tracking-widest">WPM</div>
+                                        <div class="ml-4 relative text-3xl font-bold text-white tracking-widest">
+                                            <div id="stats-pb-badge" class="absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap">
+                                                <span class="material-symbols-outlined text-[0.75rem] text-amber-500">trophy</span>
+                                                <div class="w-[1px] h-3 bg-white/10"></div>
+                                                <span class="text-slate-200 font-bold text-[0.55rem] uppercase tracking-widest mt-0.5">Personal Best</span>
+                                            </div>
+                                            WPM
+                                        </div>
                                     </div>
                                     <!-- Absolutely positioned so it doesn't disrupt the flow -->
                                     <div id="stats-cps" class="absolute -bottom-2 text-sm font-bold text-slate-400 tracking-wider hidden text-center w-full" style="text-shadow: none;"></div>
@@ -1808,7 +1810,7 @@ window.setTimeout = function(handler, timeout) {
             });
             var badge = document.getElementById('stats-pb-badge');
             if (badge) {
-                badge.className = "absolute -top-12 left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out";
+                badge.className = "absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 bg-surface/50 border border-white/5 flex items-center gap-1.5 px-2 py-1 rounded-full backdrop-blur-md shadow-xl opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap";
             }
             const tpw = document.getElementById('timer-progress-wrapper');
             if (tpw) tpw.style.opacity = '';
