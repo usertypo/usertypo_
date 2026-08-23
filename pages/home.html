@@ -898,13 +898,15 @@
                                             <h1 id="stats-wpm" class="text-[5.5rem] sm:text-[6.5rem] font-black text-primary relative z-10 leading-none tracking-tighter" style="text-shadow: 0 0 30px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">105</h1>
                                             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span id="stats-wpm-tooltip"></span></div>
                                         </div>
-                                        <div class="ml-4 text-3xl font-bold text-white tracking-widest">WPM</div>
-                                    </div>
-                                    <!-- Personal Best badge - positioned above the row -->
-                                    <div id="stats-pb-badge" class="absolute -top-4 left-1/2 -translate-x-1/2 text-[0.5rem] bg-[#1a1a1a]/80 border border-white/[0.06] flex items-center gap-1 px-2 py-[3px] rounded-full backdrop-blur-md opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap" style="font-size: 0.5rem;">
-                                        <span class="material-symbols-outlined text-amber-500" style="font-size: 0.6rem;">trophy</span>
-                                        <div class="w-px h-2 bg-white/10"></div>
-                                        <span class="text-slate-300 font-semibold uppercase tracking-[0.12em]" style="font-size: 0.5rem;">Personal Best</span>
+                                        <div class="ml-4 text-3xl font-bold text-white tracking-widest relative">
+                                            <!-- Personal Best badge - above WPM -->
+                                            <div id="stats-pb-badge" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-[#1a1a1a]/80 border border-white/[0.06] flex items-center gap-1 px-2 py-[3px] rounded-full backdrop-blur-md opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap" style="font-size: 0.5rem;">
+                                                <span class="material-symbols-outlined text-amber-500" style="font-size: 0.6rem;">trophy</span>
+                                                <div class="w-px h-2 bg-white/10"></div>
+                                                <span class="text-slate-300 font-semibold uppercase tracking-[0.12em]" style="font-size: 0.5rem;">Personal Best</span>
+                                            </div>
+                                            WPM
+                                        </div>
                                     </div>
                                     <!-- Absolutely positioned so it doesn't disrupt the flow -->
                                     <div id="stats-cps" class="absolute -bottom-2 text-sm font-bold text-slate-400 tracking-wider hidden text-center w-full" style="text-shadow: none;"></div>
