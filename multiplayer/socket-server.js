@@ -1467,6 +1467,13 @@ function createMultiplayerServer(httpServer, options) {
                         return;
                     }
                     if (deltaWords < 0) throw new Error('invalid_progress');
+                } else if (room.type === 'bot') {
+                    // Bot matches skip intermediate packets — the single final packet
+                    // carries all progress at once, so allow any positive delta on final.
+                    if (!(finalPacket || isFinal || isTimedFinal) && deltaWords !== 3) {
+                        throw new Error('three_word_packets_required');
+                    }
+                    if (deltaWords < 0) throw new Error('invalid_progress');
                 } else if (deltaWords !== 3
                     && !(isFinal && deltaWords > 0 && deltaWords <= 3)
                     && !(isTimedFinal && deltaWords >= 0 && deltaWords <= 3)) {

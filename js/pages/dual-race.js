@@ -1507,8 +1507,12 @@
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
                 var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
+                var serverMe = parseServerResult(myRow);
+                var localMe = computeFinalStats(localFinishTime || Date.now());
+                // Prefer local stats when the server has no meaningful WPM for us
+                // (e.g. bot match where the progress packet was rejected or late).
+                var meData = (serverMe && serverMe.wpm > 0) ? serverMe : (localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
                 var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
-                var meData = parseServerResult(myRow) || computeFinalStats(localFinishTime || Date.now());
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
                 meData.level = me.level;
