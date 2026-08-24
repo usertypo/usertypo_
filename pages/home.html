@@ -3284,7 +3284,7 @@ window.setTimeout = function(handler, timeout) {
                         try { localStorage.setItem(pbKey, exactWpm); } catch(e) {}
                     }
                     
-                    if (isSignedIn && isGenuinePb) {
+                    if (false && isSignedIn && isGenuinePb) { // DISABLED: PB badge — remove `false &&` to re-enable
                         setTimeout(function() {
                             badge.classList.remove('opacity-0');
                             badge.classList.add('opacity-100', 'pb-breath-glow');

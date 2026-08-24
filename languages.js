@@ -361,7 +361,7 @@ async function loadLanguage(filename) {
     }
 
     try {
-        const resp = await fetch('lang/' + filename + '.json');
+        const resp = await fetch('lang/' + filename + '.json?v=2');
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
 
