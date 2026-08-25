@@ -489,7 +489,6 @@
             activeRoomIsBot = !!(room && (
                 room.reason === 'bot'
                 || room.type === 'bot'
-                || room.bot
             ));
             return response;
         });
