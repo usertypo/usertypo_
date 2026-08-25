@@ -1042,6 +1042,8 @@ window.__spaPageInit = function() {
                     friendsPendingBadge.textContent = String(pendingCount);
                     friendsPendingBadge.classList.toggle('hidden', pendingCount === 0);
                 }
+                // Recalculate indicator width after badge visibility changes button size
+                updateFriendsPillIndicator();
             }
 
             function setActiveFriendsTab(showType, opts) {
