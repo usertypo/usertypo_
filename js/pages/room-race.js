@@ -1690,6 +1690,12 @@
                 if (lockedAt != null && errorHistory.length) {
                     var errorEntry = errorHistory.pop();
                     if (errorEntry.kind === 'space') {
+                        // Remove error-underlines from skipped chars
+                        var skipWord = words[errorEntry.wordIndex];
+                        for (var ri = errorEntry.charIndex; ri < skipWord.length; ri++) {
+                            var uel = document.getElementById('room-char-' + errorEntry.wordIndex + '-' + ri);
+                            if (uel) uel.classList.remove('error-underline');
+                        }
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
                         if (completedWords > 0) completedWords -= 1;
@@ -1742,33 +1748,31 @@
             }
             totalKeystrokes += 1;
             if (key === ' ') {
+                if (currentCharIndex === 0) return; // no space as first letter
                 if (currentCharIndex === word.length) {
                     // Word fully typed — advance normally
                     if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                     finishWord();
                     return;
                 }
-                // Space mid-word: lock and mark remaining chars as errors
+                // Space mid-word: lock and skip to next word
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                 lockedAt = currentCharIndex;
                 errorHistory = [];
+                // Underline remaining chars visually + count as errors
                 for (var si = currentCharIndex; si < word.length; si++) {
                     var el = document.getElementById('room-char-' + currentWordIndex + '-' + si);
                     if (el) el.classList.add('error-underline');
-                    errorHistory.push({
-                        kind: 'char',
-                        wordIndex: currentWordIndex,
-                        charIndex: si,
-                    });
-                    errors += 1;
-                    totalKeystrokes += 1;
                 }
-                // Record the space-to-next-word transition
+                var skippedCount = word.length - currentCharIndex;
+                errors += skippedCount;
+                totalKeystrokes += skippedCount;
+                // Single space entry — one backspace returns to where user was
                 if (words[currentWordIndex + 1]) {
                     errorHistory.push({
                         kind: 'space',
                         wordIndex: currentWordIndex,
-                        charIndex: word.length,
+                        charIndex: currentCharIndex,
                     });
                     completedWords += 1;
                     currentWordIndex += 1;
