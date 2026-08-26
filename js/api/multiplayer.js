@@ -548,6 +548,10 @@
         return emitAck('room:ready', roomId);
     }
 
+    function updateRoomConfig(roomId, config) {
+        return emitAck('room:update-config', { roomId: roomId, config: config });
+    }
+
     function returnToLobby(roomId) {
         return emitAck('room:return-lobby', roomId);
     }
@@ -615,6 +619,7 @@
         createRoom: createRoom,
         joinRoomCode: joinRoomCode,
         setRoomReady: setRoomReady,
+        updateRoomConfig: updateRoomConfig,
         returnToLobby: returnToLobby,
         addRoomBot: addRoomBot,
         startRoom: startRoom,

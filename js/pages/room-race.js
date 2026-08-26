@@ -1269,7 +1269,7 @@
             if (inviteLink) inviteLink.textContent = getJoinLink();
             if (mode) mode.textContent = config.mode === 'words'
                 ? config.amount + ' words'
-                : 'Timed: ' + config.amount + ' seconds';
+                : config.amount + ' seconds';
             if (modifiers) modifiers.textContent = [
                 config.punct ? 'Punctuation' : '',
                 config.nums ? 'Numbers' : '',
@@ -1362,25 +1362,20 @@
             }, { signal: signal });
             if (saveBtn) saveBtn.addEventListener('click', function () {
                 if (!window.usertypoMultiplayer) return;
-                window.usertypoMultiplayer.emit('room:update-config', {
-                    roomId: roomId,
-                    config: {
-                        amount: editConfigAmount,
-                        punct: editConfigPunct,
-                        nums: editConfigNums,
-                    },
-                }, function (res) {
-                    if (res && res.ok) {
-                        closeEditConfig();
-                        if (window.usertypoNotifications) {
-                            window.usertypoNotifications.showToast('Configuration updated', 'success');
-                        }
-                    } else {
-                        if (window.usertypoNotifications) {
-                            window.usertypoNotifications.showToast(
-                                (res && res.error) || 'Failed to update config', 'error'
-                            );
-                        }
+                window.usertypoMultiplayer.updateRoomConfig(roomId, {
+                    amount: editConfigAmount,
+                    punct: editConfigPunct,
+                    nums: editConfigNums,
+                }).then(function () {
+                    closeEditConfig();
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast('Configuration updated', 'success');
+                    }
+                }).catch(function (err) {
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast(
+                            (err && err.message) || 'Failed to update config', 'error'
+                        );
                     }
                 });
             }, { signal: signal });
