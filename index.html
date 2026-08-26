@@ -238,7 +238,7 @@
     <!-- Critical text fonts only ? Material Symbols is a local ~29KB subset (was ~2.3MB CDN VF) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
-    <link href="css/tailwind.css?v=8" rel="stylesheet" />
+    <link href="css/tailwind.css?v=7" rel="stylesheet" />
     <link href="css/global.css?v=28" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
@@ -1096,12 +1096,7 @@
                             <a href="/friends" data-spa-link id="nav-friends"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
                                 <span class="material-symbols-outlined nav-icon text-[1.066rem]">group</span>
-                                <span class="font-bold text-sm tracking-wide">Friends</span>
-                            </a>
-                            <a href="/multiplayer" data-spa-link id="nav-multiplayer"
-                                class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
-                                <span class="material-symbols-outlined nav-icon text-[1.066rem]">swords</span>
-                                <span class="font-bold text-sm tracking-wide">Multiplayer</span>
+                                <span class="font-bold text-sm tracking-wide">Friends and multiplayer</span>
                             </a>
                             <a href="/leaderboards" data-spa-link id="nav-leaderboards"
                                 class="bubble-nav-link flex items-center gap-3 px-4 py-3 rounded-xl">
@@ -1602,10 +1597,10 @@
     <script src="js/api/notifications.js?v=5"></script>
     <!-- Socket.IO is loaded on demand by js/api/multiplayer.js (ensureSocketIoClient). -->
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
-    <script src="js/api/multiplayer.js?v=29"></script>
+    <script src="js/api/multiplayer.js?v=28"></script>
     <script src="dual.js?v=10"></script>
     <script src="js/page-fragments.js?v=191"></script>
-    <script src="js/router.js?v=36"></script>
+    <script src="js/router.js?v=33"></script>
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
         if (!expandingBubble || !bubbleToggle || expandingBubble.dataset.bubbleWired === '1') return;

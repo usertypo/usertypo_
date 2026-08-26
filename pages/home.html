@@ -3262,41 +3262,13 @@ window.setTimeout = function(handler, timeout) {
                 // a full second — seed/pad real series so the graph never falls back to demo data.
                 finalizeGraphHistory(exactWpm, exactRawWpm);
                 
-                // Check local PB cache to determine if this is a genuine personal best
+                // Personal Best badge — handled after server confirms via is_pb flag
+                // (see saveSession().then() below)
                 var badge = document.getElementById('stats-pb-badge');
                 if (badge) {
-                    var st = null;
-                    try {
-                        st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
-                    } catch(e) {}
-                    var isSignedIn = st && st.isSignedIn;
-
-                    var pbKey = 'usertypo_pb_' + testMode + '_' + testAmount;
-                    var localPrevBest = Number(localStorage.getItem(pbKey)) || 0;
-                    
-                    // We consider it a genuine PB if it's strictly greater than the previous best.
-                    // BUT, to avoid showing the badge on their literal first test ever in this mode,
-                    // we require localPrevBest > 0.
-                    var isGenuinePb = (exactWpm > localPrevBest) && (localPrevBest > 0);
-
-                    // Update local cache
-                    if (exactWpm > localPrevBest) {
-                        try { localStorage.setItem(pbKey, exactWpm); } catch(e) {}
-                    }
-                    
-                    if (false && isSignedIn && isGenuinePb) { // DISABLED: PB badge — remove `false &&` to re-enable
-                        setTimeout(function() {
-                            badge.classList.remove('opacity-0');
-                            badge.classList.add('opacity-100', 'pb-breath-glow');
-                            
-                            var wpmText = document.getElementById('stats-wpm');
-                            if (wpmText) {
-                                wpmText.classList.remove('pb-wpm-pop-anim');
-                                void wpmText.offsetWidth; // Force reflow
-                                wpmText.classList.add('pb-wpm-pop-anim');
-                            }
-                        }, 500);
-                    }
+                    badge.classList.remove('opacity-100', 'pb-breath-glow');
+                    badge.classList.add('opacity-0');
+                    badge.style.transform = 'scale(0.7)';
                 }
             }
 
@@ -3634,6 +3606,38 @@ window.setTimeout = function(handler, timeout) {
                     }
                     if (!failedReason && saveResult && saveResult.xpAward) {
                         notifyTestXp(saveResult.xpAward);
+                    }
+
+                    // Personal Best badge — only for standard combos, using server's is_pb flag
+                    var PB_STANDARD_TIME = [15, 30, 60, 120];
+                    var PB_STANDARD_WORDS = [10, 25, 50, 100];
+                    var isStandardCombo = (
+                        (testMode === 'time' && PB_STANDARD_TIME.indexOf(testAmount) !== -1) ||
+                        (testMode === 'words' && PB_STANDARD_WORDS.indexOf(testAmount) !== -1)
+                    );
+
+                    if (
+                        !failedReason &&
+                        isStandardCombo &&
+                        saveResult &&
+                        saveResult.session &&
+                        saveResult.session.is_pb === true
+                    ) {
+                        var pbBadge = document.getElementById('stats-pb-badge');
+                        if (pbBadge) {
+                            setTimeout(function() {
+                                pbBadge.style.transform = 'scale(1)';
+                                pbBadge.classList.remove('opacity-0');
+                                pbBadge.classList.add('opacity-100', 'pb-breath-glow');
+
+                                var wpmText = document.getElementById('stats-wpm');
+                                if (wpmText) {
+                                    wpmText.classList.remove('pb-wpm-pop-anim');
+                                    void wpmText.offsetWidth; // Force reflow
+                                    wpmText.classList.add('pb-wpm-pop-anim');
+                                }
+                            }, 500);
+                        }
                     }
                 }).catch(function (err) {
                     console.error('[usertypo sessions] save failed', err);
