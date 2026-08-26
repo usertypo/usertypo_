@@ -199,8 +199,8 @@
             if (window.usertypoNotifications) {
                 window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
             }
-            if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
-            else window.location.replace('/friends');
+            if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
+            else window.location.replace('/multiplayer');
         }
 
         function appendWord(word, wordIndex) {
@@ -832,23 +832,8 @@
             totalKeystrokes += 1;
             keystrokeTimes.push(Date.now());
             if (key === ' ') {
-                if (currentCharIndex === word.length) {
-                    correctKeystrokeTimes.push(Date.now());
-                    completeWord();
-                }
-                else {
-                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
-                    unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
-                    errorHistory = [{
-                        kind: 'char',
-                        wordIndex: currentWordIndex,
-                        charIndex: currentCharIndex,
-                    }];
-                    paintCharacter(currentWordIndex, currentCharIndex, ' ', false, true);
-                    currentCharIndex += 1;
-                    errorsMade += 1;
-                    updateCaret();
-                }
+                correctKeystrokeTimes.push(Date.now());
+                completeWord();
                 return;
             }
 
@@ -1584,7 +1569,7 @@
                     await window.usertypoMultiplayer.leaveRace(roomId);
                 }
             } catch (_) { /* ignore */ }
-            if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
+            if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
         }
 
         async function requestRematch() {
@@ -1775,7 +1760,7 @@
 
         async function init() {
             if (!roomId || !window.usertypoMultiplayer) {
-                if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
+                if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
             }
             if (isReloadNavigation()) {
@@ -1823,7 +1808,7 @@
                 markDualMembership(false);
                 showMessage('Could not join dual', error.message);
                 setTimeout(function () {
-                    if (typeof window.navigateTo === 'function') window.navigateTo('/friends');
+                    if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 }, 1800);
             }
         }
