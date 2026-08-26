@@ -203,6 +203,7 @@ if (BACKEND_ONLY) {
         dotfiles: 'deny',
         fallthrough: true,
         index: false,
+        redirect: false,
         maxAge: 0,
         setHeaders(res, filePath) {
             const extension = path.extname(filePath).toLowerCase();
@@ -229,7 +230,7 @@ if (BACKEND_ONLY) {
 
     const SPA_ROUTES = new Set([
         '/', '/index.html', '/settings', '/signin', '/sso-callback', '/friends',
-        '/room', '/dual', '/leaderboards', '/userstats', '/privacy', '/terms', '/about', '/how-it-works', '/security',
+        '/multiplayer', '/room', '/dual', '/leaderboards', '/userstats', '/privacy', '/terms', '/about', '/how-it-works', '/security',
     ]);
 
     app.use((req, res, next) => {
