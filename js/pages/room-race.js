@@ -694,6 +694,8 @@
                 var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
                 var startOpen = !!(startConfirmModal && startConfirmModal.classList.contains('opacity-100'));
                 var hostOpen = !!(hostModal && hostModal.classList.contains('opacity-100'));
+                var editConfigModal = document.getElementById('edit-config-modal');
+                var editOpen = !!(editConfigModal && editConfigModal.classList.contains('opacity-100'));
 
                 // Stats view: never let Space scroll the page.
                 if ((event.key === ' ' || event.key === 'Spacebar') && state === 'finished' && !inEditable) {
@@ -702,7 +704,7 @@
                 }
 
                 if (state !== 'lobby' && state !== 'finished') return;
-                if (startOpen || hostOpen) return;
+                if (startOpen || hostOpen || editOpen) return;
                 if (inEditable) return;
 
                 var leaveBtn = state === 'lobby'
@@ -1269,12 +1271,119 @@
                 ? config.amount + ' words'
                 : 'Timed: ' + config.amount + ' seconds';
             if (modifiers) modifiers.textContent = [
-                config.lang,
                 config.punct ? 'Punctuation' : '',
                 config.nums ? 'Numbers' : '',
             ].filter(Boolean).join(' · ');
 
+            // Show edit button for host only
+            var editBtn = document.getElementById('lobby-edit-config-btn');
+            if (editBtn) editBtn.classList.toggle('hidden', !isHost);
+
             paintLobbyPlayers();
+        }
+
+        // --- Edit Config Modal ---
+        var editConfigPunct = false;
+        var editConfigNums = false;
+        var editConfigAmount = 30;
+
+        function bindEditConfigUI() {
+            var editBtn = document.getElementById('lobby-edit-config-btn');
+            var modal = document.getElementById('edit-config-modal');
+            var content = document.getElementById('edit-config-content');
+            var backdrop = document.getElementById('edit-config-backdrop');
+            var closeBtn = document.getElementById('close-edit-config-btn');
+            var saveBtn = document.getElementById('save-edit-config-btn');
+            var amountContainer = document.getElementById('edit-config-amount-container');
+            var punctBtn = document.getElementById('edit-btn-punct');
+            var numBtn = document.getElementById('edit-btn-num');
+            if (!modal) return;
+
+            var ACTIVE_CLASS = 'bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]';
+            var INACTIVE_CLASS = 'bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent';
+            var ON_CLASS = 'border-primary/60 bg-primary/10 text-primary';
+
+            function openEditConfig() {
+                if (!config) return;
+                editConfigAmount = config.amount;
+                editConfigPunct = config.punct;
+                editConfigNums = config.nums;
+                refreshEditConfigUI();
+                modal.classList.remove('pointer-events-none', 'opacity-0');
+                modal.classList.add('opacity-100');
+                if (content) content.style.transform = 'scale(1)';
+            }
+
+            function closeEditConfig() {
+                modal.classList.add('pointer-events-none', 'opacity-0');
+                modal.classList.remove('opacity-100');
+                if (content) content.style.transform = 'scale(0.95)';
+            }
+
+            function refreshEditConfigUI() {
+                if (amountContainer) {
+                    var btns = amountContainer.querySelectorAll('button[data-amount]');
+                    btns.forEach(function (btn) {
+                        var val = parseInt(btn.dataset.amount, 10);
+                        btn.className = 'flex-1 ' + (val === editConfigAmount ? ACTIVE_CLASS : INACTIVE_CLASS);
+                    });
+                }
+                if (punctBtn) {
+                    punctBtn.classList.toggle('border-primary/60', editConfigPunct);
+                    punctBtn.classList.toggle('bg-primary/10', editConfigPunct);
+                    punctBtn.classList.toggle('text-primary', editConfigPunct);
+                }
+                if (numBtn) {
+                    numBtn.classList.toggle('border-primary/60', editConfigNums);
+                    numBtn.classList.toggle('bg-primary/10', editConfigNums);
+                    numBtn.classList.toggle('text-primary', editConfigNums);
+                }
+            }
+
+            if (editBtn) editBtn.addEventListener('click', openEditConfig, { signal: signal });
+            if (backdrop) backdrop.addEventListener('click', closeEditConfig, { signal: signal });
+            if (closeBtn) closeBtn.addEventListener('click', closeEditConfig, { signal: signal });
+            if (amountContainer) {
+                amountContainer.addEventListener('click', function (e) {
+                    var btn = e.target.closest('button[data-amount]');
+                    if (btn) {
+                        editConfigAmount = parseInt(btn.dataset.amount, 10);
+                        refreshEditConfigUI();
+                    }
+                }, { signal: signal });
+            }
+            if (punctBtn) punctBtn.addEventListener('click', function () {
+                editConfigPunct = !editConfigPunct;
+                refreshEditConfigUI();
+            }, { signal: signal });
+            if (numBtn) numBtn.addEventListener('click', function () {
+                editConfigNums = !editConfigNums;
+                refreshEditConfigUI();
+            }, { signal: signal });
+            if (saveBtn) saveBtn.addEventListener('click', function () {
+                if (!window.usertypoMultiplayer) return;
+                window.usertypoMultiplayer.emit('room:update-config', {
+                    roomId: roomId,
+                    config: {
+                        amount: editConfigAmount,
+                        punct: editConfigPunct,
+                        nums: editConfigNums,
+                    },
+                }, function (res) {
+                    if (res && res.ok) {
+                        closeEditConfig();
+                        if (window.usertypoNotifications) {
+                            window.usertypoNotifications.showToast('Configuration updated', 'success');
+                        }
+                    } else {
+                        if (window.usertypoNotifications) {
+                            window.usertypoNotifications.showToast(
+                                (res && res.error) || 'Failed to update config', 'error'
+                            );
+                        }
+                    }
+                });
+            }, { signal: signal });
         }
 
         function paintLobbyPlayers() {
@@ -2379,6 +2488,7 @@
             refreshDomRefs();
             setFooterCompact(true);
             bindLobbyUI();
+            bindEditConfigUI();
             bindEvents();
             try {
                 await window.usertypoMultiplayer.connect();
