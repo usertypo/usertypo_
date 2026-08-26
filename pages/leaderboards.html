@@ -219,15 +219,15 @@
         #lb-table-wrap tbody tr td { border-top: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); border-bottom: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); }
         #lb-table-wrap tbody tr.lb-row-me {
             background: rgba(var(--theme-primary-rgb), 0.10);
-            box-shadow: inset 0 0 20px rgba(var(--theme-primary-rgb), 0.05),
-                        0 0 0 1.5px rgba(var(--theme-primary-rgb), 0.30);
         }
         #lb-table-wrap tbody tr.lb-row-me td {
-            border-color: rgba(var(--theme-primary-rgb), 0.25);
+            border-color: rgba(var(--theme-primary-rgb), 0.35);
         }
         #lb-table-wrap tbody tr.lb-row-me:hover {
             background: rgba(var(--theme-primary-rgb), 0.18);
         }
+        /* Theme-aware avatar glow for own row */
+        .lb-avatar-glow { box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.45); }
         /* Theme-aware text colors for leaderboard rows */
         .lb-text-strong { color: var(--theme-fg-strong, #ffffff); }
         .lb-text-strong-80 { color: var(--theme-fg-strong, #ffffff); opacity: 0.8; }
@@ -526,7 +526,7 @@ window.__spaPageInit = function() {
                         userId: entry.userId,
                     }, {
                         size: 'xs',
-                        className: isMe ? 'shadow-[0_0_10px_rgba(0,208,255,0.45)]' : '',
+                        className: isMe ? 'lb-avatar-glow' : '',
                     });
                 }
                 var lb = window.usertypoLeaderboards;
@@ -535,11 +535,11 @@ window.__spaPageInit = function() {
                     ? window.usertypoEscape.url(entry.avatarUrl, '')
                     : '';
                 if (safeAvatar) {
-                    return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center overflow-hidden border border-transparent' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : '') + '">' +
+                    return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center overflow-hidden border border-transparent' + (isMe ? ' lb-avatar-glow' : '') + '">' +
                         '<img src="' + escapeHtml(safeAvatar) + '" alt="" class="w-full h-full object-cover" loading="lazy" />' +
                         '</div>';
                 }
-                return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center font-sans font-bold text-xs' + (isMe ? ' shadow-[0_0_10px_rgba(0,208,255,0.5)]' : ' border border-transparent group-hover:border-white/10 transition-colors') + '">' + letter + '</div>';
+                return '<div class="w-7 h-7 rounded-full ' + colorClass + ' flex items-center justify-center font-sans font-bold text-xs' + (isMe ? ' lb-avatar-glow' : ' border border-transparent group-hover:border-white/10 transition-colors') + '">' + letter + '</div>';
             }
 
             function renderFlag(entry) {
