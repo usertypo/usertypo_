@@ -48,7 +48,7 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=44'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=45'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -130,7 +130,8 @@
             description: '1v1 typing race on usertypo_.',
             robots: 'noindex, nofollow',
             navId: null,
-            compact: false,
+            compact: true,
+            typingLayout: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
