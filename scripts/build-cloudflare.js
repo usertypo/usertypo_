@@ -100,6 +100,7 @@ function main() {
         'security',
         'leaderboards',
         'friends',
+        'multiplayer',
         'userstats',
         'settings',
         'signin',
