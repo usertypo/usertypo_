@@ -58,6 +58,7 @@ as $$
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
         (
@@ -160,6 +161,7 @@ as $$
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
         (
@@ -213,12 +215,32 @@ stable
 security definer
 set search_path = public
 as $$
+  with user_test_counts as (
+    select
+      ts.user_id,
+      count(*)::integer as completed_tests
+    from public.typing_sessions ts
+    where ts.failed = false
+    group by ts.user_id
+  ),
+  eligible_users as (
+    select distinct ts.user_id
+    from public.typing_sessions ts
+    inner join public.profiles p on p.user_id = ts.user_id
+    left join user_test_counts utc on utc.user_id = ts.user_id
+    where ts.failed = false
+      and ts.accuracy >= 75
+      and ts.wpm >= 30
+      and p.show_on_leaderboard = true
+      and p.country_code is not null
+      and p.country_code ~ '^[A-Z]{2}$'
+      and coalesce(utc.completed_tests, 0) >= 50
+  )
   select
     p.country_code as code,
     count(*)::integer as users
-  from public.profiles p
-  where p.country_code is not null
-    and p.country_code ~ '^[A-Z]{2}$'
+  from eligible_users eu
+  inner join public.profiles p on p.user_id = eu.user_id
   group by p.country_code
   order by count(*) desc, p.country_code asc;
 $$;
@@ -277,6 +299,7 @@ as $$
       and ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
         (
@@ -403,6 +426,7 @@ begin
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and ts.accuracy >= 75
       and (
         p.show_on_leaderboard = true
         or p.user_id = v_me

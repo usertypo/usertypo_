@@ -27,6 +27,7 @@ type Mode = "time" | "words";
 
 const ALLTIME_MIN_TESTS = 50;
 const ALLTIME_MIN_WPM = 30;
+const MIN_ACCURACY = 75;
 /** Soft ceiling aligned with multiplayer anti-cheat (+ headroom). */
 const MAX_INGEST_WPM = 500;
 /** Ignore stale ingest replays of old session rows. */
@@ -198,7 +199,8 @@ async function countCompletedTestsBatch(userIds: string[]) {
   return map;
 }
 
-function qualifiesAlltimeScore(completedTests: number, wpm: number) {
+function qualifiesAlltimeScore(completedTests: number, wpm: number, accuracy?: number | null) {
+  if (accuracy != null && isFinite(Number(accuracy)) && Number(accuracy) < MIN_ACCURACY) return false;
   return completedTests >= ALLTIME_MIN_TESTS && wpm >= ALLTIME_MIN_WPM;
 }
 
@@ -486,7 +488,7 @@ async function handleTop(body: Record<string, unknown>) {
     eligibleEntries = [];
     for (const entry of entries) {
       const tests = testCounts.get(entry.user_id) || 0;
-      if (!qualifiesAlltimeScore(tests, entry.wpm)) {
+      if (!qualifiesAlltimeScore(tests, entry.wpm, entry.accuracy)) {
         removeCmds.push(["ZREM", zkey, entry.user_id]);
         removeCmds.push(["HDEL", mkey, entry.user_id]);
         continue;
@@ -499,6 +501,12 @@ async function handleTop(body: Record<string, unknown>) {
       }
     }
   }
+
+  // Filter out entries with low accuracy across all timeframes
+  eligibleEntries = eligibleEntries.filter(function (entry) {
+    if (entry.accuracy != null && isFinite(Number(entry.accuracy)) && Number(entry.accuracy) < MIN_ACCURACY) return false;
+    return true;
+  });
 
   const profiles = await hydrateProfiles(eligibleEntries.map((e) => e.user_id));
   const ranked = [];
@@ -666,6 +674,11 @@ async function handleIngest(body: Record<string, unknown>, authHeader: string | 
     return json(200, { source: "redis", skipped: true, reason: "wpm_cap" });
   }
 
+  const sessionAccuracy = session.accuracy == null ? null : Number(session.accuracy);
+  if (sessionAccuracy != null && isFinite(sessionAccuracy) && sessionAccuracy < MIN_ACCURACY) {
+    return json(200, { source: "redis", skipped: true, reason: "low_accuracy" });
+  }
+
   const createdAt = session.created_at || new Date().toISOString();
   const at = new Date(createdAt);
   if (!isFinite(at.getTime()) || (Date.now() - at.getTime()) > MAX_INGEST_AGE_MS) {
@@ -691,7 +704,7 @@ async function handleIngest(body: Record<string, unknown>, authHeader: string | 
   });
 
   const completedTests = await countCompletedTests(userId);
-  const qualifiesAlltime = qualifiesAlltimeScore(completedTests, wpm);
+  const qualifiesAlltime = qualifiesAlltimeScore(completedTests, wpm, accuracy);
 
   let alltimeUpdated = false;
   if (qualifiesAlltime) {
@@ -785,6 +798,8 @@ async function reseedUserBests(userId: string) {
     const key = `${mode}:${amount}`;
     const wpm = Number(row.wpm);
     if (!isFinite(wpm) || wpm <= 0) continue;
+    const rowAccuracy = row.accuracy == null ? null : Number(row.accuracy);
+    if (rowAccuracy != null && isFinite(rowAccuracy) && rowAccuracy < MIN_ACCURACY) continue;
     const current = bestByCombo.get(key);
     if (!current || wpm > current.wpm) {
       bestByCombo.set(key, {
