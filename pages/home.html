@@ -5078,35 +5078,51 @@
                 const pbBadge = cloned.querySelector('#stats-pb-badge');
                 if (pbBadge) {
                     if (isPbVisible) {
-                        // Force-remove any Tailwind hide classes that may have been cloned
-                        pbBadge.classList.remove('opacity-0', 'hidden', 'invisible');
+                        // Detach the badge from its deeply-nested absolute position
+                        // and re-insert it as a normal-flow element near the top of
+                        // the capture area so it falls inside the canvas bounding box.
+                        pbBadge.remove();
+
+                        // Reset positioning to normal flow
+                        pbBadge.classList.remove('opacity-0', 'hidden', 'invisible', 'absolute', 'pointer-events-none');
                         pbBadge.classList.add('opacity-100');
-                        // Freeze the breath-glow animation at its peak state
+                        pbBadge.style.position = 'static';
+                        pbBadge.style.bottom = '';
+                        pbBadge.style.left = '';
+                        pbBadge.style.marginBottom = '0.5rem';
                         pbBadge.style.animation = 'none';
                         pbBadge.style.animationDelay = '0s';
                         pbBadge.style.transition = 'none';
                         pbBadge.style.opacity = '1';
                         pbBadge.style.visibility = 'visible';
-                        pbBadge.style.display = '';
+                        pbBadge.style.display = 'inline-flex';
                         pbBadge.style.transform = 'scale(1)';
                         pbBadge.style.pointerEvents = 'none';
-                        // Resolve backdrop-blur to solid bg for screenshot rendering
                         pbBadge.style.backdropFilter = 'none';
                         pbBadge.style.webkitBackdropFilter = 'none';
-                        // Ensure parent containers don't clip the absolutely-positioned badge
-                        let p = pbBadge.parentElement;
-                        while (p && p !== cloned) {
-                            p.style.overflow = 'visible';
-                            p = p.parentElement;
-                        }
                         if (livePbBadge) {
                             const cs = getComputedStyle(livePbBadge);
                             if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
                                 pbBadge.style.backgroundColor = cs.backgroundColor;
                             }
-                            // Freeze box-shadow at peak glow state
                             pbBadge.style.boxShadow = cs.boxShadow || 'none';
                             pbBadge.style.borderColor = cs.borderColor || '';
+                        }
+
+                        // Wrap in a centered container and insert after the logo (or at the top)
+                        const doc = cloned.ownerDocument || document;
+                        const pbWrap = doc.createElement('div');
+                        pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;';
+                        pbWrap.appendChild(pbBadge);
+
+                        // Insert after logo wrapper if it exists, otherwise at the start
+                        const firstChild = cloned.firstChild;
+                        // Skip past the logo wrapper (injected above) if it exists
+                        const logoWrap = cloned.querySelector('div[style*="margin-bottom:0.5rem"]');
+                        if (logoWrap && logoWrap.parentElement === cloned) {
+                            logoWrap.after(pbWrap);
+                        } else {
+                            cloned.insertBefore(pbWrap, firstChild);
                         }
                     } else {
                         // Not a PB — ensure badge stays hidden in screenshot
