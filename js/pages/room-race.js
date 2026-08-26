@@ -1968,6 +1968,11 @@
             statsView.classList.add('hidden', 'opacity-0');
             statsView.style.display = 'none';
             statsView.classList.remove('flex');
+            // Clear stale results so they don't flash when the next match finishes.
+            var oldPodium = document.getElementById('stats-podium');
+            var oldList = document.getElementById('stats-rankings-list');
+            if (oldPodium) oldPodium.innerHTML = '';
+            if (oldList) oldList.innerHTML = '';
             testView.classList.add('hidden');
             testView.style.display = 'none';
             lobbyView.classList.remove('hidden', 'opacity-0');
@@ -2168,10 +2173,22 @@
                 return;
             }
             if (self && self.ready) return;
+            // Disable immediately to prevent double-clicks and give feedback.
+            if (readyButton) {
+                readyButton.disabled = true;
+                readyButton.classList.add('is-disabled');
+                readyButton.setAttribute('aria-disabled', 'true');
+            }
             try {
                 await window.usertypoMultiplayer.setRoomReady(roomId);
             } catch (error) {
                 window.usertypoNotifications?.showToast(error.message, 'error');
+                // Re-enable on failure so the user can retry.
+                if (readyButton) {
+                    readyButton.disabled = false;
+                    readyButton.classList.remove('is-disabled');
+                    readyButton.removeAttribute('aria-disabled');
+                }
             }
         }
 
