@@ -206,23 +206,33 @@
         #lb-table-wrap thead tr th:first-child { border-radius: 9999px 0 0 9999px; }
         #lb-table-wrap thead tr th:last-child  { border-radius: 0 9999px 9999px 0; }
         #lb-table-wrap tbody tr {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(var(--theme-bg-secondary-rgb, 68,68,68), 0.25);
+            border: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08));
             transition: background 0.2s ease, box-shadow 0.2s ease;
             cursor: default;
         }
         #lb-table-wrap tbody tr:hover {
-            background: rgba(255, 255, 255, 0.07);
+            background: rgba(var(--theme-bg-secondary-rgb, 68,68,68), 0.45);
         }
-        #lb-table-wrap tbody tr td:first-child { border-radius: 9999px 0 0 9999px; }
-        #lb-table-wrap tbody tr td:last-child  { border-radius: 0 9999px 9999px 0; }
+        #lb-table-wrap tbody tr td:first-child { border-radius: 9999px 0 0 9999px; border-left: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); }
+        #lb-table-wrap tbody tr td:last-child  { border-radius: 0 9999px 9999px 0; border-right: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); }
+        #lb-table-wrap tbody tr td { border-top: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); border-bottom: 1px solid var(--theme-panel-border, rgba(255,255,255,0.08)); }
         #lb-table-wrap tbody tr.lb-row-me {
             background: rgba(var(--theme-primary-rgb), 0.10);
             box-shadow: inset 0 0 20px rgba(var(--theme-primary-rgb), 0.05),
                         0 0 0 1.5px rgba(var(--theme-primary-rgb), 0.30);
         }
+        #lb-table-wrap tbody tr.lb-row-me td {
+            border-color: rgba(var(--theme-primary-rgb), 0.25);
+        }
         #lb-table-wrap tbody tr.lb-row-me:hover {
             background: rgba(var(--theme-primary-rgb), 0.18);
         }
+        /* Theme-aware text colors for leaderboard rows */
+        .lb-text-strong { color: var(--theme-fg-strong, #ffffff); }
+        .lb-text-strong-80 { color: var(--theme-fg-strong, #ffffff); opacity: 0.8; }
+        .lb-name-hover { color: var(--theme-text-muted, #cbd5e1); }
+        .group:hover .lb-name-hover { color: var(--theme-fg-strong, #ffffff); }
 </style>
 
 <aside id="config-bar"
@@ -576,7 +586,7 @@ window.__spaPageInit = function() {
 
                     var nameBlock = '<span class="inline-flex items-center gap-1.5 min-w-0">' +
                         '<span class="font-sans tracking-wide truncate ' +
-                        (isMe ? 'font-bold text-white' : 'font-medium text-slate-200 group-hover:text-white transition-colors') +
+                        (isMe ? 'font-bold lb-text-strong' : 'font-medium lb-name-hover transition-colors') +
                         '">' + username + '</span>' +
                         flag +
                         (isMe ? '<span class="material-symbols-outlined text-primary text-sm shrink-0" title="You">person</span>' : '') +
@@ -589,10 +599,10 @@ window.__spaPageInit = function() {
                             renderAvatar(entry, colorClass, true) +
                             nameBlock +
                             '</div></td>' +
-                            '<td class="py-2.5 px-5 text-right font-bold text-white text-base">' + wpm + '</td>' +
-                            '<td class="py-2.5 px-4 text-right text-white/80 hidden md:table-cell">' + raw + '</td>' +
-                            '<td class="py-2.5 px-5 text-right text-white font-medium">' + acc + '</td>' +
-                            '<td class="py-2.5 px-4 text-right text-white/80 hidden md:table-cell">' + cons + '</td>' +
+                            '<td class="py-2.5 px-5 text-right font-bold lb-text-strong text-base">' + wpm + '</td>' +
+                            '<td class="py-2.5 px-4 text-right lb-text-strong-80 hidden md:table-cell">' + raw + '</td>' +
+                            '<td class="py-2.5 px-5 text-right lb-text-strong font-medium">' + acc + '</td>' +
+                            '<td class="py-2.5 px-4 text-right lb-text-strong-80 hidden md:table-cell">' + cons + '</td>' +
                             '<td class="py-2.5 px-5 text-right text-primary/70 hidden sm:table-cell">' + date + '</td>' +
                             '</tr>';
                     }
