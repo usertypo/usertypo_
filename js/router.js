@@ -132,6 +132,8 @@
             navId: null,
             compact: true,
             typingLayout: true,
+            hideShellFooter: true,
+            hideShellHeader: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
