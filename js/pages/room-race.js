@@ -694,6 +694,8 @@
                 var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
                 var startOpen = !!(startConfirmModal && startConfirmModal.classList.contains('opacity-100'));
                 var hostOpen = !!(hostModal && hostModal.classList.contains('opacity-100'));
+                var editConfigModal = document.getElementById('edit-config-modal');
+                var editOpen = !!(editConfigModal && editConfigModal.classList.contains('opacity-100'));
 
                 // Stats view: never let Space scroll the page.
                 if ((event.key === ' ' || event.key === 'Spacebar') && state === 'finished' && !inEditable) {
@@ -702,7 +704,7 @@
                 }
 
                 if (state !== 'lobby' && state !== 'finished') return;
-                if (startOpen || hostOpen) return;
+                if (startOpen || hostOpen || editOpen) return;
                 if (inEditable) return;
 
                 var leaveBtn = state === 'lobby'
@@ -1267,14 +1269,111 @@
             if (inviteLink) inviteLink.textContent = getJoinLink();
             if (mode) mode.textContent = config.mode === 'words'
                 ? config.amount + ' words'
-                : 'Timed: ' + config.amount + ' seconds';
+                : config.amount + ' seconds';
             if (modifiers) modifiers.textContent = [
-                config.lang,
                 config.punct ? 'Punctuation' : '',
                 config.nums ? 'Numbers' : '',
             ].filter(Boolean).join(' · ');
 
+            // Show edit button for host only
+            var editBtn = document.getElementById('lobby-edit-config-btn');
+            if (editBtn) editBtn.classList.toggle('hidden', !isHost);
+
             paintLobbyPlayers();
+        }
+
+        // --- Edit Config Modal ---
+        var editConfigPunct = false;
+        var editConfigNums = false;
+        var editConfigAmount = 30;
+
+        function bindEditConfigUI() {
+            var editBtn = document.getElementById('lobby-edit-config-btn');
+            var modal = document.getElementById('edit-config-modal');
+            var content = document.getElementById('edit-config-content');
+            var backdrop = document.getElementById('edit-config-backdrop');
+            var closeBtn = document.getElementById('close-edit-config-btn');
+            var saveBtn = document.getElementById('save-edit-config-btn');
+            var amountContainer = document.getElementById('edit-config-amount-container');
+            var punctBtn = document.getElementById('edit-btn-punct');
+            var numBtn = document.getElementById('edit-btn-num');
+            if (!modal) return;
+
+            var ACTIVE_CLASS = 'bg-primary text-background-dark py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_10px_rgba(0,208,255,0.3)]';
+            var INACTIVE_CLASS = 'bg-white/10 hover:bg-white/20 text-slate-200 py-2 rounded-lg text-sm font-semibold transition-colors border border-transparent';
+            var ON_CLASS = 'border-primary/60 bg-primary/10 text-primary';
+
+            function openEditConfig() {
+                if (!config) return;
+                editConfigAmount = config.amount;
+                editConfigPunct = config.punct;
+                editConfigNums = config.nums;
+                refreshEditConfigUI();
+                modal.classList.remove('pointer-events-none', 'opacity-0');
+                modal.classList.add('opacity-100');
+                if (content) content.style.transform = 'scale(1)';
+            }
+
+            function closeEditConfig() {
+                modal.classList.add('pointer-events-none', 'opacity-0');
+                modal.classList.remove('opacity-100');
+                if (content) content.style.transform = 'scale(0.95)';
+            }
+
+            var TOGGLE_OFF = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
+            var TOGGLE_ON = 'flex items-center justify-center gap-2 text-primary border border-primary/60 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all group';
+
+            function refreshEditConfigUI() {
+                if (amountContainer) {
+                    var btns = amountContainer.querySelectorAll('button[data-amount]');
+                    btns.forEach(function (btn) {
+                        var val = parseInt(btn.dataset.amount, 10);
+                        btn.className = 'flex-1 ' + (val === editConfigAmount ? ACTIVE_CLASS : INACTIVE_CLASS);
+                    });
+                }
+                if (punctBtn) punctBtn.className = editConfigPunct ? TOGGLE_ON : TOGGLE_OFF;
+                if (numBtn) numBtn.className = editConfigNums ? TOGGLE_ON : TOGGLE_OFF;
+            }
+
+            if (editBtn) editBtn.addEventListener('click', openEditConfig, { signal: signal });
+            if (backdrop) backdrop.addEventListener('click', closeEditConfig, { signal: signal });
+            if (closeBtn) closeBtn.addEventListener('click', closeEditConfig, { signal: signal });
+            if (amountContainer) {
+                amountContainer.addEventListener('click', function (e) {
+                    var btn = e.target.closest('button[data-amount]');
+                    if (btn) {
+                        editConfigAmount = parseInt(btn.dataset.amount, 10);
+                        refreshEditConfigUI();
+                    }
+                }, { signal: signal });
+            }
+            if (punctBtn) punctBtn.addEventListener('click', function () {
+                editConfigPunct = !editConfigPunct;
+                refreshEditConfigUI();
+            }, { signal: signal });
+            if (numBtn) numBtn.addEventListener('click', function () {
+                editConfigNums = !editConfigNums;
+                refreshEditConfigUI();
+            }, { signal: signal });
+            if (saveBtn) saveBtn.addEventListener('click', function () {
+                if (!window.usertypoMultiplayer) return;
+                window.usertypoMultiplayer.updateRoomConfig(roomId, {
+                    amount: editConfigAmount,
+                    punct: editConfigPunct,
+                    nums: editConfigNums,
+                }).then(function () {
+                    closeEditConfig();
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast('Configuration updated', 'success');
+                    }
+                }).catch(function (err) {
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast(
+                            (err && err.message) || 'Failed to update config', 'error'
+                        );
+                    }
+                });
+            }, { signal: signal });
         }
 
         function paintLobbyPlayers() {
@@ -1690,9 +1789,14 @@
                 if (lockedAt != null && errorHistory.length) {
                     var errorEntry = errorHistory.pop();
                     if (errorEntry.kind === 'space') {
+                        // Remove error-underlines from skipped chars
+                        var skipWord = words[errorEntry.wordIndex];
+                        for (var ri = errorEntry.charIndex; ri < skipWord.length; ri++) {
+                            var uel = document.getElementById('room-char-' + errorEntry.wordIndex + '-' + ri);
+                            if (uel) uel.classList.remove('error-underline');
+                        }
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
-                        if (completedWords > 0) completedWords -= 1;
                     } else {
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
@@ -1742,35 +1846,32 @@
             }
             totalKeystrokes += 1;
             if (key === ' ') {
+                if (currentCharIndex === 0) return; // no space as first letter
                 if (currentCharIndex === word.length) {
                     // Word fully typed — advance normally
                     if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                     finishWord();
                     return;
                 }
-                // Space mid-word: lock and mark remaining chars as errors
+                // Space mid-word: lock and skip to next word
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                 lockedAt = currentCharIndex;
                 errorHistory = [];
+                // Underline remaining chars visually + count as errors
                 for (var si = currentCharIndex; si < word.length; si++) {
                     var el = document.getElementById('room-char-' + currentWordIndex + '-' + si);
                     if (el) el.classList.add('error-underline');
-                    errorHistory.push({
-                        kind: 'char',
-                        wordIndex: currentWordIndex,
-                        charIndex: si,
-                    });
-                    errors += 1;
-                    totalKeystrokes += 1;
                 }
-                // Record the space-to-next-word transition
+                var skippedCount = word.length - currentCharIndex;
+                errors += skippedCount;
+                totalKeystrokes += skippedCount;
+                // Single space entry — one backspace returns to where user was
                 if (words[currentWordIndex + 1]) {
                     errorHistory.push({
                         kind: 'space',
                         wordIndex: currentWordIndex,
-                        charIndex: word.length,
+                        charIndex: currentCharIndex,
                     });
-                    completedWords += 1;
                     currentWordIndex += 1;
                     currentCharIndex = 0;
                 }
@@ -2377,6 +2478,7 @@
             refreshDomRefs();
             setFooterCompact(true);
             bindLobbyUI();
+            bindEditConfigUI();
             bindEvents();
             try {
                 await window.usertypoMultiplayer.connect();

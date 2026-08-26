@@ -1800,6 +1800,30 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
+        socket.on('room:update-config', (payload, ack) => {
+            try {
+                const roomId = String(payload && payload.roomId || '');
+                const room = rooms.get(roomId);
+                if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+                    safeAck(ack, { ok: false, error: 'room_not_found' });
+                    return;
+                }
+                if (room.hostUserId !== userId) {
+                    safeAck(ack, { ok: false, error: 'forbidden' });
+                    return;
+                }
+                const newConfig = normalizeConfig(payload.config);
+                room.config = newConfig;
+                // Un-ready all players so they re-acknowledge the new config
+                room.players.forEach((player) => { player.ready = false; });
+                touchRoomActivity(room);
+                void emitRoomState(room, 'custom');
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'update_config_failed' });
+            }
+        });
+
         socket.on('room:start', (payload, ack) => {
             const roomId = payload && typeof payload === 'object'
                 ? String(payload.roomId || '')
