@@ -15,6 +15,7 @@ const LIMITS = Object.freeze({
     finishedRoomTtlMs: 60_000,
     roomInactivityMs: 600_000,
     minReadyToStart: 3,
+    minReturnToLobby: 2,
     countdownSeconds: 5,
     maxRetainedSnapshots: 32,
     // Connection flood protection (Phase 7)
