@@ -786,12 +786,9 @@
 
             if (path === '/') {
                 prepareHomeTypingView();
-                // Only restart on the FIRST visit to home.  Returning from
-                // settings / leaderboard / profile should preserve the test.
-                if (!window.__homeTestReady && typeof window.restartTest === 'function') {
+                if (typeof window.restartTest === 'function') {
                     try {
                         window.restartTest({ randomizeTheme: false });
-                        window.__homeTestReady = true;
                     } catch (e) { console.warn('restartTest', e); }
                 }
             }
