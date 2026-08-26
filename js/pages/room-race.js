@@ -79,6 +79,39 @@
         var intentionalLeave = false;
         var prevInRoomIds = {};
         var levelCache = {};
+        var zenMouseHandler = null;
+
+        // --- Footer visibility helpers ---
+        var shellFooter = document.getElementById('spa-shell-footer');
+        var footerNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+
+        function setFooterCompact(compact) {
+            if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
+        }
+
+        function hideZenElements() {
+            document.querySelectorAll('.zen-element').forEach(function (el) {
+                el.classList.add('zen-hidden');
+            });
+        }
+
+        function showZenElements() {
+            document.querySelectorAll('.zen-element').forEach(function (el) {
+                el.classList.remove('zen-hidden');
+            });
+        }
+
+        function startZenMode() {
+            hideZenElements();
+            if (!zenMouseHandler) {
+                zenMouseHandler = function () { showZenElements(); };
+                document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
+            }
+        }
+
+        function stopZenMode() {
+            showZenElements();
+        }
 
         function getJoinLink() {
             var origin = window.location.origin || '';
@@ -1110,6 +1143,7 @@
 
             function unlockTyping() {
                 state = 'racing';
+                startZenMode();
                 if (window.usertypo_settingsApi) {
                     try {
                         window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
@@ -1658,6 +1692,7 @@
                     if (errorEntry.kind === 'space') {
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
+                        if (completedWords > 0) completedWords -= 1;
                     } else {
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
@@ -1707,16 +1742,39 @@
             }
             totalKeystrokes += 1;
             if (key === ' ') {
-                // Mark remaining untyped chars as errors (underline, like home page)
-                var skipped = word.length - currentCharIndex;
+                if (currentCharIndex === word.length) {
+                    // Word fully typed — advance normally
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                    finishWord();
+                    return;
+                }
+                // Space mid-word: lock and mark remaining chars as errors
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                lockedAt = currentCharIndex;
+                errorHistory = [];
                 for (var si = currentCharIndex; si < word.length; si++) {
                     var el = document.getElementById('room-char-' + currentWordIndex + '-' + si);
                     if (el) el.classList.add('error-underline');
+                    errorHistory.push({
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: si,
+                    });
                     errors += 1;
                     totalKeystrokes += 1;
                 }
-                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
-                finishWord();
+                // Record the space-to-next-word transition
+                if (words[currentWordIndex + 1]) {
+                    errorHistory.push({
+                        kind: 'space',
+                        wordIndex: currentWordIndex,
+                        charIndex: word.length,
+                    });
+                    completedWords += 1;
+                    currentWordIndex += 1;
+                    currentCharIndex = 0;
+                }
+                updateCaret();
                 return;
             }
             if (key === word[currentCharIndex]) {
@@ -2040,6 +2098,7 @@
             countdownSequenceStarted = false;
             pendingRacePayload = null;
             state = 'lobby';
+            setFooterCompact(true);
             if (payload) {
                 room = payload;
                 config = room.config;
@@ -2069,6 +2128,8 @@
         }
 
         function renderResults(payload) {
+            stopZenMode();
+            setFooterCompact(false);
             var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
             if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
             if (state === 'finished' && finished) {
@@ -2314,6 +2375,7 @@
                 return;
             }
             refreshDomRefs();
+            setFooterCompact(true);
             bindLobbyUI();
             bindEvents();
             try {
