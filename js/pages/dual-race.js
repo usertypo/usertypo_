@@ -874,6 +874,7 @@
                 if (currentCharIndex === 0) return; // no space as first letter
                 if (currentCharIndex === word.length) {
                     // Word fully typed — advance normally
+                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                     correctKeystrokeTimes.push(Date.now());
                     completeWord();
                     return;
@@ -1491,7 +1492,16 @@
                 var element = document.getElementById(id);
                 if (element) element.textContent = value;
             }
-            set(prefix + '-name', data.name);
+            var nameEl = document.getElementById(prefix + '-name');
+            if (nameEl) {
+                nameEl.textContent = data.name;
+                if (data.userId && data.userId === selfUserId) {
+                    var youBadge = document.createElement('span');
+                    youBadge.textContent = '(you)';
+                    youBadge.className = 'text-xs font-semibold text-slate-500 ml-1.5';
+                    nameEl.appendChild(youBadge);
+                }
+            }
             var avatar = document.getElementById(prefix + '-avatar');
             if (avatar) {
                 if (window.usertypoPlayerAvatar) {
