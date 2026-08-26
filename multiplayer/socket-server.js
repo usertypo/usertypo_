@@ -1598,13 +1598,15 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:create', (payload, ack) => {
+        socket.on('room:create', async (payload, ack) => {
             try {
                 // Abandon any stuck/previous membership so browser-back leftovers
                 // cannot permanently block creating a new room.
                 if (userToRoom.has(userId)) {
                     leaveRace(userId, true);
                 }
+                // Refresh profile so level data is up-to-date.
+                try { profiles.set(userId, await auth.getProfile(userId)); } catch (_) { /* keep existing */ }
                 const config = normalizeConfig(payload && payload.config);
                 const maxPlayers = clampInteger(payload && payload.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
                 let roomCode;
@@ -1622,7 +1624,7 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
-        socket.on('room:join-code', (code, ack) => {
+        socket.on('room:join-code', async (code, ack) => {
             const roomCodeValue = String(code || '').trim();
             const existingRoomId = userToRoom.get(userId);
             if (existingRoomId) {
@@ -1639,6 +1641,8 @@ function createMultiplayerServer(httpServer, options) {
                 safeAck(ack, { ok: false, error: 'room_not_found' });
                 return;
             }
+            // Refresh profile so level data is up-to-date.
+            try { profiles.set(userId, await auth.getProfile(userId)); } catch (_) { /* keep existing */ }
             if (!room.players.has(userId)) {
                 if (occupiedSlots(room) >= room.maxPlayers) {
                     safeAck(ack, { ok: false, error: 'room_full' });
