@@ -1356,6 +1356,17 @@ function createMultiplayerServer(httpServer, options) {
                 player.socketId = socket.id;
                 socket.join(roomChannel(room.id));
                 userToRoom.set(userId, room.id);
+                // New player who joined mid-race — show them the lobby to wait.
+                if (player.status === 'waiting') {
+                    safeAck(ack, {
+                        ok: true,
+                        room: await maskPayloadForViewer(publicRoomPayload(room, room.type), userId),
+                        state: 'waiting',
+                        countdown: null,
+                        race: null,
+                    });
+                    return;
+                }
                 safeAck(ack, {
                     ok: true,
                     room: await maskPayloadForViewer(publicRoomPayload(room, room.type), userId),
@@ -1624,7 +1635,7 @@ function createMultiplayerServer(httpServer, options) {
                 leaveRace(userId, true);
             }
             const room = Array.from(rooms.values()).find((item) => item.roomCode === roomCodeValue);
-            if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+            if (!room || room.type !== 'custom' || room.state === 'disposed') {
                 safeAck(ack, { ok: false, error: 'room_not_found' });
                 return;
             }
