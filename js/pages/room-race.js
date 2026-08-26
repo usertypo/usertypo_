@@ -1241,32 +1241,6 @@
             ].filter(Boolean).join(' · ');
 
             paintLobbyPlayers();
-            enrichRoomPlayerLevels().then(function (enrichedPlayers) {
-                if (!enrichedPlayers) return;
-                // Always update the persistent cache, even if room state changed.
-                enrichedPlayers.forEach(function (player) {
-                    if (!player || !player.userId) return;
-                    if (player.level != null && Number(player.level) > 1) {
-                        levelCache[player.userId] = {
-                            level: player.level,
-                            percentToNext: player.percentToNext,
-                            xpIntoLevel: player.xpIntoLevel,
-                        };
-                    }
-                });
-                // Apply the fresh cache to current room players and repaint.
-                if (!room || room.roomId !== roomId) return;
-                (room.players || []).forEach(function (player) {
-                    if (!player || !player.userId) return;
-                    var cached = levelCache[player.userId];
-                    if (cached && (player.level == null || Number(player.level) <= 1)) {
-                        player.level = cached.level;
-                        player.percentToNext = cached.percentToNext;
-                        if (cached.xpIntoLevel != null) player.xpIntoLevel = cached.xpIntoLevel;
-                    }
-                });
-                paintLobbyPlayers();
-            }).catch(function () { /* ignore */ });
         }
 
         function paintLobbyPlayers() {
@@ -1313,6 +1287,24 @@
             if (invitePanelOpen) {
                 renderInviteFriends();
                 updateAddBotOption();
+            }
+            // Enrich levels from the DB (same path as the player list) then repaint.
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                var paintRoom = room;
+                window.usertypoProgression.attachToList(room.players, 'userId', { force: true }).then(function () {
+                    if (!room || room !== paintRoom) return;
+                    // Re-render host avatar.
+                    var h = room.players.find(function (p) { return p.userId === room.hostUserId; });
+                    var slot = document.getElementById('lobby-host-avatar-slot')
+                        || document.querySelector('#lobby-host .lobby-host-avatar');
+                    if (slot && h) slot.innerHTML = playerAvatarHtml(h, 'host', 'lobby-host-level-avatar', { clickable: false });
+                    // Re-render orbit guests.
+                    var g = room.players.filter(function (p) {
+                        return p.userId !== room.hostUserId && p.status !== 'left';
+                    });
+                    if (room.bot) g = g.concat([{ name: room.bot.name, avatarUrl: '', ready: true, isBot: true, userId: 'bot', index: room.bot.index }]);
+                    layoutOrbitPlayers(g);
+                }).catch(function () { /* ignore */ });
             }
         }
 
