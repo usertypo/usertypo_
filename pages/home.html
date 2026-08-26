@@ -5058,62 +5058,40 @@
             hideSelectors: ['#stats-action-buttons'],
             padding: 56,
             beforeCapture: () => {
-                // Inject a STATIC PB badge into the live DOM at the top of capture area.
-                // This is the only reliable way to include it in the screenshot because
-                // domToCanvas calculates dimensions from the live DOM and clones it —
-                // any modifications to the clone tree in patchCloneRoot are unreliable.
+                // Temporarily modify the LIVE PB badge from absolute to relative
+                // so it stays inside its parent (the "WPM" text div) and is in-flow.
+                // This keeps it exactly above the "WPM" word — same as on the website.
                 if (isPbVisible && livePbBadge) {
-                    const pbClone = livePbBadge.cloneNode(true);
-                    pbClone.id = 'stats-pb-badge-screenshot';
-                    pbClone.classList.remove('opacity-0', 'hidden', 'invisible', 'absolute');
-                    pbClone.classList.add('opacity-100');
-                    pbClone.style.cssText = `
-                        position: static !important;
-                        display: inline-flex !important;
-                        opacity: 1 !important;
-                        visibility: visible !important;
-                        transform: scale(1) !important;
-                        animation: none !important;
-                        transition: none !important;
-                        pointer-events: none !important;
-                        backdrop-filter: none !important;
-                        -webkit-backdrop-filter: none !important;
-                    `;
-                    // Copy computed bg color (resolves backdrop-blur)
+                    // Save original styles to restore later
+                    _tempPbEl = {
+                        origStyle: livePbBadge.getAttribute('style') || '',
+                        origClasses: livePbBadge.className,
+                    };
+                    // Make it in-flow: relative instead of absolute
+                    livePbBadge.classList.remove('absolute', 'opacity-0');
+                    livePbBadge.classList.add('opacity-100');
+                    livePbBadge.style.position = 'relative';
+                    livePbBadge.style.bottom = 'auto';
+                    livePbBadge.style.left = 'auto';
+                    livePbBadge.style.transform = 'scale(1)';
+                    livePbBadge.style.opacity = '1';
+                    livePbBadge.style.animation = 'none';
+                    livePbBadge.style.transition = 'none';
+                    livePbBadge.style.marginBottom = '0.25rem';
+                    livePbBadge.style.backdropFilter = 'none';
+                    livePbBadge.style.webkitBackdropFilter = 'none';
+                    // Resolve backdrop-blur to solid bg
                     const cs = getComputedStyle(livePbBadge);
                     if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                        pbClone.style.backgroundColor = cs.backgroundColor;
+                        livePbBadge.style.backgroundColor = cs.backgroundColor;
                     }
-                    pbClone.style.boxShadow = cs.boxShadow || 'none';
-                    pbClone.style.borderColor = cs.borderColor || '';
-                    pbClone.style.border = cs.border || '';
-                    pbClone.style.borderRadius = cs.borderRadius || '';
-                    pbClone.style.height = cs.height || '';
-                    pbClone.style.padding = cs.padding || '';
-
-                    // Wrap in a centered container
-                    const pbWrap = document.createElement('div');
-                    pbWrap.id = 'stats-pb-screenshot-wrap';
-                    pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;margin-bottom:0.25rem;';
-                    pbWrap.appendChild(pbClone);
-
-                    // Insert above the WPM row (same visual position as on the website)
-                    const statsWpm = document.getElementById('stats-wpm');
-                    const wpmRow = statsWpm ? statsWpm.closest('.flex.flex-col') : null;
-                    if (wpmRow) {
-                        // Insert inside the flex-col, before the WPM number row
-                        wpmRow.insertBefore(pbWrap, wpmRow.firstChild);
-                    } else {
-                        // Fallback: top of capture area
-                        captureArea.insertBefore(pbWrap, captureArea.firstChild);
-                    }
-                    _tempPbEl = pbWrap;
                 }
             },
             afterCapture: () => {
-                // Remove the temporary PB element from the live DOM
-                if (_tempPbEl) {
-                    _tempPbEl.remove();
+                // Restore the original PB badge styles
+                if (_tempPbEl && livePbBadge) {
+                    livePbBadge.className = _tempPbEl.origClasses;
+                    livePbBadge.setAttribute('style', _tempPbEl.origStyle);
                     _tempPbEl = null;
                 }
             },
@@ -5136,11 +5114,6 @@
                         legend.style.pointerEvents = 'auto';
                     }
                 }
-
-                // Hide the original (absolute-positioned) PB badge in the clone —
-                // we already have the static copy from beforeCapture
-                const pbBadge = cloned.querySelector('#stats-pb-badge');
-                if (pbBadge) pbBadge.style.display = 'none';
 
                 // ── Usertypo logo: inject at top-center of capture area ──
                 if (logoODataUrl) {
