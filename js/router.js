@@ -45,10 +45,10 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=48'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=49'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=35'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=36'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -123,7 +123,6 @@
             navId: null,
             compact: true,
             typingLayout: true,
-            hideShellFooter: true,
         },
         '/dual': {
             page: 'pages/dual.html',
@@ -133,8 +132,6 @@
             navId: null,
             compact: true,
             typingLayout: true,
-            hideShellHeader: true,
-            hideShellFooter: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',

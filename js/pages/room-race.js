@@ -647,7 +647,7 @@
                     await window.usertypoMultiplayer.leaveRace(roomId);
                 }
             } catch (_) { /* ignore */ }
-            window.navigateTo?.('/friends');
+            window.navigateTo?.('/multiplayer');
         }
 
         function bindLobbyUI() {
@@ -818,7 +818,7 @@
             var closedId = Array.isArray(payload) ? String(payload[0] || '') : '';
             if (!closedId || (roomId && closedId !== String(roomId))) return;
             state = 'closed';
-            window.navigateTo?.('/friends');
+            window.navigateTo?.('/multiplayer');
         }
 
         function listen(name, handler) {
@@ -1707,22 +1707,8 @@
             }
             totalKeystrokes += 1;
             if (key === ' ') {
-                if (currentCharIndex === word.length) {
-                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
-                    finishWord();
-                } else {
-                    if (typeof window.playErrorSound === 'function') window.playErrorSound(key);
-                    lockedAt = currentCharIndex;
-                    errorHistory = [{
-                        kind: 'char',
-                        wordIndex: currentWordIndex,
-                        charIndex: currentCharIndex,
-                    }];
-                    paint(currentCharIndex, key, false);
-                    currentCharIndex += 1;
-                    errors += 1;
-                    updateCaret();
-                }
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                finishWord();
                 return;
             }
             if (key === word[currentCharIndex]) {
@@ -1940,10 +1926,9 @@
                 '<span class="text-5xl font-black ' + theme.wpmClass + ' relative z-10 leading-none tracking-tighter" style="text-shadow: ' + theme.wpmShadow + ';">' + player.wpm + '</span>' +
                 '</div><p class="text-xs font-bold text-slate-500 uppercase tracking-widest">WPM</p></div>' +
                 '<div class="panel-surface rounded-lg p-3 w-full"' + (place === 1 ? ' style="border:1px solid rgba(var(--theme-primary-rgb), 0.08);"' : '') + '>' +
-                '<div class="grid grid-cols-3 gap-2 text-center">' +
-                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Time</span><span class="text-sm font-black text-white">' + player.timeSec + '<span class="text-[10px] text-slate-500">s</span></span></div>' +
-                '<div class="border-x border-white/5"><span class="text-[9px] font-bold text-slate-500 uppercase block">Acc</span><span class="text-sm font-black text-white">' + player.acc + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
-                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Con</span><span class="text-sm font-black text-white">' + player.con + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
+                '<div class="grid grid-cols-2 gap-2 text-center">' +
+                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Acc</span><span class="text-sm font-black text-white">' + player.acc + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
+                '<div class="border-l border-white/5"><span class="text-[9px] font-bold text-slate-500 uppercase block">Con</span><span class="text-sm font-black text-white">' + player.con + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
                 '</div></div>' +
                 '<div class="flex items-center gap-1.5 ' + theme.badge + ' border rounded-full px-3 py-1">' +
                 (theme.trophy ? '<span class="material-symbols-outlined text-amber-400 text-[14px]">emoji_events</span>' : '') +
@@ -2221,7 +2206,7 @@
                 } else {
                     window.usertypoNotifications?.showToast('You were removed from the room.', 'person_remove');
                 }
-                window.navigateTo?.('/friends');
+                window.navigateTo?.('/multiplayer');
             });
             listen('race-finished', function (event) { renderResults(event.detail); });
             listen('room-return-lobby-state', function (event) {
@@ -2317,7 +2302,7 @@
 
         async function init() {
             if (!window.usertypoMultiplayer) {
-                window.navigateTo?.('/friends');
+                window.navigateTo?.('/multiplayer');
                 return;
             }
             refreshDomRefs();
@@ -2348,7 +2333,7 @@
                 } else {
                     window.usertypoNotifications?.showToast(msg, 'error');
                 }
-                setTimeout(function () { window.navigateTo?.('/friends'); }, 1800);
+                setTimeout(function () { window.navigateTo?.('/multiplayer'); }, 1800);
             }
         }
 
@@ -2383,7 +2368,7 @@
                 document.getElementById('stats-return-lobby-btn')?.click();
                 return;
             }
-            window.navigateTo?.('/friends');
+            window.navigateTo?.('/multiplayer');
         };
         window.applyRoomLiveFeedSettings = function () {
             var settings = window.usertypo_settingsApi
