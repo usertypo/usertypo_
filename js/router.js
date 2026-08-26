@@ -48,7 +48,7 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=42'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=43'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -132,6 +132,7 @@
             navId: null,
             compact: true,
             typingLayout: true,
+            hideShellFooter: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
@@ -643,6 +644,12 @@
             statsView.classList.remove('flex');
             statsView.style.display = 'none';
         }
+        var headerLeft = document.getElementById('header-left');
+        var headerRight = document.getElementById('header-right');
+        var headerLogo = document.getElementById('header-logo-link');
+        if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
+        if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
+        if (headerLogo) headerLogo.style.pointerEvents = 'none';
         if (typeof window.usertypo_lockTypingScroll === 'function') {
             window.usertypo_lockTypingScroll();
         }
