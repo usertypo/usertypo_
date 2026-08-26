@@ -259,6 +259,9 @@
     function patchClonedNode(cloned, original) {
         if (!cloned || !original || cloned.nodeType !== 1 || original.nodeType !== 1) return;
 
+        // Skip the PB badge — it's handled separately by patchCloneRoot
+        if (original.id === 'stats-pb-badge' || cloned.id === 'stats-pb-badge') return;
+
         if (isGlowBackdrop(original)) {
             cloned.style.display = 'none';
             return;
