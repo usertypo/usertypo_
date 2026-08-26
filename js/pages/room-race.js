@@ -53,6 +53,7 @@
         var hostModal = null;
         var startConfirmModal = null;
         var MIN_READY_TO_START = 3;
+        var MIN_RETURN_TO_LOBBY = 2;
 
         var lobbyView = document.getElementById('lobby-view');
         var testView = document.getElementById('test-view');
@@ -77,6 +78,7 @@
         var countdownEndsAtTarget = 0;
         var intentionalLeave = false;
         var prevInRoomIds = {};
+        var levelCache = {};
 
         function getJoinLink() {
             var origin = window.location.origin || '';
@@ -229,32 +231,85 @@
             }
             orbitGuestKey = nextKey;
             stopTooltipTracking();
-            orbitRing.innerHTML = '';
             var count = guests.length;
-            if (!count) return;
-            var step = 360 / count;
-            guests.forEach(function (player, index) {
-                var arm = document.createElement('div');
-                arm.className = 'orbit-arm';
-                arm.style.setProperty('--arm-angle', (step * index) + 'deg');
-                arm.style.setProperty('--pulse-delay', (-(6 / Math.max(count, 1)) * index) + 's');
-                var node = document.createElement('div');
-                node.className = 'orbit-counter';
-                var playerId = String(player.userId || player.index || index);
-                node.innerHTML =
-                    '<div class="orbit-pulse">' +
-                        '<div class="player-node' + (player.ready ? ' is-ready' : '') +
-                            '" data-player-id="' + escapeHtml(playerId) +
-                            '" data-player-name="' + escapeHtml(player.name) + '">' +
-                            '<div class="player-avatar-ring">' +
-                                playerAvatarHtml(player, 'lg', 'player-orbit-avatar') +
-                            '</div>' +
-                            '<div class="player-ready-dot"></div>' +
-                        '</div>' +
-                    '</div>';
-                arm.appendChild(node);
-                orbitRing.appendChild(arm);
+            var step = count ? 360 / count : 0;
+
+            // Build a map of existing arms by player id.
+            var existingArms = {};
+            Array.from(orbitRing.children).forEach(function (arm) {
+                var id = arm.getAttribute('data-orbit-id');
+                if (id) existingArms[id] = arm;
             });
+
+            // Determine which player ids are in the new list.
+            var nextIds = {};
+            guests.forEach(function (player) {
+                nextIds[String(player.userId || player.index || '')] = true;
+            });
+
+            // Remove arms for players no longer present (fade-out).
+            Object.keys(existingArms).forEach(function (id) {
+                if (!nextIds[id]) {
+                    var arm = existingArms[id];
+                    arm.style.opacity = '0';
+                    arm.style.transform = 'scale(0.5)';
+                    setTimeout(function () {
+                        if (arm.parentNode === orbitRing) orbitRing.removeChild(arm);
+                    }, 400);
+                    delete existingArms[id];
+                }
+            });
+
+            // Update or create arms for each guest.
+            guests.forEach(function (player, index) {
+                var playerId = String(player.userId || player.index || index);
+                var angle = step * index;
+                var pulseDelay = (-(6 / Math.max(count, 1)) * index) + 's';
+                var arm = existingArms[playerId];
+
+                if (arm) {
+                    // Reuse existing arm — just update the angle (CSS transition animates it).
+                    arm.style.setProperty('--arm-angle', angle + 'deg');
+                    arm.style.setProperty('--pulse-delay', pulseDelay);
+                    // Sync ready state on the existing node.
+                    var node = arm.querySelector('.player-node');
+                    if (node) {
+                        node.classList.toggle('is-ready', !!player.ready);
+                        node.setAttribute('data-player-name', player.name || '');
+                    }
+                } else {
+                    // Create new arm (fade-in).
+                    arm = document.createElement('div');
+                    arm.className = 'orbit-arm orbit-entering';
+                    arm.setAttribute('data-orbit-id', playerId);
+                    arm.style.setProperty('--arm-angle', angle + 'deg');
+                    arm.style.setProperty('--pulse-delay', pulseDelay);
+                    var counter = document.createElement('div');
+                    counter.className = 'orbit-counter';
+                    var noLevel = player.isBot || (player.userId && String(player.userId).indexOf('guest_') === 0);
+                    counter.innerHTML =
+                        '<div class="orbit-pulse">' +
+                            '<div class="player-node' + (player.ready ? ' is-ready' : '') +
+                                (noLevel ? ' pla-no-level' : '') +
+                                '" data-player-id="' + escapeHtml(playerId) +
+                                '" data-player-name="' + escapeHtml(player.name) + '">' +
+                                '<div class="player-avatar-ring">' +
+                                    playerAvatarHtml(player, 'lg', 'player-orbit-avatar') +
+                                '</div>' +
+                                '<div class="player-ready-dot"></div>' +
+                            '</div>' +
+                        '</div>';
+                    arm.appendChild(counter);
+                    orbitRing.appendChild(arm);
+                    // Trigger reflow then remove entering class to play the animation.
+                    void arm.offsetHeight;
+                    requestAnimationFrame(function () { arm.classList.remove('orbit-entering'); });
+                }
+
+                // Also set data-orbit-id on reused arms that may not have it.
+                if (!arm.getAttribute('data-orbit-id')) arm.setAttribute('data-orbit-id', playerId);
+            });
+
             bindOrbitImageFade(orbitRing);
             if (!orbitRing.dataset.tooltipBound) {
                 orbitRing.dataset.tooltipBound = '1';
@@ -1123,28 +1178,18 @@
 
         function renderLobby(nextRoom) {
             if (!nextRoom || nextRoom.roomId !== roomId) return;
-            var prevLevels = {};
-            (room && room.players || []).forEach(function (player) {
-                if (!player || !player.userId) return;
-                if (player.level != null && Number(player.level) > 1) {
-                    prevLevels[player.userId] = {
-                        level: player.level,
-                        percentToNext: player.percentToNext,
-                        xpIntoLevel: player.xpIntoLevel,
-                    };
-                }
-            });
             room = nextRoom;
             config = room.config;
             roomCode = room.roomCode || roomCode;
             isHost = room.hostUserId === selfUserId;
+            // Apply cached levels to all players so they show immediately.
             (room.players || []).forEach(function (player) {
-                var prev = prevLevels[player.userId];
-                if (!prev) return;
-                if (player.level == null || Number(player.level) <= 1) {
-                    player.level = prev.level;
-                    player.percentToNext = prev.percentToNext;
-                    if (prev.xpIntoLevel != null) player.xpIntoLevel = prev.xpIntoLevel;
+                if (!player || !player.userId) return;
+                var cached = levelCache[player.userId];
+                if (cached && (player.level == null || Number(player.level) <= 1)) {
+                    player.level = cached.level;
+                    player.percentToNext = cached.percentToNext;
+                    if (cached.xpIntoLevel != null) player.xpIntoLevel = cached.xpIntoLevel;
                 }
             });
             var title = document.getElementById('lobby-room-name');
@@ -1170,6 +1215,17 @@
             var enrichSeq = ++lobbyEnrichSeq;
             enrichRoomPlayerLevels().then(function (changed) {
                 if (!changed || enrichSeq !== lobbyEnrichSeq || !room || room.roomId !== roomId) return;
+                // Update the persistent cache with enriched level data.
+                (room.players || []).forEach(function (player) {
+                    if (!player || !player.userId) return;
+                    if (player.level != null && Number(player.level) > 1) {
+                        levelCache[player.userId] = {
+                            level: player.level,
+                            percentToNext: player.percentToNext,
+                            xpIntoLevel: player.xpIntoLevel,
+                        };
+                    }
+                });
                 paintLobbyPlayers();
             }).catch(function () { /* ignore */ });
         }
@@ -2049,7 +2105,7 @@
             var activePlayers = (room.players || []).filter(function (player) {
                 return player.status !== 'left';
             }).length || players.length;
-            returnLobbyNeeded = Math.min(MIN_READY_TO_START, Math.max(1, activePlayers));
+            returnLobbyNeeded = Math.min(MIN_RETURN_TO_LOBBY, Math.max(1, activePlayers));
             returnLobbyAgreed = 0;
             updateReturnLobbyButton();
             if (payload[3]) {

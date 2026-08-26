@@ -168,10 +168,31 @@
         }
         #lobby-host.is-ready .lobby-host-avatar .player-level-avatar__photo {
             border-color: rgba(var(--theme-primary-rgb), 0.55);
-            box-shadow: 0 0 18px rgba(var(--theme-primary-rgb), var(--gi-45, 0.45));
+        }
+        /* Host ready glow — ::after sized to ring when level bar exists */
+        #lobby-host .lobby-host-avatar .player-level-avatar {
+            position: relative;
+        }
+        #lobby-host .lobby-host-avatar .player-level-avatar::after {
+            content: '';
+            position: absolute;
+            inset: 5%;
+            border-radius: 9999px;
+            opacity: 0;
+            box-shadow: 0 0 18px rgba(var(--theme-primary-rgb), 0.45), 0 0 40px rgba(var(--theme-primary-rgb), 0.2);
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        #lobby-host.is-ready .lobby-host-avatar .player-level-avatar::after {
+            opacity: 1;
+        }
+        /* When no level ring (guest/bot), glow tight to photo */
+        #lobby-host.is-ready .lobby-host-avatar .player-level-avatar.pla-no-level::after {
+            inset: 11%;
         }
         #lobby-host.is-ready .lobby-host-avatar .player-level-avatar__progress {
-            filter: drop-shadow(0 0 6px rgba(var(--theme-primary-rgb), var(--gi-55, 0.55)));
+            filter: drop-shadow(0 0 6px rgba(var(--theme-primary-rgb), 0.55));
         }
         #ready-btn.is-disabled,
         #stats-return-lobby-btn.is-disabled {
@@ -228,6 +249,12 @@
             width: 0;
             height: 0;
             transform: rotate(var(--arm-angle)) translateX(8.625rem);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            opacity: 1;
+        }
+        .orbit-entering {
+            opacity: 0;
+            transform: rotate(var(--arm-angle)) translateX(8.625rem) scale(0.5);
         }
         .orbit-counter {
             animation: orbitSpinReverse 72s linear infinite;
@@ -264,9 +291,27 @@
         .player-avatar-ring .player-level-avatar {
             --pla-size: 3.5rem;
         }
+        /* Ready glow for orbit players — ::after pseudo-element */
+        .player-node::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 9999px;
+            opacity: 0;
+            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), 0.55), 0 0 28px rgba(var(--theme-primary-rgb), 0.2);
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .player-node.is-ready::after {
+            opacity: 1;
+        }
+        /* When no level ring (guest/bot), pull glow inward to match photo edge */
+        .player-node.is-ready.pla-no-level::after {
+            inset: 12%;
+        }
         .player-node.is-ready .player-avatar-ring .player-level-avatar__photo {
             border-color: rgba(var(--theme-primary-rgb), 0.85);
-            box-shadow: 0 0 12px rgba(var(--theme-primary-rgb), var(--gi-55, 0.55)), 0 0 28px rgba(var(--theme-primary-rgb), var(--gi-20, 0.2));
         }
         .player-node:hover .player-avatar-ring .player-level-avatar__photo {
             border-color: rgba(255, 255, 255, 0.5);
@@ -283,10 +328,11 @@
             background: #4b5563;
             pointer-events: none;
             z-index: 2;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .player-node.is-ready .player-ready-dot {
             background: var(--theme-primary, #00d0ff);
-            box-shadow: 0 0 6px rgba(var(--theme-primary-rgb), var(--gi-80, 0.8));
+            box-shadow: 0 0 6px rgba(var(--theme-primary-rgb), 0.8);
         }
         #invite-toggle-icon {
             display: inline-flex;

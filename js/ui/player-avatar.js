@@ -115,6 +115,7 @@
         var clickable = !!userId && opts.clickable !== false;
         var extraClass = opts.className ? (' ' + String(opts.className)) : '';
         if (clickable) extraClass += ' player-level-avatar--clickable';
+        if (!showLevel) extraClass += ' pla-no-level';
         var title = opts.title != null ? opts.title : name;
         var idAttr = opts.id ? ' id="' + escapeAttr(opts.id) + '"' : '';
         // Only attach data-user-id when clickable — otherwise the profile-card
