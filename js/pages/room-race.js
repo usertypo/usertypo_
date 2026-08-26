@@ -1182,6 +1182,17 @@
             config = room.config;
             roomCode = room.roomCode || roomCode;
             isHost = room.hostUserId === selfUserId;
+            // Seed self player's level from local progression cache (synchronous).
+            if (selfUserId && window.usertypoProgression && typeof window.usertypoProgression.getCached === 'function') {
+                var myProg = window.usertypoProgression.getCached();
+                if (myProg && myProg.level != null && Number(myProg.level) > 1) {
+                    levelCache[selfUserId] = {
+                        level: myProg.level,
+                        percentToNext: myProg.percentToNext,
+                        xpIntoLevel: myProg.xpIntoLevel,
+                    };
+                }
+            }
             // Apply cached levels to all players so they show immediately.
             (room.players || []).forEach(function (player) {
                 if (!player || !player.userId) return;
