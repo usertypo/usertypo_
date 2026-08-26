@@ -321,15 +321,13 @@
             outline: none !important;
         }
 
-        /* Config bar glow */
-        @keyframes configBarGlow {
-            0%, 100% { box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3); }
-            50%      { box-shadow: 0 0 12px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 25px rgba(0, 208, 255, var(--gi-80, 0.8)), 0 0 40px rgba(0, 208, 255, var(--gi-40, 0.4)), 0 8px 32px rgba(0,0,0,0.3); }
-        }
+        /* Config bar glow — initial state is invisible; the theme stylesheet
+           (settings.js) injects the real @keyframes + box-shadow with the
+           user's accent colour, so we avoid a hardcoded-cyan flash on load. */
         #config-bar > div {
-            box-shadow: 0 0 8px rgba(0, 208, 255, var(--gi-100, 1.0)), 0 0 18px rgba(0, 208, 255, var(--gi-60, 0.6)), 0 8px 32px rgba(0,0,0,0.3);
-            border-color: rgba(0, 208, 255, 0.5) !important;
-            animation: configBarGlow 3s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border-color: transparent !important;
+            animation: none;
         }
         
         /* When Config Bar is Collapsed â€” hide ALL buttons so bar stays a fixed thin strip */
@@ -1832,6 +1830,13 @@ window.setTimeout = function(handler, timeout) {
             const lsc = document.getElementById('live-stats-container');
             if (lsc) lsc.style.opacity = '';
 
+            // Hide XP toast on restart so it doesn't linger from a previous test
+            var xpToast = document.getElementById('header-xp-toast');
+            if (xpToast) {
+                xpToast.classList.remove('opacity-100');
+                xpToast.classList.add('hidden', 'opacity-0', 'translate-y-1');
+            }
+
             textContainer.style.opacity = '0';
 
             setTimeout(() => {
@@ -3062,11 +3067,15 @@ window.setTimeout = function(handler, timeout) {
             window.testFailedThreshold = false;
             isTyping = true;
             startTime = Date.now();
-            document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
 
+            // Apply the user's opacity setting BEFORE making stats visible,
+            // so the parent containers already carry the correct opacity
+            // when the children transition from opacity-0 → visible.
             if (typeof applyLiveFeedSettings === 'function') {
                 applyLiveFeedSettings(window.usertypo_settings);
             }
+
+            document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
 
             hideZenElements();
             caret.classList.remove('animate-breath');
@@ -4024,7 +4033,7 @@ window.setTimeout = function(handler, timeout) {
                         if (isTyping && !testComplete) {
                             restartTest();
                         }
-                    }, 15000); // 15 seconds
+                    }, 60000); // 60 seconds — give the user time to think/read
                 }
             }
 
