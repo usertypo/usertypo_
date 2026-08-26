@@ -1634,7 +1634,7 @@
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
             stopZenMode();
-            setFooterCompact(false);
+            setFooterCompact(true);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
