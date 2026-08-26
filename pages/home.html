@@ -1827,10 +1827,15 @@ window.setTimeout = function(handler, timeout) {
             if (wpmText) {
                 wpmText.classList.remove('pb-wpm-pop-anim');
             }
+            // Preserve the user's chosen opacity on parent wrappers so there's
+            // no visible flash from timerOpacity → 1.0 when children fade out.
+            const _userTimerOpacity = parseFloat(
+                window.usertypo_settings?.liveFeed?.timerOpacity ?? '0.5'
+            ).toString();
             const tpw = document.getElementById('timer-progress-wrapper');
-            if (tpw) tpw.style.opacity = '';
+            if (tpw) tpw.style.opacity = _userTimerOpacity;
             const lsc = document.getElementById('live-stats-container');
-            if (lsc) lsc.style.opacity = '';
+            if (lsc) lsc.style.opacity = _userTimerOpacity;
 
             // Hide XP toast on restart so it doesn't linger from a previous test
             var xpToast = document.getElementById('header-xp-toast');
@@ -3844,10 +3849,15 @@ window.setTimeout = function(handler, timeout) {
                 el.style.opacity = '';
                 el.classList.add('opacity-0');
             });
+            // Preserve the user's chosen opacity on parent wrappers so there's
+            // no visible flash from timerOpacity → 1.0 when children fade out.
+            const _userTimerOpacity = parseFloat(
+                window.usertypo_settings?.liveFeed?.timerOpacity ?? '0.5'
+            ).toString();
             const tpw = document.getElementById('timer-progress-wrapper');
-            if (tpw) tpw.style.opacity = '';
+            if (tpw) tpw.style.opacity = _userTimerOpacity;
             const lsc = document.getElementById('live-stats-container');
-            if (lsc) lsc.style.opacity = '';
+            if (lsc) lsc.style.opacity = _userTimerOpacity;
 
             // Hide XP toast immediately when starting a new test
             var xpToast = document.getElementById('header-xp-toast');
