@@ -1090,11 +1090,11 @@ window.__spaPageInit = function() {
                 var isChallengePending = !!(isOnline && pendingChallengeUserId && pendingChallengeUserId === friend.user_id);
                 if (isOnline && !isChallengePending) {
                     actions +=
-                        '<button type="button" class="dual-challenge-btn flex-1 sm:flex-none p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
+                        '<button type="button" class="dual-challenge-btn w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all" title="Challenge">' +
                         '<span class="material-symbols-outlined text-xl">swords</span></button>';
                 }
                 actions +=
-                    '<button type="button" class="remove-friend-btn flex-1 sm:flex-none p-2 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + escapeHtml(friend.user_id) + '">' +
+                    '<button type="button" class="remove-friend-btn w-10 h-10 flex items-center justify-center rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + escapeHtml(friend.user_id) + '">' +
                     '<span class="material-symbols-outlined text-xl">person_remove</span></button>';
 
                 var actionsWrapClass = 'friend-card-actions w-full sm:w-auto mt-1 sm:mt-0' +
