@@ -130,8 +130,7 @@
             description: '1v1 typing race on usertypo_.',
             robots: 'noindex, nofollow',
             navId: null,
-            compact: true,
-            typingLayout: true,
+            compact: false,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
