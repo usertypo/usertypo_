@@ -191,6 +191,38 @@
             flex-shrink: 0;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, var(--gi-12, 0.12));
         }
+        /* --- Pill-row leaderboard --- */
+        #lb-table-wrap {
+            border-collapse: separate;
+            border-spacing: 0 0.45rem;
+            width: 100%;
+            text-align: left;
+        }
+        #lb-table-wrap thead tr {
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #lb-table-wrap thead tr th:first-child { border-radius: 9999px 0 0 9999px; }
+        #lb-table-wrap thead tr th:last-child  { border-radius: 0 9999px 9999px 0; }
+        #lb-table-wrap tbody tr {
+            background: rgba(255, 255, 255, 0.03);
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+        }
+        #lb-table-wrap tbody tr:hover {
+            background: rgba(255, 255, 255, 0.07);
+        }
+        #lb-table-wrap tbody tr td:first-child { border-radius: 9999px 0 0 9999px; }
+        #lb-table-wrap tbody tr td:last-child  { border-radius: 0 9999px 9999px 0; }
+        #lb-table-wrap tbody tr.lb-row-me {
+            background: rgba(var(--theme-primary-rgb), 0.10);
+            box-shadow: inset 0 0 20px rgba(var(--theme-primary-rgb), 0.05),
+                        0 0 0 1.5px rgba(var(--theme-primary-rgb), 0.30);
+        }
+        #lb-table-wrap tbody tr.lb-row-me:hover {
+            background: rgba(var(--theme-primary-rgb), 0.18);
+        }
 </style>
 
 <aside id="config-bar"
@@ -301,12 +333,11 @@
                 </div>
             </div>
 
-            <!-- Leaderboard Table (no scroll Ã¢â‚¬â€ page scrolls instead) -->
-            <div
-                class="glass-panel rounded-xl flex flex-col overflow-hidden opacity-0 animate-fade-in-up [animation-delay:300ms]">
-                <table class="w-full text-left border-collapse">
-                    <thead style="background:var(--theme-menu-bg, rgba(68, 68, 68, 0.4));backdrop-filter: blur(4px);-webkit-backdrop-filter: blur(4px);">
-                        <tr class="border-l-4 border-transparent">
+            <!-- Leaderboard Table — pill rows, no card -->
+            <div class="opacity-0 animate-fade-in-up [animation-delay:300ms]">
+                <table id="lb-table-wrap">
+                    <thead>
+                        <tr>
                             <th class="py-3 px-5 text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">
                                 Rank</th>
                             <th class="py-3 px-5 text-xs font-semibold text-slate-400 uppercase tracking-wider">User
@@ -328,7 +359,7 @@
                                 Date</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5 font-mono text-sm" id="lb-tbody">
+                    <tbody class="font-mono text-sm" id="lb-tbody">
                         <!-- Rows injected by JS -->
                     </tbody>
                 </table>
@@ -552,7 +583,7 @@ window.__spaPageInit = function() {
                         '</span>';
 
                     if (isMe) {
-                        return '<tr class="bg-primary/10 border-l-4 border-l-primary hover:bg-primary/20 transition-colors shadow-[inset_0_0_20px_rgba(0,208,255,0.05)]">' +
+                        return '<tr class="lb-row-me group">' +
                             '<td class="py-2.5 px-5 font-bold text-primary">' + rank + '</td>' +
                             '<td class="py-2.5 px-5"><div class="flex items-center gap-2.5 min-w-0">' +
                             renderAvatar(entry, colorClass, true) +
@@ -566,7 +597,7 @@ window.__spaPageInit = function() {
                             '</tr>';
                     }
 
-                    return '<tr class="hover:bg-white/5 transition-colors group border-l-4 border-transparent">' +
+                    return '<tr class="group">' +
                         '<td class="py-2.5 px-5 text-slate-400">' + rank + '</td>' +
                         '<td class="py-2.5 px-5"><div class="flex items-center gap-2.5 min-w-0">' +
                         renderAvatar(entry, colorClass, false) +
