@@ -1698,7 +1698,6 @@
                         }
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
-                        if (completedWords > 0) completedWords -= 1;
                     } else {
                         currentWordIndex = errorEntry.wordIndex;
                         currentCharIndex = errorEntry.charIndex;
@@ -1774,7 +1773,6 @@
                         wordIndex: currentWordIndex,
                         charIndex: currentCharIndex,
                     });
-                    completedWords += 1;
                     currentWordIndex += 1;
                     currentCharIndex = 0;
                 }
