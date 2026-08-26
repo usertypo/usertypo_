@@ -79,6 +79,39 @@
         var progressBar = document.getElementById('word-progress-bar');
         var opponentAvatar = document.getElementById('bot-avatar');
         var waitOverlay = null;
+        var zenMouseHandler = null;
+
+        // --- Footer visibility helpers ---
+        var shellFooter = document.getElementById('spa-shell-footer');
+        var footerNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+
+        function setFooterCompact(compact) {
+            if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
+        }
+
+        function hideZenElements() {
+            document.querySelectorAll('.zen-element').forEach(function (el) {
+                el.classList.add('zen-hidden');
+            });
+        }
+
+        function showZenElements() {
+            document.querySelectorAll('.zen-element').forEach(function (el) {
+                el.classList.remove('zen-hidden');
+            });
+        }
+
+        function startZenMode() {
+            hideZenElements();
+            if (!zenMouseHandler) {
+                zenMouseHandler = function () { showZenElements(); };
+                document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
+            }
+        }
+
+        function stopZenMode() {
+            showZenElements();
+        }
 
         function listen(name, handler) {
             window.addEventListener('usertypo:multiplayer:' + name, handler, { signal: signal });
@@ -777,6 +810,7 @@
                 if (errorEntry.kind === 'space') {
                     currentWordIndex = errorEntry.wordIndex;
                     currentCharIndex = errorEntry.charIndex;
+                    if (completedCorrectWords > 0) completedCorrectWords -= 1;
                 } else {
                     currentWordIndex = errorEntry.wordIndex;
                     currentCharIndex = errorEntry.charIndex;
@@ -832,15 +866,39 @@
             totalKeystrokes += 1;
             keystrokeTimes.push(Date.now());
             if (key === ' ') {
-                // Mark remaining untyped chars as errors (underline, like home page)
+                if (currentCharIndex === word.length) {
+                    // Word fully typed — advance normally
+                    correctKeystrokeTimes.push(Date.now());
+                    completeWord();
+                    return;
+                }
+                // Space mid-word: lock and mark remaining chars as errors
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
+                unresolvedError = { wordIndex: currentWordIndex, charIndex: currentCharIndex };
+                errorHistory = [];
                 for (var si = currentCharIndex; si < word.length; si++) {
                     var el = document.getElementById('char-' + currentWordIndex + '-' + si);
                     if (el) el.classList.add('error-underline');
+                    errorHistory.push({
+                        kind: 'char',
+                        wordIndex: currentWordIndex,
+                        charIndex: si,
+                    });
                     errorsMade += 1;
                     totalKeystrokes += 1;
                 }
-                correctKeystrokeTimes.push(Date.now());
-                completeWord();
+                // Record the space-to-next-word transition
+                if (words[currentWordIndex + 1]) {
+                    errorHistory.push({
+                        kind: 'space',
+                        wordIndex: currentWordIndex,
+                        charIndex: word.length,
+                    });
+                    completedCorrectWords += 1;
+                    currentWordIndex += 1;
+                    currentCharIndex = 0;
+                }
+                updateCaret();
                 return;
             }
 
@@ -1370,6 +1428,7 @@
             function unlockTyping() {
                 if (token !== raceStartToken) return;
                 state = 'racing';
+                startZenMode();
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
@@ -1562,6 +1621,8 @@
             statsView.classList.remove('hidden', 'opacity-0');
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
+            stopZenMode();
+            setFooterCompact(false);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
@@ -1766,6 +1827,7 @@
         }
 
         async function init() {
+            setFooterCompact(true);
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
