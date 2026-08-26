@@ -4741,6 +4741,93 @@ window.setTimeout = function(handler, timeout) {
             const btn = document.getElementById('screenshot-btn');
             if (!captureArea || !window.StatsScreenshot) return;
 
+            // Snapshot PB badge visibility from live DOM before capture
+            const livePbBadge = document.getElementById('stats-pb-badge');
+            const isPbVisible = livePbBadge && livePbBadge.classList.contains('opacity-100');
+
+            // Pre-render logo layers with current theme colors using offscreen canvases
+            // The raw PNGs are mask shapes — we fill them with theme colors just like the CSS mask-image does
+            const logoOrigin = location.origin;
+            const rootCS = getComputedStyle(document.documentElement);
+            const themePrimary = rootCS.getPropertyValue('--theme-primary').trim() || '#00d0ff';
+            const themeText = rootCS.getPropertyValue('--theme-text').trim() || '#ffffff';
+
+            async function colorMaskImage(url, fillColor) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const c = document.createElement('canvas');
+                        c.width = img.naturalWidth;
+                        c.height = img.naturalHeight;
+                        const ctx = c.getContext('2d');
+                        // Draw mask to read its shape
+                        ctx.drawImage(img, 0, 0);
+                        // Parse the fill color to RGB using a temp canvas
+                        const tmp = document.createElement('canvas');
+                        tmp.width = 1; tmp.height = 1;
+                        const tmpCtx = tmp.getContext('2d');
+                        tmpCtx.fillStyle = fillColor;
+                        tmpCtx.fillRect(0, 0, 1, 1);
+                        const [fr, fg, fb] = tmpCtx.getImageData(0, 0, 1, 1).data;
+                        // Pixel-level recolor: every non-transparent pixel gets exact fill color at full opacity
+                        const imageData = ctx.getImageData(0, 0, c.width, c.height);
+                        const d = imageData.data;
+                        const w = c.width, h = c.height;
+                        for (let i = 0; i < d.length; i += 4) {
+                            if (d[i + 3] > 0) {
+                                d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255;
+                            }
+                        }
+                        // Dilate 2px: expand shape outward so thin strokes (underscore) appear bolder
+                        for (let pass = 0; pass < 2; pass++) {
+                            const snap = new Uint8ClampedArray(d);
+                            for (let y = 0; y < h; y++) {
+                                for (let x = 0; x < w; x++) {
+                                    const idx = (y * w + x) * 4;
+                                    if (snap[idx + 3] === 255) continue; // already filled
+                                    // Check 4 cardinal neighbors for an opaque pixel
+                                    const neighbors = [
+                                        idx - 4,           // left
+                                        idx + 4,           // right
+                                        idx - w * 4,       // up
+                                        idx + w * 4,       // down
+                                    ];
+                                    for (const ni of neighbors) {
+                                        if (ni >= 0 && ni < snap.length && snap[ni + 3] === 255) {
+                                            d[idx] = fr; d[idx + 1] = fg; d[idx + 2] = fb; d[idx + 3] = 255;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                        resolve(c.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = url;
+                });
+            }
+
+            const [logoTypDataUrl, logoUserDataUrl, logoODataUrl] = await Promise.all([
+                colorMaskImage(logoOrigin + '/logo-assets/typ_.png', themePrimary),
+                colorMaskImage(logoOrigin + '/logo-assets/user.png', themeText),
+                // The "o" dot keeps its original red color — no recoloring needed
+                new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const c = document.createElement('canvas');
+                        c.width = img.naturalWidth; c.height = img.naturalHeight;
+                        c.getContext('2d').drawImage(img, 0, 0);
+                        resolve(c.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = logoOrigin + '/logo-assets/o.png';
+                }),
+            ]);
+
             await StatsScreenshot.capture({
                 captureArea,
                 button: btn,
@@ -4764,6 +4851,79 @@ window.setTimeout = function(handler, timeout) {
                             legend.style.opacity = '1';
                             legend.style.pointerEvents = 'auto';
                         }
+                    }
+
+                    // ── Personal Best badge: freeze animation & ensure visibility ──
+                    const pbBadge = cloned.querySelector('#stats-pb-badge');
+                    if (pbBadge) {
+                        if (isPbVisible) {
+                            // Freeze the breath-glow animation at its peak state
+                            pbBadge.style.animation = 'none';
+                            pbBadge.style.animationDelay = '0s';
+                            pbBadge.style.transition = 'none';
+                            pbBadge.style.opacity = '1';
+                            pbBadge.style.transform = 'scale(1)';
+                            pbBadge.style.pointerEvents = 'none';
+                            // Resolve backdrop-blur to solid bg for screenshot rendering
+                            pbBadge.style.backdropFilter = 'none';
+                            pbBadge.style.webkitBackdropFilter = 'none';
+                            if (livePbBadge) {
+                                const cs = getComputedStyle(livePbBadge);
+                                if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                                    pbBadge.style.backgroundColor = cs.backgroundColor;
+                                }
+                                // Freeze box-shadow at peak glow state
+                                pbBadge.style.boxShadow = cs.boxShadow || 'none';
+                                pbBadge.style.borderColor = cs.borderColor || '';
+                            }
+                        } else {
+                            // Not a PB — ensure badge stays hidden in screenshot
+                            pbBadge.style.display = 'none';
+                        }
+                    }
+
+                    // ── Usertypo logo: inject at top-center of capture area ──
+                    if (logoODataUrl) {
+                        const doc = cloned.ownerDocument || document;
+                        // Outer wrapper: centers the logo and clips to the visible text band
+                        // Matches header-logo-link dimensions (9.592rem × 2.557rem)
+                        const logoWrap = doc.createElement('div');
+                        logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:0.5rem;';
+
+                        const logoClip = doc.createElement('div');
+                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:3.836rem;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+
+                        // Inner square: matches header-logo-container (26.644rem × 26.644rem @ scale 0.5 = 13.322rem visual)
+                        // We use the final visual size directly instead of transform (domToCanvas doesn't handle transforms well)
+                        const logoBox = doc.createElement('div');
+                        logoBox.style.cssText = 'position:absolute;width:19.983rem;height:19.983rem;flex-shrink:0;';
+
+                        // Layer 1: "typ_" text (cyan)
+                        if (logoTypDataUrl) {
+                            const typImg = doc.createElement('img');
+                            typImg.src = logoTypDataUrl;
+                            typImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
+                            logoBox.appendChild(typImg);
+                        }
+
+                        // Layer 2: "user" text (white)
+                        if (logoUserDataUrl) {
+                            const userImg = doc.createElement('img');
+                            userImg.src = logoUserDataUrl;
+                            userImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
+                            logoBox.appendChild(userImg);
+                        }
+
+                        // Layer 3: "o" dot (red) — always on top
+                        const oImg = doc.createElement('img');
+                        oImg.src = logoODataUrl;
+                        oImg.alt = 'usertypo_';
+                        oImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:3;';
+                        logoBox.appendChild(oImg);
+
+                        logoClip.appendChild(logoBox);
+                        logoWrap.appendChild(logoClip);
+                        cloned.insertBefore(logoWrap, cloned.firstChild);
                     }
                 },
             });
