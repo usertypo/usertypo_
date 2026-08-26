@@ -5094,11 +5094,19 @@
                     // Wrap in a centered container
                     const pbWrap = document.createElement('div');
                     pbWrap.id = 'stats-pb-screenshot-wrap';
-                    pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;margin-bottom:0.5rem;';
+                    pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;margin-bottom:0.25rem;';
                     pbWrap.appendChild(pbClone);
 
-                    // Insert at the very top of capture area
-                    captureArea.insertBefore(pbWrap, captureArea.firstChild);
+                    // Insert above the WPM row (same visual position as on the website)
+                    const statsWpm = document.getElementById('stats-wpm');
+                    const wpmRow = statsWpm ? statsWpm.closest('.flex.flex-col') : null;
+                    if (wpmRow) {
+                        // Insert inside the flex-col, before the WPM number row
+                        wpmRow.insertBefore(pbWrap, wpmRow.firstChild);
+                    } else {
+                        // Fallback: top of capture area
+                        captureArea.insertBefore(pbWrap, captureArea.firstChild);
+                    }
                     _tempPbEl = pbWrap;
                 }
             },
