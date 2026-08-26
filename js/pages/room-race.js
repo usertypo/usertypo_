@@ -1201,6 +1201,16 @@
                     };
                 }
             }
+            // Cache server-provided levels > 1 so they are never lost across room:state events.
+            (room.players || []).forEach(function (player) {
+                if (!player || !player.userId) return;
+                if (player.level != null && Number(player.level) > 1 && !levelCache[player.userId]) {
+                    levelCache[player.userId] = {
+                        level: player.level,
+                        percentToNext: player.percentToNext || 0,
+                    };
+                }
+            });
             // Apply cached levels to all players so they show immediately.
             (room.players || []).forEach(function (player) {
                 if (!player || !player.userId) return;
@@ -1231,7 +1241,6 @@
             ].filter(Boolean).join(' · ');
 
             paintLobbyPlayers();
-            var enrichSeq = ++lobbyEnrichSeq;
             enrichRoomPlayerLevels().then(function (enrichedPlayers) {
                 if (!enrichedPlayers) return;
                 // Always update the persistent cache, even if room state changed.
@@ -1245,9 +1254,8 @@
                         };
                     }
                 });
-                // Only repaint if this is still the latest enrichment call.
-                if (enrichSeq !== lobbyEnrichSeq || !room || room.roomId !== roomId) return;
-                // Apply the fresh cache to current room players.
+                // Apply the fresh cache to current room players and repaint.
+                if (!room || room.roomId !== roomId) return;
                 (room.players || []).forEach(function (player) {
                     if (!player || !player.userId) return;
                     var cached = levelCache[player.userId];
