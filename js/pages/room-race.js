@@ -1213,10 +1213,10 @@
 
             paintLobbyPlayers();
             var enrichSeq = ++lobbyEnrichSeq;
-            enrichRoomPlayerLevels().then(function (changed) {
-                if (!changed || enrichSeq !== lobbyEnrichSeq || !room || room.roomId !== roomId) return;
-                // Update the persistent cache with enriched level data.
-                (room.players || []).forEach(function (player) {
+            enrichRoomPlayerLevels().then(function (enrichedPlayers) {
+                if (!enrichedPlayers) return;
+                // Always update the persistent cache, even if room state changed.
+                enrichedPlayers.forEach(function (player) {
                     if (!player || !player.userId) return;
                     if (player.level != null && Number(player.level) > 1) {
                         levelCache[player.userId] = {
@@ -1224,6 +1224,18 @@
                             percentToNext: player.percentToNext,
                             xpIntoLevel: player.xpIntoLevel,
                         };
+                    }
+                });
+                // Only repaint if this is still the latest enrichment call.
+                if (enrichSeq !== lobbyEnrichSeq || !room || room.roomId !== roomId) return;
+                // Apply the fresh cache to current room players.
+                (room.players || []).forEach(function (player) {
+                    if (!player || !player.userId) return;
+                    var cached = levelCache[player.userId];
+                    if (cached && (player.level == null || Number(player.level) <= 1)) {
+                        player.level = cached.level;
+                        player.percentToNext = cached.percentToNext;
+                        if (cached.xpIntoLevel != null) player.xpIntoLevel = cached.xpIntoLevel;
                     }
                 });
                 paintLobbyPlayers();
@@ -1278,13 +1290,13 @@
         }
 
         async function enrichRoomPlayerLevels() {
-            if (!room || !Array.isArray(room.players)) return false;
+            if (!room || !Array.isArray(room.players)) return null;
             if (!window.usertypoProgression || typeof window.usertypoProgression.attachToList !== 'function') {
-                return false;
+                return null;
             }
             var target = room;
             await window.usertypoProgression.attachToList(target.players, 'userId', { force: true });
-            return room === target;
+            return target.players;
         }
 
         function stopRaceTimers() {
