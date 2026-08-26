@@ -1707,6 +1707,14 @@
             }
             totalKeystrokes += 1;
             if (key === ' ') {
+                // Mark remaining untyped chars as errors (underline, like home page)
+                var skipped = word.length - currentCharIndex;
+                for (var si = currentCharIndex; si < word.length; si++) {
+                    var el = document.getElementById('room-char-' + currentWordIndex + '-' + si);
+                    if (el) el.classList.add('error-underline');
+                    errors += 1;
+                    totalKeystrokes += 1;
+                }
                 if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound(key);
                 finishWord();
                 return;
