@@ -190,6 +190,7 @@
 
         if (xpToastTimer) clearTimeout(xpToastTimer);
         xpToastTimer = setTimeout(function () {
+            toast.classList.remove('opacity-100');
             toast.classList.add('opacity-0', 'translate-y-1');
             setTimeout(function () {
                 toast.classList.add('hidden');

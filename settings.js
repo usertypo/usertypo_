@@ -4362,10 +4362,21 @@ window.addEventListener('pageshow', (event) => {
     }
 });
 
-// 3. Tab switch: user was on the settings tab and switched back here
+// 3. Tab switch: user was on the settings tab and switched back here.
+//    Only refresh visuals (theme, cursor, etc.) — do NOT restart the test;
+//    that's too disruptive when the user is just Alt-Tabbing or checking
+//    a reference.  Cross-tab setting changes are already covered by the
+//    'storage' event above.
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-        _reapplyAllSettings();
+        const settings = loadSettings();
+        applyAllSettings(settings);
+        if (_isOnSettingsPage()) {
+            try {
+                restoreUI(settings);
+                applyKeymapDisplay(settings);
+            } catch (e) { /* ignore */ }
+        }
     }
 });
 
