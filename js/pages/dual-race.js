@@ -832,6 +832,13 @@
             totalKeystrokes += 1;
             keystrokeTimes.push(Date.now());
             if (key === ' ') {
+                // Mark remaining untyped chars as errors (underline, like home page)
+                for (var si = currentCharIndex; si < word.length; si++) {
+                    var el = document.getElementById('char-' + currentWordIndex + '-' + si);
+                    if (el) el.classList.add('error-underline');
+                    errorsMade += 1;
+                    totalKeystrokes += 1;
+                }
                 correctKeystrokeTimes.push(Date.now());
                 completeWord();
                 return;
