@@ -4741,9 +4741,6 @@ window.setTimeout = function(handler, timeout) {
             const btn = document.getElementById('screenshot-btn');
             if (!captureArea || !window.StatsScreenshot) return;
 
-            // Snapshot PB badge visibility from live DOM before capture
-            const livePbBadge = document.getElementById('stats-pb-badge');
-            const isPbVisible = livePbBadge && livePbBadge.classList.contains('opacity-100');
 
             // Pre-render logo layers with current theme colors using offscreen canvases
             // The raw PNGs are mask shapes — we fill them with theme colors just like the CSS mask-image does
@@ -4853,34 +4850,6 @@ window.setTimeout = function(handler, timeout) {
                         }
                     }
 
-                    // ── Personal Best badge: freeze animation & ensure visibility ──
-                    const pbBadge = cloned.querySelector('#stats-pb-badge');
-                    if (pbBadge) {
-                        if (isPbVisible) {
-                            // Freeze the breath-glow animation at its peak state
-                            pbBadge.style.animation = 'none';
-                            pbBadge.style.animationDelay = '0s';
-                            pbBadge.style.transition = 'none';
-                            pbBadge.style.opacity = '1';
-                            pbBadge.style.transform = 'scale(1)';
-                            pbBadge.style.pointerEvents = 'none';
-                            // Resolve backdrop-blur to solid bg for screenshot rendering
-                            pbBadge.style.backdropFilter = 'none';
-                            pbBadge.style.webkitBackdropFilter = 'none';
-                            if (livePbBadge) {
-                                const cs = getComputedStyle(livePbBadge);
-                                if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                                    pbBadge.style.backgroundColor = cs.backgroundColor;
-                                }
-                                // Freeze box-shadow at peak glow state
-                                pbBadge.style.boxShadow = cs.boxShadow || 'none';
-                                pbBadge.style.borderColor = cs.borderColor || '';
-                            }
-                        } else {
-                            // Not a PB — ensure badge stays hidden in screenshot
-                            pbBadge.style.display = 'none';
-                        }
-                    }
 
                     // ── Usertypo logo: inject at top-center of capture area ──
                     if (logoODataUrl) {
