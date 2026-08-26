@@ -113,14 +113,15 @@
 
         .friends-tab-pill {
             display: flex;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.06);
+            border: 1px solid rgba(var(--theme-primary-rgb, 255, 255, 255), 0.1);
             border-radius: 9999px;
             padding: 4px;
             gap: 2px;
             position: relative;
             flex-shrink: 0;
         }
+
         .friends-tab-pill .friends-tab-btn {
             position: relative;
             z-index: 2;
@@ -140,7 +141,7 @@
             gap: 0.4rem;
         }
         .friends-tab-pill .friends-tab-btn.active {
-            color: #fff;
+            color: var(--theme-fg-strong, #fff);
         }
         .friends-tab-pill-indicator {
             position: absolute;
