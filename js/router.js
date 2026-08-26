@@ -102,9 +102,17 @@
         '/friends': {
             page: 'pages/friends.html',
             title: 'Friends | usertypo_',
-            description: 'Manage friends, find opponents, and start multiplayer typing races on usertypo_.',
+            description: 'Manage your friends list, connect with other typists, and challenge friends on usertypo_.',
             robots: 'noindex, follow',
             navId: 'nav-friends',
+            compact: false,
+        },
+        '/multiplayer': {
+            page: 'pages/multiplayer.html',
+            title: 'Multiplayer | usertypo_',
+            description: 'Play multiplayer typing races on usertypo_. Duel opponents or create private rooms.',
+            robots: 'noindex, follow',
+            navId: 'nav-multiplayer',
             compact: false,
         },
         '/room': {
