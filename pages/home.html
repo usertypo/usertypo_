@@ -391,10 +391,6 @@
             line-height: 1.5 !important;
             padding-left: 0.853rem;
             padding-right: 0.853rem;
-            /* Reserve space for 3 lines so the layout doesn't collapse
-               before renderText() sets the exact height.  Uses the same
-               clamp() as font-size × line-height × 3 lines. */
-            min-height: calc(clamp(32px, 2.4vw, 43.2px) * 1.5 * 3);
         }
         /* Hide number input spinners for custom prompt */
         #custom-prompt-input::-webkit-outer-spin-button,
