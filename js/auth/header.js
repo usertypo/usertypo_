@@ -369,6 +369,9 @@
             if (!window.usertypoAuth) return;
             try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
         },
+        _cancelXpTimer: function () {
+            if (xpToastTimer) { clearTimeout(xpToastTimer); xpToastTimer = null; }
+        },
     };
 
     if (document.readyState === 'loading') {

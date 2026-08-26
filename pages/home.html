@@ -321,12 +321,14 @@
             outline: none !important;
         }
 
-        /* Config bar glow — initial state is invisible; the theme stylesheet
-           (settings.js) injects the real @keyframes + box-shadow with the
-           user's accent colour, so we avoid a hardcoded-cyan flash on load. */
+        /* Config bar glow — initial fallback is invisible.
+           The theme stylesheet (settings.js) injects the real @keyframes +
+           box-shadow + border-color with the user's accent colour using
+           !important, so these low-specificity defaults only apply during
+           the brief gap before the theme CSS is injected. */
         #config-bar > div {
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            border-color: transparent !important;
+            border-color: transparent;
             animation: none;
         }
         
@@ -1825,16 +1827,25 @@ window.setTimeout = function(handler, timeout) {
             if (wpmText) {
                 wpmText.classList.remove('pb-wpm-pop-anim');
             }
+            // Preserve the user's chosen opacity on parent wrappers so there's
+            // no visible flash from timerOpacity → 1.0 when children fade out.
+            const _userTimerOpacity = parseFloat(
+                window.usertypo_settings?.liveFeed?.timerOpacity ?? '0.5'
+            ).toString();
             const tpw = document.getElementById('timer-progress-wrapper');
-            if (tpw) tpw.style.opacity = '';
+            if (tpw) tpw.style.opacity = _userTimerOpacity;
             const lsc = document.getElementById('live-stats-container');
-            if (lsc) lsc.style.opacity = '';
+            if (lsc) lsc.style.opacity = _userTimerOpacity;
 
             // Hide XP toast on restart so it doesn't linger from a previous test
             var xpToast = document.getElementById('header-xp-toast');
             if (xpToast) {
                 xpToast.classList.remove('opacity-100');
                 xpToast.classList.add('hidden', 'opacity-0', 'translate-y-1');
+            }
+            // Cancel any pending XP toast auto-hide timer
+            if (window.usertypoHeader && window.usertypoHeader._cancelXpTimer) {
+                window.usertypoHeader._cancelXpTimer();
             }
 
             textContainer.style.opacity = '0';
@@ -3838,10 +3849,26 @@ window.setTimeout = function(handler, timeout) {
                 el.style.opacity = '';
                 el.classList.add('opacity-0');
             });
+            // Preserve the user's chosen opacity on parent wrappers so there's
+            // no visible flash from timerOpacity → 1.0 when children fade out.
+            const _userTimerOpacity = parseFloat(
+                window.usertypo_settings?.liveFeed?.timerOpacity ?? '0.5'
+            ).toString();
             const tpw = document.getElementById('timer-progress-wrapper');
-            if (tpw) tpw.style.opacity = '';
+            if (tpw) tpw.style.opacity = _userTimerOpacity;
             const lsc = document.getElementById('live-stats-container');
-            if (lsc) lsc.style.opacity = '';
+            if (lsc) lsc.style.opacity = _userTimerOpacity;
+
+            // Hide XP toast immediately when starting a new test
+            var xpToast = document.getElementById('header-xp-toast');
+            if (xpToast) {
+                xpToast.classList.remove('opacity-100');
+                xpToast.classList.add('hidden', 'opacity-0', 'translate-y-1');
+            }
+            // Cancel any pending XP toast auto-hide timer
+            if (window.usertypoHeader && window.usertypoHeader._cancelXpTimer) {
+                window.usertypoHeader._cancelXpTimer();
+            }
 
             if (testMode === 'time') {
                 wordProgressDisplay.innerHTML = testAmount.toString();
