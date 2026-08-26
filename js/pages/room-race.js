@@ -1320,6 +1320,9 @@
                 if (content) content.style.transform = 'scale(0.95)';
             }
 
+            var TOGGLE_OFF = 'flex items-center justify-center gap-2 text-slate-400 border border-white/5 bg-black/20 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all hover:border-white/50 hover:bg-white/5 hover:text-white group';
+            var TOGGLE_ON = 'flex items-center justify-center gap-2 text-primary border border-primary/60 bg-primary/10 h-10 px-4 rounded-xl cursor-pointer flex-1 transition-all group';
+
             function refreshEditConfigUI() {
                 if (amountContainer) {
                     var btns = amountContainer.querySelectorAll('button[data-amount]');
@@ -1328,16 +1331,8 @@
                         btn.className = 'flex-1 ' + (val === editConfigAmount ? ACTIVE_CLASS : INACTIVE_CLASS);
                     });
                 }
-                if (punctBtn) {
-                    punctBtn.classList.toggle('border-primary/60', editConfigPunct);
-                    punctBtn.classList.toggle('bg-primary/10', editConfigPunct);
-                    punctBtn.classList.toggle('text-primary', editConfigPunct);
-                }
-                if (numBtn) {
-                    numBtn.classList.toggle('border-primary/60', editConfigNums);
-                    numBtn.classList.toggle('bg-primary/10', editConfigNums);
-                    numBtn.classList.toggle('text-primary', editConfigNums);
-                }
+                if (punctBtn) punctBtn.className = editConfigPunct ? TOGGLE_ON : TOGGLE_OFF;
+                if (numBtn) numBtn.className = editConfigNums ? TOGGLE_ON : TOGGLE_OFF;
             }
 
             if (editBtn) editBtn.addEventListener('click', openEditConfig, { signal: signal });
