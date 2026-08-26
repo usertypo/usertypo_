@@ -361,6 +361,8 @@
             readyButton.dataset.mode = 'ready';
             if (self && self.ready) {
                 readyButton.disabled = true;
+                readyButton.classList.add('is-disabled');
+                readyButton.setAttribute('aria-disabled', 'true');
                 readyButtonLabel.textContent = 'Ready (' + readyCount + '/' + totalPlayers + ')';
             } else {
                 readyButtonLabel.textContent = 'Ready Up (' + readyCount + '/' + totalPlayers + ')';
@@ -2044,9 +2046,10 @@
             } else {
                 paintRoomResults();
             }
-            returnLobbyNeeded = Math.max(1, (room.players || []).filter(function (player) {
+            var activePlayers = (room.players || []).filter(function (player) {
                 return player.status !== 'left';
-            }).length || players.length);
+            }).length || players.length;
+            returnLobbyNeeded = Math.min(MIN_READY_TO_START, Math.max(1, activePlayers));
             returnLobbyAgreed = 0;
             updateReturnLobbyButton();
             if (payload[3]) {

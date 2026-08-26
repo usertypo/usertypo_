@@ -716,10 +716,11 @@ function createMultiplayerServer(httpServer, options) {
         if (!room || room.type !== 'custom') return;
         const remaining = remainingCustomPlayers(room);
         const agreed = remaining.filter((player) => player.returnLobby);
+        const needed = Math.min(LIMITS.minReadyToStart, Math.max(1, remaining.length));
         io.to(roomChannel(room.id)).emit('room:return-lobby-state', [
             room.id,
             agreed.length,
-            remaining.length,
+            needed,
             agreed.map((player) => player.userId),
         ]);
     }
@@ -786,7 +787,9 @@ function createMultiplayerServer(httpServer, options) {
             closeCustomRoom(room, 'empty');
             return;
         }
-        if (remaining.every((player) => player.returnLobby)) {
+        const agreed = remaining.filter((player) => player.returnLobby);
+        const needed = Math.min(LIMITS.minReadyToStart, Math.max(1, remaining.length));
+        if (agreed.length >= needed) {
             resetCustomRoomToLobby(room);
         }
     }
