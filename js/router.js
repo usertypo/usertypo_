@@ -48,7 +48,7 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=41'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=42'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -132,8 +132,6 @@
             navId: null,
             compact: true,
             typingLayout: true,
-            hideShellFooter: true,
-            hideShellHeader: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
