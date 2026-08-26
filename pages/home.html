@@ -5049,11 +5049,66 @@
             }),
         ]);
 
+        // Keep a ref to the temporary PB element injected into the LIVE DOM
+        let _tempPbEl = null;
+
         await StatsScreenshot.capture({
             captureArea,
             button: btn,
             hideSelectors: ['#stats-action-buttons'],
             padding: 56,
+            beforeCapture: () => {
+                // Inject a STATIC PB badge into the live DOM at the top of capture area.
+                // This is the only reliable way to include it in the screenshot because
+                // domToCanvas calculates dimensions from the live DOM and clones it —
+                // any modifications to the clone tree in patchCloneRoot are unreliable.
+                if (isPbVisible && livePbBadge) {
+                    const pbClone = livePbBadge.cloneNode(true);
+                    pbClone.id = 'stats-pb-badge-screenshot';
+                    pbClone.classList.remove('opacity-0', 'hidden', 'invisible', 'absolute');
+                    pbClone.classList.add('opacity-100');
+                    pbClone.style.cssText = `
+                        position: static !important;
+                        display: inline-flex !important;
+                        opacity: 1 !important;
+                        visibility: visible !important;
+                        transform: scale(1) !important;
+                        animation: none !important;
+                        transition: none !important;
+                        pointer-events: none !important;
+                        backdrop-filter: none !important;
+                        -webkit-backdrop-filter: none !important;
+                    `;
+                    // Copy computed bg color (resolves backdrop-blur)
+                    const cs = getComputedStyle(livePbBadge);
+                    if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                        pbClone.style.backgroundColor = cs.backgroundColor;
+                    }
+                    pbClone.style.boxShadow = cs.boxShadow || 'none';
+                    pbClone.style.borderColor = cs.borderColor || '';
+                    pbClone.style.border = cs.border || '';
+                    pbClone.style.borderRadius = cs.borderRadius || '';
+                    pbClone.style.height = cs.height || '';
+                    pbClone.style.padding = cs.padding || '';
+
+                    // Wrap in a centered container
+                    const pbWrap = document.createElement('div');
+                    pbWrap.id = 'stats-pb-screenshot-wrap';
+                    pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;margin-bottom:0.5rem;';
+                    pbWrap.appendChild(pbClone);
+
+                    // Insert at the very top of capture area
+                    captureArea.insertBefore(pbWrap, captureArea.firstChild);
+                    _tempPbEl = pbWrap;
+                }
+            },
+            afterCapture: () => {
+                // Remove the temporary PB element from the live DOM
+                if (_tempPbEl) {
+                    _tempPbEl.remove();
+                    _tempPbEl = null;
+                }
+            },
             patchCloneRoot: (cloned) => {
                 const overlay = cloned.querySelector('#graph-info-overlay');
                 const graphContainer = cloned.querySelector('#graph-container');
@@ -5074,61 +5129,10 @@
                     }
                 }
 
-                // ── Personal Best badge: freeze animation & ensure visibility ──
+                // Hide the original (absolute-positioned) PB badge in the clone —
+                // we already have the static copy from beforeCapture
                 const pbBadge = cloned.querySelector('#stats-pb-badge');
-                if (pbBadge) {
-                    if (isPbVisible) {
-                        // Detach the badge from its deeply-nested absolute position
-                        // and re-insert it as a normal-flow element near the top of
-                        // the capture area so it falls inside the canvas bounding box.
-                        pbBadge.remove();
-
-                        // Reset positioning to normal flow
-                        pbBadge.classList.remove('opacity-0', 'hidden', 'invisible', 'absolute', 'pointer-events-none');
-                        pbBadge.classList.add('opacity-100');
-                        pbBadge.style.position = 'static';
-                        pbBadge.style.bottom = '';
-                        pbBadge.style.left = '';
-                        pbBadge.style.marginBottom = '0.5rem';
-                        pbBadge.style.animation = 'none';
-                        pbBadge.style.animationDelay = '0s';
-                        pbBadge.style.transition = 'none';
-                        pbBadge.style.opacity = '1';
-                        pbBadge.style.visibility = 'visible';
-                        pbBadge.style.display = 'inline-flex';
-                        pbBadge.style.transform = 'scale(1)';
-                        pbBadge.style.pointerEvents = 'none';
-                        pbBadge.style.backdropFilter = 'none';
-                        pbBadge.style.webkitBackdropFilter = 'none';
-                        if (livePbBadge) {
-                            const cs = getComputedStyle(livePbBadge);
-                            if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                                pbBadge.style.backgroundColor = cs.backgroundColor;
-                            }
-                            pbBadge.style.boxShadow = cs.boxShadow || 'none';
-                            pbBadge.style.borderColor = cs.borderColor || '';
-                        }
-
-                        // Wrap in a centered container and insert after the logo (or at the top)
-                        const doc = cloned.ownerDocument || document;
-                        const pbWrap = doc.createElement('div');
-                        pbWrap.style.cssText = 'display:flex;justify-content:center;width:100%;';
-                        pbWrap.appendChild(pbBadge);
-
-                        // Insert after logo wrapper if it exists, otherwise at the start
-                        const firstChild = cloned.firstChild;
-                        // Skip past the logo wrapper (injected above) if it exists
-                        const logoWrap = cloned.querySelector('div[style*="margin-bottom:0.5rem"]');
-                        if (logoWrap && logoWrap.parentElement === cloned) {
-                            logoWrap.after(pbWrap);
-                        } else {
-                            cloned.insertBefore(pbWrap, firstChild);
-                        }
-                    } else {
-                        // Not a PB — ensure badge stays hidden in screenshot
-                        pbBadge.style.display = 'none';
-                    }
-                }
+                if (pbBadge) pbBadge.style.display = 'none';
 
                 // ── Usertypo logo: inject at top-center of capture area ──
                 if (logoODataUrl) {
