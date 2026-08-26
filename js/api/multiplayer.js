@@ -253,12 +253,12 @@
         });
         activeSocket.on('room:host-ready', function (payload) {
             if (!payload || !payload.roomId) return;
-            notify({
-                id: 'room-host-ready:' + payload.roomId,
-                type: 'room_notice',
-                title: 'The host is ready',
-                body: 'Get ready — ' + (payload.hostName || 'The host') + ' is waiting to start the match.',
-            });
+            if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
+                window.usertypoNotifications.showToast(
+                    'The host is ready — ' + (payload.hostName || 'The host') + ' is waiting to start.',
+                    'flag'
+                );
+            }
             dispatch('room-host-ready', payload);
         });
         activeSocket.on('room:closed', function (payload) {

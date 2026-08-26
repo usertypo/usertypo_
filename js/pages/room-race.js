@@ -2203,7 +2203,16 @@
                 if (payload.roomId && roomId && String(payload.roomId) !== String(roomId)) return;
                 intentionalLeave = true;
                 state = 'closed';
-                window.usertypoNotifications?.showToast('You were removed from the room.', 'person_remove');
+                if (window.usertypoNotifications && window.usertypoNotifications.addEphemeral) {
+                    window.usertypoNotifications.addEphemeral({
+                        id: 'room-kicked:' + (roomId || Date.now()),
+                        type: 'room_notice',
+                        title: 'Removed from room',
+                        body: 'You were removed from the room by the host.',
+                    });
+                } else {
+                    window.usertypoNotifications?.showToast('You were removed from the room.', 'person_remove');
+                }
                 window.navigateTo?.('/friends');
             });
             listen('race-finished', function (event) { renderResults(event.detail); });
