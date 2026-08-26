@@ -276,6 +276,14 @@
                     if (node) {
                         node.classList.toggle('is-ready', !!player.ready);
                         node.setAttribute('data-player-name', player.name || '');
+                        // Re-render avatar if level changed (enrichment arrived after first paint).
+                        var avatarEl = node.querySelector('.player-level-avatar');
+                        var domLevel = avatarEl ? Number(avatarEl.getAttribute('data-level')) : 1;
+                        var realLevel = Number(player.level) || 1;
+                        if (realLevel !== domLevel) {
+                            var ringSlot = node.querySelector('.player-avatar-ring');
+                            if (ringSlot) ringSlot.innerHTML = playerAvatarHtml(player, 'lg', 'player-orbit-avatar');
+                        }
                     }
                 } else {
                     // Create new arm (fade-in).
