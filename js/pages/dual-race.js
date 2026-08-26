@@ -1634,7 +1634,7 @@
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
             stopZenMode();
-            setFooterCompact(true);
+            setFooterCompact(false);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
@@ -1839,7 +1839,7 @@
         }
 
         async function init() {
-            setFooterCompact(true);
+            setFooterCompact(false);
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
