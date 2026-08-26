@@ -1814,6 +1814,8 @@ function createMultiplayerServer(httpServer, options) {
                 }
                 const newConfig = normalizeConfig(payload.config);
                 room.config = newConfig;
+                room.configKey = configKey(newConfig);
+                room.prompt = createPrompt(root, newConfig);
                 // Un-ready all players so they re-acknowledge the new config
                 room.players.forEach((player) => { player.ready = false; });
                 touchRoomActivity(room);
