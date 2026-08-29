@@ -82,7 +82,14 @@
 
         // Keep Postgres as source of truth for history. Redis rankings are updated
         // separately through a secure Edge Function (never from browser Redis keys).
+        // Staging (dev.usertypo.com) disables leaderboards entirely — no Redis / no ingest.
+        var leaderboardsEnabled = !(
+            window.USERTYPO_CONFIG
+            && window.USERTYPO_CONFIG.features
+            && window.USERTYPO_CONFIG.features.leaderboards === false
+        );
         if (
+            leaderboardsEnabled &&
             !payload.failed &&
             Number(payload.wpm) > 0 &&
             window.usertypoLeaderboards &&

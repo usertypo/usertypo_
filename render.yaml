@@ -2,11 +2,15 @@
 # Forkers must replace PUBLIC_SITE_URL, ALLOWED_ORIGINS, SUPABASE_URL, and
 # SELF_PING_URL with their own values, and set secret env vars (CLERK_SECRET_KEY,
 # SUPABASE_SERVICE_ROLE_KEY, etc.) in the Render dashboard — never commit secret values.
+#
+# Production: `usertypo` (mp.usertypo.com)
+# Staging:    `usertypo-dev` (usertypo-dev.onrender.com) — separate Supabase, no Redis
 services:
   - type: web
     name: usertypo
     runtime: node
     plan: free
+    branch: main
     buildCommand: npm ci && npm run build:pages
     startCommand: npm start
     healthCheckPath: /health-check
@@ -32,5 +36,36 @@ services:
         sync: false
       - key: SUPABASE_URL
         value: https://skebosepedaxnvcaizka.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: web
+    name: usertypo-dev
+    runtime: node
+    plan: free
+    branch: dev
+    buildCommand: npm ci && npm run build:pages
+    startCommand: npm start
+    healthCheckPath: /health-check
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_ONLY
+        value: "true"
+      - key: PUBLIC_SITE_URL
+        value: https://dev.usertypo.com
+      - key: ALLOWED_ORIGINS
+        value: https://dev.usertypo.com,https://usertypo-dev.onrender.com
+      - key: CLERK_AUTHORIZED_PARTIES
+        value: https://dev.usertypo.com,https://usertypo-dev.onrender.com
+      - key: SELF_PING_URL
+        value: https://usertypo-dev.onrender.com
+      - key: SELF_PING_ENABLED
+        value: "true"
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: SUPABASE_URL
+        value: https://dzpbkyqsshdruwhffwhw.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false

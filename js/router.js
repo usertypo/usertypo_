@@ -708,6 +708,18 @@
             queuedPath = path;
             return;
         }
+
+        // Staging disables global leaderboards — bounce to home.
+        var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
+        if (path === '/leaderboards' && features && features.leaderboards === false) {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/');
+            } else {
+                window.location.replace('/');
+            }
+            return;
+        }
+
         isNavigating = true;
 
         var routeConfig = routes[path];
