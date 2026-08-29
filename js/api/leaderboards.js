@@ -18,6 +18,11 @@
 
     var redisAvailable = null; // null unknown, true/false after first probe
 
+    function leaderboardsFeatureEnabled() {
+        var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
+        return !(features && features.leaderboards === false);
+    }
+
     function normalizeTimeframe(value) {
         var allowed = { alltime: true, weekly: true, daily: true };
         // Legacy "monthly" clients fall back to all-time.
@@ -350,6 +355,9 @@
     }
 
     async function callLeaderboardFunction(payload, requireAuth) {
+        if (!leaderboardsFeatureEnabled()) {
+            return { ok: false, status: 503, data: { error: 'LEADERBOARDS_DISABLED' } };
+        }
         if (redisAvailable === false) {
             return { ok: false, status: 503, data: { error: 'REDIS_NOT_CONFIGURED' } };
         }
@@ -807,6 +815,9 @@
      * Safe no-op when Redis is not configured.
      */
     async function ingestScore(session) {
+        if (!leaderboardsFeatureEnabled()) {
+            return { skipped: true, reason: 'leaderboards_disabled' };
+        }
         if (!session || session.failed) {
             return { skipped: true, reason: 'failed_or_missing' };
         }

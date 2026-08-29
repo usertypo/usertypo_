@@ -9,6 +9,7 @@
  *
  * Architecture:
  * - Website: https://usertypo.com (Cloudflare Pages)
+ * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + Render)
  * - Backend (Socket.IO, /api/*): https://mp.usertypo.com (Render)
  * - Local `npm run dev`: blank backend URLs → same-origin Express
  */
@@ -25,6 +26,7 @@ window.USERTYPO_CONFIG = {
         allowedRedirectOrigins: [
             'https://usertypo.com',
             'https://www.usertypo.com',
+            'https://dev.usertypo.com',
         ],
     },
     supabase: {
@@ -41,6 +43,10 @@ window.USERTYPO_CONFIG = {
         // Socket.IO server. Usually same as backend.url. Blank on localhost.
         url: 'https://mp.usertypo.com',
     },
+    features: {
+        // Global Redis leaderboards — off on the isolated dev environment.
+        leaderboards: true,
+    },
     analytics: {
         // GA4 Measurement ID, e.g. 'G-XXXXXXXX'. Empty = do not load analytics.
         ga4MeasurementId: 'G-J3Z3XM22WQ',
@@ -51,18 +57,58 @@ window.USERTYPO_CONFIG = {
     },
 };
 
-(function normalizeBackendUrls() {
+(function applyHostEnvironment() {
     var cfg = window.USERTYPO_CONFIG;
     if (!cfg) return;
     var host = '';
     try { host = String(location.hostname || ''); } catch (_) { host = ''; }
+
+    // Staging: Clerk Development + separate Supabase/Render; no Redis leaderboards.
+    if (host === 'dev.usertypo.com') {
+        if (!cfg.clerk) cfg.clerk = {};
+        cfg.clerk.publishableKey = 'pk_test_dHJ1c3RlZC1wcmF3bi0zMS5jbGVyay5hY2NvdW50cy5kZXYk';
+        cfg.clerk.frontendApi = 'trusted-prawn-31.clerk.accounts.dev';
+        cfg.clerk.allowedRedirectOrigins = [
+            'https://dev.usertypo.com',
+            'http://localhost:3000',
+        ];
+        cfg.supabase = {
+            url: 'https://dzpbkyqsshdruwhffwhw.supabase.co',
+            publishableKey: 'sb_publishable_nnRcpE_zT8Vtv0Z4MNTBKw_TqJhGC10',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM',
+        };
+        // Free Render hostname until optional mp-dev.usertypo.com DNS is added.
+        cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
+        cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
+        if (!cfg.features) cfg.features = {};
+        cfg.features.leaderboards = false;
+        if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
+        if (cfg.ads) cfg.ads.adsenseClient = '';
+    }
+
     // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
     if (
         host === 'localhost'
         || host === '127.0.0.1'
         || host === 'usertypo.onrender.com'
+        || host === 'usertypo-dev.onrender.com'
     ) {
         if (cfg.backend) cfg.backend.url = '';
         if (cfg.multiplayer) cfg.multiplayer.url = '';
+    }
+
+    function hideLeaderboardsNav() {
+        if (!cfg.features || cfg.features.leaderboards !== false) return;
+        var el = document.getElementById('nav-leaderboards');
+        if (el) {
+            el.hidden = true;
+            el.setAttribute('aria-hidden', 'true');
+            el.style.display = 'none';
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideLeaderboardsNav);
+    } else {
+        hideLeaderboardsNav();
     }
 })();
