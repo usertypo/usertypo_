@@ -94,7 +94,7 @@
     <script>
     (function () {
         var ABYSS = { bgMain: '#000000', bgSecondary: '#444444', textPrimary: '#cccccc', textMuted: '#777777', accentPrimary: '#ffffff', accentHover: '#dddddd', error: '#ff4444' };
-        var PAPER = { bgMain: '#ffffff', bgSecondary: '#b3b3b3', textPrimary: '#333333', textMuted: '#888888', accentPrimary: '#000000', accentHover: '#333333', error: '#cc0000' };
+        var PAPER = { bgMain: '#f2f4f7', bgSecondary: '#a8b0bc', textPrimary: '#2a3038', textMuted: '#64748b', accentPrimary: '#1e293b', accentHover: '#334155', error: '#dc2626' };
         function preferredDefault() {
             try {
                 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'Paper';
@@ -239,7 +239,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
-    <link href="css/global.css?v=28" rel="stylesheet" />
+    <link href="css/global.css?v=29" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -348,7 +348,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .menu-btn:focus, .menu-btn:active { outline: none !important; background: transparent; }
-        .menu-btn:hover { color: white !important; text-shadow: 0 0 10px rgba(255, 255, 255, calc(0.7 * var(--glow-intensity, 1))); }
+        .menu-btn:hover { color: var(--theme-fg-strong, #fff) !important; text-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.35 * var(--glow-intensity, 1))); }
         .menu-btn.is-active { color: var(--theme-primary, #ffffff) !important; text-shadow: 0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.8 * var(--glow-intensity, 1))); }
 
         .slide-ease {
@@ -747,8 +747,8 @@
         }
 
         .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
-            color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, calc(0.6 * var(--glow-intensity, 1))));
+            color: var(--theme-fg-strong, #ffffff);
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.35 * var(--glow-intensity, 1))));
         }
 
         .expanding-bubble.is-open {
@@ -847,8 +847,8 @@
         }
 
         #bubble-toggle:hover .bubble-toggle-icon {
-            color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+            color: var(--theme-fg-strong, #ffffff);
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), calc(0.35 * var(--glow-intensity, 1))));
         }
 
         .bubble-content {
@@ -863,7 +863,7 @@
 
         .bubble-nav-link {
             cursor: pointer;
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
             transition: color 0.2s ease, background-color 0.2s ease;
             background: transparent;
             border: none;
@@ -871,7 +871,7 @@
             text-align: inherit;
         }
         .bubble-nav-link:hover {
-            color: #ffffff;
+            color: var(--theme-fg-strong, #ffffff);
             background-color: rgba(255, 255, 255, 0.05);
         }
         .bubble-nav-link.is-active {
@@ -1573,9 +1573,9 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=2"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=74"></script>
+    <script src="settings.js?v=75"></script>
     <script src="footer-picker.js?v=9"></script>
-    <script src="settings-search.js?v=9"></script>
+    <script src="settings-search.js?v=10"></script>
     <!-- Auth + data API (before router) -->
     <script src="js/ui/analytics.js?v=3"></script>
     <script src="js/ui/cookie-consent.js?v=4"></script>
@@ -1604,7 +1604,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=31"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=217"></script>
+    <script src="js/page-fragments.js?v=218"></script>
     <script src="js/router.js?v=59"></script>
 
     <script>

@@ -206,7 +206,7 @@
             #global-settings-search-overlay .search-result-name {
                 font-size: 0.8125rem;
                 font-weight: 600;
-                color: #e2e8f0;
+                color: var(--theme-fg-strong, #e2e8f0);
                 margin-bottom: 0.5rem;
             }
             #global-settings-search-overlay .search-result-desc {
@@ -261,7 +261,7 @@
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
-            #global-settings-search-overlay .opt-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+            #global-settings-search-overlay .opt-btn:hover { background: rgba(255,255,255,0.08); color: var(--theme-fg-strong, #fff); }
             #global-settings-search-overlay .opt-btn.active {
                 background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.15);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.35);

@@ -109,7 +109,7 @@
         }
 
         .graph-tab-pill button.active {
-            color: #fff;
+            color: var(--theme-fg-strong, #fff);
         }
 
         .graph-pill-indicator {
@@ -156,13 +156,13 @@
             font-size: 1.226rem;
         }
         .graph-info-label {
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
             font-size: 0.693rem;
             font-weight: 600;
             margin-bottom: 3px;
         }
         .graph-info-desc {
-            color: #94a3b8;
+            color: var(--theme-text-muted, #94a3b8);
             font-size: 0.666rem;
             line-height: 1.65;
             margin-bottom: 10px;
@@ -422,8 +422,8 @@
         }
 
         .expanding-bubble:not(.is-open):hover .bubble-toggle-icon {
-            color: #ffffff;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, var(--gi-60, 0.6)));
+            color: var(--theme-fg-strong, #ffffff);
+            filter: drop-shadow(0 0 10px rgba(var(--theme-primary-rgb), var(--gi-35, 0.35)));
         }
 
         .expanding-bubble.is-open {

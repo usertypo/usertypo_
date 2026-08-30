@@ -288,7 +288,7 @@
             flex-shrink: 0;
         }
         .panel-back-btn:hover {
-            color: #fff;
+            color: var(--theme-fg-strong, #fff);
             background: rgba(255,255,255,0.06);
         }
         .sub-card-header { transition: background 0.2s ease; }
@@ -448,7 +448,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        .opt-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .opt-btn:hover { background: rgba(255,255,255,0.08); color: var(--theme-fg-strong, #fff); }
         .opt-btn.active {
             background: rgba(var(--theme-primary-rgb),0.15);
             border-color: rgba(var(--theme-primary-rgb),0.35);
@@ -499,7 +499,7 @@
             background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #f1f5f9;
+            color: var(--theme-fg-strong, #f1f5f9);
             font-size: 0.6875rem;
             font-weight: 700;
             letter-spacing: 0.04em;

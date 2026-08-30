@@ -530,13 +530,13 @@ const THEME_PALETTES = {
         error: '#ff4444',
     },
     'Paper': {
-        bgMain: '#ffffff',
-        bgSecondary: '#b3b3b3',
-        textPrimary: '#333333',
-        textMuted: '#888888',
-        accentPrimary: '#000000',
-        accentHover: '#333333',
-        error: '#cc0000',
+        bgMain: '#f2f4f7',
+        bgSecondary: '#a8b0bc',
+        textPrimary: '#2a3038',
+        textMuted: '#64748b',
+        accentPrimary: '#1e293b',
+        accentHover: '#334155',
+        error: '#dc2626',
     },
     'Dracula': {
         bgMain: '#282a36',
@@ -2146,6 +2146,137 @@ function applyThemeSettings(settings) {
             box-shadow: 0 0 10px rgba(${accentRGB}, ${themeIsLight ? '0.35' : '0.8'}) !important;
         }
 
+        /* ── Light themes: remap dark-UI hardcoded whites / slate-100s ── */
+        ${themeIsLight ? `
+        /* Hardcoded near-white text → readable on Paper / light themes */
+        .text-white,
+        .text-slate-50,
+        .text-slate-100,
+        .text-slate-200,
+        #stats-raw-wpm,
+        #stats-max-burst,
+        #stats-wpm,
+        #stats-acc,
+        #stats-consistency,
+        #stats-time,
+        #level-up-number,
+        #fail-title,
+        #shell-user-name,
+        #shell-user-tier,
+        #ppc-username,
+        #ppc-stat-tests,
+        #ppc-stat-time,
+        #ppc-stat-words,
+        #generated-room-id,
+        .about-stat-value,
+        .hiw-eq,
+        .hiw-eq-result,
+        .graph-tab-pill button.active,
+        .graph-info-label,
+        .bubble-toggle-icon,
+        .expanding-bubble:not(.is-open):hover .bubble-toggle-icon,
+        .contact-pill-input,
+        .contact-pill-textarea,
+        .contact-problem-option:hover,
+        .contact-problem-option:focus-visible,
+        .opt-btn:hover,
+        .white-link:hover,
+        .lb-username,
+        .friends-name,
+        .room-player-name,
+        .dual-player-name {
+            color: ${fgStrong} !important;
+            text-shadow: none !important;
+            filter: none !important;
+        }
+        .text-slate-300,
+        .text-slate-400 {
+            color: ${p.textMuted} !important;
+        }
+        .hover\\:text-white:hover,
+        .group:hover .group-hover\\:text-white,
+        .group-hover\\:text-white,
+        .menu-btn:hover,
+        a.hover\\:text-white:hover,
+        button.hover\\:text-white:hover {
+            color: ${p.accentPrimary} !important;
+            text-shadow: 0 0 8px rgba(${accentRGB}, 0.18) !important;
+        }
+        .menu-btn.is-active {
+            color: ${p.accentPrimary} !important;
+            text-shadow: 0 0 10px rgba(${accentRGB}, 0.22) !important;
+        }
+        .hover\\:drop-shadow-\\[0_0_8px_rgba\\(255\\,255\\,255\\,0\\.8\\)\\]:hover {
+            filter: drop-shadow(0 0 6px rgba(${accentRGB}, 0.25)) !important;
+        }
+        .drop-shadow-\\[0_0_8px_rgba\\(255\\,255\\,255\\,0\\.6\\)\\] {
+            filter: none !important;
+        }
+        /* Soften white-tinted chips / inputs on light Paper */
+        .bg-white\\/5,
+        .bg-white\\/10,
+        .hover\\:bg-white\\/5:hover,
+        .hover\\:bg-white\\/10:hover,
+        .hover\\:bg-white\\/20:hover,
+        .bg-black\\/20,
+        .bg-black\\/40 {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+        }
+        .border-white\\/5,
+        .border-white\\/10,
+        .border-white\\/50,
+        .hover\\:border-white\\/50:hover {
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+        .placeholder\\:text-slate-500::placeholder,
+        .contact-pill-input::placeholder,
+        .contact-pill-textarea::placeholder {
+            color: ${p.textMuted} !important;
+        }
+        /* Docs / legal / about / multiplayer headings */
+        .privacy-page h1, .privacy-page h2, .privacy-page h3,
+        .terms-page h1, .terms-page h2, .terms-page h3,
+        .security-page h1, .security-page h2, .security-page h3,
+        .about-page h1, .about-page h2, .about-page h3,
+        .hiw-page h1, .hiw-page h2, .hiw-page h3,
+        .privacy-page, .terms-page, .security-page,
+        .about-page, .hiw-page,
+        .about-page p, .hiw-page p,
+        .privacy-page p, .terms-page p, .security-page p,
+        #multiplayer-page h1, #multiplayer-page h2, #multiplayer-page h3,
+        #multiplayer-page .text-white,
+        #multiplayer-page .text-slate-100,
+        #multiplayer-page .text-slate-200,
+        [class*="privacy"] .text-slate-100,
+        [class*="terms"] .text-slate-100,
+        [class*="security"] .text-slate-100 {
+            color: ${fgStrong} !important;
+        }
+        .privacy-page .text-slate-400,
+        .terms-page .text-slate-400,
+        .security-page .text-slate-400,
+        .about-page .text-slate-400,
+        .hiw-page .text-slate-400,
+        .about-stat-label,
+        .about-toc a,
+        .hiw-toc a,
+        #multiplayer-page .text-slate-400,
+        #multiplayer-page .text-slate-300,
+        #multiplayer-page p {
+            color: ${p.textMuted} !important;
+        }
+        strong.text-slate-100,
+        strong.text-slate-200,
+        #multiplayer-page strong {
+            color: ${fgStrong} !important;
+        }
+        /* Settings / search overlays that force white on hover */
+        #global-settings-search-overlay .opt-btn:hover {
+            color: ${fgStrong} !important;
+            background: rgba(0, 0, 0, 0.06) !important;
+        }
+        ` : ''}
+
         /* ── Level / XP rings — visible track + contrast badge text ── */
         .player-level-avatar__track,
         #header-account-xp-track,
@@ -2291,8 +2422,8 @@ function applyThemeSettings(settings) {
         #orbit-tooltip-portal,
         .quick-btn-tooltip,
         .testActivity .yearSelectMenu {
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+            border: 1px solid ${themeIsLight ? 'rgba(0, 0, 0, 0.10)' : 'rgba(255, 255, 255, 0.05)'} !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, ${themeIsLight ? '0.18' : '0.5'}) !important;
         }
         .usertypo-menu-pill-tip,
         .score-distribution-column::after,
@@ -2986,6 +3117,11 @@ function applyThemeSettings(settings) {
     tag.textContent = css;
 
     applyGlowIntensityVar(settings);
+
+    try {
+        document.documentElement.setAttribute('data-theme-light', themeIsLight ? '1' : '0');
+        document.documentElement.classList.toggle('theme-light', !!themeIsLight);
+    } catch (e) { /* ignore */ }
 
 
 

@@ -60,14 +60,14 @@ body::-webkit-scrollbar {
 
 @media (prefers-color-scheme: light) {
     :root {
-        --theme-bg: #ffffff; /* Paper */
-        --theme-bg-rgb: 255, 255, 255;
-        --theme-primary: #000000;
-        --theme-primary-rgb: 0, 0, 0;
-        --theme-text: #333333;
-        --theme-text-muted: #888888;
-        --theme-on-primary: #ffffff;
-        --theme-fg-strong: #333333;
+        --theme-bg: #f2f4f7; /* Paper */
+        --theme-bg-rgb: 242, 244, 247;
+        --theme-primary: #1e293b;
+        --theme-primary-rgb: 30, 41, 59;
+        --theme-text: #2a3038;
+        --theme-text-muted: #64748b;
+        --theme-on-primary: #f2f4f7;
+        --theme-fg-strong: #2a3038;
         --theme-ring-track: rgba(0, 0, 0, 0.16);
     }
 }
@@ -642,7 +642,7 @@ html {
 .contact-problem-option:hover,
 .contact-problem-option:focus-visible {
     background: color-mix(in srgb, rgb(var(--theme-primary-rgb, 0, 208, 255)) 12%, transparent);
-    color: #f1f5f9;
+    color: var(--theme-fg-strong, #f1f5f9);
 }
 
 .contact-problem-option[aria-selected="true"] {
@@ -655,7 +655,7 @@ html {
     -webkit-appearance: none !important;
     appearance: none !important;
     background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
-    color: #ffffff !important;
+    color: var(--theme-fg-strong, #ffffff) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
     backdrop-filter: blur(4px) !important;
     -webkit-backdrop-filter: blur(4px) !important;
