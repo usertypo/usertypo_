@@ -1165,8 +1165,6 @@ function applyCustomThemePreset(index) {
     };
     settings.lookFeel.colorTheme = `custom:${idx}`;
     saveSettings(settings);
-    // Force a visible transition even when switching between similar custom presets.
-    __lastAppliedThemeKey = null;
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
@@ -1671,7 +1669,8 @@ function _hexToRGB(hex) {
 function beginThemeColorTransition() {
     const root = document.documentElement;
     if (!root) return;
-    // Force style recalc so the upcoming color change interpolates from current values
+    // Enable interpolating transitions, then force a style flush so the
+    // upcoming palette change animates from the current computed colors.
     root.classList.add('theme-animating');
     void root.offsetWidth;
     if (window.__usertypoThemeAnimTimer) {
@@ -1680,7 +1679,35 @@ function beginThemeColorTransition() {
     window.__usertypoThemeAnimTimer = setTimeout(() => {
         root.classList.remove('theme-animating');
         window.__usertypoThemeAnimTimer = null;
-    }, 500);
+    }, 520);
+}
+
+/** Publish live theme CSS variables on :root (drives var()-based surfaces). */
+function publishThemeCssVars(p, derived) {
+    const root = document.documentElement;
+    if (!root || !p || !derived) return;
+    const {
+        accentRGB, bgMainRGB, bgSecRGB, errorRGB,
+        onPrimary, fgStrong, ringTrack, themeIsLight, glowFactor, glowPct,
+    } = derived;
+    root.style.setProperty('--theme-primary', p.accentPrimary);
+    root.style.setProperty('--theme-primary-rgb', accentRGB);
+    root.style.setProperty('--theme-primary-hover', p.accentHover);
+    root.style.setProperty('--theme-bg', p.bgMain);
+    root.style.setProperty('--theme-bg-rgb', bgMainRGB);
+    root.style.setProperty('--theme-bg-secondary', p.bgSecondary);
+    root.style.setProperty('--theme-bg-secondary-rgb', bgSecRGB);
+    root.style.setProperty('--theme-menu-bg', `rgba(${bgSecRGB}, 0.4)`);
+    root.style.setProperty('--theme-text', p.textPrimary);
+    root.style.setProperty('--theme-text-muted', p.textMuted);
+    root.style.setProperty('--theme-error', p.error);
+    root.style.setProperty('--theme-error-rgb', errorRGB);
+    root.style.setProperty('--theme-on-primary', onPrimary);
+    root.style.setProperty('--theme-fg-strong', fgStrong);
+    root.style.setProperty('--theme-ring-track', ringTrack);
+    root.style.setProperty('--theme-is-light', themeIsLight ? '1' : '0');
+    if (glowFactor != null) root.style.setProperty('--glow-intensity', String(glowFactor));
+    if (glowPct != null) root.setAttribute('data-glow-intensity', String(glowPct));
 }
 
 /** Clamp glow intensity to 0–100. Missing/invalid → host default (100 live / 50 staging). */
@@ -1844,9 +1871,26 @@ function applyThemeSettings(settings) {
     // Animate only when switching away from an already-applied palette.
     // First paint (Abyss/Paper boot → saved theme) must be instant — otherwise
     // hardcoded shell cyan (#00d0ff / #95efff) morphs visibly in the middle.
-    const themeKey = `${themeName}|${p.bgMain}|${p.accentPrimary}|${p.textPrimary}`;
-    if (__lastAppliedThemeKey && __lastAppliedThemeKey !== themeKey) {
+    const themeKey = `${themeName}|${p.bgMain}|${p.accentPrimary}|${p.textPrimary}|${p.textMuted}|${p.bgSecondary}|${p.error}`;
+    const shouldAnimateTheme = !!(__lastAppliedThemeKey && __lastAppliedThemeKey !== themeKey);
+    if (shouldAnimateTheme) {
         beginThemeColorTransition();
+        // Push CSS vars immediately (before the big stylesheet rewrite) so
+        // var(--theme-*) surfaces start interpolating from the current frame.
+        publishThemeCssVars(p, {
+            accentRGB, bgMainRGB, bgSecRGB, errorRGB,
+            onPrimary, fgStrong, ringTrack, themeIsLight,
+            glowFactor, glowPct,
+        });
+        try {
+            const root = document.documentElement;
+            root.style.backgroundColor = p.bgMain;
+            if (document.body) document.body.style.backgroundColor = p.bgMain;
+            const backdrop = document.getElementById('app-backdrop');
+            if (backdrop) backdrop.style.backgroundColor = p.bgMain;
+            const spaContent = document.getElementById('spa-content');
+            if (spaContent) spaContent.style.backgroundColor = p.bgMain;
+        } catch (e) { /* ignore */ }
     }
     __lastAppliedThemeKey = themeKey;
 
@@ -3254,25 +3298,14 @@ function applyThemeSettings(settings) {
         ].join('');
     }
 
-    // Drive root-level vars + clear any stale inline bg so switches apply instantly
+    // Drive root-level vars + clear any stale inline bg so switches apply smoothly
     try {
+        publishThemeCssVars(p, {
+            accentRGB, bgMainRGB, bgSecRGB, errorRGB,
+            onPrimary, fgStrong, ringTrack, themeIsLight,
+            glowFactor, glowPct,
+        });
         const root = document.documentElement;
-        root.style.setProperty('--theme-primary', p.accentPrimary);
-        root.style.setProperty('--theme-primary-rgb', accentRGB);
-        root.style.setProperty('--theme-primary-hover', p.accentHover);
-        root.style.setProperty('--theme-bg', p.bgMain);
-        root.style.setProperty('--theme-bg-rgb', bgMainRGB);
-        root.style.setProperty('--theme-bg-secondary', p.bgSecondary);
-        root.style.setProperty('--theme-bg-secondary-rgb', bgSecRGB);
-        root.style.setProperty('--theme-text', p.textPrimary);
-        root.style.setProperty('--theme-text-muted', p.textMuted);
-        root.style.setProperty('--theme-error', p.error);
-        root.style.setProperty('--theme-error-rgb', errorRGB);
-        root.style.setProperty('--theme-on-primary', onPrimary);
-        root.style.setProperty('--theme-fg-strong', fgStrong);
-        root.style.setProperty('--theme-ring-track', ringTrack);
-        root.style.setProperty('--glow-intensity', String(glowFactor));
-        root.setAttribute('data-glow-intensity', String(glowPct));
         root.style.backgroundColor = p.bgMain;
         if (document.body) document.body.style.backgroundColor = p.bgMain;
         const backdrop = document.getElementById('app-backdrop');
@@ -3866,7 +3899,6 @@ function selectColorTheme(themeName) {
 
     setByPath(settings, 'lookFeel.colorTheme', themeName);
     saveSettings(settings);
-    __lastAppliedThemeKey = null;
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
