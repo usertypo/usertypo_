@@ -1163,7 +1163,7 @@ window.__spaPageInit = function() {
         }
 
         if (!username || username.length < 4) {
-            showError(signupError, 'Username must be at least 4 characters.');
+            showError(signupError, 'Display name must be at least 4 characters.');
             if (oauthChoiceMode !== 'custom') selectOAuthChoice('custom');
             return;
         }
@@ -1176,7 +1176,7 @@ window.__spaPageInit = function() {
                 goHomeAfterAuth('new');
                 return;
             }
-            showError(signupError, 'Could not finish creating your account. Try a different username.');
+            showError(signupError, 'Could not finish creating your account. Try a different display name.');
         } catch (err) {
             showError(signupError, window.usertypoAuth.formatError(err));
         } finally {
