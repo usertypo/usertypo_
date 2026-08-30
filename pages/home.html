@@ -1820,10 +1820,7 @@ window.setTimeout = function(handler, timeout) {
             });
             var badge = document.getElementById('stats-pb-badge');
             if (badge) {
-                badge.dataset.pbShown = '0';
-                badge.classList.remove('opacity-100', 'pb-breath-glow');
-                badge.classList.add('opacity-0');
-                badge.style.transform = 'scale(0.7)';
+                hidePersonalBestBadge();
             }
             var wpmText = document.getElementById('stats-wpm');
             if (wpmText) {
@@ -2772,6 +2769,20 @@ window.setTimeout = function(handler, timeout) {
             return true;
         }
 
+        function hidePersonalBestBadge() {
+            var pbBadge = document.getElementById('stats-pb-badge');
+            if (pbBadge) {
+                pbBadge.dataset.pbShown = '0';
+                pbBadge.classList.remove('opacity-100', 'pb-breath-glow');
+                pbBadge.classList.add('opacity-0');
+                pbBadge.style.transform = 'scale(0.7)';
+            }
+            var wpmText = document.getElementById('stats-wpm');
+            if (wpmText) {
+                wpmText.classList.remove('pb-wpm-pop-anim');
+            }
+        }
+
         function revealPersonalBestBadge() {
             var pbBadge = document.getElementById('stats-pb-badge');
             if (!pbBadge || pbBadge.dataset.pbShown === '1') return;
@@ -2781,6 +2792,7 @@ window.setTimeout = function(handler, timeout) {
             // on the same frame the stats view becomes visible.
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
+                    if (pbBadge.dataset.pbShown !== '1') return;
                     pbBadge.style.transform = 'scale(1)';
                     pbBadge.classList.remove('opacity-0');
                     pbBadge.classList.add('opacity-100', 'pb-breath-glow');
@@ -2830,8 +2842,8 @@ window.setTimeout = function(handler, timeout) {
                     window.__USERTYPO_DBG_0c11ab = window.__USERTYPO_DBG_0c11ab || [];
                     var _pbDbg = {
                         sessionId: '0c11ab',
-                        runId: 'pre-fix',
-                        hypothesisId: 'A,B,C,D,E',
+                        runId: 'post-fix',
+                        hypothesisId: 'A,B,C,D,E,F',
                         location: 'home.html:tryReveal',
                         message: 'PB tryReveal',
                         data: {
@@ -2843,6 +2855,9 @@ window.setTimeout = function(handler, timeout) {
                             storedBest: stored,
                             willReveal: decision === true,
                             hasWouldBeat: typeof sessionsApi.wouldBeatPersonalBest === 'function',
+                            pbShownBeforeReveal: (document.getElementById('stats-pb-badge') || {}).dataset
+                                ? document.getElementById('stats-pb-badge').dataset.pbShown
+                                : null,
                         },
                         timestamp: Date.now(),
                     };
@@ -3360,8 +3375,39 @@ window.setTimeout = function(handler, timeout) {
 
             recordLocalPaceResult(exactWpm, failedReason);
 
-            // Personal Best badge — instant client-side check (signed-in + standard
-            // mode only). Guests and custom amounts never celebrate.
+            // Always clear any leftover PB pill from a previous results screen
+            // before deciding whether THIS test earned a new celebration.
+            hidePersonalBestBadge();
+            // #region agent log
+            try {
+                window.__USERTYPO_DBG_0c11ab = window.__USERTYPO_DBG_0c11ab || [];
+                var _hideDbg = {
+                    sessionId: '0c11ab',
+                    runId: 'post-fix',
+                    hypothesisId: 'F',
+                    location: 'home.html:endTest',
+                    message: 'force-hide PB before maybeReveal',
+                    data: {
+                        wpm: exactWpm,
+                        testMode: testMode,
+                        testAmount: testAmount,
+                        failed: !!failedReason,
+                        pbShown: (document.getElementById('stats-pb-badge') || {}).dataset
+                            ? document.getElementById('stats-pb-badge').dataset.pbShown
+                            : null,
+                    },
+                    timestamp: Date.now(),
+                };
+                window.__USERTYPO_DBG_0c11ab.push(_hideDbg);
+                window.localStorage.setItem('usertypo_dbg_0c11ab', JSON.stringify(window.__USERTYPO_DBG_0c11ab.slice(-80)));
+                console.info('[PB-DBG]', _hideDbg.message, _hideDbg.data);
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0c11ab' },
+                    body: JSON.stringify(_hideDbg),
+                }).catch(function () {});
+            } catch (_e) { /* ignore */ }
+            // #endregion
             maybeRevealPersonalBestBadge(exactWpm, failedReason, acc);
 
             if (failedReason) {
@@ -3406,13 +3452,6 @@ window.setTimeout = function(handler, timeout) {
                 // Ultra-short custom tests often finish before the 500ms sampler records
                 // a full second — seed/pad real series so the graph never falls back to demo data.
                 finalizeGraphHistory(exactWpm, exactRawWpm);
-
-                var badge = document.getElementById('stats-pb-badge');
-                if (badge && badge.dataset.pbShown !== '1') {
-                    badge.classList.remove('opacity-100', 'pb-breath-glow');
-                    badge.classList.add('opacity-0');
-                    badge.style.transform = 'scale(0.7)';
-                }
             }
 
             document.getElementById('stats-wpm').innerHTML = wpmDisplay;
@@ -3960,6 +3999,9 @@ window.setTimeout = function(handler, timeout) {
                 el.style.opacity = '';
                 el.classList.add('opacity-0');
             });
+            // Next Test / Replay used to leave the PB pill stuck on the results
+            // DOM (pbShown stayed "1"), so a later non-PB still looked celebrated.
+            hidePersonalBestBadge();
             // Preserve the user's chosen opacity on timer-progress-wrapper
             // (NOT a .typing-stat) so there's no flash from timerOpacity → 1.0.
             // live-stats-container IS a .typing-stat, so its opacity-0 class
