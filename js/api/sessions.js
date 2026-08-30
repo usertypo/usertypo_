@@ -154,6 +154,43 @@
 
     var TIMED_AMOUNTS = [15, 30, 60, 120];
     var WORD_AMOUNTS = [10, 25, 50, 100];
+    var _paceHydrateDone = false;
+
+    function isStandardPbMode(mode, amount) {
+        var m = mode === 'time' ? 'time' : 'words';
+        var a = Math.max(1, Math.round(Number(amount) || 1));
+        if (m === 'time') return TIMED_AMOUNTS.indexOf(a) !== -1;
+        return WORD_AMOUNTS.indexOf(a) !== -1;
+    }
+
+    /**
+     * Matches server set_typing_session_is_pb: PB when no prior non-failed
+     * session for the same mode+amount has a strictly higher WPM.
+     * Works whether or not the current result is already in pace history.
+     * Only meaningful for standard presets (custom amounts never celebrate).
+     */
+    function isPersonalBestForMode(wpm, mode, amount) {
+        if (!isStandardPbMode(mode, amount)) return false;
+        var w = Number(wpm);
+        if (!isFinite(w) || w <= 0) return false;
+
+        var m = mode === 'time' ? 'time' : 'words';
+        var a = Math.max(1, Math.round(Number(amount) || 1));
+        var list = loadPaceHistory();
+        for (var i = 0; i < list.length; i++) {
+            var session = list[i];
+            if (!session || session.failed) continue;
+            var sm = session.mode === 'time' ? 'time' : 'words';
+            var sa = Math.max(1, Math.round(Number(session.amount) || 1));
+            if (sm !== m || sa !== a) continue;
+            if (Number(session.wpm) > w) return false;
+        }
+        return true;
+    }
+
+    function isPaceHistoryReady() {
+        return _paceHydrateDone;
+    }
 
     async function requireAuthClient() {
         if (!window.usertypoAuth || !window.usertypoDb) {
@@ -352,6 +389,7 @@
                 console.warn('[usertypo sessions] pace history hydrate failed', err);
                 return loadPaceHistory();
             } finally {
+                _paceHydrateDone = true;
                 _paceHydratePromise = null;
             }
         })();
@@ -667,24 +705,35 @@
         getPaceTargets: getPaceTargets,
         getPaceCaretWpm: getPaceCaretWpm,
         hydratePaceHistoryFromServer: hydratePaceHistoryFromServer,
+        isStandardPbMode: isStandardPbMode,
+        isPersonalBestForMode: isPersonalBestForMode,
+        isPaceHistoryReady: isPaceHistoryReady,
         TIMED_AMOUNTS: TIMED_AMOUNTS,
         WORD_AMOUNTS: WORD_AMOUNTS,
     };
 
     // Prefetch pace history for signed-in users so Average/PB/Daily work across devices.
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
-                window.usertypoAuth.ready().then(function () {
-                    var state = window.usertypoAuth.getState();
-                    if (state && state.isSignedIn) hydratePaceHistoryFromServer();
-                }).catch(function () { /* ignore */ });
-            }
-        });
-    } else if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
+    // Guests keep local pace history only — never mark hydrate ready from a server fetch.
+    function prefetchPaceHistoryIfSignedIn() {
+        if (!window.usertypoAuth || typeof window.usertypoAuth.ready !== 'function') {
+            _paceHydrateDone = true;
+            return;
+        }
         window.usertypoAuth.ready().then(function () {
             var state = window.usertypoAuth.getState();
-            if (state && state.isSignedIn) hydratePaceHistoryFromServer();
-        }).catch(function () { /* ignore */ });
+            if (state && state.isSignedIn) {
+                hydratePaceHistoryFromServer();
+            } else {
+                _paceHydrateDone = true;
+            }
+        }).catch(function () {
+            _paceHydrateDone = true;
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', prefetchPaceHistoryIfSignedIn);
+    } else {
+        prefetchPaceHistoryIfSignedIn();
     }
 })();

@@ -909,7 +909,7 @@
                                         </div>
                                         <div class="ml-4 text-3xl font-bold text-white tracking-widest relative">
                                             <!-- Personal Best badge - above WPM -->
-                                            <div id="stats-pb-badge" class="absolute bottom-full left-0 mb-3 flex items-center h-[2.238rem] px-3 rounded-full bg-surface/40 border border-white/5 backdrop-blur-md pb-breath-glow opacity-0 pointer-events-none z-20 transition-opacity duration-700 ease-out whitespace-nowrap" style="transform: scale(0.7); transform-origin: left bottom;">
+                                            <div id="stats-pb-badge" class="absolute bottom-full left-0 mb-3 flex items-center h-[2.238rem] px-3 rounded-full bg-surface/40 border border-white/5 backdrop-blur-md opacity-0 pointer-events-none z-20 transition-[opacity,transform] duration-200 ease-out whitespace-nowrap" style="transform: scale(0.7); transform-origin: left bottom;" data-pb-shown="0">
                                                 <span class="material-symbols-outlined text-[1.066rem] text-primary">emoji_events</span>
                                                 <div class="w-px h-3 bg-white/10 ml-3"></div>
                                                 <span class="text-[0.853rem] font-bold text-primary ml-3">Personal Best</span>
@@ -1820,8 +1820,10 @@ window.setTimeout = function(handler, timeout) {
             });
             var badge = document.getElementById('stats-pb-badge');
             if (badge) {
+                badge.dataset.pbShown = '0';
                 badge.classList.remove('opacity-100', 'pb-breath-glow');
                 badge.classList.add('opacity-0');
+                badge.style.transform = 'scale(0.7)';
             }
             var wpmText = document.getElementById('stats-wpm');
             if (wpmText) {
@@ -2754,6 +2756,87 @@ window.setTimeout = function(handler, timeout) {
             }));
         }
 
+        function isSignedInForPersonalBest() {
+            if (!window.usertypoAuth || typeof window.usertypoAuth.getState !== 'function') return false;
+            var state = window.usertypoAuth.getState();
+            return !!(state && state.isSignedIn && state.user);
+        }
+
+        function isSaveTestStatsEnabled() {
+            try {
+                var settings = window.usertypo_settings
+                    || (typeof loadSettings === 'function' ? loadSettings() : null)
+                    || {};
+                if (settings.systemData && settings.systemData.saveTestStats === false) return false;
+            } catch (e) { /* ignore */ }
+            return true;
+        }
+
+        function revealPersonalBestBadge() {
+            var pbBadge = document.getElementById('stats-pb-badge');
+            if (!pbBadge || pbBadge.dataset.pbShown === '1') return;
+            pbBadge.dataset.pbShown = '1';
+
+            // Double rAF so the scale/opacity transition runs from the hidden state
+            // on the same frame the stats view becomes visible.
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    pbBadge.style.transform = 'scale(1)';
+                    pbBadge.classList.remove('opacity-0');
+                    pbBadge.classList.add('opacity-100', 'pb-breath-glow');
+
+                    var wpmText = document.getElementById('stats-wpm');
+                    if (wpmText) {
+                        wpmText.classList.remove('pb-wpm-pop-anim');
+                        void wpmText.offsetWidth;
+                        wpmText.classList.add('pb-wpm-pop-anim');
+                    }
+                });
+            });
+        }
+
+        /**
+         * Show the Personal Best pill instantly when eligible:
+         * - signed-in only (guests never see it)
+         * - standard time/words presets only (custom amounts never see it)
+         * - WPM is a PB for that mode+amount (matches server is_pb rule)
+         */
+        function maybeRevealPersonalBestBadge(wpm, failedReason) {
+            if (failedReason) return;
+            if (!isSignedInForPersonalBest()) return;
+            if (!isSaveTestStatsEnabled()) return;
+            if (!window.usertypoSessions) return;
+
+            var sessionsApi = window.usertypoSessions;
+            if (typeof sessionsApi.isStandardPbMode === 'function') {
+                if (!sessionsApi.isStandardPbMode(testMode, testAmount)) return;
+            } else {
+                var timed = [15, 30, 60, 120];
+                var words = [10, 25, 50, 100];
+                var amount = Math.max(1, Math.round(Number(testAmount) || 1));
+                var standard = (testMode === 'time' && timed.indexOf(amount) !== -1)
+                    || (testMode === 'words' && words.indexOf(amount) !== -1);
+                if (!standard) return;
+            }
+
+            function tryReveal() {
+                if (typeof sessionsApi.isPersonalBestForMode === 'function') {
+                    if (sessionsApi.isPersonalBestForMode(wpm, testMode, testAmount)) {
+                        revealPersonalBestBadge();
+                    }
+                    return;
+                }
+            }
+
+            if (typeof sessionsApi.isPaceHistoryReady === 'function' && sessionsApi.isPaceHistoryReady()) {
+                tryReveal();
+                return;
+            }
+            if (typeof sessionsApi.hydratePaceHistoryFromServer === 'function') {
+                sessionsApi.hydratePaceHistoryFromServer().then(tryReveal).catch(function () { /* ignore */ });
+            }
+        }
+
         function showPaceCaret() {
             if (!paceCaretEl) return;
             paceCaretEl.classList.remove('hidden');
@@ -3241,6 +3324,10 @@ window.setTimeout = function(handler, timeout) {
 
             recordLocalPaceResult(exactWpm, failedReason);
 
+            // Personal Best badge — instant client-side check (signed-in + standard
+            // mode only). Guests and custom amounts never celebrate.
+            maybeRevealPersonalBestBadge(exactWpm, failedReason);
+
             if (failedReason) {
                 wpmDisplay = '--';
                 accStr = '--';
@@ -3283,11 +3370,9 @@ window.setTimeout = function(handler, timeout) {
                 // Ultra-short custom tests often finish before the 500ms sampler records
                 // a full second — seed/pad real series so the graph never falls back to demo data.
                 finalizeGraphHistory(exactWpm, exactRawWpm);
-                
-                // Personal Best badge — handled after server confirms via is_pb flag
-                // (see saveSession().then() below)
+
                 var badge = document.getElementById('stats-pb-badge');
-                if (badge) {
+                if (badge && badge.dataset.pbShown !== '1') {
                     badge.classList.remove('opacity-100', 'pb-breath-glow');
                     badge.classList.add('opacity-0');
                     badge.style.transform = 'scale(0.7)';
@@ -3630,35 +3715,23 @@ window.setTimeout = function(handler, timeout) {
                         notifyTestXp(saveResult.xpAward);
                     }
 
-                    // Personal Best badge — only for standard combos, using server's is_pb flag
-                    var PB_STANDARD_TIME = [15, 30, 60, 120];
-                    var PB_STANDARD_WORDS = [10, 25, 50, 100];
-                    var isStandardCombo = (
-                        (testMode === 'time' && PB_STANDARD_TIME.indexOf(testAmount) !== -1) ||
-                        (testMode === 'words' && PB_STANDARD_WORDS.indexOf(testAmount) !== -1)
-                    );
-
+                    // Fallback: if client-side pace history wasn't ready yet, reveal from
+                    // the server's is_pb flag (still never for guests/custom — gated above).
                     if (
                         !failedReason &&
-                        isStandardCombo &&
                         saveResult &&
                         saveResult.session &&
                         saveResult.session.is_pb === true
                     ) {
-                        var pbBadge = document.getElementById('stats-pb-badge');
-                        if (pbBadge) {
-                            setTimeout(function() {
-                                pbBadge.style.transform = 'scale(1)';
-                                pbBadge.classList.remove('opacity-0');
-                                pbBadge.classList.add('opacity-100', 'pb-breath-glow');
-
-                                var wpmText = document.getElementById('stats-wpm');
-                                if (wpmText) {
-                                    wpmText.classList.remove('pb-wpm-pop-anim');
-                                    void wpmText.offsetWidth; // Force reflow
-                                    wpmText.classList.add('pb-wpm-pop-anim');
-                                }
-                            }, 500);
+                        var sessionsApi = window.usertypoSessions;
+                        var standardOk = sessionsApi && typeof sessionsApi.isStandardPbMode === 'function'
+                            ? sessionsApi.isStandardPbMode(testMode, testAmount)
+                            : (
+                                (testMode === 'time' && [15, 30, 60, 120].indexOf(testAmount) !== -1) ||
+                                (testMode === 'words' && [10, 25, 50, 100].indexOf(testAmount) !== -1)
+                            );
+                        if (standardOk && isSignedInForPersonalBest() && isSaveTestStatsEnabled()) {
+                            revealPersonalBestBadge();
                         }
                     }
                 }).catch(function (err) {
