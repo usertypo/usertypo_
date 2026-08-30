@@ -18,6 +18,8 @@
     var consecutiveConnectFailures = 0;
     var reconnectPaused = false;
     var RECONNECT_FAILURE_LIMIT = 3;
+    var warmRetryTimer = null;
+    var WARM_RETRY_MS = 120000;
 
     function dispatch(name, detail) {
         try {
@@ -35,9 +37,39 @@
         }
     }
 
-    /** Keep reconnecting only while the user is actually in a multiplayer context. */
+    function isSignedInUser() {
+        if (!window.usertypoAuth || typeof window.usertypoAuth.getState !== 'function') return false;
+        var state = window.usertypoAuth.getState();
+        return !!(state && state.isSignedIn && state.user);
+    }
+
+    /**
+     * Warm socket when:
+     * - signed in (friend challenge popups on any page, including home), or
+     * - actively on a multiplayer route / in a room
+     */
     function shouldKeepSocketWarm() {
-        return isMultiplayerRoute() || !!activeRoomId;
+        return isSignedInUser() || isMultiplayerRoute() || !!activeRoomId;
+    }
+
+    function clearWarmRetry() {
+        if (warmRetryTimer) {
+            clearTimeout(warmRetryTimer);
+            warmRetryTimer = null;
+        }
+    }
+
+    function scheduleWarmRetry() {
+        clearWarmRetry();
+        if (!shouldKeepSocketWarm()) return;
+        warmRetryTimer = nativeSetTimeout(function () {
+            warmRetryTimer = null;
+            if (!shouldKeepSocketWarm()) return;
+            if (socket && socket.connected) return;
+            consecutiveConnectFailures = 0;
+            reconnectPaused = false;
+            ensureConnected().catch(function () { /* quiet background retry */ });
+        }, WARM_RETRY_MS);
     }
 
     function setReconnectEnabled(enabled) {
@@ -54,7 +86,9 @@
             if (socket && socket.connected) return;
             if (socket) socket.disconnect();
         } catch (_) { /* ignore */ }
+        // One quiet line — then stop hammering Render. Challenges resume on warm retry.
         console.warn('[multiplayer] paused reconnects:', reason || 'repeated connection failures');
+        scheduleWarmRetry();
     }
 
     function notify(note, options) {
@@ -137,6 +171,7 @@
     function bindSocketEvents(activeSocket) {
         activeSocket.on('connect', function () {
             consecutiveConnectFailures = 0;
+            clearWarmRetry();
             setReconnectEnabled(true);
             dispatch('connected', { socketId: activeSocket.id });
         });
@@ -670,22 +705,23 @@
                 consecutiveConnectFailures = 0;
                 reconnectPaused = false;
             }
-            // Do NOT auto-reconnect here. Warming the socket on every page (home typing,
-            // settings, etc.) hits Render 429/503 and floods the console. Pages that need
-            // multiplayer call connect() / emitAck() on demand.
+            clearWarmRetry();
+            // Signed-in users keep a warm socket so friend challenges arrive on any page
+            // (including the home typing test). Guests connect on-demand only.
+            if (!shouldKeepSocketWarm()) return;
+            ensureConnected().catch(function (error) {
+                console.warn('[multiplayer] connect failed:', error && error.message);
+            });
         });
         window.usertypoAuth.ready().then(function () {
             var state = window.usertypoAuth.getState();
             lastAuthIdentity = state && state.isSignedIn && state.user && state.user.id
                 ? String(state.user.id)
                 : (state && state.isLoaded ? 'guest' : null);
-            // Only auto-connect when already on a multiplayer route (direct load / refresh).
-            if (isMultiplayerRoute()) {
-                return ensureConnected().catch(function (error) {
-                    console.warn('[multiplayer] connect failed:', error && error.message);
-                });
-            }
-            return null;
+            if (!shouldKeepSocketWarm()) return null;
+            return ensureConnected().catch(function (error) {
+                console.warn('[multiplayer] connect failed:', error && error.message);
+            });
         }).catch(function () { /* auth unavailable */ });
     }
 
