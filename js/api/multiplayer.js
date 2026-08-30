@@ -322,11 +322,19 @@
         return id;
     }
 
+    function socketIoClientSrc() {
+        var cfg = window.USERTYPO_CONFIG || {};
+        var base = String(
+            (cfg.multiplayer && cfg.multiplayer.url)
+            || (cfg.backend && cfg.backend.url)
+            || ''
+        ).replace(/\/+$/, '');
+        return (base || '') + '/socket.io/socket.io.js';
+    }
+
     function ensureSocketIoClient() {
         if (window.io) return Promise.resolve();
-        // Same-origin only. Fetching socket.io.js from Render caused continuous
-        // cross-origin 429/CORS console errors and is unnecessary (we ship the client).
-        var candidates = ['/js/socket.io.min.js', '/js/vendor/socket.io.min.js'];
+        var candidates = [socketIoClientSrc(), '/js/socket.io.min.js', '/js/vendor/socket.io.min.js'];
         var unique = [];
         candidates.forEach(function (src) {
             if (src && unique.indexOf(src) === -1) unique.push(src);
@@ -367,10 +375,8 @@
                     transports: ['websocket', 'polling'],
                     reconnection: true,
                     reconnectionAttempts: Infinity,
-                    // Longer backoff than the old 0.5–4s loop so a cold/rate-limited
-                    // Render host does not flood the console, without blocking reconnects.
-                    reconnectionDelay: 1000,
-                    reconnectionDelayMax: 30000,
+                    reconnectionDelay: 500,
+                    reconnectionDelayMax: 4000,
                     auth: function (callback) {
                         var state = window.usertypoAuth.getState();
                         if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
