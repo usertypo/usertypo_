@@ -17,7 +17,7 @@
     var lastAuthIdentity = null;
     var consecutiveConnectFailures = 0;
     var reconnectPaused = false;
-    var RECONNECT_FAILURE_LIMIT = 6;
+    var RECONNECT_FAILURE_LIMIT = 3;
 
     function dispatch(name, detail) {
         try {
@@ -25,15 +25,19 @@
         } catch (_) { /* ignore */ }
     }
 
-    /** Keep a warm socket for signed-in challenge delivery, or while on MP routes. */
-    function shouldKeepSocketWarm() {
+    /** True on /multiplayer, /dual, /room (including direct loads). */
+    function isMultiplayerRoute() {
         try {
             var path = String((window.location && window.location.pathname) || '');
-            if (/^\/(multiplayer|dual|room)(\/|$)/i.test(path)) return true;
-        } catch (_) { /* ignore */ }
-        if (!window.usertypoAuth || typeof window.usertypoAuth.getState !== 'function') return false;
-        var state = window.usertypoAuth.getState();
-        return !!(state && state.isSignedIn && state.user);
+            return /^\/(multiplayer|dual|room)(\/|$)/i.test(path);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    /** Keep reconnecting only while the user is actually in a multiplayer context. */
+    function shouldKeepSocketWarm() {
+        return isMultiplayerRoute() || !!activeRoomId;
     }
 
     function setReconnectEnabled(enabled) {
@@ -368,19 +372,11 @@
         return id;
     }
 
-    function socketIoClientSrc() {
-        var cfg = window.USERTYPO_CONFIG || {};
-        var base = String(
-            (cfg.multiplayer && cfg.multiplayer.url)
-            || (cfg.backend && cfg.backend.url)
-            || ''
-        ).replace(/\/+$/, '');
-        return (base || '') + '/socket.io/socket.io.js';
-    }
-
     function ensureSocketIoClient() {
         if (window.io) return Promise.resolve();
-        var candidates = [socketIoClientSrc(), '/js/socket.io.min.js', '/js/vendor/socket.io.min.js'];
+        // Same-origin only. Never fetch /socket.io/socket.io.js from Render —
+        // that cross-origin request returns 429/CORS noise even before a race starts.
+        var candidates = ['/js/socket.io.min.js', '/js/vendor/socket.io.min.js'];
         var unique = [];
         candidates.forEach(function (src) {
             if (src && unique.indexOf(src) === -1) unique.push(src);
@@ -419,14 +415,13 @@
                 socket = window.io(url || undefined, {
                     autoConnect: false,
                     transports: ['websocket', 'polling'],
-                    // Finite backoff — infinite retries against a sleeping/rate-limited
-                    // Render free tier flooded the console with WebSocket 429/503 errors.
+                    // Keep retries small — Render free-tier 429/503 must not loop in the console.
                     reconnection: true,
-                    reconnectionAttempts: 8,
-                    reconnectionDelay: 2000,
-                    reconnectionDelayMax: 30000,
+                    reconnectionAttempts: 3,
+                    reconnectionDelay: 3000,
+                    reconnectionDelayMax: 15000,
                     randomizationFactor: 0.5,
-                    timeout: 12000,
+                    timeout: 10000,
                     auth: function (callback) {
                         var state = window.usertypoAuth.getState();
                         if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
@@ -675,15 +670,22 @@
                 consecutiveConnectFailures = 0;
                 reconnectPaused = false;
             }
-            // Guests only connect on multiplayer pages; signed-in users stay warm for challenges.
-            if (!shouldKeepSocketWarm()) return;
-            ensureConnected().catch(function (error) {
-                console.warn('[multiplayer] connect failed:', error && error.message);
-            });
+            // Do NOT auto-reconnect here. Warming the socket on every page (home typing,
+            // settings, etc.) hits Render 429/503 and floods the console. Pages that need
+            // multiplayer call connect() / emitAck() on demand.
         });
         window.usertypoAuth.ready().then(function () {
-            if (!shouldKeepSocketWarm()) return null;
-            return ensureConnected();
+            var state = window.usertypoAuth.getState();
+            lastAuthIdentity = state && state.isSignedIn && state.user && state.user.id
+                ? String(state.user.id)
+                : (state && state.isLoaded ? 'guest' : null);
+            // Only auto-connect when already on a multiplayer route (direct load / refresh).
+            if (isMultiplayerRoute()) {
+                return ensureConnected().catch(function (error) {
+                    console.warn('[multiplayer] connect failed:', error && error.message);
+                });
+            }
+            return null;
         }).catch(function () { /* auth unavailable */ });
     }
 
