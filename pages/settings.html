@@ -473,7 +473,7 @@
             width: 100%;
             border: 1px solid rgba(255,255,255,0.1);
             padding: 0.4rem 0.7rem;
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
             font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
             outline: none;
@@ -485,7 +485,7 @@
             padding-right: 0.7rem;
         }
         .setting-select:focus { border-color: rgba(var(--theme-primary-rgb),0.4); box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), var(--gi-10, 0.1)); }
-        .setting-select option { background: #1a1d23; color: #cbd5e1; }
+        .setting-select option { background: #1a1d23; color: var(--theme-text, #cbd5e1); }
 
         .coming-soon-setting[data-coming-soon] {
             position: relative;
@@ -533,7 +533,7 @@
             width: 100%;
             border: 1px solid rgba(255,255,255,0.08);
             padding: 0.55rem 2.5rem 0.55rem 2.5rem;
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
             font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
             outline: none;
@@ -653,7 +653,7 @@
         .search-result-name {
             font-size: 0.8125rem;
             font-weight: 600;
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
         }
         .search-result-desc {
             font-size: 0.6875rem;
@@ -682,7 +682,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        .danger-btn:hover { background: #ff3333; color: white; }
+        .danger-btn:hover { background: #ff3333; color: var(--theme-fg-strong, white); }
 
         /* â”€â”€â”€ Toast â”€â”€â”€ */
         #save-toast {
@@ -814,7 +814,7 @@
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
             font-size: 0.75rem;
             font-family: 'Roboto Mono', monospace;
             letter-spacing: 0.04em;
@@ -1059,7 +1059,7 @@
         }
         .custom-theme-action-btn.is-ghost:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.08);
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
         }
         .custom-theme-action-btn.is-danger {
             background: rgba(255, 68, 68, 0.08);
@@ -1102,7 +1102,7 @@
         .custom-preset-meta .name {
             font-size: 0.72rem;
             font-weight: 600;
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;

@@ -1985,6 +1985,83 @@ function applyThemeSettings(settings) {
         .border-surface { border-color: ${p.bgSecondary} !important; }
         .bg-surface-light { background-color: ${bgLight} !important; }
 
+        /* Material-style on-surface tokens (Tailwind hardcodes light-on-dark hex) */
+        .text-on-surface { color: ${fgStrong} !important; }
+        .text-on-surface-variant { color: ${p.textMuted} !important; }
+        .text-on-surface\\/90 { color: rgba(${textPriRGB}, 0.92) !important; }
+        .text-on-surface\\/80 { color: rgba(${textPriRGB}, 0.82) !important; }
+        .text-on-surface\\/70 { color: rgba(${textPriRGB}, 0.72) !important; }
+        .text-on-surface-variant\\/90 { color: rgba(${_hexToRGB(p.textMuted)}, 0.9) !important; }
+        .text-on-surface-variant\\/80 { color: rgba(${_hexToRGB(p.textMuted)}, 0.8) !important; }
+        .bg-on-surface { background-color: ${fgStrong} !important; }
+        .bg-on-surface-variant { background-color: ${p.textMuted} !important; }
+        .border-on-surface { border-color: ${fgStrong} !important; }
+        .border-on-surface-variant { border-color: ${p.textMuted} !important; }
+
+        /* Shell menu links — beat page-level hardcoded #cbd5e1/#fff (home.html) */
+        .bubble-nav-link {
+            color: ${p.textMuted} !important;
+        }
+        .bubble-nav-link:hover {
+            color: ${fgStrong} !important;
+            background-color: ${themeIsLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)'} !important;
+        }
+        .bubble-nav-link.is-active {
+            color: ${p.accentPrimary} !important;
+            background-color: ${themeIsLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)'} !important;
+        }
+        .bubble-nav-link .nav-icon {
+            color: inherit !important;
+        }
+        .bubble-nav-link:hover .nav-icon,
+        .bubble-nav-link.is-active .nav-icon {
+            color: ${p.accentPrimary} !important;
+            text-shadow: 0 0 10px rgba(${accentRGB}, ${themeIsLight ? '0.25' : '0.8'}) !important;
+        }
+        .menu-btn {
+            color: ${p.textMuted} !important;
+        }
+        .menu-btn:hover {
+            color: ${fgStrong} !important;
+        }
+        .menu-btn.is-active {
+            color: ${p.accentPrimary} !important;
+        }
+
+        /* Graph / pot / friends tab pills */
+        .graph-tab-pill button,
+        .pot-tab-pill .pot-btn,
+        .friends-tab-pill .friends-tab-btn {
+            color: ${p.textMuted} !important;
+        }
+        .graph-tab-pill button.active,
+        .pot-tab-pill .pot-btn.is-active,
+        .friends-tab-pill .friends-tab-btn.active {
+            color: ${fgStrong} !important;
+        }
+
+        /* Stats CTA — Next Test was hardcoded bg-white */
+        #stats-action-buttons button.bg-white,
+        #stats-action-buttons > button:first-child {
+            background-color: ${p.accentPrimary} !important;
+            color: ${onPrimary} !important;
+            box-shadow: 0 0 28px rgba(${accentRGB}, ${themeIsLight ? '0.28' : '0.45'}) !important;
+        }
+        #stats-action-buttons button.bg-white:hover,
+        #stats-action-buttons > button:first-child:hover {
+            box-shadow: 0 0 42px rgba(${accentRGB}, ${themeIsLight ? '0.4' : '0.6'}) !important;
+        }
+        #stats-action-buttons button.bg-white .bg-black\\/15,
+        #stats-action-buttons > button:first-child .bg-black\\/15,
+        #stats-action-buttons .bg-primary .bg-black\\/15 {
+            background-color: ${_accentLum > 0.55 ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.18)'} !important;
+        }
+        #stats-action-buttons button.bg-white .text-black\\/60,
+        #stats-action-buttons > button:first-child .text-black\\/60,
+        #stats-action-buttons .bg-primary .text-black\\/60 {
+            color: ${_accentLum > 0.55 ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.7)'} !important;
+        }
+
         /* Background */
         .bg-background { background-color: ${p.bgMain} !important; }
         .bg-background-dark { background-color: ${bgDark} !important; }
@@ -2233,7 +2310,23 @@ function applyThemeSettings(settings) {
         .contact-pill-textarea::placeholder {
             color: ${p.textMuted} !important;
         }
-        /* Docs / legal / about / multiplayer headings */
+        /* Explicit lobby / room chrome */
+        #lobby-room-name,
+        #lobby-room-id,
+        #lobby-mode-text,
+        #lobby-modifiers-text,
+        #invite-panel-room-id,
+        #invite-panel-join-link,
+        #lobby-test-config {
+            color: ${fgStrong} !important;
+        }
+        #lobby-room-id,
+        #lobby-modifiers-text,
+        #invite-panel-join-link,
+        .text-on-surface-variant {
+            color: ${p.textMuted} !important;
+        }
+
         .privacy-page h1, .privacy-page h2, .privacy-page h3,
         .terms-page h1, .terms-page h2, .terms-page h3,
         .security-page h1, .security-page h2, .security-page h3,
@@ -4744,7 +4837,7 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            color: #fff !important;
+            color: var(--theme-fg-strong, #fff) !important;
             -moz-appearance: textfield !important;
             appearance: textfield !important;
             backdrop-filter: blur(4px) !important;
@@ -4768,7 +4861,7 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            color: #fff !important;
+            color: var(--theme-fg-strong, #fff) !important;
         }
         .custom-popover button:hover {
             background: rgba(255, 255, 255, 0.08) !important;
