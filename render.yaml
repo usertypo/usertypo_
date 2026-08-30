@@ -62,7 +62,7 @@ services:
       - key: SELF_PING_URL
         value: https://usertypo-dev.onrender.com
       - key: SELF_PING_ENABLED
-        value: "true"
+        value: "false"
       - key: CLERK_SECRET_KEY
         sync: false
       - key: SUPABASE_URL
