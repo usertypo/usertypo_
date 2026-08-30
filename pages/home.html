@@ -2799,9 +2799,10 @@ window.setTimeout = function(handler, timeout) {
          * Show the Personal Best pill instantly when eligible:
          * - signed-in only (guests never see it)
          * - standard time/words presets only (custom amounts never see it)
-         * - WPM is a PB for that mode+amount (matches server is_pb rule)
+         * - WPM strictly beats the hydrated best for that mode+amount
+         * Never guess from incomplete local history (that caused random false PBs).
          */
-        function maybeRevealPersonalBestBadge(wpm, failedReason) {
+        function maybeRevealPersonalBestBadge(wpm, failedReason, accuracy) {
             if (failedReason) return;
             if (!isSignedInForPersonalBest()) return;
             if (!isSaveTestStatsEnabled()) return;
@@ -2820,15 +2821,17 @@ window.setTimeout = function(handler, timeout) {
             }
 
             function tryReveal() {
-                if (typeof sessionsApi.isPersonalBestForMode === 'function') {
-                    if (sessionsApi.isPersonalBestForMode(wpm, testMode, testAmount)) {
-                        revealPersonalBestBadge();
-                    }
-                    return;
+                if (typeof sessionsApi.wouldBeatPersonalBest !== 'function') return;
+                var decision = sessionsApi.wouldBeatPersonalBest(wpm, testMode, testAmount);
+                // null = bests not loaded — do not celebrate (avoids false positives)
+                if (decision !== true) return;
+                revealPersonalBestBadge();
+                if (typeof sessionsApi.rememberPersonalBest === 'function') {
+                    sessionsApi.rememberPersonalBest(wpm, testMode, testAmount, accuracy);
                 }
             }
 
-            if (typeof sessionsApi.isPaceHistoryReady === 'function' && sessionsApi.isPaceHistoryReady()) {
+            if (typeof sessionsApi.areStandardBestsReady === 'function' && sessionsApi.areStandardBestsReady()) {
                 tryReveal();
                 return;
             }
@@ -3326,7 +3329,7 @@ window.setTimeout = function(handler, timeout) {
 
             // Personal Best badge — instant client-side check (signed-in + standard
             // mode only). Guests and custom amounts never celebrate.
-            maybeRevealPersonalBestBadge(exactWpm, failedReason);
+            maybeRevealPersonalBestBadge(exactWpm, failedReason, acc);
 
             if (failedReason) {
                 wpmDisplay = '--';
@@ -3715,24 +3718,24 @@ window.setTimeout = function(handler, timeout) {
                         notifyTestXp(saveResult.xpAward);
                     }
 
-                    // Fallback: if client-side pace history wasn't ready yet, reveal from
-                    // the server's is_pb flag (still never for guests/custom — gated above).
+                    // Keep the local bests cache in sync after save. Do not use
+                    // server is_pb alone to show the badge — it treats ties as PB
+                    // and we only celebrate strict beats / first scores.
                     if (
                         !failedReason &&
                         saveResult &&
                         saveResult.session &&
-                        saveResult.session.is_pb === true
+                        window.usertypoSessions &&
+                        typeof window.usertypoSessions.rememberPersonalBest === 'function' &&
+                        typeof window.usertypoSessions.isStandardPbMode === 'function' &&
+                        window.usertypoSessions.isStandardPbMode(testMode, testAmount)
                     ) {
-                        var sessionsApi = window.usertypoSessions;
-                        var standardOk = sessionsApi && typeof sessionsApi.isStandardPbMode === 'function'
-                            ? sessionsApi.isStandardPbMode(testMode, testAmount)
-                            : (
-                                (testMode === 'time' && [15, 30, 60, 120].indexOf(testAmount) !== -1) ||
-                                (testMode === 'words' && [10, 25, 50, 100].indexOf(testAmount) !== -1)
-                            );
-                        if (standardOk && isSignedInForPersonalBest() && isSaveTestStatsEnabled()) {
-                            revealPersonalBestBadge();
-                        }
+                        window.usertypoSessions.rememberPersonalBest(
+                            saveResult.session.wpm,
+                            testMode,
+                            testAmount,
+                            saveResult.session.accuracy
+                        );
                     }
                 }).catch(function (err) {
                     console.error('[usertypo sessions] save failed', err);
