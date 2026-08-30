@@ -16,13 +16,13 @@
         error: '#ff4444'
     };
     var PAPER = {
-        bgMain: '#ffffff',
-        bgSecondary: '#b3b3b3',
-        textPrimary: '#333333',
-        textMuted: '#888888',
-        accentPrimary: '#000000',
-        accentHover: '#333333',
-        error: '#cc0000'
+        bgMain: '#f2f4f7',
+        bgSecondary: '#a8b0bc',
+        textPrimary: '#2a3038',
+        textMuted: '#64748b',
+        accentPrimary: '#1e293b',
+        accentHover: '#334155',
+        error: '#dc2626'
     };
 
     function preferredDefault() {

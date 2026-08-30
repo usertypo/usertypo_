@@ -21,7 +21,7 @@
             color: var(--theme-text) !important;
         }
         .about-toc a {
-            color: #94a3b8;
+            color: var(--theme-text-muted, #94a3b8);
             text-decoration: none;
             transition: color 0.15s ease;
             cursor: pointer;
@@ -44,7 +44,7 @@
             font-family: 'Space Grotesk', 'Inter', sans-serif;
             font-size: clamp(1.35rem, 2.4vw, 1.85rem);
             font-weight: 700;
-            color: #f1f5f9;
+            color: var(--theme-fg-strong, #f1f5f9);
             line-height: 1.15;
             font-variant-numeric: tabular-nums;
         }
@@ -53,7 +53,7 @@
             font-size: 0.68rem;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #94a3b8;
+            color: var(--theme-text-muted, #94a3b8);
             font-weight: 600;
         }
         .about-chart-panel {
@@ -201,7 +201,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.55rem 0.75rem;
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
             font-family: 'Space Grotesk', 'Inter', sans-serif;
             font-size: clamp(0.9rem, 2vw, 1.05rem);
             font-weight: 500;
@@ -213,7 +213,7 @@
         }
         .about-eq-sub {
             font-size: clamp(0.78rem, 1.7vw, 0.92rem);
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
         }
         .about-lhs {
             color: var(--theme-primary);
@@ -221,7 +221,7 @@
             white-space: nowrap;
         }
         .about-op {
-            color: #94a3b8;
+            color: var(--theme-text-muted, #94a3b8);
         }
         .about-where {
             display: block;
@@ -257,7 +257,7 @@
         }
         .about-var {
             font-style: italic;
-            color: #f1f5f9;
+            color: var(--theme-fg-strong, #f1f5f9);
         }
 </style>
 
