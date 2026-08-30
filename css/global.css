@@ -336,7 +336,7 @@ html {
     justify-content: center;
     flex-shrink: 0;
     vertical-align: middle;
-    color: #cbd5e1;
+    color: var(--theme-text, #cbd5e1);
     --pla-size: 2.75rem;
     --pla-photo: 72.7%;
     --pla-stroke: 2.5;

@@ -182,7 +182,7 @@
                 font-family: "Roboto Mono", monospace;
                 width: fit-content;
             }
-            .footer-picker-back:hover { color: #fff; }
+            .footer-picker-back:hover { color: var(--theme-fg-strong, #fff); }
             .footer-picker-back .material-symbols-outlined { font-size: 1rem; }
             .footer-picker-close-btn {
                 display: flex;
@@ -198,7 +198,7 @@
                 margin-left: auto;
                 border-radius: 9999px;
             }
-            .footer-picker-close-btn:hover { color: #fff; }
+            .footer-picker-close-btn:hover { color: var(--theme-fg-strong, #fff); }
             .footer-picker-close-btn .material-symbols-outlined { font-size: 1rem; }
             .footer-picker-search-row {
                 position: relative;
@@ -213,7 +213,7 @@
                 padding: 0.55rem 2.4rem 0.55rem 1rem;
                 font-size: 0.72rem;
                 font-family: "Roboto Mono", monospace;
-                color: #e2e8f0;
+                color: var(--theme-fg-strong, #e2e8f0);
                 outline: none;
             }
             .footer-picker-search:focus {
@@ -241,7 +241,7 @@
             .footer-picker-end-icon.is-close {
                 cursor: pointer;
             }
-            .footer-picker-end-icon.is-close:hover { color: #fff; }
+            .footer-picker-end-icon.is-close:hover { color: var(--theme-fg-strong, #fff); }
             .footer-picker-end-icon .material-symbols-outlined { font-size: 1rem; }
             .footer-picker-section-title {
                 font-size: 0.58rem;
@@ -376,7 +376,7 @@
             .footer-picker-preview-label {
                 font-size: 0.65rem;
                 font-weight: 700;
-                color: #cbd5e1;
+                color: var(--theme-text, #cbd5e1);
             }
             .footer-picker-preview-sub {
                 font-size: 0.58rem;
@@ -393,13 +393,13 @@
                 padding: 0.65rem 1rem;
                 font-size: 0.68rem;
                 font-family: "Roboto Mono", monospace;
-                color: #cbd5e1;
+                color: var(--theme-text, #cbd5e1);
                 cursor: pointer;
                 text-align: left;
                 transition: color 0.15s ease, border-color 0.15s ease;
             }
             .footer-picker-pill:hover:not(:disabled) {
-                color: #fff;
+                color: var(--theme-fg-strong, #fff);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.3);
             }
             .footer-picker-pill:disabled {
@@ -461,7 +461,7 @@
                 transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
             }
             .footer-picker-list-item:hover {
-                color: #fff;
+                color: var(--theme-fg-strong, #fff);
                 border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.3);
             }
             .footer-picker-list-item.is-active {

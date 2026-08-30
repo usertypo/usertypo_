@@ -239,7 +239,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
-    <link href="css/global.css?v=29" rel="stylesheet" />
+    <link href="css/global.css?v=30" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -285,13 +285,13 @@
             font-size: 23px;
         }
         .graph-info-label {
-            color: #e2e8f0;
+            color: var(--theme-fg-strong, #e2e8f0);
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 3px;
         }
         .graph-info-desc {
-            color: #94a3b8;
+            color: var(--theme-text-muted, #94a3b8);
             font-size: 12.5px;
             line-height: 1.65;
             margin-bottom: 10px;
@@ -1003,7 +1003,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
-            color: #cbd5e1;
+            color: var(--theme-text, #cbd5e1);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -1573,9 +1573,9 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=2"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=75"></script>
+    <script src="settings.js?v=76"></script>
     <script src="footer-picker.js?v=9"></script>
-    <script src="settings-search.js?v=10"></script>
+    <script src="settings-search.js?v=11"></script>
     <!-- Auth + data API (before router) -->
     <script src="js/ui/analytics.js?v=3"></script>
     <script src="js/ui/cookie-consent.js?v=4"></script>
@@ -1604,7 +1604,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=31"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=218"></script>
+    <script src="js/page-fragments.js?v=219"></script>
     <script src="js/router.js?v=59"></script>
 
     <script>

@@ -83,7 +83,7 @@
                 border: none;
                 border-radius: 9999px;
                 padding: 0.55rem 2.5rem;
-                color: #cbd5e1;
+                color: var(--theme-text, #cbd5e1);
                 font-size: 0.75rem;
                 font-family: 'Roboto Mono', monospace;
                 outline: none;
