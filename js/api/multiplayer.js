@@ -15,11 +15,42 @@
     var activeRoomIsBot = false;
     var pendingLeaveRoomId = null;
     var lastAuthIdentity = null;
+    var consecutiveConnectFailures = 0;
+    var reconnectPaused = false;
+    var RECONNECT_FAILURE_LIMIT = 6;
 
     function dispatch(name, detail) {
         try {
             window.dispatchEvent(new CustomEvent('usertypo:multiplayer:' + name, { detail: detail }));
         } catch (_) { /* ignore */ }
+    }
+
+    /** Keep a warm socket for signed-in challenge delivery, or while on MP routes. */
+    function shouldKeepSocketWarm() {
+        try {
+            var path = String((window.location && window.location.pathname) || '');
+            if (/^\/(multiplayer|dual|room)(\/|$)/i.test(path)) return true;
+        } catch (_) { /* ignore */ }
+        if (!window.usertypoAuth || typeof window.usertypoAuth.getState !== 'function') return false;
+        var state = window.usertypoAuth.getState();
+        return !!(state && state.isSignedIn && state.user);
+    }
+
+    function setReconnectEnabled(enabled) {
+        reconnectPaused = !enabled;
+        if (socket && socket.io && typeof socket.io.reconnection === 'function') {
+            socket.io.reconnection(!!enabled);
+        }
+    }
+
+    function pauseReconnects(reason) {
+        if (reconnectPaused) return;
+        setReconnectEnabled(false);
+        try {
+            if (socket && socket.connected) return;
+            if (socket) socket.disconnect();
+        } catch (_) { /* ignore */ }
+        console.warn('[multiplayer] paused reconnects:', reason || 'repeated connection failures');
     }
 
     function notify(note, options) {
@@ -101,14 +132,29 @@
 
     function bindSocketEvents(activeSocket) {
         activeSocket.on('connect', function () {
+            consecutiveConnectFailures = 0;
+            setReconnectEnabled(true);
             dispatch('connected', { socketId: activeSocket.id });
         });
         activeSocket.on('disconnect', function (reason) {
             readyState = null;
             dispatch('disconnected', { reason: reason });
+            // Server/transport kicks should not hammer a cold Render free instance forever.
+            if (reason === 'io server disconnect' || reason === 'transport close' || reason === 'transport error') {
+                if (!shouldKeepSocketWarm()) {
+                    pauseReconnects(reason);
+                }
+            }
         });
         activeSocket.on('connect_error', function (error) {
-            dispatch('error', { code: 'connection_failed', message: error && error.message });
+            consecutiveConnectFailures += 1;
+            var message = String((error && error.message) || error || '');
+            dispatch('error', { code: 'connection_failed', message: message });
+            // 429/503 and cold-start failures spam the console when Socket.IO retries forever.
+            var rateOrUnavailable = /429|503|xhr poll error|websocket error|timeout|server error/i.test(message);
+            if (consecutiveConnectFailures >= RECONNECT_FAILURE_LIMIT || rateOrUnavailable && consecutiveConnectFailures >= 3) {
+                pauseReconnects(message || 'connect_error');
+            }
         });
         activeSocket.on('multiplayer:ready', function (state) {
             readyState = state;
@@ -373,10 +419,14 @@
                 socket = window.io(url || undefined, {
                     autoConnect: false,
                     transports: ['websocket', 'polling'],
+                    // Finite backoff — infinite retries against a sleeping/rate-limited
+                    // Render free tier flooded the console with WebSocket 429/503 errors.
                     reconnection: true,
-                    reconnectionAttempts: Infinity,
-                    reconnectionDelay: 500,
-                    reconnectionDelayMax: 4000,
+                    reconnectionAttempts: 8,
+                    reconnectionDelay: 2000,
+                    reconnectionDelayMax: 30000,
+                    randomizationFactor: 0.5,
+                    timeout: 12000,
                     auth: function (callback) {
                         var state = window.usertypoAuth.getState();
                         if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
@@ -390,16 +440,47 @@
                 });
                 bindSocketEvents(socket);
             }
+            consecutiveConnectFailures = 0;
+            setReconnectEnabled(true);
             if (!socket.active) socket.connect();
-            await new Promise(function (resolve, reject) {
-                var timeout = nativeSetTimeout(function () {
-                    reject(new Error('Could not connect to the multiplayer server.'));
-                }, 20_000);
-                socket.once('multiplayer:ready', function () {
-                    clearTimeout(timeout);
-                    resolve();
+            try {
+                await new Promise(function (resolve, reject) {
+                    if (socket.connected && readyState) {
+                        resolve();
+                        return;
+                    }
+                    var settled = false;
+                    var timeout = nativeSetTimeout(function () {
+                        if (settled) return;
+                        settled = true;
+                        cleanup();
+                        reject(new Error('Could not connect to the multiplayer server.'));
+                    }, 20_000);
+                    function cleanup() {
+                        clearTimeout(timeout);
+                        socket.off('multiplayer:ready', onReady);
+                        socket.off('connect_error', onErr);
+                    }
+                    function onReady() {
+                        if (settled) return;
+                        settled = true;
+                        cleanup();
+                        resolve();
+                    }
+                    function onErr(error) {
+                        // Keep retrying inside the timeout window unless we paused reconnects.
+                        if (settled || !reconnectPaused) return;
+                        settled = true;
+                        cleanup();
+                        reject(error || new Error('Could not connect to the multiplayer server.'));
+                    }
+                    socket.on('multiplayer:ready', onReady);
+                    socket.on('connect_error', onErr);
                 });
-            });
+            } catch (err) {
+                pauseReconnects((err && err.message) || 'connect timeout');
+                throw err;
+            }
             return socket;
         })();
         try {
@@ -587,16 +668,21 @@
                 activeRoomId = '';
             }
             if (socket) {
-                socket.disconnect();
+                try { socket.disconnect(); } catch (_) { /* ignore */ }
                 socket = null;
                 readyState = null;
                 pendingMatches = {};
+                consecutiveConnectFailures = 0;
+                reconnectPaused = false;
             }
+            // Guests only connect on multiplayer pages; signed-in users stay warm for challenges.
+            if (!shouldKeepSocketWarm()) return;
             ensureConnected().catch(function (error) {
                 console.warn('[multiplayer] connect failed:', error && error.message);
             });
         });
         window.usertypoAuth.ready().then(function () {
+            if (!shouldKeepSocketWarm()) return null;
             return ensureConnected();
         }).catch(function () { /* auth unavailable */ });
     }
