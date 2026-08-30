@@ -3,6 +3,34 @@
  * Public API: window.usertypoSessions
  */
 (function () {
+    // #region agent log
+    function agentDbgLog(hypothesisId, location, message, data) {
+        var payload = {
+            sessionId: '0c11ab',
+            runId: 'pre-fix',
+            hypothesisId: hypothesisId,
+            location: location,
+            message: message,
+            data: data || {},
+            timestamp: Date.now(),
+        };
+        try {
+            window.__USERTYPO_DBG_0c11ab = window.__USERTYPO_DBG_0c11ab || [];
+            window.__USERTYPO_DBG_0c11ab.push(payload);
+            window.localStorage.setItem(
+                'usertypo_dbg_0c11ab',
+                JSON.stringify(window.__USERTYPO_DBG_0c11ab.slice(-80))
+            );
+        } catch (e) { /* ignore */ }
+        try { console.info('[PB-DBG]', message, data); } catch (e2) { /* ignore */ }
+        fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0c11ab' },
+            body: JSON.stringify(payload),
+        }).catch(function () { /* https pages block localhost; localStorage backup used */ });
+    }
+    // #endregion
+
     function round2(n) {
         var x = Number(n);
         if (!isFinite(x)) return 0;
@@ -195,12 +223,28 @@
         if (!areStandardBestsReady()) return null;
 
         var prev = getStandardBestWpm(mode, amount);
-        if (prev == null) return true;
-        return w > round2(prev);
+        var decision = prev == null ? true : (w > round2(prev));
+        // #region agent log
+        agentDbgLog('B,C,E', 'sessions.js:wouldBeatPersonalBest', 'PB decision', {
+            wpm: w,
+            mode: mode,
+            amount: amount,
+            prev: prev,
+            decision: decision,
+            ready: _standardBestsReady,
+            bestKey: bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1))),
+            bestEntry: _standardBests
+                ? _standardBests[bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1)))]
+                : null,
+        });
+        // #endregion
+        return decision;
     }
 
     function rememberPersonalBest(wpm, mode, amount, accuracy) {
         if (!isStandardPbMode(mode, amount)) return;
+        var wasReady = _standardBestsReady;
+        var before = _standardBests ? _standardBests[bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1)))] : null;
         if (!_standardBests) _standardBests = emptyStandardBests();
         var key = bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1)));
         var w = round2(wpm);
@@ -213,6 +257,18 @@
             };
         }
         _standardBestsReady = true;
+        // #region agent log
+        agentDbgLog('A', 'sessions.js:rememberPersonalBest', 'rememberPersonalBest called', {
+            wpm: w,
+            mode: mode,
+            amount: amount,
+            key: key,
+            wasReady: wasReady,
+            before: before,
+            after: _standardBests[key],
+            seededEmpty: !wasReady,
+        });
+        // #endregion
     }
 
     /** @deprecated Use wouldBeatPersonalBest — kept as a thin wrapper for older callers. */
@@ -416,15 +472,36 @@
             try {
                 var result = await fetchAllMySessions();
                 if (result.error || !result.sessions) {
+                    // #region agent log
+                    agentDbgLog('B,E', 'sessions.js:hydratePaceHistoryFromServer', 'hydrate failed or empty', {
+                        error: result && result.error ? String(result.error) : null,
+                        hasSessions: !!(result && result.sessions),
+                        ready: _standardBestsReady,
+                    });
+                    // #endregion
                     // Do NOT mark standard bests ready — guessing from incomplete
                     // local pace history caused false "Personal Best" celebrations.
                     return loadPaceHistory();
                 }
                 _standardBests = computeBests(result.sessions);
                 _standardBestsReady = true;
+                // #region agent log
+                agentDbgLog('B,C,E', 'sessions.js:hydratePaceHistoryFromServer', 'hydrate success', {
+                    sessionCount: result.sessions.length,
+                    words10: _standardBests['words:10'],
+                    time60: _standardBests['time:60'],
+                    ready: _standardBestsReady,
+                });
+                // #endregion
                 return mergePaceHistoryFromSessions(result.sessions);
             } catch (err) {
                 console.warn('[usertypo sessions] pace history hydrate failed', err);
+                // #region agent log
+                agentDbgLog('B', 'sessions.js:hydratePaceHistoryFromServer', 'hydrate threw', {
+                    err: String(err && err.message || err),
+                    ready: _standardBestsReady,
+                });
+                // #endregion
                 return loadPaceHistory();
             } finally {
                 _paceHydrateDone = true;
