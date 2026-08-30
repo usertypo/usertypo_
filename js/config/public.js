@@ -119,37 +119,9 @@ window.USERTYPO_CONFIG = {
         }
     }
 
-    function showStagingBanner() {
-        if (cfg.environment !== 'staging') return;
-        if (document.getElementById('usertypo-staging-banner')) return;
-        var bar = document.createElement('div');
-        bar.id = 'usertypo-staging-banner';
-        bar.setAttribute('role', 'status');
-        bar.textContent = 'DEV environment — separate test accounts & data (not live usertypo.com)';
-        bar.style.cssText = [
-            'position:fixed',
-            'top:0',
-            'left:0',
-            'right:0',
-            'z-index:99999',
-            'padding:6px 12px',
-            'font:600 12px/1.4 Inter,system-ui,sans-serif',
-            'text-align:center',
-            'color:#fef3c7',
-            'background:#92400e',
-            'border-bottom:1px solid #f59e0b',
-        ].join(';');
-        document.body.appendChild(bar);
-        document.documentElement.style.setProperty('scroll-padding-top', '36px');
-    }
-
-    function onDomReady() {
-        hideLeaderboardsNav();
-        showStagingBanner();
-    }
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', onDomReady);
+        document.addEventListener('DOMContentLoaded', hideLeaderboardsNav);
     } else {
-        onDomReady();
+        hideLeaderboardsNav();
     }
 })();
