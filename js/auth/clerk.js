@@ -14,6 +14,14 @@
         return;
     }
 
+    function refreshClerkConfig() {
+        var next = getClerkConfig();
+        if (next && next.publishableKey && next.frontendApi) {
+            config = next;
+        }
+        return config;
+    }
+
     var readyPromise = null;
     var listeners = [];
     var pendingSignUp = null;
@@ -104,6 +112,7 @@
     }
 
     async function initClerk() {
+        refreshClerkConfig();
         var uiSrc = 'https://' + config.frontendApi + '/npm/@clerk/ui@1/dist/ui.browser.js';
         var clerkSrc = 'https://' + config.frontendApi + '/npm/@clerk/clerk-js@6/dist/clerk.browser.js';
 
@@ -157,7 +166,8 @@
         console.info(
             '[usertypo auth] Clerk ready. Signed in:',
             state.isSignedIn,
-            state.user ? '(user id: ' + state.user.id + ')' : ''
+            state.user ? '(user id: ' + state.user.id + ')' : '',
+            '| instance:', config.frontendApi
         );
         return state;
     }

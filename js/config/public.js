@@ -61,15 +61,21 @@ window.USERTYPO_CONFIG = {
     var cfg = window.USERTYPO_CONFIG;
     if (!cfg) return;
     var host = '';
-    try { host = String(location.hostname || ''); } catch (_) { host = ''; }
+    try { host = String(location.hostname || '').toLowerCase(); } catch (_) { host = ''; }
 
-    // Staging: Clerk Development + separate Supabase/Render; no Redis leaderboards.
-    if (host === 'dev.usertypo.com') {
+    function isStagingHost(h) {
+        return h === 'dev.usertypo.com'
+            || h === 'www.dev.usertypo.com'
+            || h === 'dev.usertypo.pages.dev';
+    }
+
+    function applyStagingConfig() {
         if (!cfg.clerk) cfg.clerk = {};
         cfg.clerk.publishableKey = 'pk_test_dHJ1c3RlZC1wcmF3bi0zMS5jbGVyay5hY2NvdW50cy5kZXYk';
         cfg.clerk.frontendApi = 'trusted-prawn-31.clerk.accounts.dev';
         cfg.clerk.allowedRedirectOrigins = [
             'https://dev.usertypo.com',
+            'https://dev.usertypo.pages.dev',
             'http://localhost:3000',
         ];
         cfg.supabase = {
@@ -77,13 +83,19 @@ window.USERTYPO_CONFIG = {
             publishableKey: 'sb_publishable_nnRcpE_zT8Vtv0Z4MNTBKw_TqJhGC10',
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM',
         };
-        // Free Render hostname until optional mp-dev.usertypo.com DNS is added.
         cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
         cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = false;
         if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
         if (cfg.ads) cfg.ads.adsenseClient = '';
+        cfg.environment = 'staging';
+    }
+
+    // Staging: Clerk Development + separate Supabase/Render; no Redis leaderboards.
+    if (isStagingHost(host)) {
+        applyStagingConfig();
+        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase');
     }
 
     // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
@@ -106,9 +118,38 @@ window.USERTYPO_CONFIG = {
             el.style.display = 'none';
         }
     }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', hideLeaderboardsNav);
-    } else {
+
+    function showStagingBanner() {
+        if (cfg.environment !== 'staging') return;
+        if (document.getElementById('usertypo-staging-banner')) return;
+        var bar = document.createElement('div');
+        bar.id = 'usertypo-staging-banner';
+        bar.setAttribute('role', 'status');
+        bar.textContent = 'DEV environment — separate test accounts & data (not live usertypo.com)';
+        bar.style.cssText = [
+            'position:fixed',
+            'top:0',
+            'left:0',
+            'right:0',
+            'z-index:99999',
+            'padding:6px 12px',
+            'font:600 12px/1.4 Inter,system-ui,sans-serif',
+            'text-align:center',
+            'color:#fef3c7',
+            'background:#92400e',
+            'border-bottom:1px solid #f59e0b',
+        ].join(';');
+        document.body.appendChild(bar);
+        document.documentElement.style.setProperty('scroll-padding-top', '36px');
+    }
+
+    function onDomReady() {
         hideLeaderboardsNav();
+        showStagingBanner();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onDomReady);
+    } else {
+        onDomReady();
     }
 })();
