@@ -155,6 +155,9 @@
     var TIMED_AMOUNTS = [15, 30, 60, 120];
     var WORD_AMOUNTS = [10, 25, 50, 100];
     var _paceHydrateDone = false;
+    /** @type {Record<string, {wpm:number, accuracy:number|null}|null>} */
+    var _standardBests = null;
+    var _standardBestsReady = false;
 
     function isStandardPbMode(mode, amount) {
         var m = mode === 'time' ? 'time' : 'words';
@@ -163,29 +166,58 @@
         return WORD_AMOUNTS.indexOf(a) !== -1;
     }
 
-    /**
-     * Matches server set_typing_session_is_pb: PB when no prior non-failed
-     * session for the same mode+amount has a strictly higher WPM.
-     * Works whether or not the current result is already in pace history.
-     * Only meaningful for standard presets (custom amounts never celebrate).
-     */
-    function isPersonalBestForMode(wpm, mode, amount) {
-        if (!isStandardPbMode(mode, amount)) return false;
-        var w = Number(wpm);
-        if (!isFinite(w) || w <= 0) return false;
+    function emptyStandardBests() {
+        return computeBests([]);
+    }
 
-        var m = mode === 'time' ? 'time' : 'words';
-        var a = Math.max(1, Math.round(Number(amount) || 1));
-        var list = loadPaceHistory();
-        for (var i = 0; i < list.length; i++) {
-            var session = list[i];
-            if (!session || session.failed) continue;
-            var sm = session.mode === 'time' ? 'time' : 'words';
-            var sa = Math.max(1, Math.round(Number(session.amount) || 1));
-            if (sm !== m || sa !== a) continue;
-            if (Number(session.wpm) > w) return false;
+    function areStandardBestsReady() {
+        return _standardBestsReady && !!_standardBests;
+    }
+
+    function getStandardBestWpm(mode, amount) {
+        if (!areStandardBestsReady() || !isStandardPbMode(mode, amount)) return null;
+        var entry = _standardBests[bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1)))];
+        if (!entry || entry.wpm == null || !isFinite(Number(entry.wpm))) return null;
+        return Number(entry.wpm);
+    }
+
+    /**
+     * Strict beat of the stored personal best for a standard mode+amount.
+     * Returns:
+     *   true  — first score for that mode, or wpm is strictly greater than stored best
+     *   false — not a beat (or ineligible)
+     *   null  — bests not loaded yet; caller must wait (never guess)
+     */
+    function wouldBeatPersonalBest(wpm, mode, amount) {
+        if (!isStandardPbMode(mode, amount)) return false;
+        var w = round2(wpm);
+        if (!isFinite(w) || w <= 0) return false;
+        if (!areStandardBestsReady()) return null;
+
+        var prev = getStandardBestWpm(mode, amount);
+        if (prev == null) return true;
+        return w > round2(prev);
+    }
+
+    function rememberPersonalBest(wpm, mode, amount, accuracy) {
+        if (!isStandardPbMode(mode, amount)) return;
+        if (!_standardBests) _standardBests = emptyStandardBests();
+        var key = bestKey(mode === 'time' ? 'time' : 'words', Math.max(1, Math.round(Number(amount) || 1)));
+        var w = round2(wpm);
+        if (!isFinite(w) || w <= 0) return;
+        var current = _standardBests[key];
+        if (!current || w > Number(current.wpm)) {
+            _standardBests[key] = {
+                wpm: w,
+                accuracy: accuracy == null || !isFinite(Number(accuracy)) ? null : Number(accuracy),
+            };
         }
-        return true;
+        _standardBestsReady = true;
+    }
+
+    /** @deprecated Use wouldBeatPersonalBest — kept as a thin wrapper for older callers. */
+    function isPersonalBestForMode(wpm, mode, amount) {
+        return wouldBeatPersonalBest(wpm, mode, amount) === true;
     }
 
     function isPaceHistoryReady() {
@@ -383,7 +415,13 @@
         _paceHydratePromise = (async function () {
             try {
                 var result = await fetchAllMySessions();
-                if (result.error || !result.sessions) return loadPaceHistory();
+                if (result.error || !result.sessions) {
+                    // Do NOT mark standard bests ready — guessing from incomplete
+                    // local pace history caused false "Personal Best" celebrations.
+                    return loadPaceHistory();
+                }
+                _standardBests = computeBests(result.sessions);
+                _standardBestsReady = true;
                 return mergePaceHistoryFromSessions(result.sessions);
             } catch (err) {
                 console.warn('[usertypo sessions] pace history hydrate failed', err);
@@ -707,6 +745,10 @@
         hydratePaceHistoryFromServer: hydratePaceHistoryFromServer,
         isStandardPbMode: isStandardPbMode,
         isPersonalBestForMode: isPersonalBestForMode,
+        wouldBeatPersonalBest: wouldBeatPersonalBest,
+        rememberPersonalBest: rememberPersonalBest,
+        areStandardBestsReady: areStandardBestsReady,
+        getStandardBestWpm: getStandardBestWpm,
         isPaceHistoryReady: isPaceHistoryReady,
         TIMED_AMOUNTS: TIMED_AMOUNTS,
         WORD_AMOUNTS: WORD_AMOUNTS,
