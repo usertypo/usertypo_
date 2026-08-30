@@ -48,14 +48,76 @@ body::-webkit-scrollbar {
     --theme-bg-rgb: 0, 0, 0;
     --theme-primary: #ffffff;
     --theme-primary-rgb: 255, 255, 255;
+    --theme-primary-hover: #dddddd;
+    --theme-bg-secondary: #444444;
+    --theme-bg-secondary-rgb: 68, 68, 68;
+    --theme-menu-bg: rgba(68, 68, 68, 0.4);
     --theme-text: #cccccc;
     --theme-text-muted: #777777;
     --theme-on-primary: #000000;
     --theme-fg-strong: #ffffff;
+    --theme-error: #ff4444;
     --theme-ring-track: rgba(255, 255, 255, 0.12);
     /* Same as settings nav tabs / pill (--settings-box-radius) */
     --settings-box-radius: 1.375rem;
     --theme-box-radius: 1.375rem;
+}
+
+/* Register theme colors so browsers can interpolate them during switches */
+@property --theme-bg {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #000000;
+}
+@property --theme-primary {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #ffffff;
+}
+@property --theme-primary-hover {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #dddddd;
+}
+@property --theme-bg-secondary {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #444444;
+}
+@property --theme-text {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #cccccc;
+}
+@property --theme-text-muted {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #777777;
+}
+@property --theme-fg-strong {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #ffffff;
+}
+@property --theme-on-primary {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #000000;
+}
+@property --theme-error {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #ff4444;
+}
+@property --theme-menu-bg {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: rgba(68, 68, 68, 0.4);
+}
+@property --theme-ring-track {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: rgba(255, 255, 255, 0.12);
 }
 
 @media (prefers-color-scheme: light) {
@@ -64,10 +126,15 @@ body::-webkit-scrollbar {
         --theme-bg-rgb: 242, 244, 247;
         --theme-primary: #1e293b;
         --theme-primary-rgb: 30, 41, 59;
+        --theme-primary-hover: #334155;
+        --theme-bg-secondary: #a8b0bc;
+        --theme-bg-secondary-rgb: 168, 176, 188;
+        --theme-menu-bg: rgba(168, 176, 188, 0.4);
         --theme-text: #2a3038;
         --theme-text-muted: #64748b;
         --theme-on-primary: #f2f4f7;
         --theme-fg-strong: #2a3038;
+        --theme-error: #dc2626;
         --theme-ring-track: rgba(0, 0, 0, 0.16);
     }
 }
@@ -79,10 +146,29 @@ body {
     background-color: var(--theme-bg) !important;
 }
 
-/* Smooth theme switches — limited surfaces only (never universal * — breaks modal opacity/transitions) */
+/* Smooth theme switches — color props only (never opacity/transform — breaks modals) */
 html.theme-animating,
 html.theme-animating body {
-    transition: background-color 500ms ease !important;
+    transition:
+        background-color 500ms ease,
+        color 500ms ease,
+        border-color 500ms ease,
+        fill 500ms ease,
+        stroke 500ms ease,
+        box-shadow 500ms ease,
+        text-shadow 500ms ease,
+        filter 500ms ease,
+        outline-color 500ms ease,
+        caret-color 500ms ease !important;
+}
+
+html.theme-animating *:not(script):not(style):not(br):not(link):not(meta) {
+    transition-property:
+        background-color, color, border-color,
+        border-top-color, border-right-color, border-bottom-color, border-left-color,
+        fill, stroke, box-shadow, text-shadow, filter, outline-color, caret-color !important;
+    transition-duration: 500ms !important;
+    transition-timing-function: ease !important;
 }
 
 html.theme-animating #app-backdrop,
