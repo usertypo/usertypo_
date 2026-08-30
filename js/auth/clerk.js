@@ -25,6 +25,7 @@
     var readyPromise = null;
     var listeners = [];
     var pendingSignUp = null;
+    var pendingDisplayUsername = '';
 
     function notify(state) {
         listeners.forEach(function (fn) {
@@ -226,20 +227,23 @@
             throw new Error('Clerk is not ready yet.');
         }
 
+        pendingDisplayUsername = fields.displayUsername || fields.username || '';
+
         var payload = {
             emailAddress: fields.email,
             password: fields.password,
         };
-        if (fields.username) {
-            payload.username = fields.username;
-        }
 
         var signUp = await clerk.client.signUp.create(payload);
+        pendingSignUp = signUp;
+        signUp = await fulfillClerkUsernameRequirement(signUp);
         pendingSignUp = signUp;
 
         if (signUp.status === 'complete') {
             await activateSession(signUp.createdSessionId);
             pendingSignUp = null;
+            await applyDisplayUsername(pendingDisplayUsername);
+            pendingDisplayUsername = '';
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -262,9 +266,13 @@
         }
 
         var result = await pendingSignUp.attemptEmailAddressVerification({ code: code });
+        result = await fulfillClerkUsernameRequirement(result);
+        pendingSignUp = result;
         if (result.status === 'complete') {
             await activateSession(result.createdSessionId);
             pendingSignUp = null;
+            await applyDisplayUsername(pendingDisplayUsername);
+            pendingDisplayUsername = '';
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -273,6 +281,49 @@
             status: result.status,
             message: 'Verification is not complete yet.',
         };
+    }
+
+    function generateInternalClerkUsername() {
+        var suffix = String(Date.now()).slice(-7) + String(Math.floor(Math.random() * 1000));
+        return sanitizeUsername('u' + suffix);
+    }
+
+    async function applyDisplayUsername(raw) {
+        var name = String(raw || '').trim();
+        if (!name) return;
+        if (!window.usertypoProfiles || typeof window.usertypoProfiles.setUsername !== 'function') {
+            return;
+        }
+        try {
+            await window.usertypoProfiles.setUsername(name);
+        } catch (err) {
+            console.warn('[usertypo auth] display name save failed', err);
+        }
+    }
+
+    async function fulfillClerkUsernameRequirement(signUp) {
+        if (!signUp || signUp.status === 'complete') return signUp;
+        var missing = signUp.missingFields || [];
+        if (missing.indexOf('username') === -1) return signUp;
+
+        var attempts = 0;
+        while (attempts < 12) {
+            try {
+                var updated = await signUp.update({ username: generateInternalClerkUsername() });
+                if (!updated.missingFields || updated.missingFields.indexOf('username') === -1) {
+                    return updated;
+                }
+                signUp = updated;
+                attempts += 1;
+            } catch (err) {
+                if (isUsernameTakenError(err)) {
+                    attempts += 1;
+                    continue;
+                }
+                throw err;
+            }
+        }
+        throw new Error('Could not finish creating your account.');
     }
 
     function sanitizeUsername(raw) {
@@ -478,9 +529,10 @@
      * Finish a pending Google OAuth sign-up.
      * Without preferredUsername: accept legal/name fields only, then return
      * needs_username_choice so the sign-up page can ask Google vs custom.
-     * With preferredUsername: set that username and activate the session.
+     * With preferredDisplayUsername: set a hidden unique Clerk username, save the
+     * chosen name as the public display name in Supabase (duplicates allowed).
      */
-    async function completePendingOAuthSignUp(preferredUsername) {
+    async function completePendingOAuthSignUp(preferredDisplayUsername) {
         var clerk = getClerk();
         var signUp = clerk && clerk.client && clerk.client.signUp;
         if (!signUp || !signUp.status) {
@@ -516,6 +568,7 @@
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
+            await applyDisplayUsername(preferredDisplayUsername);
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -530,9 +583,9 @@
             };
         }
 
-        var usernameSeed = preferredUsername ? sanitizeUsername(preferredUsername) : '';
+        var displaySeed = preferredDisplayUsername ? sanitizeUsername(preferredDisplayUsername) : '';
         var attempts = 0;
-        var maxAttempts = usernameSeed ? 12 : 3;
+        var maxAttempts = displaySeed ? 12 : 3;
 
         while (attempts < maxAttempts) {
             var missing = signUp.missingFields || [];
@@ -549,8 +602,7 @@
                 updates.lastName = signUp.lastName || lastNameSnapshot || 'User';
             }
             if (missing.indexOf('username') !== -1) {
-                if (!usernameSeed) {
-                    // Do not invent a username — send the user to the chooser.
+                if (!displaySeed) {
                     return {
                         status: 'needs_username_choice',
                         missingFields: missing,
@@ -561,13 +613,11 @@
                             || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
                     };
                 }
-                updates.username = attempts === 0
-                    ? usernameSeed
-                    : sanitizeUsername(usernameSeed.slice(0, 12) + Math.floor(Math.random() * 9000 + 1000));
+                updates.username = generateInternalClerkUsername();
             }
 
             if (!Object.keys(updates).length) {
-                if (missing.indexOf('username') !== -1 && !usernameSeed) {
+                if (missing.indexOf('username') !== -1 && !displaySeed) {
                     return {
                         status: 'needs_username_choice',
                         missingFields: missing,
@@ -591,6 +641,7 @@
                 signUp = await signUp.update(updates);
                 if (signUp.status === 'complete' && signUp.createdSessionId) {
                     await activateSession(signUp.createdSessionId);
+                    await applyDisplayUsername(displaySeed);
                     markAuthWelcome('new');
                     return { status: 'complete' };
                 }
@@ -609,12 +660,13 @@
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
+            await applyDisplayUsername(displaySeed);
             markAuthWelcome('new');
             return { status: 'complete' };
         }
 
         var stillMissing = signUp.missingFields || [];
-        if (stillMissing.indexOf('username') !== -1 && !usernameSeed) {
+        if (stillMissing.indexOf('username') !== -1 && !displaySeed) {
             return {
                 status: 'needs_username_choice',
                 missingFields: stillMissing,
@@ -777,7 +829,7 @@
             markAuthWelcome('new');
             return { status: 'complete', redirectTo: config.afterSignInUrl || '/' };
         }
-        throw new Error('Could not finish creating your account. Try a different username.');
+        throw new Error('Could not finish creating your account. Try a different display name.');
     }
 
     async function signOut() {
