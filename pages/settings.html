@@ -168,6 +168,10 @@
             padding: 0 !important;
             border-width: 0 !important;
         }
+        /* Skip layout of heavy content (e.g. 300+ language buttons) during flex animation */
+        .settings-panel-card.panel-growing .panel-body-inner {
+            content-visibility: hidden;
+        }
         /* Collapsed/hidden panels must not leave an extra flex gap */
         .settings-panel-card.panel-away {
             flex: 0 1 0% !important;
@@ -3044,7 +3048,7 @@
                             <div class="category-content hidden" data-panel="language-content">
                                 <div class="flex flex-col gap-5">
                                     <div class="flex flex-col gap-2 relative sub-setting-card"
-                                        data-sub-title="Test Language" data-sub-icon="language" data-searchable="true">
+                                        data-sub-title="Test Language" data-sub-icon="translate" data-searchable="true">
                                         <div class="flex items-center gap-2">
                                             <label
                                                 class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Test
@@ -3180,6 +3184,13 @@
                                                     <button class="opt-btn lang-btn" data-lang-file="code_visual_basic" onclick="selectLangOpt(this)">Visual Basic</button>
                                                     <button class="opt-btn lang-btn" data-lang-file="code_zig" onclick="selectLangOpt(this)">Zig</button>
                                                     </div>
+                                                </div>
+                                                <!-- AI-cleaned disclaimer -->
+                                                <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                                                    <p style="font-size: 0.6rem; color: #64748b; line-height: 1.5; letter-spacing: 0.01em;">
+                                                        <span class="material-symbols-outlined" style="font-size: 0.6rem; vertical-align: middle; margin-right: 0.2rem;">smart_toy</span>
+                                                        Languages cleaned by AI. Report if any inappropriate words found.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
