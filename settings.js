@@ -4084,8 +4084,8 @@ function applyLiveFeedSettings(settings) {
     const liveSegments = [
         { wrapperId: 'live-wpm-wrapper', dividerId: 'live-wpm-divider', show: lf.liveWpm !== false },
         { wrapperId: 'live-raw-wrapper', dividerId: 'live-raw-divider', show: lf.liveRawWpm === true },
-        { wrapperId: 'live-acc-wrapper', dividerId: 'live-acc-divider', show: lf.liveAccuracy !== false },
-        { wrapperId: 'live-burst-wrapper', dividerId: null, show: lf.liveBurst === true },
+        { wrapperId: 'live-burst-wrapper', dividerId: 'live-burst-divider', show: lf.liveBurst === true },
+        { wrapperId: 'live-acc-wrapper', dividerId: null, show: lf.liveAccuracy !== false },
     ];
     liveSegments.forEach((segment, index) => {
         document.getElementById(segment.wrapperId)?.classList.toggle('hidden', !segment.show);
