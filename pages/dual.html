@@ -116,7 +116,9 @@
 
 
 
-            <main class="flex-1 flex flex-col items-center justify-center p-6 relative z-10 min-h-0">
+            <main id="dual-test-main" class="flex-1 flex flex-col items-center p-6 relative z-10 min-h-0 overflow-y-auto">
+
+                <div id="dual-test-center" class="flex-1 flex flex-col items-center justify-center w-full min-h-0">
 
                 <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none">
 
@@ -182,24 +184,25 @@
                         </div>
                     </div>
 
-                    <!-- Visual Keymap (in-flow so footer sits below keymap) -->
-                    <div class="w-[80vw] max-w-none mx-auto mt-[72px]">
-                        <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
-                            style="height: 184px;">
-                            <div id="dynamic-keymap"
-                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
-                            </div>
-                        </div>
-                        <div id="capslock-warning"
-                            class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                            <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                </div>
+                </div>
+
+                <!-- Visual Keymap (below centered typing block, above footer) -->
+                <div id="dual-keymap-section" class="w-[80vw] max-w-none mx-auto shrink-0 mt-4">
+                    <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
+                        style="height: 184px;">
+                        <div id="dynamic-keymap"
+                            class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
                         </div>
                     </div>
-
+                    <div id="capslock-warning"
+                        class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                        <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                    </div>
                 </div>
             </main>
 
-            <footer id="test-view-footer" class="px-8 py-4 flex justify-between items-center gap-3 relative z-20 zen-element shrink-0">
+            <footer id="test-view-footer" class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 zen-element shrink-0 w-full">
                 <div class="footer-nav-links text-[0.48rem] text-slate-600 font-mono footer-nav-weight" aria-label="Footer links">
                     <span class="footer-socials" aria-label="Social links">
                         <button type="button" class="footer-social-btn" aria-label="X" title="X">

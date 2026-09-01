@@ -82,14 +82,73 @@
         var progressBar = document.getElementById('word-progress-bar');
         var opponentAvatar = document.getElementById('bot-avatar');
         var waitOverlay = null;
-        var zenMouseHandler = null;
+        var zenHandlersBound = false;
+        var zenTypingActive = false;
 
-        // --- Footer visibility helpers ---
+        // --- Footer / header helpers ---
         var testViewFooter = document.getElementById('test-view-footer');
         var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
+        var dualTestMain = document.getElementById('dual-test-main');
+
+        function debugLog(hypothesisId, location, message, data) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v1' }) }).catch(function () {});
+            // #endregion
+        }
 
         function setFooterCompact(compact) {
             if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
+            if (testViewFooter) {
+                testViewFooter.classList.toggle('justify-end', compact);
+                testViewFooter.classList.toggle('justify-between', !compact);
+            }
+            // #region agent log
+            debugLog('H4', 'dual-race.js:setFooterCompact', 'footer compact toggled', { compact: compact });
+            // #endregion
+        }
+
+        function setDualHeaderInteractive(enabled) {
+            var headerLeft = document.getElementById('header-left');
+            var headerRight = document.getElementById('header-right');
+            var headerLogo = document.getElementById('header-logo-link');
+            if (enabled) {
+                if (headerLeft) headerLeft.classList.remove('opacity-0', 'pointer-events-none');
+                if (headerRight) headerRight.classList.remove('opacity-0', 'pointer-events-none');
+                if (headerLogo) headerLogo.style.pointerEvents = '';
+            } else {
+                if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
+                if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
+                if (headerLogo) headerLogo.style.pointerEvents = 'none';
+            }
+            // #region agent log
+            debugLog('H5', 'dual-race.js:setDualHeaderInteractive', 'header visibility', { enabled: enabled });
+            // #endregion
+        }
+
+        function syncDualKeymapLayout() {
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+                window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
+            }
+            requestAnimationFrame(function () {
+                var footer = document.getElementById('test-view-footer');
+                var keymap = document.getElementById('dynamic-keymap-container');
+                var footerRect = footer ? footer.getBoundingClientRect() : null;
+                var keymapRect = keymap ? keymap.getBoundingClientRect() : null;
+                // #region agent log
+                debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
+                    keymapOn: keymapOn,
+                    footerTop: footerRect ? footerRect.top : null,
+                    keymapBottom: keymapRect ? keymapRect.bottom : null,
+                    viewportH: window.innerHeight,
+                    overlap: footerRect && keymapRect ? footerRect.top < keymapRect.bottom : null,
+                });
+                // #endregion
+                if (keymapOn && footer && footerRect && keymapRect && footerRect.top < keymapRect.bottom) {
+                    window.scrollTo({ top: window.scrollY + (keymapRect.bottom - footerRect.top) + 16, behavior: 'auto' });
+                }
+            });
         }
 
         function bindDualKeymapRenderArgs() {
@@ -102,30 +161,40 @@
                     window.usertypo_settingsApi.applyKeymapDisplay(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* retain current keymap */ }
             }
+            syncDualKeymapLayout();
         }
 
         function hideZenElements() {
-            document.querySelectorAll('.zen-element').forEach(function (el) {
+            document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
         }
 
         function showZenElements() {
-            document.querySelectorAll('.zen-element').forEach(function (el) {
+            document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
         }
 
-        function startZenMode() {
-            hideZenElements();
-            if (!zenMouseHandler) {
-                zenMouseHandler = function () { showZenElements(); };
-                document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
-            }
+        function resetZenState() {
+            zenTypingActive = false;
+            showZenElements();
+        }
+
+        function wireZenHandlers() {
+            if (zenHandlersBound) return;
+            zenHandlersBound = true;
+            document.addEventListener('mousemove', function () {
+                if (state !== 'racing' || !zenTypingActive) return;
+                showZenElements();
+                // #region agent log
+                debugLog('H3', 'dual-race.js:mousemove', 'zen show on mousemove', { state: state, zenTypingActive: zenTypingActive });
+                // #endregion
+            }, { signal: signal });
         }
 
         function stopZenMode() {
-            showZenElements();
+            resetZenState();
         }
 
         function listen(name, handler) {
@@ -964,6 +1033,11 @@
                 event.preventDefault();
                 return;
             }
+            zenTypingActive = true;
+            hideZenElements();
+            // #region agent log
+            debugLog('H2', 'dual-race.js:onKeyDown', 'zen hide on keystroke', { key: event.key, state: state });
+            // #endregion
             updateKeymapHighlight(event.key, true);
             if (event.key === 'Backspace') handleBackspace(event);
             else handlePrintable(event);
@@ -1055,6 +1129,8 @@
                 testView.classList.remove('hidden');
                 testView.style.display = '';
             }
+            setDualHeaderInteractive(false);
+            setFooterCompact(true);
             updateRematchButton();
             prepareWaitingTestView();
         }
@@ -1260,6 +1336,7 @@
             showTestChrome();
             requestAnimationFrame(function () {
                 syncCountdownLayout(false);
+                syncDualKeymapLayout();
             });
         }
 
@@ -1457,7 +1534,10 @@
             function unlockTyping() {
                 if (token !== raceStartToken) return;
                 state = 'racing';
-                startZenMode();
+                resetZenState();
+                // #region agent log
+                debugLog('H2', 'dual-race.js:unlockTyping', 'race unlocked without zen hide', { state: state });
+                // #endregion
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
@@ -1661,6 +1741,7 @@
             statsView.style.display = 'flex';
             stopZenMode();
             setFooterCompact(false);
+            setDualHeaderInteractive(true);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
@@ -1868,7 +1949,9 @@
         }
 
         async function init() {
-            setFooterCompact(false);
+            setFooterCompact(true);
+            setDualHeaderInteractive(false);
+            wireZenHandlers();
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
