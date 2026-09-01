@@ -80,6 +80,15 @@
             transform: translateY(clamp(2rem, 6vh, 4.5rem));
         }
 
+        /* Keep typing vertically centered in the viewport; keymap sits below via spacer */
+        .dual-typing-stage-min {
+            min-height: calc(100svh - 10rem);
+        }
+
+        #dual-scroll-area {
+            scrollbar-gutter: stable;
+        }
+
         #app-views {
             height: 100%;
         }
@@ -116,11 +125,11 @@
 
 
 
-            <main id="dual-test-main" class="flex-1 flex flex-col items-center p-6 relative z-10 min-h-0 overflow-y-auto">
+            <main id="dual-test-main" class="flex-1 flex flex-col min-h-0 relative z-10">
 
-                <div id="dual-test-center" class="flex-1 flex flex-col items-center justify-center w-full min-h-0">
-
-                <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none">
+                <div id="dual-scroll-area" class="flex-1 min-h-0 flex flex-col">
+                    <div id="dual-typing-stage" class="flex items-center justify-center w-full p-6 dual-typing-stage-min">
+                        <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none w-full">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->
                     <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">
@@ -184,21 +193,25 @@
                         </div>
                     </div>
 
-                </div>
-                </div>
-
-                <!-- Visual Keymap (below centered typing block, above footer) -->
-                <div id="dual-keymap-section" class="w-[80vw] max-w-none mx-auto shrink-0 mt-4">
-                    <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
-                        style="height: 184px;">
-                        <div id="dynamic-keymap"
-                            class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                    <!-- Visual Keymap (absolute — does not shift typing center) -->
+                    <div id="dual-keymap-slot" class="absolute left-0 right-0 top-full mt-[72px] pointer-events-none">
+                        <div class="w-[80vw] max-w-none mx-auto pointer-events-auto">
+                            <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
+                                style="height: 184px;">
+                                <div id="dynamic-keymap"
+                                    class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
+                                </div>
+                            </div>
+                            <div id="capslock-warning"
+                                class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                                <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+                            </div>
                         </div>
                     </div>
-                    <div id="capslock-warning"
-                        class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                        <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
+
+                </div>
                     </div>
+                    <div id="dual-keymap-spacer" class="shrink-0 w-full" style="height: 0;" aria-hidden="true"></div>
                 </div>
             </main>
 

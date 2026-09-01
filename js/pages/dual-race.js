@@ -87,24 +87,57 @@
 
         // --- Footer / header helpers ---
         var testViewFooter = document.getElementById('test-view-footer');
+        var shellFooter = document.getElementById('spa-shell-footer');
         var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
-        var dualTestMain = document.getElementById('dual-test-main');
+        var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+        var keymapSpacer = null;
 
         function debugLog(hypothesisId, location, message, data) {
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v1' }) }).catch(function () {});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v2' }) }).catch(function () {});
+            // #endregion
+        }
+
+        function ensureDualKeymapHook() {
+            window.usertypo_getKeymapRenderArgs = function () {
+                if (!config) {
+                    return { useNumbers: false, usePunctuation: false };
+                }
+                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
+            };
+        }
+
+        function setDualFooterMode(mode) {
+            if (mode === 'stats-full') {
+                if (testViewFooter) testViewFooter.style.display = 'none';
+                if (shellFooter) {
+                    shellFooter.classList.remove('hidden');
+                    if (shellFooterNavLinks) shellFooterNavLinks.style.display = '';
+                }
+            } else {
+                if (shellFooter) shellFooter.classList.add('hidden');
+                if (testViewFooter) {
+                    testViewFooter.style.display = '';
+                    if (footerNavLinks) footerNavLinks.style.display = 'none';
+                    testViewFooter.classList.add('justify-end');
+                    testViewFooter.classList.remove('justify-between');
+                }
+            }
+            // #region agent log
+            debugLog('H4', 'dual-race.js:setDualFooterMode', 'footer mode', { mode: mode });
             // #endregion
         }
 
         function setFooterCompact(compact) {
-            if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
-            if (testViewFooter) {
-                testViewFooter.classList.toggle('justify-end', compact);
-                testViewFooter.classList.toggle('justify-between', !compact);
+            if (compact) {
+                setDualFooterMode('test-compact');
+                return;
             }
-            // #region agent log
-            debugLog('H4', 'dual-race.js:setFooterCompact', 'footer compact toggled', { compact: compact });
-            // #endregion
+            if (footerNavLinks) footerNavLinks.style.display = '';
+            if (testViewFooter) {
+                testViewFooter.classList.toggle('justify-end', false);
+                testViewFooter.classList.toggle('justify-between', true);
+            }
         }
 
         function setDualHeaderInteractive(enabled) {
@@ -126,36 +159,25 @@
         }
 
         function syncDualKeymapLayout() {
+            if (!keymapSpacer) keymapSpacer = document.getElementById('dual-keymap-spacer');
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            var spacerHeight = keymapOn ? 280 : 0;
+            if (keymapSpacer) keymapSpacer.style.height = spacerHeight ? (spacerHeight + 'px') : '0';
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
             }
-            requestAnimationFrame(function () {
-                var footer = document.getElementById('test-view-footer');
-                var keymap = document.getElementById('dynamic-keymap-container');
-                var footerRect = footer ? footer.getBoundingClientRect() : null;
-                var keymapRect = keymap ? keymap.getBoundingClientRect() : null;
-                // #region agent log
-                debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
-                    keymapOn: keymapOn,
-                    footerTop: footerRect ? footerRect.top : null,
-                    keymapBottom: keymapRect ? keymapRect.bottom : null,
-                    viewportH: window.innerHeight,
-                    overlap: footerRect && keymapRect ? footerRect.top < keymapRect.bottom : null,
-                });
-                // #endregion
-                if (keymapOn && footer && footerRect && keymapRect && footerRect.top < keymapRect.bottom) {
-                    window.scrollTo({ top: window.scrollY + (keymapRect.bottom - footerRect.top) + 16, behavior: 'auto' });
-                }
+            // #region agent log
+            debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
+                keymapOn: keymapOn,
+                spacerHeight: spacerHeight,
             });
+            // #endregion
         }
 
         function bindDualKeymapRenderArgs() {
+            ensureDualKeymapHook();
             if (!config) return;
-            window.usertypo_getKeymapRenderArgs = function () {
-                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
-            };
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.applyKeymapDisplay === 'function') {
                 try {
                     window.usertypo_settingsApi.applyKeymapDisplay(window.usertypo_settingsApi.loadSettings());
@@ -1130,7 +1152,7 @@
                 testView.style.display = '';
             }
             setDualHeaderInteractive(false);
-            setFooterCompact(true);
+            setDualFooterMode('test-compact');
             updateRematchButton();
             prepareWaitingTestView();
         }
@@ -1328,6 +1350,7 @@
                 caret.classList.add('animate-breath');
                 caret.style.display = 'block';
             }
+            ensureDualKeymapHook();
             if (window.usertypo_settingsApi) {
                 try {
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
@@ -1663,6 +1686,8 @@
                 statsView.classList.remove('hidden', 'opacity-0');
                 statsView.classList.add('flex');
                 statsView.style.display = 'flex';
+                setDualFooterMode('stats-full');
+                setDualHeaderInteractive(true);
                 return;
             }
             state = 'finished';
@@ -1740,7 +1765,7 @@
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
             stopZenMode();
-            setFooterCompact(false);
+            setDualFooterMode('stats-full');
             setDualHeaderInteractive(true);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
@@ -1949,7 +1974,8 @@
         }
 
         async function init() {
-            setFooterCompact(true);
+            ensureDualKeymapHook();
+            setDualFooterMode('test-compact');
             setDualHeaderInteractive(false);
             wireZenHandlers();
             if (!roomId || !window.usertypoMultiplayer) {
