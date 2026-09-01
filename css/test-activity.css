@@ -1,12 +1,12 @@
-/* Monkeytype-style test activity heatmap (adapted from account.scss) */
+/* UserTypo test activity heatmap */
 
 .testActivity {
-    --mt-bg-color: var(--theme-bg, #0e1013);
-    --mt-sub-alt-color: var(--theme-bg-secondary, #1a1d23);
-    --mt-main-color: var(--theme-primary, #00d0ff);
-    --mt-sub-color: var(--theme-text-muted, #94a3b8);
-    --mt-text-color: var(--theme-text, #f3f3f9);
-    --mt-roundness: 0.5rem;
+    --ta-bg-color: var(--theme-bg, #0e1013);
+    --ta-sub-alt-color: var(--theme-bg-secondary, #1a1d23);
+    --ta-main-color: var(--theme-primary, #00d0ff);
+    --ta-sub-color: var(--theme-text-muted, #94a3b8);
+    --ta-text-color: var(--theme-text, #f3f3f9);
+    --ta-roundness: 0.5rem;
 
     background: transparent;
     padding: 0;
@@ -34,7 +34,7 @@
     grid-column: span 2;
     text-align: center;
     font-size: 0.6em;
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
     margin-top: 0.25rem;
 }
 
@@ -50,7 +50,7 @@
 .testActivity .months div,
 .testActivity .days div,
 .testActivity .legend {
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
 }
 
 .testActivity .yearPicker {
@@ -69,7 +69,7 @@
     background-image: none !important;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--theme-box-radius, 1.375rem);
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
     font-family: inherit;
     font-size: 0.7rem;
     line-height: 1;
@@ -89,7 +89,7 @@
     border-color: rgba(255, 255, 255, 0.08) !important;
     outline: none !important;
     box-shadow: none !important;
-    color: var(--mt-text-color);
+    color: var(--ta-text-color);
 }
 
 .testActivity .yearSelectChevron {
@@ -129,7 +129,7 @@
     border-radius: var(--theme-box-radius, 1.375rem);
     padding: 0.4rem 0.55rem;
     background: transparent;
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
     font-family: inherit;
     font-size: 0.7rem;
     line-height: 1;
@@ -140,13 +140,13 @@
 
 .testActivity .yearSelectOption:hover,
 .testActivity .yearSelectOption:focus-visible {
-    background: color-mix(in srgb, var(--mt-main-color) 12%, transparent);
-    color: var(--mt-text-color);
+    background: color-mix(in srgb, var(--ta-main-color) 12%, transparent);
+    color: var(--ta-text-color);
 }
 
 .testActivity .yearSelectOption[aria-selected="true"] {
-    background: color-mix(in srgb, var(--mt-main-color) 18%, transparent);
-    color: var(--mt-main-color);
+    background: color-mix(in srgb, var(--ta-main-color) 18%, transparent);
+    color: var(--ta-main-color);
 }
 
 .testActivity .year {
@@ -158,7 +158,7 @@
     grid-area: title;
     text-align: left;
     font-size: var(--font-size);
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
     align-self: center;
 }
 
@@ -194,7 +194,7 @@
 
 .testActivity .nodata {
     grid-area: chart;
-    color: var(--mt-sub-color);
+    color: var(--ta-sub-color);
     font-size: var(--font-size);
     align-self: center;
     justify-self: center;
@@ -213,7 +213,7 @@
 }
 
 .testActivity .activity div:hover {
-    outline: 2px solid var(--mt-text-color);
+    outline: 2px solid var(--ta-text-color);
     outline-offset: -2px;
 }
 
@@ -263,27 +263,27 @@
 
 .testActivity .activity div[data-level="0"],
 .testActivity .legend div[data-level="0"] {
-    background-color: var(--mt-bg-color);
+    background-color: var(--ta-bg-color);
 }
 
 .testActivity .activity div[data-level="1"],
 .testActivity .legend div[data-level="1"] {
-    background-color: color-mix(in srgb, var(--mt-main-color) 20%, var(--mt-sub-alt-color));
+    background-color: color-mix(in srgb, var(--ta-main-color) 20%, var(--ta-sub-alt-color));
 }
 
 .testActivity .activity div[data-level="2"],
 .testActivity .legend div[data-level="2"] {
-    background-color: color-mix(in srgb, var(--mt-main-color) 50%, var(--mt-sub-alt-color));
+    background-color: color-mix(in srgb, var(--ta-main-color) 50%, var(--ta-sub-alt-color));
 }
 
 .testActivity .activity div[data-level="3"],
 .testActivity .legend div[data-level="3"] {
-    background-color: color-mix(in srgb, var(--mt-main-color) 75%, var(--mt-sub-alt-color));
+    background-color: color-mix(in srgb, var(--ta-main-color) 75%, var(--ta-sub-alt-color));
 }
 
 .testActivity .activity div[data-level="4"],
 .testActivity .legend div[data-level="4"] {
-    background-color: var(--mt-main-color);
+    background-color: var(--ta-main-color);
 }
 
 /* Simple tooltip (balloon-style) */
@@ -301,7 +301,7 @@
     background: var(--theme-menu-bg) !important;
     background-color: var(--theme-menu-bg) !important;
     background-image: none !important;
-    color: var(--theme-text, var(--mt-text-color)) !important;
+    color: var(--theme-text, var(--ta-text-color)) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
     border-radius: var(--theme-box-radius, 1.375rem);
     padding: 0.45rem 0.75rem;

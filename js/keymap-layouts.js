@@ -131,8 +131,7 @@
         if (id.startsWith('greek')) return 'Greek';
         if (id.startsWith('korean')) return 'Korean';
         if (id.startsWith('hindi')) return 'Hindi';
-        if (id.startsWith('japanese_hiragana')) return 'Japanese Hiragana';
-        if (id.startsWith('japanese_katakana')) return 'Japanese Katakana';
+        if (id.startsWith('japanese')) return 'Japanese Hiragana';
         if (id.startsWith('french')) return 'AZERTY';
         if (id.startsWith('german')) return 'QWERTZ';
         if (id.startsWith('spanish')) return 'Spanish';

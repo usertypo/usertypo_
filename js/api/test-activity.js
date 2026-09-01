@@ -1,6 +1,6 @@
 /**
- * Monkeytype-style test activity heatmap (UTC-based).
- * Ported from monkeytypegame/monkeytype test-activity-calendar.ts + test-activity.ts
+ * UserTypo test activity heatmap (UTC-based).
+ * Public API: window.usertypoTestActivity
  */
 (function () {
     var cachedSessions = [];

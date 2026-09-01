@@ -2,67 +2,59 @@
 //  LANGUAGES – Master language list & dynamic word list loader
 // ═══════════════════════════════════════════════════════════════
 
-// All available languages with metadata
+// All available languages with metadata (matches Settings → Test Language + lang/*.json)
 const ALL_LANGUAGES = [
     { file: "arabic", name: "Arabic", category: "natural" },
-    { file: "arabic_egypt", name: "Arabic Egypt", category: "natural" },
-    { file: "arabic_egypt_1k", name: "Arabic Egypt 1k", category: "natural" },
-    { file: "arabic_morocco", name: "Arabic Morocco", category: "natural" },
+    { file: "arabic_1k", name: "Arabic 1k", category: "natural" },
+    { file: "chinese", name: "Chinese", category: "natural" },
+    { file: "chinese_1k", name: "Chinese 1k", category: "natural" },
     { file: "dutch", name: "Dutch", category: "natural" },
     { file: "dutch_10k", name: "Dutch 10k", category: "natural" },
     { file: "dutch_1k", name: "Dutch 1k", category: "natural" },
+    { file: "dutch_2k", name: "Dutch 2k", category: "natural" },
+    { file: "dutch_5k", name: "Dutch 5k", category: "natural" },
     { file: "english", name: "English", category: "natural" },
     { file: "english_10k", name: "English 10k", category: "natural" },
     { file: "english_1k", name: "English 1k", category: "natural" },
-    { file: "english_25k", name: "English 25k", category: "natural" },
-    { file: "english_450k", name: "English 450k", category: "natural" },
+    { file: "english_2k", name: "English 2k", category: "natural" },
     { file: "english_5k", name: "English 5k", category: "natural" },
-    { file: "english_commonly_misspelled", name: "English Commonly Misspelled", category: "natural" },
-    { file: "english_contractions", name: "English Contractions", category: "natural" },
-    { file: "english_doubleletter", name: "English Doubleletter", category: "natural" },
-    { file: "english_medical", name: "English Medical", category: "natural" },
-    { file: "english_old", name: "English Old", category: "natural" },
-    { file: "english_shakespearean", name: "English Shakespearean", category: "natural" },
+    { file: "english_ze", name: "English ZE", category: "natural" },
+    { file: "english_ze_10k", name: "English ZE 10k", category: "natural" },
+    { file: "english_ze_1k", name: "English ZE 1k", category: "natural" },
+    { file: "english_ze_2k", name: "English ZE 2k", category: "natural" },
+    { file: "english_ze_5k", name: "English ZE 5k", category: "natural" },
     { file: "french", name: "French", category: "natural" },
     { file: "french_10k", name: "French 10k", category: "natural" },
     { file: "french_1k", name: "French 1k", category: "natural" },
     { file: "french_2k", name: "French 2k", category: "natural" },
-    { file: "french_600k", name: "French 600k", category: "natural" },
-    { file: "french_bitoduc", name: "French Bitoduc", category: "natural" },
+    { file: "french_5k", name: "French 5k", category: "natural" },
     { file: "german", name: "German", category: "natural" },
     { file: "german_10k", name: "German 10k", category: "natural" },
     { file: "german_1k", name: "German 1k", category: "natural" },
-    { file: "german_250k", name: "German 250k", category: "natural" },
+    { file: "german_2k", name: "German 2k", category: "natural" },
+    { file: "german_5k", name: "German 5k", category: "natural" },
     { file: "greek", name: "Greek", category: "natural" },
     { file: "greek_1k", name: "Greek 1k", category: "natural" },
-    { file: "greek_25k", name: "Greek 25k", category: "natural" },
     { file: "hindi", name: "Hindi", category: "natural" },
     { file: "hindi_1k", name: "Hindi 1k", category: "natural" },
     { file: "indonesian", name: "Indonesian", category: "natural" },
     { file: "indonesian_1k", name: "Indonesian 1k", category: "natural" },
     { file: "italian", name: "Italian", category: "natural" },
+    { file: "italian_10k", name: "Italian 10k", category: "natural" },
     { file: "italian_1k", name: "Italian 1k", category: "natural" },
-    { file: "italian_280k", name: "Italian 280k", category: "natural" },
-    { file: "italian_60k", name: "Italian 60k", category: "natural" },
-    { file: "italian_7k", name: "Italian 7k", category: "natural" },
-    { file: "japanese_hiragana", name: "Japanese Hiragana", category: "natural" },
-    { file: "japanese_katakana", name: "Japanese Katakana", category: "natural" },
-    { file: "japanese_romaji", name: "Japanese Romaji", category: "natural" },
-    { file: "japanese_romaji_1k", name: "Japanese Romaji 1k", category: "natural" },
+    { file: "italian_2k", name: "Italian 2k", category: "natural" },
+    { file: "italian_5k", name: "Italian 5k", category: "natural" },
+    { file: "japanese", name: "Japanese", category: "natural" },
+    { file: "japanese_1k", name: "Japanese 1k", category: "natural" },
     { file: "korean", name: "Korean", category: "natural" },
     { file: "korean_1k", name: "Korean 1k", category: "natural" },
     { file: "russian", name: "Russian", category: "natural" },
     { file: "russian_1k", name: "Russian 1k", category: "natural" },
-    { file: "russian_25k", name: "Russian 25k", category: "natural" },
-    { file: "russian_375k", name: "Russian 375k", category: "natural" },
-    { file: "russian_50k", name: "Russian 50k", category: "natural" },
-    { file: "russian_abbreviations", name: "Russian Abbreviations", category: "natural" },
-    { file: "russian_contractions", name: "Russian Contractions", category: "natural" },
-    { file: "russian_contractions_1k", name: "Russian Contractions 1k", category: "natural" },
     { file: "spanish", name: "Spanish", category: "natural" },
     { file: "spanish_10k", name: "Spanish 10k", category: "natural" },
     { file: "spanish_1k", name: "Spanish 1k", category: "natural" },
-    { file: "spanish_650k", name: "Spanish 650k", category: "natural" },
+    { file: "spanish_2k", name: "Spanish 2k", category: "natural" },
+    { file: "spanish_5k", name: "Spanish 5k", category: "natural" },
     { file: "code_bash", name: "Bash", category: "code" },
     { file: "code_c", name: "C", category: "code" },
     { file: "code_cpp", name: "C++", category: "code" },
@@ -102,28 +94,31 @@ const ALL_LANGUAGES = [
     { file: "code_zig", name: "Zig", category: "code" },
 ];
 
-// Default word list (English 200 most common – used as fallback)
+// Default word list (lang/english.json – used as fallback before JSON loads)
 let wordList = [
-    "the", "be", "of", "and", "a", "to", "in", "he", "have", "it", "that", "for",
-    "they", "with", "as", "not", "on", "she", "at", "by", "this", "we", "you",
-    "do", "but", "from", "or", "which", "one", "would", "all", "will", "there", "say",
-    "who", "make", "when", "can", "more", "if", "no", "man", "out", "other", "so",
-    "what", "time", "up", "go", "about", "than", "into", "could", "state", "only",
-    "new", "year", "some", "take", "come", "these", "know", "see", "use", "get", "like",
-    "then", "first", "any", "work", "now", "may", "such", "give", "over", "think",
-    "most", "even", "find", "day", "also", "after", "way", "many", "must", "look",
-    "before", "great", "back", "through", "long", "where", "much", "should", "well",
-    "people", "down", "own", "just", "because", "good", "each", "those", "feel", "seem",
-    "how", "high", "too", "place", "little", "world", "very", "still", "nation", "hand",
-    "old", "life", "tell", "write", "become", "here", "show", "house", "both", "between",
-    "need", "mean", "call", "develop", "under", "last", "right", "move", "thing", "general",
-    "school", "never", "same", "another", "begin", "while", "number", "part", "turn", "real",
-    "leave", "might", "want", "point", "form", "off", "child", "few", "small", "since",
-    "against", "ask", "late", "home", "interest", "large", "person", "end", "open", "public",
-    "follow", "during", "present", "without", "again", "hold", "govern", "around", "possible",
-    "head", "consider", "word", "program", "problem", "however", "lead", "system", "set",
-    "order", "eye", "plan", "run", "keep", "face", "fact", "group", "play", "stand",
-    "increase", "early", "course", "change", "help", "line"
+    "you", "the", "and", "that", "what", "this", "for", "have", "your", "state",
+    "year", "use", "may", "such", "most", "also", "many", "through", "own", "each",
+    "seem", "high", "world", "nation", "hand", "write", "become", "show", "house",
+    "both", "between", "develop", "under", "move", "general", "school", "same",
+    "another", "begin", "while", "number", "part", "turn", "real", "might", "point",
+    "form", "child", "few", "small", "since", "against", "ask", "late", "interest",
+    "large", "person", "end", "was", "not", "are", "dont", "know", "can", "with",
+    "but", "all", "just", "there", "here", "they", "like", "get", "she", "right",
+    "out", "about", "him", "now", "one", "come", "well", "her", "how", "yeah", "will",
+    "got", "want", "think", "see", "did", "good", "who", "why", "from", "let", "his",
+    "yes", "when", "going", "time", "okay", "back", "look", "would", "them", "where",
+    "were", "take", "then", "had", "been", "our", "gonna", "tell", "really", "man",
+    "some", "say", "hey", "could", "need", "something", "has", "too", "more", "way",
+    "down", "make", "very", "never", "only", "people", "over", "because", "little",
+    "please", "love", "should", "mean", "said", "sorry", "give", "off", "thank", "any",
+    "two", "even", "much", "doing", "sure", "thing", "these", "help", "first", "into",
+    "anything", "still", "find", "life", "nothing", "day", "god", "work", "their",
+    "again", "maybe", "must", "before", "other", "wait", "stop", "call", "after", "wont",
+    "talk", "away", "than", "thought", "home", "night", "put", "great", "those", "last",
+    "better", "everything", "told", "new", "things", "always", "keep", "long", "years",
+    "leave", "does", "money", "around", "doesnt", "name", "place", "ever", "feel", "guys",
+    "father", "guy", "made", "old", "which", "big", "lot", "done", "hello", "nice",
+    "believe", "girl", "someone", "fine", "thanks", "wanted"
 ];
 
 // Currently loaded language filename
@@ -134,15 +129,7 @@ let currentLanguageFile = 'english';
  */
 function isLanguageRTL(langFile) {
     const id = String(langFile || currentLanguageFile || 'english').toLowerCase();
-    return (
-        id.startsWith('arabic')
-        || id.startsWith('hebrew')
-        || id.startsWith('urdu')
-        || id.startsWith('persian')
-        || id.startsWith('farsi')
-        || id.startsWith('pashto')
-        || id.startsWith('kurdish')
-    );
+    return id.startsWith('arabic');
 }
 
 /**

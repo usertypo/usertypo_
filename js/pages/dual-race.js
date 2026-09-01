@@ -520,8 +520,8 @@
             if (!mean) return 100;
             var variance = intervals.reduce(function (sum, value) { return sum + Math.pow(value - mean, 2); }, 0) / intervals.length;
             var cov = Math.sqrt(variance) / mean;
-            var kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-            return Math.max(0, Math.min(100, Math.round(kogasa)));
+            var consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+            return Math.max(0, Math.min(100, Math.round(consistencyTransform)));
         }
 
         function computeFinalStats(finishTime) {

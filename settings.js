@@ -194,7 +194,7 @@ function loadSettings() {
             if (langId === 'english' || String(langId).startsWith('english')
                 || String(langId).startsWith('dutch')
                 || String(langId).startsWith('indonesian')
-                || String(langId).startsWith('japanese_romaji')
+                || String(langId).startsWith('japanese')
                 || String(langId).startsWith('code_')) {
                 valid = true;
             }

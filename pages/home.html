@@ -3297,9 +3297,9 @@ window.setTimeout = function(handler, timeout) {
                 if (mean > 0) {
                     const stdDev = Math.sqrt(rawHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawHistory.length);
                     const cov = stdDev / mean;
-                    const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-                    exactConsistency = kogasa;
-                    consistency = Math.max(0, Math.min(100, Math.round(kogasa)));
+                    const consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+                    exactConsistency = consistencyTransform;
+                    consistency = Math.max(0, Math.min(100, Math.round(consistencyTransform)));
                 }
             }
             if (isNaN(consistency)) {
