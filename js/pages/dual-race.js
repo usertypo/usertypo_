@@ -1104,14 +1104,11 @@
         }
 
         function sendCursorPacket() {
-            if (state !== 'racing' || !window.usertypoMultiplayer || isLocalBotMatch()) return;
+            if (state !== 'racing' || isLocalBotMatch()) return;
+            var mp = window.usertypoMultiplayer;
+            if (!mp || typeof mp.sendCursorState !== 'function') return;
             var sync = getCursorSyncState();
-            window.usertypoMultiplayer.sendCursorState(
-                roomId,
-                sync.wpm,
-                sync.wordIndex,
-                sync.charIndex
-            );
+            mp.sendCursorState(roomId, sync.wpm, sync.wordIndex, sync.charIndex);
         }
 
         function stopLocalBotTimer() {
@@ -2134,7 +2131,6 @@
                     bindDualKeymapRenderArgs();
                 }
                 updateLineLayout();
-                updateCaret();
                 showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 bindRaceKeys();
@@ -2143,6 +2139,7 @@
                 updateLiveStats();
                 if (isLocalBotMatch()) startLocalBotTimer();
                 else startCursorSync();
+                updateCaret();
                 // #region agent log
                 dbgLog('H3-H5', 'dual-race.js:unlockTyping:done', 'unlockTyping completed', { state: state, raceKeysBound: raceKeysBound, hasUpdateTimer: !!updateTimer, localFinished: localFinished, remainingMs: config && config.mode === 'time' ? Math.max(0, raceEndsAt() - Date.now()) : null });
                 // #endregion
