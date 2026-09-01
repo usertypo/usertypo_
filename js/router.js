@@ -48,7 +48,7 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=63'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=64'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -667,6 +667,9 @@
         if (keymapOn) {
             var body = document.getElementById('app-body');
             if (body) body.classList.add('keymap-scrollable');
+        }
+        if (typeof window.usertypoDualPage?.refreshKeymap === 'function') {
+            try { window.usertypoDualPage.refreshKeymap(); } catch (e) { /* ignore */ }
         }
     }
 

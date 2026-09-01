@@ -108,13 +108,43 @@
             });
         }
 
+        function configFlag(value) {
+            return value === true || value === 1 || value === '1';
+        }
+
         function ensureDualKeymapHook() {
             window.usertypo_getKeymapRenderArgs = function () {
                 if (!config) {
                     return { useNumbers: false, usePunctuation: false };
                 }
-                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
+                return {
+                    useNumbers: configFlag(config.nums),
+                    usePunctuation: configFlag(config.punct),
+                };
             };
+        }
+
+        function seedConfigFromPendingMatch() {
+            if (config) return;
+            var pending = window.DualMatch && typeof window.DualMatch.loadRequest === 'function'
+                ? window.DualMatch.loadRequest()
+                : null;
+            if (!pending || String(pending.roomId || '') !== roomId || !pending.config) return;
+            config = pending.config;
+        }
+
+        function applyDualRaceConfig(nextConfig) {
+            if (!nextConfig) return;
+            config = nextConfig;
+        }
+
+        function applyDualTestSettings() {
+            if (window.usertypo_settingsApi) {
+                try {
+                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* retain current settings */ }
+            }
+            bindDualKeymapRenderArgs();
         }
 
         function setDualFooterMode(mode) {
@@ -332,6 +362,14 @@
                 } catch (_) { /* retain current keymap */ }
             }
             syncDualKeymapLayout();
+            // #region agent log
+            debugLog('H-keymap', 'dual-race.js:bindDualKeymapRenderArgs', 'keymap render args', {
+                nums: config.nums,
+                punct: config.punct,
+                renderArgs: window.usertypo_getKeymapRenderArgs ? window.usertypo_getKeymapRenderArgs() : null,
+                state: state,
+            });
+            // #endregion
         }
 
         function hideZenElements() {
@@ -1542,11 +1580,7 @@
                 caret.style.display = 'block';
             }
             ensureDualKeymapHook();
-            if (window.usertypo_settingsApi) {
-                try {
-                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
-                } catch (_) { /* defaults */ }
-            }
+            applyDualTestSettings();
             showTestChrome();
             requestAnimationFrame(function () {
                 syncCountdownLayout(false);
@@ -1673,7 +1707,7 @@
             if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
             var token = raceStartToken;
-            config = payload.config;
+            applyDualRaceConfig(payload.config);
             words = payload.words || [];
             bindDualKeymapRenderArgs();
             window.updateKeymapHighlight = updateKeymapHighlight;
@@ -1758,9 +1792,9 @@
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
-                    try {
-                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
-                    } catch (_) { /* retain race defaults */ }
+                    applyDualTestSettings();
+                } else {
+                    bindDualKeymapRenderArgs();
                 }
                 updateLineLayout();
                 updateCaret();
@@ -2069,6 +2103,7 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
+                if (!config) return;
                 if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
                 // Local 3→2→1 tape animation paced to countdownEndsAt.
                 if (Number(payload[1]) === 0) return;
@@ -2149,7 +2184,7 @@
                 if (!payload.roomId || payload.roomId !== roomId) return;
                 matchReason = payload.reason || matchReason;
                 if (payload.config) {
-                    config = payload.config;
+                    applyDualRaceConfig(payload.config);
                     bindDualKeymapRenderArgs();
                 }
                 leaveStatsForRematch();
@@ -2185,6 +2220,8 @@
 
         async function init() {
             ensureDualKeymapHook();
+            seedConfigFromPendingMatch();
+            if (config) bindDualKeymapRenderArgs();
             setDualFooterMode('test-compact');
             setDualHeaderInteractive(false);
             wireZenHandlers();
@@ -2196,7 +2233,6 @@
                 redirectAfterRefresh();
                 return;
             }
-            prepareWaitingTestView();
             bindEvents();
             bindResultActions();
             window.addEventListener('resize', function () {
@@ -2215,7 +2251,11 @@
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 markDualMembership(true);
                 setSessionFlag(refreshHandledKey, '');
-                config = response.room && response.room.config;
+                applyDualRaceConfig(response.room && response.room.config);
+                if (response.race && response.race.config) {
+                    applyDualRaceConfig(response.race.config);
+                }
+                if (response.race) pendingRacePayload = response.race;
                 bindDualKeymapRenderArgs();
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
@@ -2232,6 +2272,7 @@
                     return;
                 }
                 if (response.state === 'countdown') {
+                    prepareWaitingTestView();
                     ensureCountdownSequence();
                     return;
                 }
@@ -2273,6 +2314,7 @@
         return {
             init: init,
             cleanup: cleanup,
+            refreshKeymap: bindDualKeymapRenderArgs,
             isActive: function () {
                 return state === 'racing' || state === 'countdown' || state === 'waiting-result';
             },

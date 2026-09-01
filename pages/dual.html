@@ -476,12 +476,19 @@
             return;
         }
         controller = window.usertypoDualPage.createController();
+        window.usertypoDualPage.refreshKeymap = function () {
+            if (controller && typeof controller.refreshKeymap === 'function') {
+                controller.refreshKeymap();
+            }
+        };
         await controller.init();
+        window.usertypoDualPage.refreshKeymap();
     };
 
     window.__spaPageCleanup = function () {
         if (controller) controller.cleanup();
         controller = null;
+        if (window.usertypoDualPage) window.usertypoDualPage.refreshKeymap = null;
         window.usertypo_testRuntime = null;
         if (typeof window.usertypo_unlockStatsScroll === 'function') {
             window.usertypo_unlockStatsScroll();
