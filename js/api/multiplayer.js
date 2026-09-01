@@ -6,6 +6,9 @@
     'use strict';
 
     var nativeSetTimeout = window.setTimeout.bind(window);
+    var nativeSetInterval = window.setInterval.bind(window);
+    var nativeClearTimeout = window.clearTimeout.bind(window);
+    var nativeClearInterval = window.clearInterval.bind(window);
     var socket = null;
     var connectPromise = null;
     var readyState = null;
