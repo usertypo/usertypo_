@@ -450,10 +450,6 @@
         }
         controller = window.usertypoDualPage.createController();
         await controller.init();
-
-        if (typeof window.usertypo_lockTypingScroll === 'function') {
-            window.usertypo_lockTypingScroll();
-        }
     };
 
     window.__spaPageCleanup = function () {

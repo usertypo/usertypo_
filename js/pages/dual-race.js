@@ -180,12 +180,32 @@
             // #endregion
         }
 
-        function syncDualKeymapLayout() {
+        function syncDualTypingScroll() {
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
+            } else if (keymapOn && typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            } else if (!keymapOn && typeof window.usertypo_lockTypingScroll === 'function') {
+                window.usertypo_lockTypingScroll();
             }
+            // #region agent log
+            var body = document.getElementById('app-body');
+            debugLog('H3', 'dual-race.js:syncDualTypingScroll', 'scroll state', {
+                keymapOn: keymapOn,
+                bodyClass: body ? body.className : null,
+                scrollY: window.scrollY,
+                docHeight: document.documentElement.scrollHeight,
+                innerHeight: window.innerHeight,
+            });
+            // #endregion
+        }
+
+        function syncDualKeymapLayout() {
+            syncDualTypingScroll();
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
             if (!keymapOn) return;
             setTimeout(function () {
                 var testBox = document.getElementById('test-box');
@@ -1776,7 +1796,23 @@
                 var localMe = computeFinalStats(localFinishTime || Date.now());
                 // Prefer local stats when the server has no meaningful WPM for us
                 // (e.g. bot match where the progress packet was rejected or late).
-                var meData = (serverMe && serverMe.wpm > 0) ? serverMe : (localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                var meData = (serverMe && serverMe.wpm > 0)
+                    ? Object.assign({}, serverMe)
+                    : Object.assign({}, localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                // Bot matches send one final progress packet, so the server has too few
+                // snapshots to compute consistency and defaults to 100. Prefer local keystroke data.
+                if (localMe && localMe.consistency != null) {
+                    meData.consistency = localMe.consistency;
+                }
+                // #region agent log
+                debugLog('H4', 'dual-race.js:showResults', 'consistency source', {
+                    serverConsistency: serverMe ? serverMe.consistency : null,
+                    localConsistency: localMe ? localMe.consistency : null,
+                    usedConsistency: meData.consistency,
+                    keystrokeSamples: keystrokeTimes.length,
+                    rowConsistency: myRow[11],
+                });
+                // #endregion
                 var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
