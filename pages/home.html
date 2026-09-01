@@ -1166,6 +1166,7 @@ window.setTimeout = function(handler, timeout) {
         let currentWordStartTime = null;
         let currentWordCharTimes = [];
         let lastKeystrokeTime = null;
+        let maxLiveBurstSeen = 0; // peak live burst shown while typing
         let avgInterKeyInterval = 150; // running average inter-key interval (ms)
         let graphMode = 'basic';       // 'basic' or 'advanced'
         let graphInfoVisible = false;   // info overlay state
@@ -1880,6 +1881,7 @@ window.setTimeout = function(handler, timeout) {
                 currentWordStartTime = null;
                 currentWordCharTimes = [];
                 lastKeystrokeTime = null;
+                maxLiveBurstSeen = 0;
                 avgInterKeyInterval = 150;
                 typedCharsMap = {};
                 isPaceRepeat = false;
@@ -3397,10 +3399,7 @@ window.setTimeout = function(handler, timeout) {
             document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
             document.getElementById('stats-total-chars').innerText = failedReason ? '--' : rawChars;
 
-            let maxBurst = 0;
-            if (typeof rawHistory !== 'undefined' && rawHistory.length > 0) {
-                maxBurst = Math.max(...rawHistory);
-            }
+            let maxBurst = computeMaxBurstFromTest();
             let maxBurstEl = document.getElementById('stats-max-burst');
             if (maxBurstEl) {
                 maxBurstEl.innerText = failedReason ? '--' : Math.round(maxBurst);
@@ -3910,6 +3909,7 @@ window.setTimeout = function(handler, timeout) {
             currentWordStartTime = null;
             currentWordCharTimes = [];
             lastKeystrokeTime = null;
+            maxLiveBurstSeen = 0;
             avgInterKeyInterval = 150;
             typedCharsMap = {};
             // Hide fail overlay on restart
@@ -4001,6 +4001,28 @@ window.setTimeout = function(handler, timeout) {
 
 
 
+        function computeWordBurstWpm(correctChars, startMs, endMs, useLiveFloor) {
+            if (!correctChars || correctChars <= 0) return 0;
+            const elapsedMins = (endMs - startMs) / 60000;
+            if (elapsedMins <= 0) return 0;
+            const calcMins = useLiveFloor ? Math.max(elapsedMins, 0.5 / 60) : elapsedMins;
+            return Math.round((correctChars / 5) / calcMins);
+        }
+
+        /** Max per-word burst — matches live burst (not per-second raw WPM). */
+        function computeMaxBurstFromTest() {
+            let max = maxLiveBurstSeen || 0;
+            if (!textContainer) return max;
+            const allWords = textContainer.querySelectorAll('.word');
+            wordTimestamps.forEach(wt => {
+                const wordEl = allWords[wt.wordIndex];
+                if (!wordEl) return;
+                const correctChars = wordEl.querySelectorAll('.text-primary').length;
+                max = Math.max(max, computeWordBurstWpm(correctChars, wt.startTime, wt.endTime, false));
+            });
+            return max;
+        }
+
         function updateStats() {
             if (!startTime) return;
 
@@ -4036,23 +4058,17 @@ window.setTimeout = function(handler, timeout) {
             if (lastKeystrokeTime && (currentTime - lastKeystrokeTime) > 1000) {
                 burst = 0; // Decay to 0 after 1 second of inactivity
             } else if (currentWordStartTime) {
-                const burstElapsedMins = (currentTime - currentWordStartTime) / 60000;
-                // Add a small floor to prevent infinite burst speed on the first keystroke
-                const calcMins = Math.max(burstElapsedMins, 0.5 / 60);
                 const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
                 if (currentWordEl) {
                     const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
-                    burst = Math.round((correctInCurrentWord / 5) / calcMins);
+                    burst = computeWordBurstWpm(correctInCurrentWord, currentWordStartTime, currentTime, true);
                 }
             } else if (typeof wordTimestamps !== 'undefined' && wordTimestamps.length > 0) {
                 const lastWord = wordTimestamps[wordTimestamps.length - 1];
-                const burstElapsedMins = (lastWord.endTime - lastWord.startTime) / 60000;
-                if (burstElapsedMins > 0) {
-                    const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
-                    if (lastWordEl) {
-                        const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
-                        burst = Math.round((correctInLastWord / 5) / burstElapsedMins);
-                    }
+                const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
+                if (lastWordEl) {
+                    const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
+                    burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime, false);
                 }
             }
 
@@ -4091,6 +4107,7 @@ window.setTimeout = function(handler, timeout) {
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
             window.lastBurstVal = burst;
+            if (burst > maxLiveBurstSeen) maxLiveBurstSeen = burst;
 
             // Live Threshold Check
             const config = window.usertypo_settings || {};
@@ -5073,7 +5090,7 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-label">The Left Axis</div>
                     <div class="graph-info-desc">Shows your speed (WPM).</div>
                     <div class="graph-info-label">Hovering</div>
-                    <div class="graph-info-desc">You can move your mouse over any part of the graph to see a popup with your exact speed, raw bursts, and any errors for that specific second.</div>
+                    <div class="graph-info-desc">You can move your mouse over any part of the graph to see a popup with your exact speed, raw WPM, and any errors for that specific second.</div>
 
                     <div class="graph-info-tip">
                         <div class="tip-label"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;">lightbulb</span> Pro Tip</div>
