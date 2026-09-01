@@ -32,7 +32,8 @@ function isStagingHost() {
 }
 
 function getDefaultGlowIntensity() {
-    return 50;
+    // Staging-only default for experiments; live stays at 100.
+    return isStagingHost() ? 50 : 100;
 }
 
 const DEFAULTS = {
@@ -98,7 +99,7 @@ const DEFAULTS = {
         colorTheme: 'Abyss',
         fontFamily: 'JetBrains Mono',
         randomizeTheme: 'Off',
-        glowIntensity: 50,
+        glowIntensity: 100, // overwritten in cloneDefaults() for staging hosts (50)
         customTheme: {
             mode: 'Dark',
             mainColor: '#ffffff',
