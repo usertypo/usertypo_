@@ -9,7 +9,7 @@
     var SIZE = 96;
     var WORK_SIZE = 192;
     /** Zoom into blah template — trims built-in padding around USER/o_. */
-    var CONTENT_ZOOM = 1.26;
+    var CONTENT_ZOOM = 1.18;
     var ABYSS_SRC = '/logo-assets/blah-abyss.png';
     var PAPER_SRC = '/logo-assets/blah-paper.png';
     var abyssImg = null;
