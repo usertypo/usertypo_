@@ -90,6 +90,7 @@ const DEFAULTS = {
     },
     liveFeed: {
         liveWpm: true,
+        liveRawWpm: false,
         liveAccuracy: true,
         liveBurst: false,
         timerStyle: 'Number',
@@ -2247,6 +2248,7 @@ function applyThemeSettings(settings) {
         #word-progress,
         #room-word-progress,
         #wpm-display,
+        #raw-wpm-display,
         #acc-display,
         #burst-display,
         #bot-wpm-display,
@@ -4079,22 +4081,21 @@ function applyLiveFeedSettings(settings) {
     const lf = settings.liveFeed || DEFAULTS.liveFeed;
     const testActive = isTestSessionActive();
 
+    const liveSegments = [
+        { wrapperId: 'live-wpm-wrapper', dividerId: 'live-wpm-divider', show: lf.liveWpm !== false },
+        { wrapperId: 'live-raw-wrapper', dividerId: 'live-raw-divider', show: lf.liveRawWpm === true },
+        { wrapperId: 'live-acc-wrapper', dividerId: 'live-acc-divider', show: lf.liveAccuracy !== false },
+        { wrapperId: 'live-burst-wrapper', dividerId: null, show: lf.liveBurst === true },
+    ];
+    liveSegments.forEach((segment, index) => {
+        document.getElementById(segment.wrapperId)?.classList.toggle('hidden', !segment.show);
+        if (!segment.dividerId) return;
+        const hasVisibleAfter = liveSegments.slice(index + 1).some((next) => next.show);
+        document.getElementById(segment.dividerId)?.classList.toggle('hidden', !(segment.show && hasVisibleAfter));
+    });
+
     const liveWpmWrapper = document.getElementById('live-wpm-wrapper');
     if (liveWpmWrapper) {
-        const showWpm = lf.liveWpm !== false;
-        const showAcc = lf.liveAccuracy !== false;
-        const showBurst = lf.liveBurst === true;
-
-        liveWpmWrapper.classList.toggle('hidden', !showWpm);
-        document.getElementById('live-acc-wrapper')?.classList.toggle('hidden', !showAcc);
-        document.getElementById('live-burst-wrapper')?.classList.toggle('hidden', !showBurst);
-
-        const wpmDivider = document.getElementById('live-wpm-divider');
-        const accDivider = document.getElementById('live-acc-divider');
-        if (wpmDivider) wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
-        if (accDivider) accDivider.classList.toggle('hidden', !(showAcc && showBurst));
-        if (showWpm && !showAcc && showBurst && wpmDivider) wpmDivider.classList.remove('hidden');
-
         const timerStyle = lf.timerStyle || 'Number';
         const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
         const timerProgressWrapper = document.getElementById('timer-progress-wrapper');

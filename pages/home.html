@@ -778,6 +778,12 @@
                                     <span class="text-[0.533rem] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
                                 <div id="live-wpm-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5"></div>
+                                <div id="live-raw-wrapper" class="flex items-baseline gap-[0.213rem] hidden">
+                                    <span id="raw-wpm-display"
+                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">raw</span>
+                                </div>
+                                <div id="live-raw-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5 hidden"></div>
                                 <div id="live-acc-wrapper" class="flex items-baseline gap-[0.213rem]">
                                     <span id="acc-display"
                                         class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
@@ -1194,6 +1200,7 @@ window.setTimeout = function(handler, timeout) {
         let caret = document.getElementById('caret');
         let paceCaretEl = document.getElementById('pace-caret');
         let wpmDisplay = document.getElementById('wpm-display');
+        let rawWpmDisplay = document.getElementById('raw-wpm-display');
         let accDisplay = document.getElementById('acc-display');
         let burstDisplay = document.getElementById('burst-display');
         let wordProgressDisplay = document.getElementById('word-progress');
@@ -1296,6 +1303,7 @@ window.setTimeout = function(handler, timeout) {
             caret = document.getElementById('caret');
             paceCaretEl = document.getElementById('pace-caret');
             wpmDisplay = document.getElementById('wpm-display');
+            rawWpmDisplay = document.getElementById('raw-wpm-display');
             accDisplay = document.getElementById('acc-display');
             burstDisplay = document.getElementById('burst-display');
             wordProgressDisplay = document.getElementById('word-progress');
@@ -1892,6 +1900,7 @@ window.setTimeout = function(handler, timeout) {
 
                 clearInterval(updateInterval);
                 wpmDisplay.innerText = "0";
+                if (rawWpmDisplay) rawWpmDisplay.innerText = "0";
                 accDisplay.innerText = "0%";
                 if (burstDisplay) burstDisplay.innerText = "0";
 
@@ -3918,6 +3927,7 @@ window.setTimeout = function(handler, timeout) {
 
             clearInterval(updateInterval);
             wpmDisplay.innerText = "0";
+            if (rawWpmDisplay) rawWpmDisplay.innerText = "0";
             accDisplay.innerText = "0%";
             if (burstDisplay) burstDisplay.innerText = "0";
 
@@ -4019,6 +4029,7 @@ window.setTimeout = function(handler, timeout) {
             if (!startTime) return;
 
             let validChars = 0;
+            let rawChars = 0;
             const allWords = textContainer.querySelectorAll('.word');
             allWords.forEach((wordEl, idx) => {
                 if (idx < currentWordIndex) {
@@ -4026,8 +4037,10 @@ window.setTimeout = function(handler, timeout) {
                     if (!hasError) {
                         validChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
                     }
+                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length + 1;
                 } else if (idx === currentWordIndex) {
                     validChars += wordEl.querySelectorAll('.text-primary').length;
+                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length;
                 }
             });
 
@@ -4036,9 +4049,11 @@ window.setTimeout = function(handler, timeout) {
             const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
 
             let wpm = 0;
+            let rawWpm = 0;
             if (elapsedMinutes > 0) {
                 const calcMins = Math.max(elapsedMinutes, 2 / 60);
                 wpm = Math.round((validChars / 5) / calcMins);
+                rawWpm = Math.round((rawChars / 5) / calcMins);
             }
 
             let acc = 0;
@@ -4096,6 +4111,7 @@ window.setTimeout = function(handler, timeout) {
             }
 
             wpmDisplay.innerText = Math.max(0, wpm);
+            if (rawWpmDisplay) rawWpmDisplay.innerText = Math.max(0, rawWpm);
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
             window.lastBurstVal = burst;

@@ -1274,7 +1274,7 @@
 
                 <!-- Card 5: Live Feed -->
                 <div class="setting-card" data-category="live-feed"
-                    data-keywords="live wpm accuracy burst timer progress opacity">
+                    data-keywords="live wpm raw accuracy burst timer progress opacity">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -2620,6 +2620,34 @@
                                             <p class="text-xs text-slate-500">Show speed updates in real-time</p>
                                         </div>
                                         <div class="toggle-track on" data-setting="liveFeed.liveWpm"
+                                            onclick="toggleSwitch(this)">
+                                            <div class="toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                        <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-semibold text-slate-200">Live Raw WPM</p>
+                                                <div
+                                                    class="info-icon-wrapper group relative flex items-center justify-center">
+                                                    <span
+                                                        class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                    <div
+                                                        class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                        <div
+                                                            class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                            <span
+                                                                class="material-symbols-outlined text-[0.746rem]">info</span>
+                                                            How it works
+                                                        </div>
+                                                        Shows your raw finger speed in real-time, counting every
+                                                        keystroke including mistakes. Usually higher than net WPM.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Show raw speed while typing</p>
+                                        </div>
+                                        <div class="toggle-track" data-setting="liveFeed.liveRawWpm"
                                             onclick="toggleSwitch(this)">
                                             <div class="toggle-thumb"></div>
                                         </div>
