@@ -3338,7 +3338,7 @@ function applyThemeSettings(settings) {
         }
     } catch { /* ignore */ }
 
-    // Tab favicon: blah-abyss / blah-paper (circular), chosen from theme bg lightness
+    // Tab favicon: blah template recolored to theme bg + accent (circular)
     try {
         if (typeof window.usertypoUpdateFavicon === 'function') {
             window.usertypoUpdateFavicon(p.bgMain, p.accentPrimary);
