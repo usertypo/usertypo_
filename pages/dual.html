@@ -78,7 +78,7 @@
             max-width: none !important;
         }
 
-        /* Fill first viewport; flex spacers bias typing block lower than center */
+        /* Fixed header clearance + flexible tail; test-box only grows downward */
         #test-view {
             min-height: calc(100dvh - 4.5rem);
         }
@@ -86,12 +86,13 @@
             min-height: calc(100dvh - 4.5rem - 4rem);
         }
         #dual-layout-spacer-top {
-            flex: 2 1 0%;
-            min-height: 0;
+            flex: 0 0 auto;
+            flex-shrink: 0;
+            min-height: clamp(10rem, 22vh, 16rem);
             width: 100%;
         }
         #dual-layout-spacer-bottom {
-            flex: 1 1 0%;
+            flex: 1 1 auto;
             min-height: 0;
             width: 100%;
         }

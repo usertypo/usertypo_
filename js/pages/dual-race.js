@@ -95,7 +95,7 @@
         var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
         function debugLog(hypothesisId, location, message, data) {
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-layout-v5' }) }).catch(function () {});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-layout-v6' }) }).catch(function () {});
             // #endregion
         }
 
@@ -260,36 +260,34 @@
             var typingArea = document.getElementById('typing-area');
             var pad = document.getElementById('dual-scroll-pad');
             var footer = document.getElementById('test-view-footer');
-            var testView = document.getElementById('test-view');
             var spacerTop = document.getElementById('dual-layout-spacer-top');
             var spacerBottom = document.getElementById('dual-layout-spacer-bottom');
             var keymap = document.getElementById('dynamic-keymap-container');
-            var mainStyle = testMain ? window.getComputedStyle(testMain) : null;
             var mainRect = testMain ? testMain.getBoundingClientRect() : null;
             var testRect = testBox ? testBox.getBoundingClientRect() : null;
             var typingRect = typingArea ? typingArea.getBoundingClientRect() : null;
             var footerRect = footer ? footer.getBoundingClientRect() : null;
-            var testViewRect = testView ? testView.getBoundingClientRect() : null;
             var keymapRect = keymap && !keymap.classList.contains('hidden') ? keymap.getBoundingClientRect() : null;
+            var header = document.querySelector('body > header');
+            var headerRect = header ? header.getBoundingClientRect() : null;
             var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
             var vh = window.innerHeight;
             debugLog(hypothesisId || 'H-layout', 'dual-race.js:measureDualLayoutMetrics', 'vertical layout', {
                 keymapOn: !!(window.usertypo_settings && window.usertypo_settings.keyboardLayout
                     && window.usertypo_settings.keyboardLayout.keymapMode
                     && window.usertypo_settings.keyboardLayout.keymapMode !== 'Off'),
-                mainJustify: mainStyle ? mainStyle.justifyContent : null,
                 mainHeight: mainRect ? mainRect.height : null,
-                testViewHeight: testViewRect ? testViewRect.height : null,
                 spacerTopHeight: spacerTop ? spacerTop.getBoundingClientRect().height : null,
+                spacerTopMinHeight: spacerTop ? window.getComputedStyle(spacerTop).minHeight : null,
                 spacerBottomHeight: spacerBottom ? spacerBottom.getBoundingClientRect().height : null,
                 typingAreaHeight: typingArea ? typingArea.offsetHeight : null,
                 typingTop: typingRect ? typingRect.top : null,
-                typingCenterRatio: typingRect ? (typingRect.top + typingRect.height / 2) / vh : null,
+                gapFromHeader: typingRect && headerRect ? typingRect.top - headerRect.bottom : null,
+                headerBottom: headerRect ? headerRect.bottom : null,
+                testBoxTop: testRect ? testRect.top : null,
                 testBoxBottom: testRect ? testRect.bottom : null,
                 keymapBottom: keymapRect ? keymapRect.bottom : null,
                 footerTop: footerRect ? footerRect.top : null,
-                gapAboveFooter: footerRect && testRect ? footerRect.top - testRect.bottom : null,
-                padHeight: pad ? pad.style.height : null,
                 scrollY: window.scrollY,
                 docHeight: docHeight,
                 viewportBottom: vh,
