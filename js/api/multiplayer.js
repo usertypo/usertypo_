@@ -513,14 +513,16 @@
         if (activeRoomIsBot) {
             return Promise.resolve({ ok: true, skipped: true });
         }
-        return emitAck('race:cursor', [
+        if (!socket || !socket.connected) {
+            return Promise.resolve({ ok: false, offline: true });
+        }
+        socket.emit('race:cursor', [
             roomId,
             Math.max(0, Math.round(Number(wpm) || 0)),
             Math.max(0, Math.floor(Number(wordIndex) || 0)),
             Math.max(0, Math.floor(Number(charIndex) || 0)),
-        ], 1500).catch(function () {
-            return { ok: false };
-        });
+        ]);
+        return Promise.resolve({ ok: true });
     }
 
     function leaveRace(roomId) {

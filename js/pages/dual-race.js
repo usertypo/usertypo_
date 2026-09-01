@@ -58,6 +58,7 @@
         var opponentAnimationFrame = null;
         var cursorSyncTimer = null;
         var localBotTimer = null;
+        var lastOpponentCursorAt = 0;
         var localFinishTime = 0;
         var statsHeaderReady = false;
         var rematchVotes = 0;
@@ -1027,6 +1028,7 @@
         function startCursorSync() {
             if (isLocalBotMatch() || isBotMatch()) return;
             stopCursorSync();
+            sendCursorPacket();
             cursorSyncTimer = setInterval(sendCursorPacket, 300);
         }
 
@@ -1573,6 +1575,7 @@
             opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
+            lastOpponentCursorAt = 0;
             localFinishTime = 0;
             rematchVotes = 0;
             rematchNeeded = 2;
@@ -1997,6 +2000,7 @@
             opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
+            lastOpponentCursorAt = 0;
             localFinishTime = 0;
             countdownAnimToken += 1;
             introBusy = false;
@@ -2083,34 +2087,47 @@
             }
         }
 
+        function paintOpponentCaret(wordIndex, charIndex) {
+            if (!opponentCaret || !words.length) return;
+            opponentCaret.style.display = 'block';
+            var safeWordIndex = Math.min(
+                Math.max(0, wordIndex),
+                Math.max(0, words.length - 1)
+            );
+            positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+        }
+
         function applyOpponentCursor(payload) {
-            if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
+            if (!Array.isArray(payload) || Number(payload[0]) !== Number(opponentIndex)) return;
             opponentTargetWpm = Math.max(0, Number(payload[1]) || 0);
             opponentTargetWordIndex = Math.max(0, Number(payload[2]) || 0);
             opponentTargetCharIndex = Math.max(0, Number(payload[3]) || 0);
             opponentHasReport = true;
-            if (opponentCaret) {
-                positionCaretAt(
-                    opponentCaret,
-                    Math.min(opponentTargetWordIndex, Math.max(0, words.length - 1)),
-                    opponentTargetCharIndex
-                );
+            opponentDisplayWpm = opponentTargetWpm;
+            lastOpponentCursorAt = Date.now();
+            if (opponentWpmDisplay) {
+                opponentWpmDisplay.textContent = String(Math.round(opponentTargetWpm));
             }
+            paintOpponentCaret(opponentTargetWordIndex, opponentTargetCharIndex);
         }
 
         function applyOpponentProgress(payload) {
-            if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
+            if (!Array.isArray(payload) || Number(payload[0]) !== Number(opponentIndex)) return;
             if (isLocalBotMatch()) return;
-            // PvP caret position comes from race:cursor packets.
-            if (!isBotMatch()) return;
+
+            var wpm = Math.max(0, Number(payload[1]) || 0);
+            opponentTargetWpm = wpm;
+            opponentHasReport = true;
+            opponentDisplayWpm = wpm;
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
+
             var completedWords = Number(payload[4]) || 0;
             var position = positionFromCompletedWords(completedWords);
-            applyOpponentCursor([
-                opponentIndex,
-                Math.max(0, Number(payload[1]) || 0),
-                position.wordIndex,
-                position.charIndex,
-            ]);
+            // Cursor packets are primary for PvP; progress still updates WPM and
+            // provides caret fallback when cursor sync is unavailable.
+            if (isBotMatch() || !lastOpponentCursorAt || Date.now() - lastOpponentCursorAt > 800) {
+                paintOpponentCaret(position.wordIndex, position.charIndex);
+            }
         }
 
         function fillCard(prefix, data) {

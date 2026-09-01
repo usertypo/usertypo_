@@ -442,6 +442,27 @@ function createMultiplayerServer(httpServer, options) {
         return total;
     }
 
+    function cursorPositionFromCompletedWords(room, completedWords) {
+        const words = room.prompt.words;
+        const safeCount = Math.max(0, Math.min(Number(completedWords) || 0, words.length));
+        if (!words.length) return { wordIndex: 0, charIndex: 0 };
+        if (safeCount >= words.length) {
+            const last = words.length - 1;
+            return { wordIndex: last, charIndex: words[last] ? words[last].length : 0 };
+        }
+        return { wordIndex: safeCount, charIndex: 0 };
+    }
+
+    function emitOpponentCursor(room, player, wpm, wordIndex, charIndex) {
+        if (!room || room.type === 'bot') return;
+        io.to(roomChannel(room.id)).emit('race:cursor', [
+            player.index,
+            Math.max(0, Math.round(Number(wpm) || 0)),
+            Math.max(0, Math.floor(Number(wordIndex) || 0)),
+            Math.max(0, Math.floor(Number(charIndex) || 0)),
+        ]);
+    }
+
     function raceStartPayload(room) {
         const endsAt = room.config && room.config.mode === 'time' && room.startsAt
             ? room.startsAt + (room.config.amount * 1000)
@@ -1560,6 +1581,8 @@ function createMultiplayerServer(httpServer, options) {
                     1,
                     player.completedWords,
                 ]);
+                const cursorPos = cursorPositionFromCompletedWords(room, player.completedWords);
+                emitOpponentCursor(room, player, player.wpm, cursorPos.wordIndex, cursorPos.charIndex);
                 if (isFinal || isTimedFinal) {
                     player.status = 'finished';
                     player.finishedAt = now;
@@ -1595,12 +1618,7 @@ function createMultiplayerServer(httpServer, options) {
                 const maxChar = room.prompt.words[wordIndex] ? room.prompt.words[wordIndex].length : 0;
                 if (charIndex > maxChar) throw new Error('invalid_position');
                 player.lastCursorAt = now;
-                io.to(roomChannel(room.id)).emit('race:cursor', [
-                    player.index,
-                    wpm,
-                    wordIndex,
-                    charIndex,
-                ]);
+                emitOpponentCursor(room, player, wpm, wordIndex, charIndex);
                 safeAck(ack, { ok: true });
             } catch (error) {
                 safeAck(ack, { ok: false, error: error.message || 'cursor_rejected' });
