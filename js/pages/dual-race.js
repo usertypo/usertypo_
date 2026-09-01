@@ -85,11 +85,23 @@
         var zenMouseHandler = null;
 
         // --- Footer visibility helpers ---
-        var shellFooter = document.getElementById('spa-shell-footer');
-        var footerNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+        var testViewFooter = document.getElementById('test-view-footer');
+        var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
 
         function setFooterCompact(compact) {
             if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
+        }
+
+        function bindDualKeymapRenderArgs() {
+            if (!config) return;
+            window.usertypo_getKeymapRenderArgs = function () {
+                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
+            };
+            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.applyKeymapDisplay === 'function') {
+                try {
+                    window.usertypo_settingsApi.applyKeymapDisplay(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* retain current keymap */ }
+            }
         }
 
         function hideZenElements() {
@@ -1372,9 +1384,7 @@
             var token = raceStartToken;
             config = payload.config;
             words = payload.words || [];
-            window.usertypo_getKeymapRenderArgs = function () {
-                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
-            };
+            bindDualKeymapRenderArgs();
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
@@ -1822,7 +1832,10 @@
                 var payload = event.detail || {};
                 if (!payload.roomId || payload.roomId !== roomId) return;
                 matchReason = payload.reason || matchReason;
-                if (payload.config) config = payload.config;
+                if (payload.config) {
+                    config = payload.config;
+                    bindDualKeymapRenderArgs();
+                }
                 leaveStatsForRematch();
             });
             listen('match-resumed', function (event) {
@@ -1882,6 +1895,7 @@
                 markDualMembership(true);
                 setSessionFlag(refreshHandledKey, '');
                 config = response.room && response.room.config;
+                bindDualKeymapRenderArgs();
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
                 matchReason = response.room && response.room.reason || '';
