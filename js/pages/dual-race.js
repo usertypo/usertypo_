@@ -248,17 +248,14 @@
             var testBox = document.getElementById('test-box');
             var padHeight = 0;
             if (footer && keymap) {
-                var overlap = keymap.getBoundingClientRect().bottom - footer.getBoundingClientRect().top + 24;
+                var overlap = keymap.getBoundingClientRect().bottom - footer.getBoundingClientRect().top + 16;
                 if (overlap > 0) padHeight = Math.max(padHeight, overlap);
             }
             if (testBox) {
                 var rect = testBox.getBoundingClientRect();
                 var centerScroll = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
-                if (centerScroll > 0) padHeight = Math.max(padHeight, centerScroll + 24);
+                if (centerScroll > 0) padHeight = Math.max(padHeight, centerScroll + 16);
             }
-            var scrollHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-            var deficit = window.innerHeight - scrollHeight + 1;
-            if (deficit > 0) padHeight = Math.max(padHeight, deficit);
             pad.style.height = Math.ceil(padHeight) + 'px';
             return padHeight;
         }
@@ -281,10 +278,15 @@
                 }
                 // #region agent log
                 var pad = document.getElementById('dual-scroll-pad');
+                var footer = document.getElementById('test-view-footer');
+                var footerRect = footer ? footer.getBoundingClientRect() : null;
                 var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
                 debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
                     keymapOn: keymapOn,
                     padHeight: pad ? pad.style.height : null,
+                    footerBottom: footerRect ? footerRect.bottom : null,
+                    viewportBottom: window.innerHeight,
+                    footerGap: footerRect ? window.innerHeight - footerRect.bottom : null,
                     docHeight: docHeight,
                     scrollable: docHeight - window.innerHeight,
                 });

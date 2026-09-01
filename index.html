@@ -256,7 +256,7 @@
         #spa-page-root, #spa-shell-footer { background-color: transparent !important; }
     </style>
     <style id="shell-keymap-scroll">
-        /* Typing pages with keymap: grow the document so the page can scroll like home */
+        /* Keymap on: unlock page scroll without breaking flex footer pin */
         #app-body.keymap-scrollable {
             overflow-y: auto !important;
             height: auto !important;
@@ -265,16 +265,7 @@
         }
         #app-body.keymap-scrollable > #spa-content,
         #app-body.keymap-scrollable #spa-page-root {
-            flex: none !important;
             overflow: visible !important;
-            min-height: auto !important;
-        }
-        #app-body.keymap-scrollable #app-views,
-        #app-body.keymap-scrollable #test-view,
-        #app-body.keymap-scrollable #dual-test-main {
-            height: auto !important;
-            min-height: auto !important;
-            flex: none !important;
         }
     </style>
     <style>
@@ -1641,8 +1632,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=36"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=242"></script>
-    <script src="js/router.js?v=69"></script>
+    <script src="js/page-fragments.js?v=243"></script>
+    <script src="js/router.js?v=70"></script>
 
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {

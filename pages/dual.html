@@ -80,23 +80,11 @@
             transform: translateY(clamp(2rem, 6vh, 4.5rem));
         }
 
-        /* Match home page: allow document scroll when keymap extends below the viewport */
+        /* Keymap on: page scroll only — footer stays pinned via test-view flex column */
         #app-body.keymap-scrollable {
             overflow-y: auto !important;
             height: auto !important;
             min-height: 100vh;
-        }
-        #app-body.keymap-scrollable #spa-content,
-        #app-body.keymap-scrollable #spa-page-root {
-            overflow: visible !important;
-            min-height: auto !important;
-        }
-        #app-body.keymap-scrollable #app-views,
-        #app-body.keymap-scrollable #test-view,
-        #app-body.keymap-scrollable #dual-test-main {
-            height: auto !important;
-            min-height: auto !important;
-            flex: none !important;
         }
 
         /* Proportional desktop scaling for typing test (matches home page) */
@@ -204,9 +192,8 @@
                     </div>
 
                 </div>
+                <div id="dual-scroll-pad" class="shrink-0 w-full" style="height: 0;" aria-hidden="true"></div>
             </main>
-
-            <div id="dual-scroll-pad" class="shrink-0 w-full" style="height: 0;" aria-hidden="true"></div>
 
             <footer id="test-view-footer" class="px-8 py-4 flex justify-end items-center gap-3 relative z-20 zen-element shrink-0 w-full">
                 <div class="footer-nav-links text-[0.48rem] text-slate-600 font-mono footer-nav-weight" aria-label="Footer links">
