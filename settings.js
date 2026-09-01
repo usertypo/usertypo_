@@ -40,7 +40,6 @@ const DEFAULTS = {
     cursor: {
         caretStyle: 'underscore', // line | block | underscore | outline
         caretSmoothness: 'medium',    // off | slow | medium | fast
-        adaptiveSmoothness: false,
         paceCaretMode: 'off',       // off | average | pb | last | custom | daily
         paceCaretStyle: 'underscore', // line | block | underscore | outline
         paceCaretCustomSpeed: 100,
@@ -3755,22 +3754,10 @@ function applyCursorSettings(settings) {
     if (document.body) {
         document.body.setAttribute('data-caret-style', settings.cursor.caretStyle);
         document.body.setAttribute('data-caret-smoothness', settings.cursor.caretSmoothness);
-        document.body.setAttribute('data-adaptive-smoothness', String(settings.cursor.adaptiveSmoothness));
         document.body.setAttribute('data-smooth-line-scroll', String(settings.cursor.smoothLineScroll));
         document.body.setAttribute('data-tape-mode', effectiveTapeMode);
         document.body.setAttribute('data-pace-caret-mode', settings.cursor.paceCaretMode);
         document.body.setAttribute('data-pace-caret-style', settings.cursor.paceCaretStyle);
-    }
-
-    // ── Adaptive smoothness hook ──
-    setupAdaptiveSmoothness(settings.cursor.adaptiveSmoothness);
-
-    if (!settings.cursor.adaptiveSmoothness) {
-        document.getElementById('caret')?.style.removeProperty('transition');
-        document.getElementById('spa-boot-caret')?.style.removeProperty('transition');
-        document.getElementById('pace-caret')?.style.removeProperty('transition');
-        document.getElementById('text-container')?.style.removeProperty('transition');
-        document.getElementById('room-text-container')?.style.removeProperty('transition');
     }
 
     try {
@@ -4194,63 +4181,6 @@ function refreshActiveTestVisuals() {
     }
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  4. ADAPTIVE SMOOTHNESS
-//
-//  When enabled, the caret transition duration scales with WPM:
-//    - Slow typing (≤20 WPM)  → 300ms (smooth, relaxed)
-//    - Fast typing (≥160 WPM) → 35ms  (snappy, keeps up)
-//
-//  Reads the live WPM from #wpm-display every 500ms and interpolates.
-// ─────────────────────────────────────────────────────────────────────────────
-
-let _adaptiveInterval = null;
-
-function setupAdaptiveSmoothness(enabled) {
-    if (_adaptiveInterval) {
-        clearInterval(_adaptiveInterval);
-        _adaptiveInterval = null;
-    }
-    if (!enabled) return;
-
-    _adaptiveInterval = setInterval(() => {
-        const wpmEl = document.getElementById('wpm-display') || document.getElementById('room-wpm-display');
-        if (!wpmEl) return;
-
-        const wpm = parseInt(wpmEl.textContent) || 0;
-        const minWpm = 20, maxWpm = 160;
-        const minDur = 35, maxDur = 300; // ms
-
-        const clamped = Math.max(minWpm, Math.min(maxWpm, wpm));
-        const t = (clamped - minWpm) / (maxWpm - minWpm);
-        const dur = Math.round(maxDur - t * (maxDur - minDur));
-
-        const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
-        const transition = `transform ${dur}ms ${ease}, width ${dur}ms ${ease}, opacity 0.5s ease-in-out`;
-        const tapeMode = document.body?.getAttribute('data-tape-mode') || '';
-        const isTape = tapeMode === 'letter' || tapeMode === 'word';
-
-        // In tape mode, keep caret + line scroll on the same duration so the
-        // caret stays visually locked while the line still feels smooth.
-        const caretTransition = isTape
-            ? `transform ${dur}ms ${ease}, width 0s, opacity 0.5s ease-in-out`
-            : transition;
-        const lineTransition = `filter 0.3s ease-in-out, opacity 0.5s ease-in-out, transform ${dur}ms ${ease}`;
-
-        const caret = document.getElementById('caret');
-        if (caret) caret.style.transition = caretTransition;
-
-        const paceCaret = document.getElementById('pace-caret');
-        if (paceCaret) paceCaret.style.transition = caretTransition;
-
-        if (isTape) {
-            const textContainer = document.getElementById('text-container')
-                || document.getElementById('room-text-container');
-            if (textContainer) textContainer.style.transition = lineTransition;
-        }
-    }, 500);
-}
 
 
 // ─────────────────────────────────────────────────────────────────────────────
