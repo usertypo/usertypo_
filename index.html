@@ -90,6 +90,14 @@
 
     <base href="/" />
     <script>window.__usertypoBootPath = window.location.pathname;</script>
+    <script>
+    (function () {
+        var h = String(location.hostname || '').toLowerCase();
+        if (h === 'dev.usertypo.com' || h === 'www.dev.usertypo.com' || h === 'dev.usertypo.pages.dev') {
+            document.documentElement.setAttribute('data-staging', '1');
+        }
+    })();
+    </script>
     <!-- Inline boot theme: Abyss/Paper by OS before CSS paints (no extra network hop) -->
     <script>
     (function () {
@@ -131,16 +139,16 @@
       Crawlable favicons for Google / browsers without JS.
       Google Search shows one favicon per host and does not switch on prefers-color-scheme,
       so the default (no media) is Abyss. Browsers that honor media get Paper in light OS.
-      js/favicon.js then replaces #usertypo-favicon to match the live app theme.
+      js/favicon-theme.js then replaces #usertypo-favicon to match the live app theme.
     -->
-    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png" data-usertypo-static-favicon="1" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png" media="(prefers-color-scheme: dark)" data-usertypo-static-favicon="1" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-paper.png" media="(prefers-color-scheme: light)" data-usertypo-static-favicon="1" />
-    <link id="usertypo-favicon" rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png" />
-    <script src="js/favicon.js?v=8" defer></script>
-    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-abyss.png" />
-    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-abyss.png" media="(prefers-color-scheme: dark)" />
-    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-paper.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png?v=19" data-usertypo-static-favicon="1" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png?v=19" media="(prefers-color-scheme: dark)" data-usertypo-static-favicon="1" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-paper.png?v=19" media="(prefers-color-scheme: light)" data-usertypo-static-favicon="1" />
+    <link id="usertypo-favicon" rel="icon" type="image/png" sizes="96x96" href="/logo-assets/favicon-abyss.png?v=19" />
+    <script src="js/favicon-theme.js?v=3" defer></script>
+    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-abyss.png?v=19" />
+    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-abyss.png?v=19" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/logo-assets/apple-touch-paper.png?v=19" media="(prefers-color-scheme: light)" />
     <link rel="preload" href="/logo-assets/typ_.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/user.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/o.png" as="image" fetchpriority="high" />
@@ -982,9 +990,13 @@
         .header-dynamic-layer { -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; opacity: 1; }
         .header-typ-layer { background-color: var(--theme-primary, #ffffff); -webkit-mask-image: url('logo-assets/typ_.png'); mask-image: url('logo-assets/typ_.png'); }
         .header-user-layer { background-color: var(--theme-text, #cccccc); -webkit-mask-image: url('logo-assets/user.png'); mask-image: url('logo-assets/user.png'); }
+        .header-dev-wrapper { display: none; z-index: 2; animation: header-fade-dev 1s ease-out 0s forwards; }
+        html[data-staging="1"] .header-dev-wrapper { display: block; }
+        .header-dev-layer { background-color: var(--theme-text, #cccccc); -webkit-mask-image: url('logo-assets/dev.png'); mask-image: url('logo-assets/dev.png'); }
         .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; animation: header-fade-o 1s ease-out 0s forwards; }
         .header-typ-wrapper { z-index: 1; animation: header-fade-typ 1s ease-out 0s forwards; }
         .header-user-wrapper { z-index: 2; animation: header-fade-user 1s ease-out 0s forwards; }
+        @keyframes header-fade-dev { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(var(--theme-primary-rgb, 255, 255, 255), 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-primary, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1)))); } }
@@ -1162,6 +1174,9 @@
                     </div>
                     <div class="header-logo-layer header-user-wrapper">
                         <div class="header-logo-layer header-dynamic-layer header-user-layer"></div>
+                    </div>
+                    <div class="header-logo-layer header-dev-wrapper">
+                        <div class="header-logo-layer header-dynamic-layer header-dev-layer"></div>
                     </div>
                     <img src="logo-assets/o.png" class="header-logo-layer header-static-layer" alt="usertypo_" width="512" height="512" decoding="async" fetchpriority="high">
                 </div>
