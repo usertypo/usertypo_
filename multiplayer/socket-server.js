@@ -1607,16 +1607,15 @@ function createMultiplayerServer(httpServer, options) {
                 if (!player || player.status !== 'racing') throw new Error('player_not_active');
                 const now = Date.now();
                 if (now < room.startsAt) throw new Error('early_progress');
-                if (now - (player.lastCursorAt || 0) < 250) {
-                    safeAck(ack, { ok: true, throttled: true });
-                    return;
-                }
                 const wpm = Math.max(0, Math.round(Number(payload[1]) || 0));
-                const wordIndex = Math.max(0, Math.floor(Number(payload[2]) || 0));
-                const charIndex = Math.max(0, Math.floor(Number(payload[3]) || 0));
-                if (wordIndex >= room.prompt.words.length) throw new Error('invalid_position');
-                const maxChar = room.prompt.words[wordIndex] ? room.prompt.words[wordIndex].length : 0;
-                if (charIndex > maxChar) throw new Error('invalid_position');
+                let wordIndex = Math.max(0, Math.floor(Number(payload[2]) || 0));
+                let charIndex = Math.max(0, Math.floor(Number(payload[3]) || 0));
+                const lastWord = Math.max(0, room.prompt.words.length - 1);
+                wordIndex = Math.min(wordIndex, lastWord);
+                const maxChar = room.prompt.words[wordIndex]
+                    ? room.prompt.words[wordIndex].length + 12
+                    : 12;
+                charIndex = Math.min(charIndex, maxChar);
                 player.lastCursorAt = now;
                 emitOpponentCursor(room, player, wpm, wordIndex, charIndex);
                 safeAck(ack, { ok: true });

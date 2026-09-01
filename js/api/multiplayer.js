@@ -516,8 +516,12 @@
         if (!socket || !socket.connected) {
             return Promise.resolve({ ok: false, offline: true });
         }
-        socket.emit('race:cursor', [
-            roomId,
+        var targetRoom = String(roomId || activeRoomId || '');
+        if (!targetRoom) {
+            return Promise.resolve({ ok: false, missingRoom: true });
+        }
+        socket.volatile.emit('race:cursor', [
+            targetRoom,
             Math.max(0, Math.round(Number(wpm) || 0)),
             Math.max(0, Math.floor(Number(wordIndex) || 0)),
             Math.max(0, Math.floor(Number(charIndex) || 0)),

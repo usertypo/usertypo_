@@ -59,6 +59,7 @@
         var cursorSyncTimer = null;
         var localBotTimer = null;
         var lastOpponentCursorAt = 0;
+        var lastCursorSentAt = 0;
         var localFinishTime = 0;
         var statsHeaderReady = false;
         var rematchVotes = 0;
@@ -659,6 +660,43 @@
             if (window.usertypo_settings?.keyboardLayout?.keymapMode === 'Next') {
                 updateKeymapHighlight();
             }
+            queueCursorSend(false);
+        }
+
+        function opponentCursorFresh() {
+            return !!(lastOpponentCursorAt && (Date.now() - lastOpponentCursorAt) < 700);
+        }
+
+        function getLiveCursorWpm() {
+            if (!startTime || state !== 'racing') return 0;
+            var stats = localStats();
+            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedSec > lastLiveRawSecond) {
+                lastLiveRawSecond = elapsedSec;
+                liveRawSecondKeystrokes = totalKeystrokes;
+            }
+            var ksThisSec = totalKeystrokes - liveRawSecondKeystrokes;
+            var liveRawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
+            return Math.max(stats.wpm, liveRawWpm);
+        }
+
+        function getCursorSyncState() {
+            var wordIndex = Math.max(0, Math.min(currentWordIndex, Math.max(0, words.length - 1)));
+            var word = words[wordIndex] || '';
+            var maxChar = word.length + 12;
+            return {
+                wpm: getLiveCursorWpm(),
+                wordIndex: wordIndex,
+                charIndex: Math.max(0, Math.min(currentCharIndex, maxChar)),
+            };
+        }
+
+        function queueCursorSend(force) {
+            if (state !== 'racing' || isLocalBotMatch() || isBotMatch()) return;
+            var now = Date.now();
+            if (!force && now - lastCursorSentAt < 100) return;
+            lastCursorSentAt = now;
+            sendCursorPacket();
         }
 
         function animateOpponent(now) {
@@ -670,10 +708,27 @@
             var elapsedSeconds = Math.min(0.1, Math.max(0, (now - opponentFrameAt) / 1000));
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
-                var blend = 1 - Math.exp(-elapsedSeconds * 3);
+                var cursorFresh = opponentCursorFresh();
                 var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
-                opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
-                if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
+
+                // When cursor packets are flowing, WPM snaps each packet. Otherwise glide
+                // from sparse progress updates so motion still looks continuous.
+                if (cursorFresh) {
+                    opponentDisplayWpm = desiredWpm;
+                } else {
+                    var blend = 1 - Math.exp(-elapsedSeconds * 3);
+                    opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
+                    if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
+                    if (!isLocalBotMatch() && !isBotMatch() && opponentDisplayWpm > 0) {
+                        opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                        var last = Math.max(0, words.length - 1);
+                        var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
+                        opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
+                        var glidePos = offsetToPosition(opponentOffset);
+                        paintOpponentCaret(glidePos.wordIndex, glidePos.charIndex);
+                    }
+                }
+
                 if (opponentWpmDisplay && opponentHasReport) {
                     opponentWpmDisplay.textContent = String(Math.round(opponentDisplayWpm));
                 }
@@ -1028,18 +1083,20 @@
         function startCursorSync() {
             if (isLocalBotMatch() || isBotMatch()) return;
             stopCursorSync();
-            sendCursorPacket();
-            cursorSyncTimer = setInterval(sendCursorPacket, 300);
+            queueCursorSend(true);
+            cursorSyncTimer = setInterval(function () {
+                queueCursorSend(true);
+            }, 300);
         }
 
         function sendCursorPacket() {
             if (state !== 'racing' || !window.usertypoMultiplayer || isLocalBotMatch()) return;
-            var stats = localStats();
+            var sync = getCursorSyncState();
             window.usertypoMultiplayer.sendCursorState(
                 roomId,
-                stats.wpm,
-                currentWordIndex,
-                currentCharIndex
+                sync.wpm,
+                sync.wordIndex,
+                sync.charIndex
             );
         }
 
@@ -1576,6 +1633,7 @@
             opponentHasReport = false;
             opponentFrameAt = 0;
             lastOpponentCursorAt = 0;
+            lastCursorSentAt = 0;
             localFinishTime = 0;
             rematchVotes = 0;
             rematchNeeded = 2;
@@ -2001,6 +2059,7 @@
             opponentHasReport = false;
             opponentFrameAt = 0;
             lastOpponentCursorAt = 0;
+            lastCursorSentAt = 0;
             localFinishTime = 0;
             countdownAnimToken += 1;
             introBusy = false;
@@ -2105,6 +2164,7 @@
             opponentHasReport = true;
             opponentDisplayWpm = opponentTargetWpm;
             lastOpponentCursorAt = Date.now();
+            opponentOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
             if (opponentWpmDisplay) {
                 opponentWpmDisplay.textContent = String(Math.round(opponentTargetWpm));
             }
@@ -2116,18 +2176,27 @@
             if (isLocalBotMatch()) return;
 
             var wpm = Math.max(0, Number(payload[1]) || 0);
+            var completedWords = Number(payload[4]) || 0;
+            var position = positionFromCompletedWords(completedWords);
+
+            if (isBotMatch()) {
+                opponentTargetWpm = wpm;
+                opponentHasReport = true;
+                opponentDisplayWpm = wpm;
+                if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
+                paintOpponentCaret(position.wordIndex, position.charIndex);
+                return;
+            }
+
+            // PvP: progress is only a fallback when high-frequency cursor sync is down.
+            if (opponentCursorFresh()) return;
+
             opponentTargetWpm = wpm;
             opponentHasReport = true;
             opponentDisplayWpm = wpm;
             if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
-
-            var completedWords = Number(payload[4]) || 0;
-            var position = positionFromCompletedWords(completedWords);
-            // Cursor packets are primary for PvP; progress still updates WPM and
-            // provides caret fallback when cursor sync is unavailable.
-            if (isBotMatch() || !lastOpponentCursorAt || Date.now() - lastOpponentCursorAt > 800) {
-                paintOpponentCaret(position.wordIndex, position.charIndex);
-            }
+            opponentOffset = wordOffset(position.wordIndex) + position.charIndex;
+            paintOpponentCaret(position.wordIndex, position.charIndex);
         }
 
         function fillCard(prefix, data) {
