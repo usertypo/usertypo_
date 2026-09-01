@@ -39,6 +39,8 @@
         var errorHistory = [];
         var opponentLeft = false;
         var updateTimer = null;
+        var liveRawSecondKeystrokes = 0;
+        var lastLiveRawSecond = 0;
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
@@ -72,6 +74,7 @@
         var caret = document.getElementById('caret');
         var opponentCaret = document.getElementById('bot-caret');
         var wpmDisplay = document.getElementById('wpm-display');
+        var rawWpmDisplay = document.getElementById('raw-wpm-display');
         var accDisplay = document.getElementById('acc-display');
         var burstDisplay = document.getElementById('burst-display');
         var opponentWpmDisplay = document.getElementById('bot-wpm-display');
@@ -674,6 +677,14 @@
             if (state !== 'racing') return;
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
+            var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            if (elapsedSec > lastLiveRawSecond) {
+                lastLiveRawSecond = elapsedSec;
+                liveRawSecondKeystrokes = totalKeystrokes;
+            }
+            var ksThisSec = totalKeystrokes - liveRawSecondKeystrokes;
+            var liveRawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
+            if (rawWpmDisplay) rawWpmDisplay.textContent = liveRawWpm;
             if (accDisplay) accDisplay.textContent = Math.round(stats.accuracy) + '%';
             if (burstDisplay) {
                 var cutoff = Date.now() - 2000;
@@ -970,6 +981,8 @@
             totalKeystrokes = 0;
             errorsMade = 0;
             extraChars = 0;
+            liveRawSecondKeystrokes = 0;
+            lastLiveRawSecond = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -987,6 +1000,7 @@
             rematchNeeded = 2;
             selfRematchVoted = false;
             if (wpmDisplay) wpmDisplay.textContent = '0';
+            if (rawWpmDisplay) rawWpmDisplay.textContent = '0';
             if (accDisplay) accDisplay.textContent = '0%';
             if (burstDisplay) burstDisplay.textContent = '0';
             if (opponentWpmDisplay) opponentWpmDisplay.textContent = '0';
@@ -1143,20 +1157,20 @@
                 ? window.usertypo_settingsApi.loadSettings()
                 : window.usertypo_settings;
             var lf = (settings && settings.liveFeed) || {};
-            var showWpm = lf.liveWpm !== false;
-            var showAcc = lf.liveAccuracy !== false;
-            var showBurst = lf.liveBurst === true;
-            var wpmWrapper = document.getElementById('live-wpm-wrapper');
-            var accWrapper = document.getElementById('live-acc-wrapper');
-            var burstWrapper = document.getElementById('live-burst-wrapper');
-            var wpmDivider = document.getElementById('live-wpm-divider');
-            var accDivider = document.getElementById('live-acc-divider');
-            if (wpmWrapper) wpmWrapper.classList.toggle('hidden', !showWpm);
-            if (accWrapper) accWrapper.classList.toggle('hidden', !showAcc);
-            if (burstWrapper) burstWrapper.classList.toggle('hidden', !showBurst);
-            if (wpmDivider) wpmDivider.classList.toggle('hidden', !(showWpm && showAcc));
-            if (accDivider) accDivider.classList.toggle('hidden', !(showAcc && showBurst));
-            if (showWpm && !showAcc && showBurst && wpmDivider) wpmDivider.classList.remove('hidden');
+            var liveSegments = [
+                { wrapperId: 'live-wpm-wrapper', dividerId: 'live-wpm-divider', show: lf.liveWpm !== false },
+                { wrapperId: 'live-raw-wrapper', dividerId: 'live-raw-divider', show: lf.liveRawWpm === true },
+                { wrapperId: 'live-burst-wrapper', dividerId: 'live-burst-divider', show: lf.liveBurst === true },
+                { wrapperId: 'live-acc-wrapper', dividerId: null, show: lf.liveAccuracy !== false },
+            ];
+            liveSegments.forEach(function (segment, index) {
+                var wrapper = document.getElementById(segment.wrapperId);
+                if (wrapper) wrapper.classList.toggle('hidden', !segment.show);
+                if (!segment.dividerId) return;
+                var hasVisibleAfter = liveSegments.slice(index + 1).some(function (next) { return next.show; });
+                var divider = document.getElementById(segment.dividerId);
+                if (divider) divider.classList.toggle('hidden', !(segment.show && hasVisibleAfter));
+            });
 
             var timerStyle = lf.timerStyle || 'Number';
             var timerOpacity = parseFloat(lf.timerOpacity || '0.5');
@@ -1390,6 +1404,8 @@
             totalKeystrokes = 0;
             errorsMade = 0;
             extraChars = 0;
+            liveRawSecondKeystrokes = 0;
+            lastLiveRawSecond = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;

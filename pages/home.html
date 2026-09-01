@@ -778,17 +778,22 @@
                                     <span class="text-[0.533rem] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
                                 <div id="live-wpm-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5"></div>
-                                <div id="live-acc-wrapper" class="flex items-baseline gap-[0.213rem]">
-                                    <span id="acc-display"
-                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
-                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">acc</span>
+                                <div id="live-raw-wrapper" class="flex items-baseline gap-[0.213rem] hidden">
+                                    <span id="raw-wpm-display"
+                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">raw</span>
                                 </div>
-                                <div id="live-acc-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5 hidden">
-                                </div>
+                                <div id="live-raw-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5 hidden"></div>
                                 <div id="live-burst-wrapper" class="flex items-baseline gap-[0.213rem] hidden">
                                     <span id="burst-display"
                                         class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
                                     <span class="text-[0.533rem] font-bold text-slate-500 uppercase">burst</span>
+                                </div>
+                                <div id="live-burst-divider" class="w-px h-[0.853rem] bg-white/10 relative top-0.5 hidden"></div>
+                                <div id="live-acc-wrapper" class="flex items-baseline gap-[0.213rem]">
+                                    <span id="acc-display"
+                                        class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
                             </div>
                         </div>
@@ -1194,6 +1199,7 @@ window.setTimeout = function(handler, timeout) {
         let caret = document.getElementById('caret');
         let paceCaretEl = document.getElementById('pace-caret');
         let wpmDisplay = document.getElementById('wpm-display');
+        let rawWpmDisplay = document.getElementById('raw-wpm-display');
         let accDisplay = document.getElementById('acc-display');
         let burstDisplay = document.getElementById('burst-display');
         let wordProgressDisplay = document.getElementById('word-progress');
@@ -1296,6 +1302,7 @@ window.setTimeout = function(handler, timeout) {
             caret = document.getElementById('caret');
             paceCaretEl = document.getElementById('pace-caret');
             wpmDisplay = document.getElementById('wpm-display');
+            rawWpmDisplay = document.getElementById('raw-wpm-display');
             accDisplay = document.getElementById('acc-display');
             burstDisplay = document.getElementById('burst-display');
             wordProgressDisplay = document.getElementById('word-progress');
@@ -1892,6 +1899,7 @@ window.setTimeout = function(handler, timeout) {
 
                 clearInterval(updateInterval);
                 wpmDisplay.innerText = "0";
+                if (rawWpmDisplay) rawWpmDisplay.innerText = "0";
                 accDisplay.innerText = "0%";
                 if (burstDisplay) burstDisplay.innerText = "0";
 
@@ -3918,6 +3926,7 @@ window.setTimeout = function(handler, timeout) {
 
             clearInterval(updateInterval);
             wpmDisplay.innerText = "0";
+            if (rawWpmDisplay) rawWpmDisplay.innerText = "0";
             accDisplay.innerText = "0%";
             if (burstDisplay) burstDisplay.innerText = "0";
 
@@ -4041,6 +4050,10 @@ window.setTimeout = function(handler, timeout) {
                 wpm = Math.round((validChars / 5) / calcMins);
             }
 
+            // Per-second raw WPM — same formula as the graph gray line (rawHistory).
+            const ksThisSec = totalKeystrokes - lastSecondKeystrokes;
+            const rawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
+
             let acc = 0;
             if (totalKeystrokes > 0) {
                 acc = Math.round(Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100));
@@ -4096,6 +4109,7 @@ window.setTimeout = function(handler, timeout) {
             }
 
             wpmDisplay.innerText = Math.max(0, wpm);
+            if (rawWpmDisplay) rawWpmDisplay.innerText = Math.max(0, rawWpm);
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
             window.lastBurstVal = burst;
