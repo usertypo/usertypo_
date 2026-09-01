@@ -4001,26 +4001,18 @@ window.setTimeout = function(handler, timeout) {
 
 
 
-        function computeWordBurstWpm(correctChars, startMs, endMs, useLiveFloor) {
+        function computeWordBurstWpm(correctChars, startMs, endMs) {
             if (!correctChars || correctChars <= 0) return 0;
             const elapsedMins = (endMs - startMs) / 60000;
             if (elapsedMins <= 0) return 0;
-            const calcMins = useLiveFloor ? Math.max(elapsedMins, 0.5 / 60) : elapsedMins;
+            // 0.5s floor prevents absurd spikes on short words or the first keystroke.
+            const calcMins = Math.max(elapsedMins, 0.5 / 60);
             return Math.round((correctChars / 5) / calcMins);
         }
 
-        /** Max per-word burst — matches live burst (not per-second raw WPM). */
+        /** Max burst = highest live burst value shown during the test. */
         function computeMaxBurstFromTest() {
-            let max = maxLiveBurstSeen || 0;
-            if (!textContainer) return max;
-            const allWords = textContainer.querySelectorAll('.word');
-            wordTimestamps.forEach(wt => {
-                const wordEl = allWords[wt.wordIndex];
-                if (!wordEl) return;
-                const correctChars = wordEl.querySelectorAll('.text-primary').length;
-                max = Math.max(max, computeWordBurstWpm(correctChars, wt.startTime, wt.endTime, false));
-            });
-            return max;
+            return maxLiveBurstSeen || 0;
         }
 
         function updateStats() {
@@ -4061,14 +4053,14 @@ window.setTimeout = function(handler, timeout) {
                 const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
                 if (currentWordEl) {
                     const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
-                    burst = computeWordBurstWpm(correctInCurrentWord, currentWordStartTime, currentTime, true);
+                    burst = computeWordBurstWpm(correctInCurrentWord, currentWordStartTime, currentTime);
                 }
             } else if (typeof wordTimestamps !== 'undefined' && wordTimestamps.length > 0) {
                 const lastWord = wordTimestamps[wordTimestamps.length - 1];
                 const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
                 if (lastWordEl) {
                     const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
-                    burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime, false);
+                    burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime);
                 }
             }
 
