@@ -174,14 +174,22 @@
         if (!current || current.mode !== 'matchmaking' || !current.listingId) {
             throw new Error('No active dual search.');
         }
-        var listingId = current.listingId;
+        var raceConfig = current.config;
         clearPendingIndicator(current.pendingId);
-        autoJoinBotMatch = true;
+        autoJoinBotMatch = false;
         try {
-            await api().playBotFromListing(listingId);
-        } catch (error) {
-            autoJoinBotMatch = false;
-            throw error;
+            await api().cancelPublicDuel();
+        } catch (_) {
+            // Offline or listing already cleared — local bot race does not need the server.
+        }
+        try {
+            sessionStorage.setItem('usertypo:local-bot-config', JSON.stringify(raceConfig));
+        } catch (_) { /* ignore */ }
+        current = { mode: 'bot', status: 'ready', local: true, config: raceConfig };
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo('/dual?local=bot');
+        } else {
+            window.location.href = '/dual?local=bot';
         }
     }
 

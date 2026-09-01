@@ -1571,6 +1571,42 @@ function createMultiplayerServer(httpServer, options) {
             }
         });
 
+        socket.on('race:cursor', (payload, ack) => {
+            try {
+                if (!Array.isArray(payload) || payload.length < 4) throw new Error('invalid_payload');
+                const room = rooms.get(String(payload[0] || ''));
+                if (!room || room.state !== 'racing') throw new Error('race_not_active');
+                if (room.type === 'bot') {
+                    safeAck(ack, { ok: true, ignored: true });
+                    return;
+                }
+                const player = room.players.get(userId);
+                if (!player || player.status !== 'racing') throw new Error('player_not_active');
+                const now = Date.now();
+                if (now < room.startsAt) throw new Error('early_progress');
+                if (now - (player.lastCursorAt || 0) < 250) {
+                    safeAck(ack, { ok: true, throttled: true });
+                    return;
+                }
+                const wpm = Math.max(0, Math.round(Number(payload[1]) || 0));
+                const wordIndex = Math.max(0, Math.floor(Number(payload[2]) || 0));
+                const charIndex = Math.max(0, Math.floor(Number(payload[3]) || 0));
+                if (wordIndex >= room.prompt.words.length) throw new Error('invalid_position');
+                const maxChar = room.prompt.words[wordIndex] ? room.prompt.words[wordIndex].length : 0;
+                if (charIndex > maxChar) throw new Error('invalid_position');
+                player.lastCursorAt = now;
+                io.to(roomChannel(room.id)).emit('race:cursor', [
+                    player.index,
+                    wpm,
+                    wordIndex,
+                    charIndex,
+                ]);
+                safeAck(ack, { ok: true });
+            } catch (error) {
+                safeAck(ack, { ok: false, error: error.message || 'cursor_rejected' });
+            }
+        });
+
         socket.on('race:leave', (roomId, ack) => {
             const current = userToRoom.get(userId);
             if (!current) {

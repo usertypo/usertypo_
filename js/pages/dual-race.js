@@ -12,7 +12,8 @@
         var abort = new AbortController();
         var signal = abort.signal;
         var params = new URLSearchParams(window.location.search);
-        var roomId = params.get('room') || '';
+        var isLocalBot = params.get('local') === 'bot';
+        var roomId = isLocalBot ? 'local-bot' : (params.get('room') || '');
         var state = 'joining';
         var config = null;
         var words = [];
@@ -50,9 +51,13 @@
         var opponentOffset = 0;
         var opponentDisplayWpm = 0;
         var opponentTargetWpm = 0;
+        var opponentTargetWordIndex = 0;
+        var opponentTargetCharIndex = 0;
         var opponentHasReport = false;
         var opponentFrameAt = 0;
         var opponentAnimationFrame = null;
+        var cursorSyncTimer = null;
+        var localBotTimer = null;
         var localFinishTime = 0;
         var statsHeaderReady = false;
         var rematchVotes = 0;
@@ -93,11 +98,6 @@
         var shellFooter = document.getElementById('spa-shell-footer');
         var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
         var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
-        function debugLog(hypothesisId, location, message, data) {
-            // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-layout-v6' }) }).catch(function () {});
-            // #endregion
-        }
 
         function clearReactKeyHighlights(keys) {
             keys.forEach(function (key) {
@@ -163,9 +163,6 @@
                     testViewFooter.classList.remove('justify-between');
                 }
             }
-            // #region agent log
-            debugLog('H4', 'dual-race.js:setDualFooterMode', 'footer mode', { mode: mode });
-            // #endregion
         }
 
         function setFooterCompact(compact) {
@@ -208,9 +205,6 @@
                     window.usertypoCloseExpandingBubble();
                 }
             }
-            // #region agent log
-            debugLog('H5', 'dual-race.js:setDualHeaderInteractive', 'header visibility', { enabled: enabled });
-            // #endregion
         }
 
         function syncDualTypingScroll() {
@@ -246,18 +240,6 @@
                 && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(true);
             }
-            // #region agent log
-            var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-            debugLog('H3', 'dual-race.js:syncDualTypingScroll', 'scroll state', {
-                keymapOn: keymapOn,
-                bodyClass: body ? body.className : null,
-                contentClass: content ? content.className : null,
-                scrollY: window.scrollY,
-                docHeight: docHeight,
-                innerHeight: window.innerHeight,
-                scrollable: docHeight - window.innerHeight,
-            });
-            // #endregion
         }
 
         function measureDualScrollPad() {
@@ -284,53 +266,9 @@
             return padHeight;
         }
 
-        function measureDualLayoutMetrics(hypothesisId) {
-            var testMain = document.getElementById('dual-test-main');
-            var testBox = document.getElementById('test-box');
-            var typingArea = document.getElementById('typing-area');
-            var pad = document.getElementById('dual-scroll-pad');
-            var footer = document.getElementById('test-view-footer');
-            var spacerTop = document.getElementById('dual-layout-spacer-top');
-            var spacerBottom = document.getElementById('dual-layout-spacer-bottom');
-            var keymap = document.getElementById('dynamic-keymap-container');
-            var mainRect = testMain ? testMain.getBoundingClientRect() : null;
-            var testRect = testBox ? testBox.getBoundingClientRect() : null;
-            var typingRect = typingArea ? typingArea.getBoundingClientRect() : null;
-            var footerRect = footer ? footer.getBoundingClientRect() : null;
-            var keymapRect = keymap && !keymap.classList.contains('hidden') ? keymap.getBoundingClientRect() : null;
-            var header = document.querySelector('body > header');
-            var headerRect = header ? header.getBoundingClientRect() : null;
-            var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-            var vh = window.innerHeight;
-            debugLog(hypothesisId || 'H-layout', 'dual-race.js:measureDualLayoutMetrics', 'vertical layout', {
-                keymapOn: !!(window.usertypo_settings && window.usertypo_settings.keyboardLayout
-                    && window.usertypo_settings.keyboardLayout.keymapMode
-                    && window.usertypo_settings.keyboardLayout.keymapMode !== 'Off'),
-                mainHeight: mainRect ? mainRect.height : null,
-                spacerTopHeight: spacerTop ? spacerTop.getBoundingClientRect().height : null,
-                spacerTopMinHeight: spacerTop ? window.getComputedStyle(spacerTop).minHeight : null,
-                spacerBottomHeight: spacerBottom ? spacerBottom.getBoundingClientRect().height : null,
-                typingAreaHeight: typingArea ? typingArea.offsetHeight : null,
-                typingTop: typingRect ? typingRect.top : null,
-                gapFromHeader: typingRect && headerRect ? typingRect.top - headerRect.bottom : null,
-                headerBottom: headerRect ? headerRect.bottom : null,
-                testBoxTop: testRect ? testRect.top : null,
-                testBoxBottom: testRect ? testRect.bottom : null,
-                keymapBottom: keymapRect ? keymapRect.bottom : null,
-                footerTop: footerRect ? footerRect.top : null,
-                scrollY: window.scrollY,
-                docHeight: docHeight,
-                viewportBottom: vh,
-                state: state,
-            });
-        }
-
         function afterDualLineLayout() {
             requestAnimationFrame(function () {
                 syncDualKeymapLayout();
-                // #region agent log
-                measureDualLayoutMetrics('H-expand');
-                // #endregion
             });
         }
 
@@ -340,16 +278,10 @@
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
             if (!keymapOn) {
                 measureDualScrollPad();
-                // #region agent log
-                measureDualLayoutMetrics('H2');
-                // #endregion
                 return;
             }
             setTimeout(function () {
                 measureDualScrollPad();
-                // #region agent log
-                measureDualLayoutMetrics('H1');
-                // #endregion
             }, 50);
         }
 
@@ -362,14 +294,6 @@
                 } catch (_) { /* retain current keymap */ }
             }
             syncDualKeymapLayout();
-            // #region agent log
-            debugLog('H-keymap', 'dual-race.js:bindDualKeymapRenderArgs', 'keymap render args', {
-                nums: config.nums,
-                punct: config.punct,
-                renderArgs: window.usertypo_getKeymapRenderArgs ? window.usertypo_getKeymapRenderArgs() : null,
-                state: state,
-            });
-            // #endregion
         }
 
         function hideZenElements() {
@@ -395,9 +319,6 @@
             document.addEventListener('mousemove', function () {
                 if (state !== 'racing' || !zenTypingActive) return;
                 showZenElements();
-                // #region agent log
-                debugLog('H3', 'dual-race.js:mousemove', 'zen show on mousemove', { state: state, zenTypingActive: zenTypingActive });
-                // #endregion
             }, { signal: signal });
         }
 
@@ -456,13 +377,6 @@
                         }
                     }
                 });
-                // #region agent log
-                debugLog('H2', 'dual-race.js:updateKeymapHighlight', 'react highlight', {
-                    pressedKey: pressedKey,
-                    isKeyDown: isKeyDown,
-                    keymapMode: keyboard.keymapMode,
-                });
-                // #endregion
                 return;
             }
             if (keyboard.keymapMode === 'Next') {
@@ -755,19 +669,13 @@
             var elapsedSeconds = Math.min(0.1, Math.max(0, (now - opponentFrameAt) / 1000));
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
-                // Never mirror the local player. No report / 0 WPM => ghost stays still.
-                var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
                 var blend = 1 - Math.exp(-elapsedSeconds * 3);
+                var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
                 opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
                 if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
-                if (opponentDisplayWpm > 0) {
-                    opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                if (opponentWpmDisplay && opponentHasReport) {
+                    opponentWpmDisplay.textContent = String(Math.round(opponentDisplayWpm));
                 }
-                var last = Math.max(0, words.length - 1);
-                var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
-                opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
-                var position = offsetToPosition(opponentOffset);
-                positionCaretAt(opponentCaret, position.wordIndex, position.charIndex);
             }
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
         }
@@ -1033,6 +941,11 @@
                     localFinishTime = endAt;
                     state = 'waiting-result';
                     clearInterval(updateTimer);
+                    stopCursorSync();
+                    if (isLocalBotMatch()) {
+                        finishLocalBotRace('time');
+                        return;
+                    }
                     sendThreeWordPacket(true);
                     if (!isBotMatch()) {
                         showMessage(
@@ -1049,8 +962,325 @@
             }
         }
 
+        function isLocalBotMatch() {
+            return isLocalBot;
+        }
+
         function isBotMatch() {
-            return matchReason === 'bot' || !!(bot && (bot.isBot !== false));
+            return isLocalBotMatch() || matchReason === 'bot' || !!(bot && (bot.isBot !== false));
+        }
+
+        function getLocalUserId() {
+            if (window.usertypoMultiplayer && typeof window.usertypoMultiplayer.getReadyState === 'function') {
+                var ready = window.usertypoMultiplayer.getReadyState();
+                if (ready && ready.userId) return ready.userId;
+            }
+            if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+                var auth = window.usertypoAuth.getState();
+                if (auth && auth.user && auth.user.id) return auth.user.id;
+            }
+            try {
+                var guestKey = 'usertypo:guest-id';
+                var guest = localStorage.getItem(guestKey);
+                if (guest) return guest;
+            } catch (_) { /* ignore */ }
+            return 'guest_local';
+        }
+
+        function getLocalUserName() {
+            var profile = window.__USERTYPO_PROFILE__ || {};
+            if (profile.display_name || profile.username) {
+                return profile.display_name || profile.username;
+            }
+            if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+                var auth = window.usertypoAuth.getState();
+                if (auth && auth.user) {
+                    return auth.user.username || auth.user.firstName || 'You';
+                }
+            }
+            return 'You';
+        }
+
+        function cumulativeCorrectChars(completedWords) {
+            var total = 0;
+            for (var i = 0; i < completedWords && i < words.length; i += 1) {
+                total += words[i].length + 1;
+            }
+            return total;
+        }
+
+        function positionFromCompletedWords(count) {
+            var safeCount = Math.max(0, Math.min(count, words.length));
+            if (!words.length) return { wordIndex: 0, charIndex: 0 };
+            if (safeCount >= words.length) {
+                var last = words.length - 1;
+                return { wordIndex: last, charIndex: words[last] ? words[last].length : 0 };
+            }
+            return { wordIndex: safeCount, charIndex: 0 };
+        }
+
+        function stopCursorSync() {
+            if (cursorSyncTimer) clearInterval(cursorSyncTimer);
+            cursorSyncTimer = null;
+        }
+
+        function startCursorSync() {
+            if (isLocalBotMatch() || isBotMatch()) return;
+            stopCursorSync();
+            cursorSyncTimer = setInterval(sendCursorPacket, 300);
+        }
+
+        function sendCursorPacket() {
+            if (state !== 'racing' || !window.usertypoMultiplayer || isLocalBotMatch()) return;
+            var stats = localStats();
+            window.usertypoMultiplayer.sendCursorState(
+                roomId,
+                stats.wpm,
+                currentWordIndex,
+                currentCharIndex
+            );
+        }
+
+        function stopLocalBotTimer() {
+            if (localBotTimer) clearInterval(localBotTimer);
+            localBotTimer = null;
+        }
+
+        function startLocalBotTimer() {
+            if (!isLocalBotMatch()) return;
+            stopLocalBotTimer();
+            localBotTimer = setInterval(updateLocalBotPosition, 200);
+        }
+
+        function updateLocalBotPosition() {
+            if (!bot || !startTime || (state !== 'racing' && state !== 'waiting-result')) return;
+            var elapsedMinutes = Math.max((Date.now() - startTime) / 60000, 1 / 120);
+            var targetChars = Math.floor(bot.targetWpm * 5 * elapsedMinutes);
+            var completedWords = 0;
+            while (
+                completedWords < words.length
+                && cumulativeCorrectChars(completedWords + 1) <= targetChars
+            ) {
+                completedWords += 1;
+            }
+            bot.completedWords = completedWords;
+            var validChars = cumulativeCorrectChars(completedWords);
+            bot.wpm = (validChars / 5) / elapsedMinutes;
+            var position = offsetToPosition(targetChars);
+            applyOpponentCursor([opponentIndex, bot.wpm, position.wordIndex, position.charIndex]);
+            if (config.mode === 'words' && completedWords >= config.amount) {
+                bot.finished = true;
+                bot.finishedAt = Date.now();
+                stopLocalBotTimer();
+                maybeFinishLocalBotRace();
+            }
+        }
+
+        function computeLocalBotFinalStats() {
+            var finishedAt = bot && bot.finishedAt ? bot.finishedAt : Date.now();
+            var displaySeconds = Math.max(0, Math.floor((finishedAt - startTime) / 1000));
+            var elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+            var validChars = cumulativeCorrectChars(bot ? bot.completedWords : 0);
+            var rawChars = Math.ceil(validChars / ((bot && bot.accuracy) || 97) * 100);
+            var errors = Math.max(0, rawChars - validChars);
+            return {
+                wpm: Math.max(0, Math.round((validChars / 5) / elapsedMinutes)),
+                raw: Math.max(0, Math.round((rawChars / 5) / elapsedMinutes)),
+                accuracy: Math.max(0, Math.min(100, Math.round((bot && bot.accuracy) || 97))),
+                consistency: 100,
+                correct: validChars,
+                total: rawChars,
+                errors: errors,
+                extra: 0,
+                time: displaySeconds,
+            };
+        }
+
+        function buildLocalResultRow(index, userId, name, stats, progress, status, finishedAt, isBotPlayer) {
+            return [
+                index,
+                userId,
+                name,
+                stats.wpm,
+                stats.accuracy,
+                progress,
+                status,
+                finishedAt,
+                stats.correct,
+                stats.total,
+                stats.raw,
+                stats.consistency,
+                stats.time,
+                stats.errors,
+                stats.extra,
+                isBotPlayer ? 1 : 0,
+            ];
+        }
+
+        function finishLocalBotRace(reason) {
+            if (!isLocalBotMatch() || state === 'finished') return;
+            stopLocalBotTimer();
+            stopCursorSync();
+            clearInterval(updateTimer);
+            updateLocalBotPosition();
+            var meStats = computeFinalStats(localFinishTime || Date.now());
+            var botStats = computeLocalBotFinalStats();
+            var myProgress = config.mode === 'words'
+                ? Math.min(100, Math.round((completedCorrectWords / config.amount) * 100))
+                : 100;
+            var botProgress = config.mode === 'words'
+                ? Math.min(100, Math.round(((bot && bot.completedWords) || 0) / config.amount * 100))
+                : 100;
+            var rows = [
+                buildLocalResultRow(
+                    selfIndex,
+                    selfUserId,
+                    getLocalUserName(),
+                    meStats,
+                    myProgress,
+                    'finished',
+                    localFinishTime || Date.now(),
+                    false
+                ),
+                buildLocalResultRow(
+                    opponentIndex,
+                    'bot',
+                    bot && bot.name || 'TypeBot',
+                    botStats,
+                    botProgress,
+                    'finished',
+                    bot && bot.finishedAt || Date.now(),
+                    true
+                ),
+            ];
+            rows.sort(function (a, b) {
+                if (b[3] !== a[3]) return b[3] - a[3];
+                if (b[4] !== a[4]) return b[4] - a[4];
+                return (a[7] || 0) - (b[7] || 0);
+            });
+            showResults([roomId, reason || 'complete', rows, 0, 'bot']);
+        }
+
+        function maybeFinishLocalBotRace() {
+            if (!isLocalBotMatch() || state === 'finished') return;
+            if (!localFinished) return;
+            if (config.mode === 'words' && !(bot && bot.finished)) return;
+            finishLocalBotRace(config.mode === 'time' ? 'time' : 'complete');
+        }
+
+        function buildLocalRacePayload(promptWords) {
+            var startsAt = Date.now() + 7000;
+            return {
+                roomId: roomId,
+                config: config,
+                words: promptWords,
+                startsAt: startsAt,
+                startsInMs: Math.max(0, startsAt - Date.now()),
+                endsAt: config.mode === 'time' ? startsAt + (config.amount * 1000) : null,
+                players: players,
+                bot: bot,
+            };
+        }
+
+        async function restartLocalBotRace() {
+            if (!window.usertypoLocalPrompt || typeof window.usertypoLocalPrompt.createPrompt !== 'function') {
+                throw new Error('Local prompt generator is unavailable.');
+            }
+            resetLocalRaceState();
+            rematchNeeded = 1;
+            abortCountdownIntro();
+            countdownSequenceStarted = false;
+            pendingRacePayload = null;
+            state = 'joining';
+            bot.targetWpm = 55 + Math.floor(Math.random() * 61);
+            bot.accuracy = 97 + Math.floor(Math.random() * 4);
+            bot.completedWords = 0;
+            bot.finished = false;
+            bot.finishedAt = 0;
+            var prompt = await window.usertypoLocalPrompt.createPrompt(config);
+            pendingRacePayload = buildLocalRacePayload(prompt.words);
+            rematchVotes = 0;
+            selfRematchVoted = false;
+            updateRematchButton();
+            prepareWaitingTestView();
+            ensureCountdownSequence();
+        }
+
+        async function initLocalBotRace() {
+            var raceConfig = null;
+            try {
+                var stored = sessionStorage.getItem('usertypo:local-bot-config');
+                if (stored) raceConfig = JSON.parse(stored);
+            } catch (_) { /* ignore */ }
+            if (!raceConfig) {
+                var pending = window.DualMatch && typeof window.DualMatch.loadRequest === 'function'
+                    ? window.DualMatch.loadRequest()
+                    : null;
+                raceConfig = pending && pending.config;
+            }
+            if (!raceConfig || !window.usertypoLocalPrompt) {
+                if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
+                return;
+            }
+            config = raceConfig;
+            matchReason = 'bot';
+            bindDualKeymapRenderArgs();
+            setDualFooterMode('test-compact');
+            setDualHeaderInteractive(false);
+            wireZenHandlers();
+            bindResultActions();
+            window.addEventListener('resize', function () {
+                if (!words.length) return;
+                if (state === 'countdown' || state === 'joining') {
+                    syncCountdownLayout(!!document.getElementById('char-0-0')
+                        && document.getElementById('char-0-0').style.opacity !== '0');
+                    syncDualKeymapLayout();
+                    return;
+                }
+                updateLineLayout();
+                updateCaret();
+                syncDualKeymapLayout();
+            }, { signal: signal });
+            selfUserId = getLocalUserId();
+            players = [
+                {
+                    index: 0,
+                    userId: selfUserId,
+                    name: getLocalUserName(),
+                    avatarUrl: (window.__USERTYPO_PROFILE__ && window.__USERTYPO_PROFILE__.avatar_url) || '',
+                },
+                {
+                    index: 1,
+                    userId: 'bot',
+                    name: 'TypeBot',
+                    isBot: true,
+                },
+            ];
+            selfIndex = 0;
+            opponentIndex = 1;
+            bot = {
+                index: 1,
+                name: 'TypeBot',
+                isBot: true,
+                targetWpm: 55 + Math.floor(Math.random() * 61),
+                accuracy: 97 + Math.floor(Math.random() * 4),
+                completedWords: 0,
+                finished: false,
+                finishedAt: 0,
+            };
+            rematchNeeded = 1;
+            try {
+                var prompt = await window.usertypoLocalPrompt.createPrompt(raceConfig);
+                pendingRacePayload = buildLocalRacePayload(prompt.words);
+                paintDualOpponentAvatar(players[1]);
+                prepareWaitingTestView();
+                ensureCountdownSequence();
+            } catch (error) {
+                showMessage('Could not start bot dual', error.message || 'Prompt generation failed.');
+                setTimeout(function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
+                }, 1800);
+            }
         }
 
         function closeDualToFriends(toastMessage, toastIcon) {
@@ -1064,6 +1294,7 @@
 
         function sendThreeWordPacket(forceFinal) {
             if (state !== 'racing' && state !== 'waiting-result') return;
+            if (isLocalBotMatch()) return;
             if (!window.usertypoMultiplayer) return;
             // Bot matches: never stream live progress — only the final packet so the
             // server can settle results / rematch. No intermediate race:progress traffic.
@@ -1129,6 +1360,17 @@
                 localFinished = true;
                 localFinishTime = Date.now();
                 state = 'waiting-result';
+                stopCursorSync();
+                if (isLocalBotMatch()) {
+                    showMessage(
+                        'Finished',
+                        bot && bot.finished
+                            ? 'Calculating race results.'
+                            : 'Waiting for TypeBot to finish.'
+                    );
+                    maybeFinishLocalBotRace();
+                    return;
+                }
                 showMessage(
                     'Finished',
                     opponentLeft
@@ -1282,9 +1524,6 @@
             }
             zenTypingActive = true;
             hideZenElements();
-            // #region agent log
-            debugLog('H2', 'dual-race.js:onKeyDown', 'zen hide on keystroke', { key: event.key, state: state });
-            // #endregion
             updateKeymapHighlight(event.key, true);
             if (event.key === 'Backspace') handleBackspace(event);
             else handlePrintable(event);
@@ -1330,6 +1569,8 @@
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
+            opponentTargetWordIndex = 0;
+            opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
             localFinishTime = 0;
@@ -1716,8 +1957,8 @@
             // Local unlock clock from relative delay — avoids skew delaying typing.
             var unlockDelay = raceUnlockDelayMs(payload);
             startTime = Date.now() + unlockDelay;
-            selfUserId = window.usertypoMultiplayer.getReadyState()
-                && window.usertypoMultiplayer.getReadyState().userId || '';
+            selfUserId = (window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState()
+                && window.usertypoMultiplayer.getReadyState().userId) || getLocalUserId();
             var self = players.find(function (player) { return player.userId === selfUserId; });
             var opponent = players.find(function (player) { return player.userId !== selfUserId; });
             selfIndex = self ? self.index : 0;
@@ -1752,6 +1993,8 @@
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
+            opponentTargetWordIndex = 0;
+            opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
             localFinishTime = 0;
@@ -1777,6 +2020,11 @@
                 localFinishTime = endAt;
                 bindRaceKeys();
                 clearInterval(updateTimer);
+                stopCursorSync();
+                if (isLocalBotMatch()) {
+                    finishLocalBotRace('time');
+                    return;
+                }
                 sendThreeWordPacket(true);
                 showMessage('Finished', 'Calculating race results.');
                 return;
@@ -1786,9 +2034,6 @@
                 if (token !== raceStartToken) return;
                 state = 'racing';
                 resetZenState();
-                // #region agent log
-                debugLog('H2', 'dual-race.js:unlockTyping', 'race unlocked without zen hide', { state: state });
-                // #endregion
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
@@ -1804,6 +2049,8 @@
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
+                if (isLocalBotMatch()) startLocalBotTimer();
+                else startCursorSync();
             }
 
             var wait = Math.max(0, startTime - Date.now());
@@ -1836,12 +2083,34 @@
             }
         }
 
+        function applyOpponentCursor(payload) {
+            if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
+            opponentTargetWpm = Math.max(0, Number(payload[1]) || 0);
+            opponentTargetWordIndex = Math.max(0, Number(payload[2]) || 0);
+            opponentTargetCharIndex = Math.max(0, Number(payload[3]) || 0);
+            opponentHasReport = true;
+            if (opponentCaret) {
+                positionCaretAt(
+                    opponentCaret,
+                    Math.min(opponentTargetWordIndex, Math.max(0, words.length - 1)),
+                    opponentTargetCharIndex
+                );
+            }
+        }
+
         function applyOpponentProgress(payload) {
             if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
-            var nextWpm = Math.max(0, Number(payload[1]) || 0);
-            opponentTargetWpm = nextWpm;
-            opponentHasReport = true;
-            if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(nextWpm);
+            if (isLocalBotMatch()) return;
+            // PvP caret position comes from race:cursor packets.
+            if (!isBotMatch()) return;
+            var completedWords = Number(payload[4]) || 0;
+            var position = positionFromCompletedWords(completedWords);
+            applyOpponentCursor([
+                opponentIndex,
+                Math.max(0, Number(payload[1]) || 0),
+                position.wordIndex,
+                position.charIndex,
+            ]);
         }
 
         function fillCard(prefix, data) {
@@ -1941,15 +2210,6 @@
                 if (localMe && localMe.consistency != null) {
                     meData.consistency = localMe.consistency;
                 }
-                // #region agent log
-                debugLog('H4', 'dual-race.js:showResults', 'consistency source', {
-                    serverConsistency: serverMe ? serverMe.consistency : null,
-                    localConsistency: localMe ? localMe.consistency : null,
-                    usedConsistency: meData.consistency,
-                    rawHistorySamples: rawHistory.length,
-                    rowConsistency: myRow[11],
-                });
-                // #endregion
                 var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
@@ -2021,7 +2281,7 @@
         async function leaveDual() {
             if (!closingDual) closingDual = true;
             try {
-                if (roomId && window.usertypoMultiplayer) {
+                if (!isLocalBotMatch() && roomId && window.usertypoMultiplayer) {
                     await window.usertypoMultiplayer.leaveRace(roomId);
                 }
             } catch (_) { /* ignore */ }
@@ -2032,6 +2292,21 @@
             if (state !== 'finished' || !config || selfRematchVoted) return;
             if (opponentLeft && !isBotMatch()) {
                 window.usertypoNotifications?.showToast('Your opponent left — rematch is unavailable.', 'person_remove');
+                return;
+            }
+            if (isLocalBotMatch()) {
+                selfRematchVoted = true;
+                rematchVotes = 1;
+                updateRematchButton();
+                try {
+                    leaveStatsForRematch();
+                    await restartLocalBotRace();
+                } catch (error) {
+                    selfRematchVoted = false;
+                    rematchVotes = 0;
+                    updateRematchButton();
+                    window.usertypoNotifications?.showToast(error.message || 'Could not rematch', 'error');
+                }
                 return;
             }
             var button = document.getElementById('rematch-btn');
@@ -2119,6 +2394,7 @@
                 if (state === 'racing') updateLiveStats();
             }, { signal: signal });
             listen('race-progress', function (event) { applyOpponentProgress(event.detail); });
+            listen('race-cursor', function (event) { applyOpponentCursor(event.detail); });
             listen('race-player-left', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId || payload[1] === selfIndex) return;
@@ -2225,6 +2501,9 @@
             setDualFooterMode('test-compact');
             setDualHeaderInteractive(false);
             wireZenHandlers();
+            if (isLocalBotMatch()) {
+                return initLocalBotRace();
+            }
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
@@ -2291,10 +2570,12 @@
             pendingRacePayload = null;
             countdownSequenceStarted = false;
             clearInterval(updateTimer);
+            stopCursorSync();
+            stopLocalBotTimer();
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
             // Always leave so dual membership cannot stick after navigating away.
-            if (roomId && window.usertypoMultiplayer) {
+            if (roomId && window.usertypoMultiplayer && !isLocalBotMatch()) {
                 window.usertypoMultiplayer.leaveRace(roomId);
             }
             markDualMembership(false);
