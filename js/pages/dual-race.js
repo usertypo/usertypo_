@@ -39,6 +39,8 @@
         var errorHistory = [];
         var opponentLeft = false;
         var updateTimer = null;
+        var liveRawSecondKeystrokes = 0;
+        var lastLiveRawSecond = 0;
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
@@ -675,7 +677,14 @@
             if (state !== 'racing') return;
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
-            if (rawWpmDisplay) rawWpmDisplay.textContent = stats.raw;
+            var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            if (elapsedSec > lastLiveRawSecond) {
+                lastLiveRawSecond = elapsedSec;
+                liveRawSecondKeystrokes = totalKeystrokes;
+            }
+            var ksThisSec = totalKeystrokes - liveRawSecondKeystrokes;
+            var liveRawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
+            if (rawWpmDisplay) rawWpmDisplay.textContent = liveRawWpm;
             if (accDisplay) accDisplay.textContent = Math.round(stats.accuracy) + '%';
             if (burstDisplay) {
                 var cutoff = Date.now() - 2000;
@@ -972,6 +981,8 @@
             totalKeystrokes = 0;
             errorsMade = 0;
             extraChars = 0;
+            liveRawSecondKeystrokes = 0;
+            lastLiveRawSecond = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -989,6 +1000,7 @@
             rematchNeeded = 2;
             selfRematchVoted = false;
             if (wpmDisplay) wpmDisplay.textContent = '0';
+            if (rawWpmDisplay) rawWpmDisplay.textContent = '0';
             if (accDisplay) accDisplay.textContent = '0%';
             if (burstDisplay) burstDisplay.textContent = '0';
             if (opponentWpmDisplay) opponentWpmDisplay.textContent = '0';
@@ -1392,6 +1404,8 @@
             totalKeystrokes = 0;
             errorsMade = 0;
             extraChars = 0;
+            liveRawSecondKeystrokes = 0;
+            lastLiveRawSecond = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;

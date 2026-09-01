@@ -4029,7 +4029,6 @@ window.setTimeout = function(handler, timeout) {
             if (!startTime) return;
 
             let validChars = 0;
-            let rawChars = 0;
             const allWords = textContainer.querySelectorAll('.word');
             allWords.forEach((wordEl, idx) => {
                 if (idx < currentWordIndex) {
@@ -4037,10 +4036,8 @@ window.setTimeout = function(handler, timeout) {
                     if (!hasError) {
                         validChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
                     }
-                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length + 1;
                 } else if (idx === currentWordIndex) {
                     validChars += wordEl.querySelectorAll('.text-primary').length;
-                    rawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length;
                 }
             });
 
@@ -4049,12 +4046,14 @@ window.setTimeout = function(handler, timeout) {
             const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
 
             let wpm = 0;
-            let rawWpm = 0;
             if (elapsedMinutes > 0) {
                 const calcMins = Math.max(elapsedMinutes, 2 / 60);
                 wpm = Math.round((validChars / 5) / calcMins);
-                rawWpm = Math.round((rawChars / 5) / calcMins);
             }
+
+            // Per-second raw WPM — same formula as the graph gray line (rawHistory).
+            const ksThisSec = totalKeystrokes - lastSecondKeystrokes;
+            const rawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
 
             let acc = 0;
             if (totalKeystrokes > 0) {
