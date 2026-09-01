@@ -6,8 +6,10 @@
  * Crawlable PNGs for Google (Abyss/Paper defaults) come from scripts/generate-favicons.py.
  */
 (function () {
-    var SIZE = 64;
-    var WORK_SIZE = 128;
+    var SIZE = 96;
+    var WORK_SIZE = 192;
+    /** Zoom into blah template — trims built-in padding around USER/o_. */
+    var CONTENT_ZOOM = 1.3;
     var ABYSS_SRC = '/logo-assets/blah-abyss.png';
     var PAPER_SRC = '/logo-assets/blah-paper.png';
     var abyssImg = null;
@@ -102,7 +104,9 @@
 
         wctx.imageSmoothingEnabled = true;
         wctx.imageSmoothingQuality = 'high';
-        wctx.drawImage(img, 0, 0, WORK_SIZE, WORK_SIZE);
+        var drawSize = WORK_SIZE * CONTENT_ZOOM;
+        var offset = (WORK_SIZE - drawSize) / 2;
+        wctx.drawImage(img, offset, offset, drawSize, drawSize);
 
         var imageData = wctx.getImageData(0, 0, WORK_SIZE, WORK_SIZE);
         var data = imageData.data;
@@ -122,6 +126,9 @@
         if (!ctx) return;
 
         ctx.clearRect(0, 0, SIZE, SIZE);
+        // Opaque square (no transparent corners) so browsers use the full tab slot.
+        ctx.fillStyle = 'rgb(' + bgRgb.r + ',' + bgRgb.g + ',' + bgRgb.b + ')';
+        ctx.fillRect(0, 0, SIZE, SIZE);
         ctx.save();
         ctx.beginPath();
         ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
