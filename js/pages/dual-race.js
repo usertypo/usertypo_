@@ -77,14 +77,6 @@
         var countdownEndsAtTarget = 0;
         var closingDual = false;
 
-        function dbgLog(hypothesisId, location, message, data) {
-            var payload = { sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now() };
-            // #region agent log
-            try { console.warn('[dual-debug]', message, data || {}); } catch (_) { /* ignore */ }
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify(payload) }).catch(function () {});
-            // #endregion
-        }
-
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
         var typingArea = document.getElementById('typing-area');
@@ -513,6 +505,7 @@
             requestAnimationFrame(function () {
                 updateLineLayout();
                 updateCaret();
+                showOpponentCaretAtStart();
             });
         }
 
@@ -995,12 +988,6 @@
                 var endAt = raceEndsAt();
                 var remainingMs = Math.max(0, endAt - Date.now());
                 var remaining = Math.max(0, Math.ceil(remainingMs / 1000));
-                // #region agent log
-                if (!window.__dualDbgTimerLog || Date.now() - window.__dualDbgTimerLog > 2000) {
-                    window.__dualDbgTimerLog = Date.now();
-                    dbgLog('H4', 'dual-race.js:updateLiveStats', 'timer tick', { state: state, remaining: remaining, remainingMs: remainingMs, startTime: startTime, endAt: endAt, localFinished: localFinished, hasProgressDisplay: !!progressDisplay });
-                }
-                // #endregion
                 if (progressDisplay) progressDisplay.textContent = remaining;
                 if (progressBar) {
                     var elapsed = Math.max(0, (Date.now() - startTime) / 1000);
@@ -1097,10 +1084,8 @@
         function startCursorSync() {
             if (isLocalBotMatch() || isBotMatch()) return;
             stopCursorSync();
-            queueCursorSend(true);
-            cursorSyncTimer = setInterval(function () {
-                queueCursorSend(true);
-            }, 300);
+            sendCursorPacket();
+            cursorSyncTimer = setInterval(sendCursorPacket, 300);
         }
 
         function sendCursorPacket() {
@@ -1119,6 +1104,7 @@
         function startLocalBotTimer() {
             if (!isLocalBotMatch()) return;
             stopLocalBotTimer();
+            updateLocalBotPosition();
             localBotTimer = setInterval(updateLocalBotPosition, 200);
         }
 
@@ -1586,12 +1572,6 @@
         }
 
         function onKeyDown(event) {
-            // #region agent log
-            if (!window.__dualDbgKeyLog || Date.now() - window.__dualDbgKeyLog > 1500) {
-                window.__dualDbgKeyLog = Date.now();
-                dbgLog('H5', 'dual-race.js:onKeyDown', 'keydown', { state: state, raceKeysBound: raceKeysBound, localFinished: localFinished, key: event.key });
-            }
-            // #endregion
             if (state !== 'racing') return;
             if (event.ctrlKey || event.altKey || event.metaKey) return;
             if (event.key === 'Enter') {
@@ -2089,6 +2069,7 @@
             renderPrompt();
             showTestChrome();
             if (opponentCaret) opponentCaret.style.display = 'block';
+            showOpponentCaretAtStart();
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
 
@@ -2111,16 +2092,7 @@
             }
 
             function unlockTyping() {
-                // #region agent log
-                dbgLog('H1-H2', 'dual-race.js:unlockTyping:entry', 'unlockTyping called', { token: token, raceStartToken: raceStartToken, state: state, wait: wait, startTime: startTime, now: Date.now() });
-                // #endregion
-                if (token !== raceStartToken) {
-                    // #region agent log
-                    dbgLog('H2', 'dual-race.js:unlockTyping:token-mismatch', 'unlockTyping aborted token mismatch', { token: token, raceStartToken: raceStartToken });
-                    // #endregion
-                    return;
-                }
-                try {
+                if (token !== raceStartToken) return;
                 state = 'racing';
                 resetZenState();
                 hideMessage();
@@ -2137,24 +2109,13 @@
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
+                showOpponentCaretAtStart();
                 if (isLocalBotMatch()) startLocalBotTimer();
                 else startCursorSync();
                 updateCaret();
-                // #region agent log
-                dbgLog('H3-H5', 'dual-race.js:unlockTyping:done', 'unlockTyping completed', { state: state, raceKeysBound: raceKeysBound, hasUpdateTimer: !!updateTimer, localFinished: localFinished, remainingMs: config && config.mode === 'time' ? Math.max(0, raceEndsAt() - Date.now()) : null });
-                // #endregion
-                } catch (unlockErr) {
-                // #region agent log
-                dbgLog('H3', 'dual-race.js:unlockTyping:error', 'unlockTyping threw', { error: String(unlockErr && unlockErr.message || unlockErr), state: state, raceKeysBound: raceKeysBound });
-                // #endregion
-                throw unlockErr;
-                }
             }
 
             var wait = Math.max(0, startTime - Date.now());
-            // #region agent log
-            dbgLog('H1', 'dual-race.js:beginActualRace', 'race scheduled', { wait: wait, unlockDelay: unlockDelay, startTime: startTime, state: state, mode: config && config.mode });
-            // #endregion
             if (wait <= 0) unlockTyping();
             else setTimeout(unlockTyping, wait);
         }
@@ -2184,13 +2145,30 @@
             }
         }
 
-        function paintOpponentCaret(wordIndex, charIndex) {
+        function showOpponentCaretAtStart() {
+            if (!opponentCaret || !words.length) return;
+            paintOpponentCaret(0, 0, true);
+            requestAnimationFrame(function () {
+                paintOpponentCaret(0, 0, true);
+            });
+        }
+
+        function paintOpponentCaret(wordIndex, charIndex, snap) {
             if (!opponentCaret || !words.length) return;
             opponentCaret.style.display = 'block';
             var safeWordIndex = Math.min(
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
+            if (snap) {
+                var prevTransition = opponentCaret.style.transition;
+                opponentCaret.style.transition = 'none';
+                positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+                requestAnimationFrame(function () {
+                    opponentCaret.style.transition = prevTransition;
+                });
+                return;
+            }
             positionCaretAt(opponentCaret, safeWordIndex, charIndex);
         }
 
