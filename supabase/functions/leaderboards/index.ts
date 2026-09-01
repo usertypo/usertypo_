@@ -87,35 +87,12 @@ async function redisPipeline(commands: Array<Array<string | number>>) {
   return payload as Array<{ result?: unknown; error?: string }>;
 }
 
-function pad2(n: number) {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function utcParts(date = new Date()) {
-  return {
-    y: date.getUTCFullYear(),
-    m: date.getUTCMonth() + 1,
-    d: date.getUTCDate(),
-  };
-}
-
-function isoWeekKey(date = new Date()) {
-  const tmp = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = tmp.getUTCDay() || 7;
-  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${tmp.getUTCFullYear()}-W${pad2(week)}`;
-}
-
-function boardKey(mode: Mode, amount: number, timeframe: Timeframe, at = new Date()) {
+function boardKey(mode: Mode, amount: number, timeframe: Timeframe, _at = new Date()) {
   const base = `lb:v1:${mode}:${amount}`;
   if (timeframe === "alltime") return `${base}:alltime`;
-  if (timeframe === "daily") {
-    const p = utcParts(at);
-    return `${base}:daily:${p.y}-${pad2(p.m)}-${pad2(p.d)}`;
-  }
-  return `${base}:weekly:${isoWeekKey(at)}`;
+  if (timeframe === "daily") return `${base}:daily`;
+  // Rolling 7-day window — single stable key (not ISO calendar week).
+  return `${base}:weekly`;
 }
 
 function metaKey(zsetKey: string) {
@@ -124,8 +101,20 @@ function metaKey(zsetKey: string) {
 
 function ttlForTimeframe(timeframe: Timeframe): number | null {
   if (timeframe === "daily") return 60 * 60 * 48;
-  if (timeframe === "weekly") return 60 * 60 * 24 * 10;
+  if (timeframe === "weekly") return 60 * 60 * 24 * 8;
   return null;
+}
+
+const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const WEEKLY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+function sessionInTimeframe(timeframe: Timeframe, createdAt: string | null | undefined) {
+  if (timeframe === "alltime") return true;
+  if (!createdAt) return false;
+  const at = new Date(createdAt).getTime();
+  if (!isFinite(at)) return false;
+  if (timeframe === "daily") return at >= Date.now() - DAILY_WINDOW_MS;
+  return at >= Date.now() - WEEKLY_WINDOW_MS;
 }
 
 function normalizeMode(value: unknown): Mode {
@@ -338,13 +327,21 @@ function pickSessionForBoardScore(
   }>,
   userId: string,
   boardWpm: number,
+  timeframe: Timeframe = "alltime",
 ) {
-  const userRows = rows.filter((row) => row.user_id === userId);
+  let userRows = rows.filter((row) => row.user_id === userId);
   if (!userRows.length) return null;
+
+  if (timeframe !== "alltime") {
+    userRows = userRows.filter((row) => sessionInTimeframe(timeframe, row.created_at));
+    if (!userRows.length) return null;
+  }
 
   const exactMatches = userRows
     .filter((row) => Math.abs(Number(row.wpm) - boardWpm) < 0.05)
     .sort((a, b) => {
+      const accDiff = (Number(b.accuracy) || 0) - (Number(a.accuracy) || 0);
+      if (accDiff !== 0) return accDiff;
       const ta = new Date(a.created_at || 0).getTime();
       const tb = new Date(b.created_at || 0).getTime();
       return ta - tb;
@@ -352,13 +349,22 @@ function pickSessionForBoardScore(
 
   if (exactMatches.length) return exactMatches[0];
 
-  return userRows.sort((a, b) => Number(b.wpm) - Number(a.wpm))[0];
+  return userRows.sort((a, b) => {
+    const wpmDiff = Number(b.wpm) - Number(a.wpm);
+    if (wpmDiff !== 0) return wpmDiff;
+    const accDiff = (Number(b.accuracy) || 0) - (Number(a.accuracy) || 0);
+    if (accDiff !== 0) return accDiff;
+    const ta = new Date(a.created_at || 0).getTime();
+    const tb = new Date(b.created_at || 0).getTime();
+    return ta - tb;
+  })[0];
 }
 
 async function hydrateDisplayFieldsFromPostgres(
   mode: Mode,
   amount: number,
   entries: BoardEntryMeta[],
+  timeframe: Timeframe = "alltime",
 ) {
   if (!entries.length) return;
 
@@ -376,7 +382,7 @@ async function hydrateDisplayFieldsFromPostgres(
   const rows = result.data || [];
 
   for (const entry of entries) {
-    const match = pickSessionForBoardScore(rows, entry.user_id, entry.wpm);
+    const match = pickSessionForBoardScore(rows, entry.user_id, entry.wpm, timeframe);
     if (!match) continue;
 
     entry.accuracy = match.accuracy == null ? null : Number(match.accuracy);
@@ -478,8 +484,29 @@ async function handleTop(body: Record<string, unknown>) {
   }
 
   // Postgres is source of truth for display fields tied to the board WPM.
-  await hydrateDisplayFieldsFromPostgres(mode, amount, entries);
+  await hydrateDisplayFieldsFromPostgres(mode, amount, entries, timeframe);
   await cacheEntryMeta(zkey, entries);
+
+  // Drop period-board rows outside the active window (self-heals stale Redis keys).
+  if (timeframe === "daily" || timeframe === "weekly") {
+    const removeCmds: Array<Array<string | number>> = [];
+    const inWindow: typeof entries = [];
+    for (const entry of entries) {
+      if (sessionInTimeframe(timeframe, entry.session_created_at)) {
+        inWindow.push(entry);
+        continue;
+      }
+      removeCmds.push(["ZREM", zkey, entry.user_id]);
+      removeCmds.push(["HDEL", mkey, entry.user_id]);
+    }
+    entries.length = 0;
+    entries.push(...inWindow);
+    if (removeCmds.length) {
+      for (let i = 0; i < removeCmds.length; i += 40) {
+        await redisPipeline(removeCmds.slice(i, i + 40));
+      }
+    }
+  }
 
   let eligibleEntries = entries;
   if (timeframe === "alltime" && entries.length) {
@@ -612,8 +639,25 @@ async function handleRank(body: Record<string, unknown>, authHeader: string | nu
   };
 
   if (boardWpm != null && isFinite(boardWpm)) {
-    await hydrateDisplayFieldsFromPostgres(mode, amount, [displayEntry]);
+    await hydrateDisplayFieldsFromPostgres(mode, amount, [displayEntry], timeframe);
     await cacheEntryMeta(zkey, [displayEntry]);
+  }
+
+  if (
+    timeframe !== "alltime" &&
+    displayEntry.session_created_at &&
+    !sessionInTimeframe(timeframe, displayEntry.session_created_at)
+  ) {
+    await removeFromBoard(mode, amount, timeframe, userId);
+    return json(200, {
+      source: "redis",
+      rank: null,
+      wpm: null,
+      accuracy: null,
+      raw_wpm: null,
+      consistency: null,
+      totalPlayers: Number(total) || 0,
+    });
   }
 
   return json(200, {
@@ -816,32 +860,11 @@ async function reseedUserBests(userId: string) {
 
   for (const best of bestByCombo.values()) {
     const at = new Date(best.created_at);
-    const now = new Date();
     const metaValue = buildMetaValue({
       accuracy: best.accuracy,
       raw_wpm: best.raw_wpm,
       consistency: best.consistency,
       created_at: best.created_at,
-    });
-
-    // Current period boards use "now" so opt-in puts the user on today's/this week's lists.
-    await upsertBoardScore({
-      mode: best.mode,
-      amount: best.amount,
-      timeframe: "daily",
-      userId,
-      wpm: best.wpm,
-      metaValue,
-      at: now,
-    });
-    await upsertBoardScore({
-      mode: best.mode,
-      amount: best.amount,
-      timeframe: "weekly",
-      userId,
-      wpm: best.wpm,
-      metaValue,
-      at: now,
     });
 
     if (qualifiesAlltime && best.wpm >= ALLTIME_MIN_WPM) {

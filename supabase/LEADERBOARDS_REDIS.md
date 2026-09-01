@@ -16,11 +16,14 @@ The browser never sees Redis secrets. All Redis traffic goes through a Supabase 
 
 ```
 lb:v1:{mode}:{amount}:alltime
-lb:v1:{mode}:{amount}:daily:YYYY-MM-DD
-lb:v1:{mode}:{amount}:weekly:YYYY-Www
+lb:v1:{mode}:{amount}:daily            -- rolling 24-hour window
+lb:v1:{mode}:{amount}:weekly          -- rolling 7-day window (single stable key)
 
 meta:lb:v1:...   → hash of user_id → { accuracy, raw_wpm, consistency, created_at }
 ```
+
+- **Daily**: scores from the last 24 hours (rolling window)
+- **Weekly**: scores from the last 7 days (rolling window, not ISO calendar week)
 
 Monthly boards are removed.
 
