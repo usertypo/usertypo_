@@ -89,7 +89,8 @@ app.use((_req, res, next) => {
     next();
 });
 
-app.get('/health-check', (_req, res) => {
+app.get('/health-check', (req, res) => {
+    applyCors(req, res);
     res.status(200).type('text/plain').send('200 OK');
 });
 
