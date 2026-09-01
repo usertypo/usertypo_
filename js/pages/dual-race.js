@@ -187,13 +187,20 @@
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
             var body = document.getElementById('app-body');
+            var content = document.getElementById('spa-content');
+            var pageRoot = document.getElementById('spa-page-root');
             var appViews = document.getElementById('app-views');
             var testMain = document.getElementById('dual-test-main');
             if (keymapOn) {
                 if (typeof window.usertypo_unlockStatsScroll === 'function') {
                     window.usertypo_unlockStatsScroll();
                 }
-                if (body) body.classList.add('keymap-scrollable');
+                if (body) {
+                    body.classList.remove('h-screen', 'overflow-hidden');
+                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden', 'keymap-scrollable');
+                }
+                if (content) content.classList.remove('min-h-0', 'overflow-hidden');
+                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
                 if (appViews) appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
                 if (testMain) testMain.classList.remove('min-h-0');
             } else {
@@ -210,23 +217,62 @@
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(true);
             }
             // #region agent log
+            var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
             debugLog('H3', 'dual-race.js:syncDualTypingScroll', 'scroll state', {
                 keymapOn: keymapOn,
                 bodyClass: body ? body.className : null,
-                appViewsClass: appViews ? appViews.className : null,
+                contentClass: content ? content.className : null,
                 scrollY: window.scrollY,
-                docHeight: document.documentElement.scrollHeight,
+                docHeight: docHeight,
                 innerHeight: window.innerHeight,
+                scrollable: docHeight - window.innerHeight,
             });
             // #endregion
+        }
+
+        function measureDualScrollPad() {
+            var pad = document.getElementById('dual-scroll-pad');
+            if (!pad) return 0;
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            if (!keymapOn) {
+                pad.style.height = '0';
+                return 0;
+            }
+            var keymap = document.getElementById('dynamic-keymap-container');
+            if (!keymap || keymap.classList.contains('hidden')) {
+                pad.style.height = '0';
+                return 0;
+            }
+            var footer = document.getElementById('test-view-footer');
+            var testBox = document.getElementById('test-box');
+            var padHeight = 0;
+            if (footer && keymap) {
+                var overlap = keymap.getBoundingClientRect().bottom - footer.getBoundingClientRect().top + 24;
+                if (overlap > 0) padHeight = Math.max(padHeight, overlap);
+            }
+            if (testBox) {
+                var rect = testBox.getBoundingClientRect();
+                var centerScroll = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
+                if (centerScroll > 0) padHeight = Math.max(padHeight, centerScroll + 24);
+            }
+            var scrollHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+            var deficit = window.innerHeight - scrollHeight + 1;
+            if (deficit > 0) padHeight = Math.max(padHeight, deficit);
+            pad.style.height = Math.ceil(padHeight) + 'px';
+            return padHeight;
         }
 
         function syncDualKeymapLayout() {
             syncDualTypingScroll();
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
-            if (!keymapOn) return;
+            if (!keymapOn) {
+                measureDualScrollPad();
+                return;
+            }
             setTimeout(function () {
+                measureDualScrollPad();
                 var testBox = document.getElementById('test-box');
                 if (testBox) {
                     var rect = testBox.getBoundingClientRect();
@@ -234,17 +280,13 @@
                     window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
                 }
                 // #region agent log
-                var testBoxEl = document.getElementById('test-box');
-                var keymapEl = document.getElementById('dynamic-keymap-container');
-                var tb = testBoxEl ? testBoxEl.getBoundingClientRect() : null;
-                var km = keymapEl ? keymapEl.getBoundingClientRect() : null;
+                var pad = document.getElementById('dual-scroll-pad');
+                var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
                 debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
                     keymapOn: keymapOn,
-                    testBoxLeft: tb ? tb.left : null,
-                    testBoxWidth: tb ? tb.width : null,
-                    keymapLeft: km ? km.left : null,
-                    viewportWidth: window.innerWidth,
-                    scrollX: window.scrollX,
+                    padHeight: pad ? pad.style.height : null,
+                    docHeight: docHeight,
+                    scrollable: docHeight - window.innerHeight,
                 });
                 // #endregion
             }, 50);
@@ -2129,10 +2171,12 @@
                 if (state === 'countdown' || state === 'joining') {
                     syncCountdownLayout(!!document.getElementById('char-0-0')
                         && document.getElementById('char-0-0').style.opacity !== '0');
+                    syncDualKeymapLayout();
                     return;
                 }
                 updateLineLayout();
                 updateCaret();
+                syncDualKeymapLayout();
             }, { signal: signal });
             try {
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
