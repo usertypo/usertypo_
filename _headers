@@ -25,6 +25,18 @@
 /js/favicon-theme.js
   Cache-Control: public, max-age=0, must-revalidate
 
+/logo-assets/favicon-abyss.png
+  Cache-Control: public, max-age=0, must-revalidate
+
+/logo-assets/favicon-paper.png
+  Cache-Control: public, max-age=0, must-revalidate
+
+/logo-assets/apple-touch-abyss.png
+  Cache-Control: public, max-age=0, must-revalidate
+
+/logo-assets/apple-touch-paper.png
+  Cache-Control: public, max-age=0, must-revalidate
+
 /js/*
   Cache-Control: public, max-age=31536000, immutable
 

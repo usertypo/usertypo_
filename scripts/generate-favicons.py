@@ -9,7 +9,7 @@ SOURCES = {
     "paper": os.path.join(ROOT, "blah-paper.png"),
 }
 
-# Keep in sync with js/favicon.js CONTENT_ZOOM
+# Keep in sync with js/favicon-theme.js CONTENT_ZOOM
 CONTENT_ZOOM = 1.06
 
 
