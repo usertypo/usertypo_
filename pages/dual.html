@@ -80,20 +80,6 @@
             transform: translateY(clamp(2rem, 6vh, 4.5rem));
         }
 
-        /* Keep typing vertically centered in the viewport; keymap sits below via spacer */
-        .dual-typing-stage-min {
-            min-height: calc(100svh - 10rem);
-        }
-
-        #dual-scroll-area {
-            scrollbar-gutter: stable;
-        }
-
-        #app-views {
-            height: 100%;
-        }
-
-
         /* Proportional desktop scaling for typing test (matches home page) */
         #typing-area {
             font-size: clamp(32px, 2.4vw, 43.2px) !important;
@@ -127,8 +113,8 @@
 
             <main id="dual-test-main" class="flex-1 flex flex-col min-h-0 relative z-10">
 
-                <div id="dual-scroll-area" class="flex-1 min-h-0 flex flex-col">
-                    <div id="dual-typing-stage" class="flex items-center justify-center w-full p-6 dual-typing-stage-min">
+                <div id="dual-scroll-area" class="flex-1 min-h-0 flex items-center justify-center">
+                    <div id="dual-typing-stage" class="flex items-center justify-center w-full p-6">
                         <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none w-full">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->

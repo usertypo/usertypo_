@@ -1619,8 +1619,8 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=36"></script>
     <script src="dual.js?v=10"></script>
-    <script src="js/page-fragments.js?v=237"></script>
-    <script src="js/router.js?v=64"></script>
+    <script src="js/page-fragments.js?v=238"></script>
+    <script src="js/router.js?v=65"></script>
 
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
@@ -1689,6 +1689,26 @@
             runBubbleAnimation(!bubbleOpen);
         });
         expandingBubble.addEventListener('mouseleave', function() { if (bubbleOpen) runBubbleAnimation(false); });
+
+        expandingBubble.usertypoBubbleRemeasure = function () {
+            bubbleExpandedHeight = measureBubbleExpandedHeight() + 6;
+        };
+        expandingBubble.usertypoBubbleClose = function () {
+            if (bubbleOpen) runBubbleAnimation(false);
+        };
+    };
+
+    window.usertypoRemeasureExpandingBubble = function () {
+        var bubble = document.getElementById('expanding-bubble');
+        if (bubble && typeof bubble.usertypoBubbleRemeasure === 'function') {
+            bubble.usertypoBubbleRemeasure();
+        }
+    };
+    window.usertypoCloseExpandingBubble = function () {
+        var bubble = document.getElementById('expanding-bubble');
+        if (bubble && typeof bubble.usertypoBubbleClose === 'function') {
+            bubble.usertypoBubbleClose();
+        }
     };
 
     (function initShellBubbleMenu() {

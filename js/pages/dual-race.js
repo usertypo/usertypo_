@@ -144,14 +144,29 @@
             var headerLeft = document.getElementById('header-left');
             var headerRight = document.getElementById('header-right');
             var headerLogo = document.getElementById('header-logo-link');
+            var menuWrapper = document.getElementById('expanding-menu-wrapper');
+            var header = document.querySelector('body > header');
             if (enabled) {
-                if (headerLeft) headerLeft.classList.remove('opacity-0', 'pointer-events-none');
-                if (headerRight) headerRight.classList.remove('opacity-0', 'pointer-events-none');
+                if (headerLeft) {
+                    headerLeft.classList.remove('opacity-0', 'pointer-events-none', 'zen-hidden');
+                    headerLeft.style.overflow = 'visible';
+                }
+                if (headerRight) {
+                    headerRight.classList.remove('opacity-0', 'pointer-events-none', 'zen-hidden');
+                }
                 if (headerLogo) headerLogo.style.pointerEvents = '';
+                if (menuWrapper) menuWrapper.style.overflow = 'visible';
+                if (header) header.style.overflow = 'visible';
+                if (typeof window.usertypoRemeasureExpandingBubble === 'function') {
+                    window.usertypoRemeasureExpandingBubble();
+                }
             } else {
                 if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
                 if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
                 if (headerLogo) headerLogo.style.pointerEvents = 'none';
+                if (typeof window.usertypoCloseExpandingBubble === 'function') {
+                    window.usertypoCloseExpandingBubble();
+                }
             }
             // #region agent log
             debugLog('H5', 'dual-race.js:setDualHeaderInteractive', 'header visibility', { enabled: enabled });
@@ -162,17 +177,39 @@
             if (!keymapSpacer) keymapSpacer = document.getElementById('dual-keymap-spacer');
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
-            var spacerHeight = keymapOn ? 280 : 0;
-            if (keymapSpacer) keymapSpacer.style.height = spacerHeight ? (spacerHeight + 'px') : '0';
+            if (keymapSpacer) keymapSpacer.style.height = '0';
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
             }
-            // #region agent log
-            debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
-                keymapOn: keymapOn,
-                spacerHeight: spacerHeight,
-            });
-            // #endregion
+            if (!keymapOn) return;
+            setTimeout(function () {
+                var testBox = document.getElementById('test-box');
+                var footer = document.getElementById('test-view-footer');
+                var keymapEl = document.getElementById('dynamic-keymap-container');
+                if (footer && keymapEl && !keymapEl.classList.contains('hidden')) {
+                    var footerRect = footer.getBoundingClientRect();
+                    var keymapBottom = keymapEl.getBoundingClientRect().bottom;
+                    var overlap = keymapBottom - footerRect.top + 8;
+                    if (keymapSpacer && overlap > 0) {
+                        keymapSpacer.style.height = Math.ceil(overlap) + 'px';
+                    }
+                }
+                if (testBox) {
+                    var rect = testBox.getBoundingClientRect();
+                    var keymapRect = keymapEl ? keymapEl.getBoundingClientRect() : rect;
+                    var blockBottom = Math.max(rect.bottom, keymapRect.bottom);
+                    var blockTop = rect.top;
+                    var midpoint = window.scrollY + blockTop + (blockBottom - blockTop) / 2;
+                    var scrollTarget = midpoint - window.innerHeight / 2;
+                    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+                }
+                // #region agent log
+                debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
+                    keymapOn: keymapOn,
+                    spacerHeight: keymapSpacer ? keymapSpacer.style.height : null,
+                });
+                // #endregion
+            }, 50);
         }
 
         function bindDualKeymapRenderArgs() {
@@ -244,24 +281,45 @@
                 });
             }
             if (keyboard.keymapMode === 'Static') return;
-            keys.forEach(function (key) {
-                var chars = key.dataset.chars || '';
-                var special = key.dataset.special || '';
-                var matches = false;
-                if (keyboard.keymapMode === 'Next') {
-                    var next = words[currentWordIndex]?.[currentCharIndex] || ' ';
-                    matches = chars.includes(next) || (next === ' ' && special === 'Space');
-                } else if (pressedKey) {
-                    matches = (pressedKey.length === 1 && chars.includes(pressedKey))
-                        || (pressedKey === ' ' && special === 'Space')
-                        || pressedKey === special;
-                }
-                key.classList.toggle('bg-primary/40', matches);
-                key.classList.toggle('scale-95', matches);
-                key.classList.toggle('ring-2', matches);
-                key.classList.toggle('ring-primary/50', matches);
-                key.classList.toggle('bg-primary/10', !matches);
-            });
+            if (keyboard.keymapMode === 'React') {
+                if (!pressedKey) return;
+                keys.forEach(function (key) {
+                    var chars = key.dataset.chars || '';
+                    var special = key.dataset.special || '';
+                    var matches = false;
+                    if (pressedKey.length === 1 && chars.includes(pressedKey)) matches = true;
+                    if (pressedKey === ' ' && special === 'Space') matches = true;
+                    if (pressedKey === 'Backspace' && special === 'Backspace') matches = true;
+                    if (pressedKey === 'Tab' && special === 'Tab') matches = true;
+                    if (pressedKey === 'Enter' && special === 'Enter') matches = true;
+                    if (pressedKey === 'Shift' && special === 'Shift') matches = true;
+                    if (pressedKey === 'CapsLock' && special === 'Caps') matches = true;
+                    if (matches) {
+                        if (isKeyDown) {
+                            key.classList.add('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
+                            key.classList.remove('bg-primary/10', 'scale-95', 'ring-2', 'ring-primary/50');
+                        } else {
+                            key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]', 'scale-95', 'ring-2', 'ring-primary/50');
+                            key.classList.add('bg-primary/10');
+                        }
+                    }
+                });
+                return;
+            }
+            if (keyboard.keymapMode === 'Next') {
+                var next = words[currentWordIndex]?.[currentCharIndex] || ' ';
+                keys.forEach(function (key) {
+                    var chars = key.dataset.chars || '';
+                    var special = key.dataset.special || '';
+                    if (chars.includes(next) || (next === ' ' && special === 'Space')) {
+                        key.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        key.classList.remove('bg-primary/10');
+                    } else {
+                        key.classList.remove('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        key.classList.add('bg-primary/10');
+                    }
+                });
+            }
         }
 
         function showMessage(message, detail) {
@@ -1070,6 +1128,7 @@
             raceKeysBound = true;
             document.addEventListener('keydown', onKeyDown, { signal: signal });
             document.addEventListener('keyup', function (event) {
+                if (window.usertypo_footerPicker?.isOpen()) return;
                 if (state !== 'racing') return;
                 updateKeymapHighlight(event.key, false);
             }, { signal: signal });
