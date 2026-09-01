@@ -10,7 +10,7 @@ SOURCES = {
 }
 
 # Keep in sync with js/favicon.js CONTENT_ZOOM
-CONTENT_ZOOM = 1.3
+CONTENT_ZOOM = 1.26
 
 
 def circular_icon(src: Image.Image, size: int) -> Image.Image:
