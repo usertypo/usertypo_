@@ -78,12 +78,22 @@
             max-width: none !important;
         }
 
-        /* Fill first viewport so justify-end anchors typing above the footer */
+        /* Fill first viewport; flex spacers bias typing block lower than center */
         #test-view {
             min-height: calc(100dvh - 4.5rem);
         }
         #dual-test-main {
             min-height: calc(100dvh - 4.5rem - 4rem);
+        }
+        #dual-layout-spacer-top {
+            flex: 2 1 0%;
+            min-height: 0;
+            width: 100%;
+        }
+        #dual-layout-spacer-bottom {
+            flex: 1 1 0%;
+            min-height: 0;
+            width: 100%;
         }
 
         /* Keymap on: page scroll only — footer stays pinned via test-view flex column */
@@ -124,8 +134,9 @@
 
 
 
-            <main id="dual-test-main" class="flex-1 flex flex-col items-center justify-end pb-2 pt-4 relative z-10 min-h-0">
-                <div id="test-box" class="w-full flex flex-col relative test-box-outer max-w-none">
+            <main id="dual-test-main" class="flex-1 flex flex-col items-center relative z-10 min-h-0">
+                <div id="dual-layout-spacer-top" aria-hidden="true"></div>
+                <div id="test-box" class="w-full flex flex-col relative test-box-outer max-w-none shrink-0">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->
                     <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">
@@ -198,6 +209,7 @@
                     </div>
 
                 </div>
+                <div id="dual-layout-spacer-bottom" aria-hidden="true"></div>
                 <div id="dual-scroll-pad" class="shrink-0 w-full" style="height: 0;" aria-hidden="true"></div>
             </main>
 
