@@ -126,9 +126,6 @@
         if (!ctx) return;
 
         ctx.clearRect(0, 0, SIZE, SIZE);
-        // Opaque square (no transparent corners) so browsers use the full tab slot.
-        ctx.fillStyle = 'rgb(' + bgRgb.r + ',' + bgRgb.g + ',' + bgRgb.b + ')';
-        ctx.fillRect(0, 0, SIZE, SIZE);
         ctx.save();
         ctx.beginPath();
         ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
