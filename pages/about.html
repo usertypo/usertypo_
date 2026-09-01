@@ -35,6 +35,7 @@
             opacity: 0;
             transform: translateY(12px);
             transition: opacity 0.55s ease, transform 0.55s ease;
+            text-align: center;
         }
         .about-stat-card.is-visible {
             opacity: 1;
@@ -291,19 +292,31 @@
 
             <div id="about-kpi-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div class="about-stat-card" data-about-kpi style="transition-delay:40ms">
-                    <div class="about-stat-value" data-about-count data-stat="total_seconds" data-format="duration">0</div>
+                    <div class="relative group inline-block cursor-default max-w-full">
+                        <div class="about-stat-value" data-about-count data-stat="total_seconds" data-format="duration">0</div>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span data-about-tooltip></span></div>
+                    </div>
                     <div class="about-stat-label">Total time typed</div>
                 </div>
                 <div class="about-stat-card" data-about-kpi style="transition-delay:90ms">
-                    <div class="about-stat-value" data-about-count data-stat="tests_taken" data-format="compact">0</div>
+                    <div class="relative group inline-block cursor-default max-w-full">
+                        <div class="about-stat-value" data-about-count data-stat="tests_taken" data-format="compact">0</div>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span data-about-tooltip></span></div>
+                    </div>
                     <div class="about-stat-label">Tests taken</div>
                 </div>
                 <div class="about-stat-card" data-about-kpi style="transition-delay:140ms">
-                    <div class="about-stat-value" data-about-count data-stat="total_words" data-format="compact">0</div>
+                    <div class="relative group inline-block cursor-default max-w-full">
+                        <div class="about-stat-value" data-about-count data-stat="total_words" data-format="compact">0</div>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span data-about-tooltip></span></div>
+                    </div>
                     <div class="about-stat-label">Words typed</div>
                 </div>
                 <div class="about-stat-card" data-about-kpi style="transition-delay:190ms">
-                    <div class="about-stat-value" data-about-count data-stat="users" data-format="compact">0</div>
+                    <div class="relative group inline-block cursor-default max-w-full">
+                        <div class="about-stat-value" data-about-count data-stat="users" data-format="compact">0</div>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"><span data-about-tooltip></span></div>
+                    </div>
                     <div class="about-stat-label">Registered users</div>
                 </div>
             </div>
@@ -798,6 +811,12 @@ function initAboutCommunityStats() {
         return (Math.round(minutes * 10) / 10).toLocaleString() + 'm';
     }
 
+    function formatExactTooltip(value, format) {
+        var n = Math.max(0, Math.round(Number(value) || 0));
+        if (format === 'duration') return n.toLocaleString() + ' seconds';
+        return n.toLocaleString();
+    }
+
     function formatModeLabel(mode, amount) {
         if (mode === 'time') return amount + 's';
         return amount + ' words';
@@ -846,7 +865,10 @@ function initAboutCommunityStats() {
         document.querySelectorAll('[data-about-count]').forEach(function (el) {
             var key = el.getAttribute('data-stat');
             var format = el.getAttribute('data-format') || 'compact';
-            animateCount(el, map[key] == null ? 0 : map[key], format);
+            var raw = map[key] == null ? 0 : map[key];
+            animateCount(el, raw, format);
+            var tip = el.parentElement && el.parentElement.querySelector('[data-about-tooltip]');
+            if (tip) tip.textContent = formatExactTooltip(raw, format);
         });
     }
 
