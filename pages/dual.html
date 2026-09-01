@@ -76,8 +76,14 @@
         .test-box-outer {
             width: 88vw;
             max-width: none !important;
-            /* Offset so the typing area (not just the in-flow box) sits at visual center */
-            transform: translateY(clamp(2rem, 6vh, 4.5rem));
+        }
+
+        /* Fill first viewport so justify-end anchors typing above the footer */
+        #test-view {
+            min-height: calc(100dvh - 4.5rem);
+        }
+        #dual-test-main {
+            min-height: calc(100dvh - 4.5rem - 4rem);
         }
 
         /* Keymap on: page scroll only — footer stays pinned via test-view flex column */
@@ -118,7 +124,7 @@
 
 
 
-            <main id="dual-test-main" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+            <main id="dual-test-main" class="flex-1 flex flex-col items-center justify-end pb-2 pt-4 relative z-10 min-h-0">
                 <div id="test-box" class="w-full flex flex-col relative test-box-outer max-w-none">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->

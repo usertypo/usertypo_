@@ -95,7 +95,7 @@
         var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
         function debugLog(hypothesisId, location, message, data) {
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v3' }) }).catch(function () {});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-layout-v4' }) }).catch(function () {});
             // #endregion
         }
 
@@ -245,19 +245,47 @@
                 return 0;
             }
             var footer = document.getElementById('test-view-footer');
-            var testBox = document.getElementById('test-box');
             var padHeight = 0;
             if (footer && keymap) {
                 var overlap = keymap.getBoundingClientRect().bottom - footer.getBoundingClientRect().top + 16;
                 if (overlap > 0) padHeight = Math.max(padHeight, overlap);
             }
-            if (testBox) {
-                var rect = testBox.getBoundingClientRect();
-                var centerScroll = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
-                if (centerScroll > 0) padHeight = Math.max(padHeight, centerScroll + 16);
-            }
             pad.style.height = Math.ceil(padHeight) + 'px';
             return padHeight;
+        }
+
+        function measureDualLayoutMetrics(hypothesisId) {
+            var testMain = document.getElementById('dual-test-main');
+            var testBox = document.getElementById('test-box');
+            var typingArea = document.getElementById('typing-area');
+            var pad = document.getElementById('dual-scroll-pad');
+            var footer = document.getElementById('test-view-footer');
+            var testView = document.getElementById('test-view');
+            var mainStyle = testMain ? window.getComputedStyle(testMain) : null;
+            var mainRect = testMain ? testMain.getBoundingClientRect() : null;
+            var testRect = testBox ? testBox.getBoundingClientRect() : null;
+            var typingRect = typingArea ? typingArea.getBoundingClientRect() : null;
+            var footerRect = footer ? footer.getBoundingClientRect() : null;
+            var testViewRect = testView ? testView.getBoundingClientRect() : null;
+            var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+            var vh = window.innerHeight;
+            debugLog(hypothesisId || 'H-layout', 'dual-race.js:measureDualLayoutMetrics', 'vertical layout', {
+                keymapOn: !!(window.usertypo_settings && window.usertypo_settings.keyboardLayout
+                    && window.usertypo_settings.keyboardLayout.keymapMode
+                    && window.usertypo_settings.keyboardLayout.keymapMode !== 'Off'),
+                mainJustify: mainStyle ? mainStyle.justifyContent : null,
+                mainHeight: mainRect ? mainRect.height : null,
+                testViewHeight: testViewRect ? testViewRect.height : null,
+                typingTop: typingRect ? typingRect.top : null,
+                typingCenterRatio: typingRect ? (typingRect.top + typingRect.height / 2) / vh : null,
+                testBoxBottom: testRect ? testRect.bottom : null,
+                footerTop: footerRect ? footerRect.top : null,
+                gapAboveFooter: footerRect && testRect ? footerRect.top - testRect.bottom : null,
+                padHeight: pad ? pad.style.height : null,
+                scrollY: window.scrollY,
+                docHeight: docHeight,
+                viewportBottom: vh,
+            });
         }
 
         function syncDualKeymapLayout() {
@@ -266,30 +294,15 @@
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
             if (!keymapOn) {
                 measureDualScrollPad();
+                // #region agent log
+                measureDualLayoutMetrics('H2');
+                // #endregion
                 return;
             }
             setTimeout(function () {
                 measureDualScrollPad();
-                var testBox = document.getElementById('test-box');
-                if (testBox) {
-                    var rect = testBox.getBoundingClientRect();
-                    var scrollTarget = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
-                    window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
-                }
                 // #region agent log
-                var pad = document.getElementById('dual-scroll-pad');
-                var footer = document.getElementById('test-view-footer');
-                var footerRect = footer ? footer.getBoundingClientRect() : null;
-                var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-                debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
-                    keymapOn: keymapOn,
-                    padHeight: pad ? pad.style.height : null,
-                    footerBottom: footerRect ? footerRect.bottom : null,
-                    viewportBottom: window.innerHeight,
-                    footerGap: footerRect ? window.innerHeight - footerRect.bottom : null,
-                    docHeight: docHeight,
-                    scrollable: docHeight - window.innerHeight,
-                });
+                measureDualLayoutMetrics('H1');
                 // #endregion
             }, 50);
         }
