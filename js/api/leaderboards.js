@@ -496,11 +496,6 @@
             return getFriendsLeaderboard(options);
         }
 
-        // Daily/weekly boards use Postgres so rolling windows stay authoritative.
-        if (timeframe === 'daily' || timeframe === 'weekly') {
-            return getLeaderboardFromPostgres({ mode: mode, amount: amount, timeframe: timeframe, limit: limit });
-        }
-
         try {
             var redisResult = await callLeaderboardFunction({
                 action: 'top',
@@ -764,44 +759,32 @@
             console.warn('[usertypo leaderboards] board-scan rank failed', err);
         }
 
-        // 2) Postgres RPC for period boards (authoritative date windows).
-        if (timeframe === 'daily' || timeframe === 'weekly') {
-            try {
-                var periodPg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
-                if (periodPg && periodPg.rank != null && isFinite(Number(periodPg.rank)) && Number(periodPg.rank) > 0) {
-                    return periodPg;
-                }
-            } catch (err) {
-                console.warn('[usertypo leaderboards] postgres period rank failed', err);
-            }
-        } else {
-            // 3) Dedicated Redis rank endpoint (works beyond the visible top list).
-            try {
-                var redisResult = await callLeaderboardFunction({
-                    action: 'rank',
-                    mode: mode,
-                    amount: amount,
-                    timeframe: timeframe,
-                }, true);
+        // 2) Dedicated Redis rank endpoint (works beyond the visible top list).
+        try {
+            var redisResult = await callLeaderboardFunction({
+                action: 'rank',
+                mode: mode,
+                amount: amount,
+                timeframe: timeframe,
+            }, true);
 
-                if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
-                    var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
-                    if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
-                        return {
-                            rank: redisRank,
-                            wpm: redisResult.data.wpm == null ? null : Number(redisResult.data.wpm),
-                            accuracy: redisResult.data.accuracy == null ? null : Number(redisResult.data.accuracy),
-                            totalPlayers: redisResult.data.totalPlayers == null ? 0 : Number(redisResult.data.totalPlayers),
-                            source: 'redis',
-                        };
-                    }
+            if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
+                var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
+                if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
+                    return {
+                        rank: redisRank,
+                        wpm: redisResult.data.wpm == null ? null : Number(redisResult.data.wpm),
+                        accuracy: redisResult.data.accuracy == null ? null : Number(redisResult.data.accuracy),
+                        totalPlayers: redisResult.data.totalPlayers == null ? 0 : Number(redisResult.data.totalPlayers),
+                        source: 'redis',
+                    };
                 }
-            } catch (err) {
-                console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
             }
+        } catch (err) {
+            console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
         }
 
-        // 4) Postgres RPC — full board, not capped at top 100.
+        // 3) Postgres RPC — full board, not capped at top 100.
         try {
             var pg = await getMyRankFromPostgres({ mode: mode, amount: amount, timeframe: timeframe });
             if (pg && pg.rank != null && isFinite(Number(pg.rank)) && Number(pg.rank) > 0) {

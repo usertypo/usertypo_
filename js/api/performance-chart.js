@@ -1,5 +1,5 @@
 /**
- * Performance Over Time — account history chart for signed-in users.
+ * Performance Over Time — Monkeytype-style account history chart.
  * Public API: window.usertypoPerformanceChart
  */
 (function () {
@@ -279,7 +279,7 @@
     }
 
     function applyCurrentSettings() {
-        // Match filters to the active typing test settings
+        // Monkeytype: currentConfigFilter — match active typing test settings
         clearBubbleCloseTimer();
         deSelectFilterPreset();
 
@@ -299,7 +299,7 @@
         if (mode === 'time') {
             if (TIME_STANDARD[amount]) filters.time[String(amount)] = true;
             else filters.time.custom = true;
-            // Only enable word-count filters for the active test mode's amounts
+            // leave words filters off (Monkeytype only enables the active mode's amounts)
         } else {
             if (WORD_STANDARD[amount]) filters.words[String(amount)] = true;
             else filters.words.custom = true;
@@ -935,8 +935,9 @@
     }
 
     /**
-     * Account chart series visibility sequence:
+     * Monkeytype account-chart visibility sequence:
      * updateResults → updateAccuracy → updateAverage10 → updateAverage100
+     * @see https://github.com/monkeytypegame/monkeytype chart-controller.ts
      */
     function applySeriesVisibility(chart) {
         if (!chart) return;
@@ -991,7 +992,7 @@
         }
         applySeriesVisibility(chartInstance);
         applyColors(chartInstance);
-        // Full update so series toggles refresh the chart immediately
+        // Full update — Monkeytype's fix for toggles not refreshing the chart
         chartInstance.update();
     }
 
@@ -1003,7 +1004,7 @@
         var next = accountChart.slice();
         next[index] = next[index] === 'on' ? 'off' : 'on';
 
-        // Never allow both speed and accuracy series to be hidden at once
+        // Monkeytype config override: never allow both speed and accuracy off
         if (next[0] === 'off' && next[1] === 'off') {
             var changedIndex = next[0] === previous[0] ? 0 : 1;
             next[changedIndex] = 'on';
@@ -1503,7 +1504,7 @@
             });
         }
 
-        // Direct bindings for series toggles (capture so nothing steals the click)
+        // Direct Monkeytype-style bindings for series toggles (capture so nothing steals the click)
         rootEl.querySelectorAll('[data-pot-chart-toggle]').forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();

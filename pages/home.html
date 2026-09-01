@@ -881,7 +881,7 @@
                         <!-- 2. Main Stats Grid -->
                         <div class="w-full grid grid-cols-[1fr_auto_1fr] items-center justify-between gap-8 sm:gap-16 md:gap-32 mb-6">
                             <!-- Left Column -->
-                            <div class="flex flex-col gap-10 text-left w-full">
+                            <div class="flex flex-col gap-10 text-center items-center w-full">
                                 <div id="stats-raw-card" class="opacity-0 stats-animate-card [animation-delay:200ms]">
                                     <h4 class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest mb-1">Raw WPM</h4>
                                     <div class="relative group inline-block cursor-default">
@@ -947,7 +947,7 @@
                             </div>
 
                             <!-- Right Column -->
-                            <div class="flex flex-col gap-10 text-right w-full">
+                            <div class="flex flex-col gap-10 text-center items-center w-full">
                                 <div id="stats-corr-card" class="opacity-0 stats-animate-card [animation-delay:200ms]">
                                     <h4 class="text-[0.533rem] font-bold text-slate-500 uppercase tracking-widest mb-1">Correct</h4>
                                     <div class="relative group inline-block cursor-default">
@@ -1166,6 +1166,7 @@ window.setTimeout = function(handler, timeout) {
         let currentWordStartTime = null;
         let currentWordCharTimes = [];
         let lastKeystrokeTime = null;
+        let maxLiveBurstSeen = 0; // peak live burst shown while typing
         let avgInterKeyInterval = 150; // running average inter-key interval (ms)
         let graphMode = 'basic';       // 'basic' or 'advanced'
         let graphInfoVisible = false;   // info overlay state
@@ -1880,6 +1881,7 @@ window.setTimeout = function(handler, timeout) {
                 currentWordStartTime = null;
                 currentWordCharTimes = [];
                 lastKeystrokeTime = null;
+                maxLiveBurstSeen = 0;
                 avgInterKeyInterval = 150;
                 typedCharsMap = {};
                 isPaceRepeat = false;
@@ -3297,9 +3299,9 @@ window.setTimeout = function(handler, timeout) {
                 if (mean > 0) {
                     const stdDev = Math.sqrt(rawHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawHistory.length);
                     const cov = stdDev / mean;
-                    const consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-                    exactConsistency = consistencyTransform;
-                    consistency = Math.max(0, Math.min(100, Math.round(consistencyTransform)));
+                    const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+                    exactConsistency = kogasa;
+                    consistency = Math.max(0, Math.min(100, Math.round(kogasa)));
                 }
             }
             if (isNaN(consistency)) {
@@ -3397,10 +3399,7 @@ window.setTimeout = function(handler, timeout) {
             document.getElementById('stats-correct').innerText = failedReason ? '--' : validChars;
             document.getElementById('stats-total-chars').innerText = failedReason ? '--' : rawChars;
 
-            let maxBurst = 0;
-            if (typeof rawHistory !== 'undefined' && rawHistory.length > 0) {
-                maxBurst = Math.max(...rawHistory);
-            }
+            let maxBurst = computeMaxBurstFromTest();
             let maxBurstEl = document.getElementById('stats-max-burst');
             if (maxBurstEl) {
                 maxBurstEl.innerText = failedReason ? '--' : Math.round(maxBurst);
@@ -3910,6 +3909,7 @@ window.setTimeout = function(handler, timeout) {
             currentWordStartTime = null;
             currentWordCharTimes = [];
             lastKeystrokeTime = null;
+            maxLiveBurstSeen = 0;
             avgInterKeyInterval = 150;
             typedCharsMap = {};
             // Hide fail overlay on restart
@@ -4001,6 +4001,20 @@ window.setTimeout = function(handler, timeout) {
 
 
 
+        function computeWordBurstWpm(correctChars, startMs, endMs) {
+            if (!correctChars || correctChars <= 0) return 0;
+            const elapsedMins = (endMs - startMs) / 60000;
+            if (elapsedMins <= 0) return 0;
+            // 0.5s floor prevents absurd spikes on short words or the first keystroke.
+            const calcMins = Math.max(elapsedMins, 0.5 / 60);
+            return Math.round((correctChars / 5) / calcMins);
+        }
+
+        /** Max burst = highest live burst value shown during the test. */
+        function computeMaxBurstFromTest() {
+            return maxLiveBurstSeen || 0;
+        }
+
         function updateStats() {
             if (!startTime) return;
 
@@ -4036,23 +4050,17 @@ window.setTimeout = function(handler, timeout) {
             if (lastKeystrokeTime && (currentTime - lastKeystrokeTime) > 1000) {
                 burst = 0; // Decay to 0 after 1 second of inactivity
             } else if (currentWordStartTime) {
-                const burstElapsedMins = (currentTime - currentWordStartTime) / 60000;
-                // Add a small floor to prevent infinite burst speed on the first keystroke
-                const calcMins = Math.max(burstElapsedMins, 0.5 / 60);
                 const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
                 if (currentWordEl) {
                     const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
-                    burst = Math.round((correctInCurrentWord / 5) / calcMins);
+                    burst = computeWordBurstWpm(correctInCurrentWord, currentWordStartTime, currentTime);
                 }
             } else if (typeof wordTimestamps !== 'undefined' && wordTimestamps.length > 0) {
                 const lastWord = wordTimestamps[wordTimestamps.length - 1];
-                const burstElapsedMins = (lastWord.endTime - lastWord.startTime) / 60000;
-                if (burstElapsedMins > 0) {
-                    const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
-                    if (lastWordEl) {
-                        const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
-                        burst = Math.round((correctInLastWord / 5) / burstElapsedMins);
-                    }
+                const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
+                if (lastWordEl) {
+                    const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
+                    burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime);
                 }
             }
 
@@ -4091,6 +4099,7 @@ window.setTimeout = function(handler, timeout) {
             accDisplay.innerText = acc + "%";
             if (burstDisplay) burstDisplay.innerText = Math.max(0, burst);
             window.lastBurstVal = burst;
+            if (burst > maxLiveBurstSeen) maxLiveBurstSeen = burst;
 
             // Live Threshold Check
             const config = window.usertypo_settings || {};
@@ -5073,7 +5082,7 @@ window.setTimeout = function(handler, timeout) {
                     <div class="graph-info-label">The Left Axis</div>
                     <div class="graph-info-desc">Shows your speed (WPM).</div>
                     <div class="graph-info-label">Hovering</div>
-                    <div class="graph-info-desc">You can move your mouse over any part of the graph to see a popup with your exact speed, raw bursts, and any errors for that specific second.</div>
+                    <div class="graph-info-desc">You can move your mouse over any part of the graph to see a popup with your exact speed, raw WPM, and any errors for that specific second.</div>
 
                     <div class="graph-info-tip">
                         <div class="tip-label"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;">lightbulb</span> Pro Tip</div>

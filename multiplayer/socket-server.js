@@ -467,7 +467,7 @@ function createMultiplayerServer(httpServer, options) {
     }
 
     function computeConsistencyFromSnapshots(snapshots) {
-        // Compute per-snapshot raw WPM, then apply COV → tanh variance transform
+        // Compute per-snapshot raw WPM, then apply COV → kogasa
         if (!Array.isArray(snapshots) || snapshots.length < 2) return 100;
         const rawWpms = [];
         for (let i = 1; i < snapshots.length; i += 1) {
@@ -482,8 +482,8 @@ function createMultiplayerServer(httpServer, options) {
         if (mean <= 0) return 100;
         const stdDev = Math.sqrt(rawWpms.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawWpms.length);
         const cov = stdDev / mean;
-        const consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-        return Math.max(0, Math.min(100, Math.round(consistencyTransform)));
+        const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+        return Math.max(0, Math.min(100, Math.round(kogasa)));
     }
 
     function computeRoomConsistencyFromSnapshots(snapshots) {
@@ -505,8 +505,8 @@ function createMultiplayerServer(httpServer, options) {
         if (mean <= 0) return 100;
         const stdDev = Math.sqrt(rawWpms.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / rawWpms.length);
         const cov = stdDev / mean;
-        const consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-        return Math.max(0, Math.min(100, Math.round(consistencyTransform)));
+        const kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+        return Math.max(0, Math.min(100, Math.round(kogasa)));
     }
 
     function raceDisplaySeconds(room, participant) {

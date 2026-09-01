@@ -66,8 +66,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
-        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
+        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
+        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
       )
   ),
   best_per_user as (
@@ -169,8 +169,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
-        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
+        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
+        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
       )
   ),
   best_per_user as (
@@ -307,8 +307,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
-        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
+        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
+        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
       )
   ),
   best_per_user as (
@@ -437,8 +437,8 @@ begin
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
-        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
+        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
+        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
       )
   ),
   best_per_user as (

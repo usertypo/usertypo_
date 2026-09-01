@@ -1,21 +1,18 @@
 /**
- * Theme-aware tab favicon from blah-abyss / blah-paper templates.
- * Recolors bg + USER + caret to the live theme; keeps the coral "o" static.
+ * Theme-aware favicon: pixel "o" (fixed coral) + underscore caret (accent) on theme bg.
+ * Circular icon; o and _ share the same width; _ sits on the o baseline (matches logo art).
  * Call window.usertypoUpdateFavicon(bgHex, accentHex) whenever the theme changes.
  *
- * Crawlable PNGs for Google (Abyss/Paper defaults) come from scripts/generate-favicons.py.
+ * Static crawlable fallbacks (for Google SERP + no-JS) live in index.html as
+ * /logo-assets/favicon-abyss.png and favicon-paper.png — keep those in sync via
+ * scripts/generate-favicons.py when this paint logic changes.
  */
 (function () {
-    var SIZE = 96;
-    var WORK_SIZE = 192;
-    /** Zoom into blah template — trims built-in padding around USER/o_. 1 = no zoom. */
-    var CONTENT_ZOOM = 1.06;
-    var ABYSS_SRC = '/logo-assets/blah-abyss.png';
-    var PAPER_SRC = '/logo-assets/blah-paper.png';
-    var abyssImg = null;
-    var paperImg = null;
-    var abyssReady = false;
-    var paperReady = false;
+    var SIZE = 64;
+    var O_SRC = '/logo-assets/favicon-o.png';
+    var O_COLOR = '#ff5757';
+    var oImg = null;
+    var oReady = false;
     var lastBg = '#000000';
     var lastAccent = '#ffffff';
     var linkEl = null;
@@ -33,6 +30,7 @@
         return linkEl;
     }
 
+    /** Drop crawlable static icons once the live theme favicon is painted. Googlebot reads the HTML source (still has Abyss) and does not run this. */
     function removeStaticFavicons() {
         if (!document.head) return;
         var nodes = document.head.querySelectorAll('link[data-usertypo-static-favicon]');
@@ -42,82 +40,38 @@
         }
     }
 
-    function parseHex(hex) {
-        var h = String(hex || '').replace('#', '');
-        if (h.length === 3) {
-            h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    /** Fallback pixel "o" if favicon-o.png has not loaded yet. */
+    function drawPixelO(ctx, x, y, size, color) {
+        var grid = [
+            [0, 1, 1, 1, 1, 0],
+            [1, 1, 0, 0, 1, 1],
+            [1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1],
+            [1, 1, 0, 0, 1, 1],
+            [0, 1, 1, 1, 1, 0]
+        ];
+        var rows = grid.length;
+        var cols = grid[0].length;
+        var cell = size / Math.max(rows, cols);
+        var ox = x + (size - cols * cell) / 2;
+        var oy = y + (size - rows * cell) / 2;
+        ctx.fillStyle = color;
+        for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+                if (!grid[r][c]) continue;
+                ctx.fillRect(
+                    Math.round(ox + c * cell),
+                    Math.round(oy + r * cell),
+                    Math.ceil(cell),
+                    Math.ceil(cell)
+                );
+            }
         }
-        if (h.length !== 6) return { r: 0, g: 0, b: 0 };
-        return {
-            r: parseInt(h.slice(0, 2), 16) || 0,
-            g: parseInt(h.slice(2, 4), 16) || 0,
-            b: parseInt(h.slice(4, 6), 16) || 0
-        };
-    }
-
-    function isLightBg(hex) {
-        var c = parseHex(hex);
-        return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 160;
-    }
-
-    function mix(a, b, t) {
-        return Math.round(a + (b - a) * t);
-    }
-
-    /** Coral "o" + glow — leave channel ratios intact. */
-    function isRedPixel(r, g, b) {
-        return r > 80 && g < 110 && b < 110 && r >= Math.max(g, b) * 1.15;
-    }
-
-    function recolorPixel(r, g, b, lightTemplate, bg, accent) {
-        if (isRedPixel(r, g, b)) {
-            return { r: r, g: g, b: b, a: 255 };
-        }
-        var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        // Dark template: black bg → white fg. Light template: white bg → black fg.
-        var t = lightTemplate ? (1 - lum) : lum;
-        return {
-            r: mix(bg.r, accent.r, t),
-            g: mix(bg.g, accent.g, t),
-            b: mix(bg.b, accent.b, t),
-            a: 255
-        };
     }
 
     function paint(bg, accent) {
         lastBg = bg || lastBg;
         lastAccent = accent || lastAccent;
-
-        var light = isLightBg(lastBg);
-        var img = light ? paperImg : abyssImg;
-        var ready = light ? paperReady : abyssReady;
-        if (!ready || !img) return;
-
-        var bgRgb = parseHex(lastBg);
-        var accentRgb = parseHex(lastAccent);
-
-        var work = document.createElement('canvas');
-        work.width = WORK_SIZE;
-        work.height = WORK_SIZE;
-        var wctx = work.getContext('2d');
-        if (!wctx) return;
-
-        wctx.imageSmoothingEnabled = true;
-        wctx.imageSmoothingQuality = 'high';
-        var drawSize = WORK_SIZE * CONTENT_ZOOM;
-        var offset = (WORK_SIZE - drawSize) / 2;
-        wctx.drawImage(img, offset, offset, drawSize, drawSize);
-
-        var imageData = wctx.getImageData(0, 0, WORK_SIZE, WORK_SIZE);
-        var data = imageData.data;
-        for (var i = 0; i < data.length; i += 4) {
-            var out = recolorPixel(data[i], data[i + 1], data[i + 2], light, bgRgb, accentRgb);
-            data[i] = out.r;
-            data[i + 1] = out.g;
-            data[i + 2] = out.b;
-            data[i + 3] = out.a;
-        }
-        wctx.putImageData(imageData, 0, 0);
 
         var canvas = document.createElement('canvas');
         canvas.width = SIZE;
@@ -125,16 +79,70 @@
         var ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        // Transparent outside → circular tab icon
         ctx.clearRect(0, 0, SIZE, SIZE);
-        ctx.save();
         ctx.beginPath();
         ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(work, 0, 0, SIZE, SIZE);
+
+        ctx.fillStyle = lastBg;
+        ctx.fillRect(0, 0, SIZE, SIZE);
+
+        // Zoomed out so o_ sits with breathing room; glows match header logo
+        var oSize = 20;
+        var stroke = Math.max(3, Math.round(oSize * (6 / 32)));
+        var gap = Math.max(2, Math.round(oSize * (3 / 98)));
+        var caretW = oSize;
+        var caretH = stroke;
+        var belowGap = Math.max(2, Math.round(oSize * 0.14));
+        var totalW = oSize + gap + caretW;
+        var totalH = oSize + belowGap + caretH;
+        var startX = Math.round((SIZE - totalW) / 2);
+        var oY = Math.round((SIZE - totalH) / 2);
+
+        // Coral glow on o (matches header-fade-o)
+        ctx.save();
+        ctx.shadowColor = 'rgba(255, 51, 68, 0.9)';
+        ctx.shadowBlur = 10;
+        if (oReady && oImg) {
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(oImg, startX, oY, oSize, oSize);
+        } else {
+            drawPixelO(ctx, startX, oY, oSize, O_COLOR);
+        }
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = '#ff3344';
+        if (oReady && oImg) {
+            ctx.drawImage(oImg, startX, oY, oSize, oSize);
+        } else {
+            drawPixelO(ctx, startX, oY, oSize, O_COLOR);
+        }
         ctx.restore();
+
+        // Solid o on top of glow
+        if (oReady && oImg) {
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(oImg, startX, oY, oSize, oSize);
+        } else {
+            drawPixelO(ctx, startX, oY, oSize, O_COLOR);
+        }
+
+        // Underscore: same width as o, same stroke weight, below the letter + accent glow
+        var caretX = startX + oSize + gap;
+        var caretY = oY + oSize + belowGap;
+
+        ctx.save();
+        ctx.shadowColor = lastAccent;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = lastAccent;
+        ctx.fillRect(caretX, caretY, caretW, caretH);
+        ctx.shadowBlur = 5;
+        ctx.fillRect(caretX, caretY, caretW, caretH);
+        ctx.restore();
+
+        ctx.fillStyle = lastAccent;
+        ctx.fillRect(caretX, caretY, caretW, caretH);
 
         var link = ensureLink();
         if (!link || !link.parentNode) return;
@@ -150,40 +158,27 @@
         linkEl = next;
     }
 
-    function loadAssets() {
-        if (!abyssImg) {
-            abyssImg = new Image();
-            abyssImg.decoding = 'async';
-            abyssImg.onload = function () {
-                abyssReady = true;
-                paint(lastBg, lastAccent);
-            };
-            abyssImg.onerror = function () {
-                abyssReady = false;
-            };
-            abyssImg.src = ABYSS_SRC;
-        }
-        if (!paperImg) {
-            paperImg = new Image();
-            paperImg.decoding = 'async';
-            paperImg.onload = function () {
-                paperReady = true;
-                paint(lastBg, lastAccent);
-            };
-            paperImg.onerror = function () {
-                paperReady = false;
-            };
-            paperImg.src = PAPER_SRC;
-        }
+    function loadO() {
+        if (oImg) return;
+        oImg = new Image();
+        oImg.decoding = 'async';
+        oImg.onload = function () {
+            oReady = true;
+            paint(lastBg, lastAccent);
+        };
+        oImg.onerror = function () {
+            oReady = false;
+        };
+        oImg.src = O_SRC;
     }
 
     /**
-     * @param {string} bgHex     Theme background (--theme-bg)
-     * @param {string} accentHex Theme accent for USER + caret (--theme-primary)
+     * @param {string} bgHex       Theme background (--theme-bg)
+     * @param {string} accentHex   Theme accent / caret (--theme-primary)
      */
     function updateFavicon(bgHex, accentHex) {
         paint(bgHex, accentHex);
-        loadAssets();
+        loadO();
     }
 
     window.usertypoUpdateFavicon = updateFavicon;

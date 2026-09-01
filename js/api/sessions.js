@@ -409,36 +409,12 @@
     }
 
     var _paceHydratePromise = null;
-    var _hydrateGeneration = 0;
-
-    /**
-     * Drop in-memory PB/pace caches after account reset (or similar wipe).
-     * Empty standard bests are marked ready so the next score in each mode
-     * celebrates immediately without a full page reload.
-     */
-    function resetPersonalBestState(options) {
-        _hydrateGeneration += 1;
-        _paceHydratePromise = null;
-        _standardBests = emptyStandardBests();
-        _standardBestsReady = true;
-        savePaceHistory([]);
-        if (options && options.skipRehydrate) {
-            _paceHydrateDone = true;
-            return;
-        }
-        _paceHydrateDone = false;
-        hydratePaceHistoryFromServer();
-    }
 
     async function hydratePaceHistoryFromServer() {
         if (_paceHydratePromise) return _paceHydratePromise;
-        var generation = _hydrateGeneration;
         _paceHydratePromise = (async function () {
             try {
                 var result = await fetchAllMySessions();
-                if (generation !== _hydrateGeneration) {
-                    return loadPaceHistory();
-                }
                 if (result.error || !result.sessions) {
                     // Do NOT mark standard bests ready — guessing from incomplete
                     // local pace history caused false "Personal Best" celebrations.
@@ -451,10 +427,8 @@
                 console.warn('[usertypo sessions] pace history hydrate failed', err);
                 return loadPaceHistory();
             } finally {
-                if (generation === _hydrateGeneration) {
-                    _paceHydrateDone = true;
-                    _paceHydratePromise = null;
-                }
+                _paceHydrateDone = true;
+                _paceHydratePromise = null;
             }
         })();
         return _paceHydratePromise;
@@ -775,7 +749,6 @@
         rememberPersonalBest: rememberPersonalBest,
         areStandardBestsReady: areStandardBestsReady,
         getStandardBestWpm: getStandardBestWpm,
-        resetPersonalBestState: resetPersonalBestState,
         isPaceHistoryReady: isPaceHistoryReady,
         TIMED_AMOUNTS: TIMED_AMOUNTS,
         WORD_AMOUNTS: WORD_AMOUNTS,
@@ -799,10 +772,6 @@
             _paceHydrateDone = true;
         });
     }
-
-    window.addEventListener('usertypo:account-data-cleared', function () {
-        resetPersonalBestState();
-    });
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', prefetchPaceHistoryIfSignedIn);

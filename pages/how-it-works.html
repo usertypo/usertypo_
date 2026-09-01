@@ -205,7 +205,7 @@
                     characters-per-minute divided by five. Accuracy is keystroke-based, not
                     “percentage of words that look correct.” Consistency measures how steady your
                     second-by-second raw speed was, using a coefficient-of-variation transform
-                    using a nonlinear tanh variance map (consistency transform).
+                    inspired by the well-known Monkeytype “kogasa” mapping.
                 </p>
                 <div class="hiw-callout">
                     Guest tests still show live results and graphs. Signed-in tests also persist to
@@ -361,7 +361,7 @@
                     Consistency asks whether your speed was smooth or bursty. On the solo home test,
                     usertypo_ samples <strong class="text-slate-200">raw WPM once per second</strong>
                     while you type. That series becomes the input to a coefficient-of-variation
-                    calculation, then a nonlinear tanh variance transform that
+                    calculation, then a nonlinear map (often called a kogasa transform) that
                     compresses the result into a friendly 0–100 score.
                 </p>
                 <div class="hiw-math" role="group" aria-label="Consistency formulas">
@@ -391,14 +391,14 @@
                         </span>
                     </div>
                     <div class="hiw-eq">
-                        <span class="hiw-lhs">transform</span>
+                        <span class="hiw-lhs">kogasa</span>
                         <span class="hiw-op">=</span>
                         <span class="hiw-fn">100 × ( 1 − tanh( <span class="hiw-var">cov</span> + <span class="hiw-var">cov</span>³÷3 + <span class="hiw-var">cov</span>⁵÷5 ) )</span>
                     </div>
                     <div class="hiw-eq">
                         <span class="hiw-lhs">consistency</span>
                         <span class="hiw-op">=</span>
-                        <span class="hiw-fn">clamp( round( <span class="hiw-var">transform</span> ) , 0 , 100 )</span>
+                        <span class="hiw-fn">clamp( round( <span class="hiw-var">kogasa</span> ) , 0 , 100 )</span>
                     </div>
                 </div>
                 <p class="mb-3">
@@ -409,7 +409,7 @@
                 </p>
                 <div class="hiw-callout">
                     Multiplayer dual/room races can compute consistency from inter-keystroke
-                    intervals instead of the per-second raw series. The variance transform is the same;
+                    intervals instead of the per-second raw series. The kogasa mapping is the same;
                     the input signal differs. Always compare consistency within the same mode family.
                 </div>
             </section>
@@ -731,7 +731,7 @@
                             </tr>
                             <tr>
                                 <td>Consistency</td>
-                                <td>0–100 smoothness score from speed variance (tanh transform).</td>
+                                <td>0–100 smoothness score from speed variance (kogasa map).</td>
                             </tr>
                             <tr>
                                 <td>Personal best (PB)</td>
