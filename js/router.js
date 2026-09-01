@@ -48,7 +48,7 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=55'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=56'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -631,8 +631,14 @@
         var appViews = document.getElementById('app-views');
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
+        var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+        var keymapOn = kl && kl.keymapMode && kl.keymapMode !== 'Off';
         if (appViews) {
-            appViews.classList.add('h-full', 'min-h-0');
+            if (keymapOn) {
+                appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+            } else {
+                appViews.classList.add('h-full', 'min-h-0');
+            }
         }
         if (testView) {
             testView.style.display = 'flex';
@@ -652,13 +658,15 @@
         if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
         if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
         if (headerLogo) headerLogo.style.pointerEvents = 'none';
-        var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
-        var keymapOn = kl && kl.keymapMode && kl.keymapMode !== 'Off';
         if (window.usertypo_settingsApi
             && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
             window.usertypo_settingsApi.syncTypingScrollForKeymap(!!keymapOn);
         } else if (typeof window.usertypo_lockTypingScroll === 'function') {
             window.usertypo_lockTypingScroll();
+        }
+        if (keymapOn) {
+            var body = document.getElementById('app-body');
+            if (body) body.classList.add('keymap-scrollable');
         }
     }
 

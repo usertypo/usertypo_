@@ -41,6 +41,9 @@
         var updateTimer = null;
         var liveRawSecondKeystrokes = 0;
         var lastLiveRawSecond = 0;
+        var rawHistory = [];
+        var lastRawHistorySecond = 0;
+        var lastSecondKeystrokes = 0;
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
@@ -183,18 +186,34 @@
         function syncDualTypingScroll() {
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
-            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
-                window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
-            } else if (keymapOn && typeof window.usertypo_unlockStatsScroll === 'function') {
-                window.usertypo_unlockStatsScroll();
-            } else if (!keymapOn && typeof window.usertypo_lockTypingScroll === 'function') {
-                window.usertypo_lockTypingScroll();
+            var body = document.getElementById('app-body');
+            var appViews = document.getElementById('app-views');
+            var testMain = document.getElementById('dual-test-main');
+            if (keymapOn) {
+                if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                    window.usertypo_unlockStatsScroll();
+                }
+                if (body) body.classList.add('keymap-scrollable');
+                if (appViews) appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                if (testMain) testMain.classList.remove('min-h-0');
+            } else {
+                if (body) body.classList.remove('keymap-scrollable');
+                if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+                    window.usertypo_settingsApi.syncTypingScrollForKeymap(false);
+                } else if (typeof window.usertypo_lockTypingScroll === 'function') {
+                    window.usertypo_lockTypingScroll();
+                }
+                if (appViews) appViews.classList.add('h-full', 'min-h-0');
+            }
+            if (keymapOn && window.usertypo_settingsApi
+                && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+                window.usertypo_settingsApi.syncTypingScrollForKeymap(true);
             }
             // #region agent log
-            var body = document.getElementById('app-body');
             debugLog('H3', 'dual-race.js:syncDualTypingScroll', 'scroll state', {
                 keymapOn: keymapOn,
                 bodyClass: body ? body.className : null,
+                appViewsClass: appViews ? appViews.className : null,
                 scrollY: window.scrollY,
                 docHeight: document.documentElement.scrollHeight,
                 innerHeight: window.innerHeight,
@@ -707,17 +726,25 @@
             return localStats().wpm;
         }
 
-        function computeConsistencyFromTimes(times) {
-            if (!Array.isArray(times) || times.length < 2) return 100;
-            var intervals = [];
-            for (var i = 1; i < times.length; i += 1) intervals.push(times[i] - times[i - 1]);
-            if (intervals.length < 2) return 100;
-            var mean = intervals.reduce(function (sum, value) { return sum + value; }, 0) / intervals.length;
-            if (!mean) return 100;
-            var variance = intervals.reduce(function (sum, value) { return sum + Math.pow(value - mean, 2); }, 0) / intervals.length;
-            var cov = Math.sqrt(variance) / mean;
+        function computeConsistencyFromRawHistory(history) {
+            if (!Array.isArray(history) || history.length < 2) return 100;
+            var mean = history.reduce(function (sum, value) { return sum + value; }, 0) / history.length;
+            if (mean <= 0) return 100;
+            var stdDev = Math.sqrt(history.map(function (x) { return Math.pow(x - mean, 2); })
+                .reduce(function (sum, value) { return sum + value; }, 0) / history.length);
+            var cov = stdDev / mean;
             var kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
             return Math.max(0, Math.min(100, Math.round(kogasa)));
+        }
+
+        function sampleRawHistorySecond() {
+            if (!startTime || state !== 'racing') return;
+            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedSec <= lastRawHistorySecond) return;
+            lastRawHistorySecond = elapsedSec;
+            var ksThisSec = totalKeystrokes - lastSecondKeystrokes;
+            lastSecondKeystrokes = totalKeystrokes;
+            rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
         }
 
         function computeFinalStats(finishTime) {
@@ -744,11 +771,12 @@
             var accuracy = totalKeystrokes > 0
                 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100)
                 : 100;
+            sampleRawHistorySecond();
             return {
                 wpm: Math.max(0, Math.round(exactWpm)),
                 raw: Math.max(0, Math.round(exactRawWpm)),
                 accuracy: Math.round(accuracy * 10) / 10,
-                consistency: computeConsistencyFromTimes(keystrokeTimes),
+                consistency: computeConsistencyFromRawHistory(rawHistory),
                 correct: validChars,
                 total: rawChars,
                 errors: errorsMade,
@@ -845,14 +873,7 @@
             var accuracy = totalKeystrokes
                 ? Math.max(0, Math.min(100, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100))
                 : 100;
-            var consistency = 100;
-            if (keystrokeTimes.length > 2) {
-                var intervals = [];
-                for (var i = 1; i < keystrokeTimes.length; i += 1) intervals.push(keystrokeTimes[i] - keystrokeTimes[i - 1]);
-                var mean = intervals.reduce(function (sum, value) { return sum + value; }, 0) / intervals.length;
-                var variance = intervals.reduce(function (sum, value) { return sum + Math.pow(value - mean, 2); }, 0) / intervals.length;
-                consistency = Math.max(0, Math.min(100, Math.round(100 * (1 - Math.min(1, Math.sqrt(variance) / Math.max(1, mean))))));
-            }
+            var consistency = computeConsistencyFromRawHistory(rawHistory);
             return {
                 wpm: wpm,
                 raw: Math.max(wpm, Math.round(((totalKeystrokes / 5) / elapsedMinutes))),
@@ -868,6 +889,7 @@
 
         function updateLiveStats() {
             if (state !== 'racing') return;
+            sampleRawHistorySecond();
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
             var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
@@ -1182,6 +1204,9 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
+            rawHistory = [];
+            lastRawHistorySecond = 0;
+            lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -1607,6 +1632,9 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
+            rawHistory = [];
+            lastRawHistorySecond = 0;
+            lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -1809,7 +1837,7 @@
                     serverConsistency: serverMe ? serverMe.consistency : null,
                     localConsistency: localMe ? localMe.consistency : null,
                     usedConsistency: meData.consistency,
-                    keystrokeSamples: keystrokeTimes.length,
+                    rawHistorySamples: rawHistory.length,
                     rowConsistency: myRow[11],
                 });
                 // #endregion
