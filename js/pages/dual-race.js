@@ -90,12 +90,19 @@
         var shellFooter = document.getElementById('spa-shell-footer');
         var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
         var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
-        var keymapSpacer = null;
-
         function debugLog(hypothesisId, location, message, data) {
             // #region agent log
-            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v2' }) }).catch(function () {});
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '99e749' }, body: JSON.stringify({ sessionId: '99e749', hypothesisId: hypothesisId, location: location, message: message, data: data || {}, timestamp: Date.now(), runId: 'dual-fix-v3' }) }).catch(function () {});
             // #endregion
+        }
+
+        function clearReactKeyHighlights(keys) {
+            keys.forEach(function (key) {
+                key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
+                if (!key.classList.contains('bg-primary/10')) {
+                    key.classList.add('bg-primary/10');
+                }
+            });
         }
 
         function ensureDualKeymapHook() {
@@ -174,39 +181,31 @@
         }
 
         function syncDualKeymapLayout() {
-            if (!keymapSpacer) keymapSpacer = document.getElementById('dual-keymap-spacer');
             var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
             var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
-            if (keymapSpacer) keymapSpacer.style.height = '0';
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
                 window.usertypo_settingsApi.syncTypingScrollForKeymap(keymapOn);
             }
             if (!keymapOn) return;
             setTimeout(function () {
                 var testBox = document.getElementById('test-box');
-                var footer = document.getElementById('test-view-footer');
-                var keymapEl = document.getElementById('dynamic-keymap-container');
-                if (footer && keymapEl && !keymapEl.classList.contains('hidden')) {
-                    var footerRect = footer.getBoundingClientRect();
-                    var keymapBottom = keymapEl.getBoundingClientRect().bottom;
-                    var overlap = keymapBottom - footerRect.top + 8;
-                    if (keymapSpacer && overlap > 0) {
-                        keymapSpacer.style.height = Math.ceil(overlap) + 'px';
-                    }
-                }
                 if (testBox) {
                     var rect = testBox.getBoundingClientRect();
-                    var keymapRect = keymapEl ? keymapEl.getBoundingClientRect() : rect;
-                    var blockBottom = Math.max(rect.bottom, keymapRect.bottom);
-                    var blockTop = rect.top;
-                    var midpoint = window.scrollY + blockTop + (blockBottom - blockTop) / 2;
-                    var scrollTarget = midpoint - window.innerHeight / 2;
+                    var scrollTarget = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;
                     window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
                 }
                 // #region agent log
+                var testBoxEl = document.getElementById('test-box');
+                var keymapEl = document.getElementById('dynamic-keymap-container');
+                var tb = testBoxEl ? testBoxEl.getBoundingClientRect() : null;
+                var km = keymapEl ? keymapEl.getBoundingClientRect() : null;
                 debugLog('H1', 'dual-race.js:syncDualKeymapLayout', 'layout metrics', {
                     keymapOn: keymapOn,
-                    spacerHeight: keymapSpacer ? keymapSpacer.style.height : null,
+                    testBoxLeft: tb ? tb.left : null,
+                    testBoxWidth: tb ? tb.width : null,
+                    keymapLeft: km ? km.left : null,
+                    viewportWidth: window.innerWidth,
+                    scrollX: window.scrollX,
                 });
                 // #endregion
             }, 50);
@@ -283,6 +282,9 @@
             if (keyboard.keymapMode === 'Static') return;
             if (keyboard.keymapMode === 'React') {
                 if (!pressedKey) return;
+                if (isKeyDown) {
+                    clearReactKeyHighlights(keys);
+                }
                 keys.forEach(function (key) {
                     var chars = key.dataset.chars || '';
                     var special = key.dataset.special || '';
@@ -297,13 +299,20 @@
                     if (matches) {
                         if (isKeyDown) {
                             key.classList.add('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
-                            key.classList.remove('bg-primary/10', 'scale-95', 'ring-2', 'ring-primary/50');
+                            key.classList.remove('bg-primary/10');
                         } else {
-                            key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]', 'scale-95', 'ring-2', 'ring-primary/50');
+                            key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
                             key.classList.add('bg-primary/10');
                         }
                     }
                 });
+                // #region agent log
+                debugLog('H2', 'dual-race.js:updateKeymapHighlight', 'react highlight', {
+                    pressedKey: pressedKey,
+                    isKeyDown: isKeyDown,
+                    keymapMode: keyboard.keymapMode,
+                });
+                // #endregion
                 return;
             }
             if (keyboard.keymapMode === 'Next') {
@@ -580,6 +589,9 @@
         function updateCaret() {
             handleScroll();
             positionCaretAt(caret, currentWordIndex, currentCharIndex);
+            if (window.usertypo_settings?.keyboardLayout?.keymapMode === 'Next') {
+                updateKeymapHighlight();
+            }
         }
 
         function animateOpponent(now) {

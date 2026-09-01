@@ -111,11 +111,8 @@
 
 
 
-            <main id="dual-test-main" class="flex-1 flex flex-col min-h-0 relative z-10">
-
-                <div id="dual-scroll-area" class="flex-1 min-h-0 flex items-center justify-center">
-                    <div id="dual-typing-stage" class="flex items-center justify-center w-full p-6">
-                        <div id="test-box" class="relative flex items-center justify-center test-box-outer max-w-none w-full">
+            <main id="dual-test-main" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10 min-h-0">
+                <div id="test-box" class="w-full flex flex-col relative test-box-outer max-w-none">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->
                     <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">
@@ -131,7 +128,7 @@
                         </div>
                     </div>
 
-                    <!-- TYPING AREA (vertically centered element) -->
+                    <!-- Typing column (in-flow keymap like home page) -->
                     <div class="w-[80vw] max-w-none mx-auto relative z-10">
                         <div id="typing-area"
                             class="font-mono text-[24px] md:text-[30px] text-left select-none relative w-full overflow-hidden transition-[height] duration-300 ease-in-out box-content py-[8px] -my-[8px]">
@@ -140,11 +137,8 @@
                                 <span id="bot-caret"></span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- BELOW: live stats (absolute, does not shift centering) -->
-                    <div class="absolute left-0 right-0 top-full h-[48px]">
-                        <div class="relative w-[80vw] max-w-none mx-auto h-full">
+                        <div class="relative w-full h-[48px] mt-4">
                             <div id="live-stats-container"
                                 class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[16px] flex items-center gap-[16px] pointer-events-auto">
                                 <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
@@ -177,27 +171,19 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Visual Keymap (absolute — does not shift typing center) -->
-                    <div id="dual-keymap-slot" class="absolute left-0 right-0 top-full mt-[72px] pointer-events-none">
-                        <div class="w-[80vw] max-w-none mx-auto pointer-events-auto">
-                            <div class="hidden transition-opacity duration-300" id="dynamic-keymap-container"
-                                style="height: 184px;">
-                                <div id="dynamic-keymap"
-                                    class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2">
-                                </div>
+                        <div class="mt-8 mb-2 hidden transition-opacity duration-300 overflow-x-auto" id="dynamic-keymap-container"
+                            style="height: 184px;">
+                            <div id="dynamic-keymap"
+                                class="flex flex-col gap-1.5 items-center justify-end w-full min-w-max h-full pb-2 mx-auto">
                             </div>
-                            <div id="capslock-warning"
-                                class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
-                                <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
-                            </div>
+                        </div>
+                        <div id="capslock-warning"
+                            class="opacity-0 transition-opacity duration-150 mt-6 text-center text-amber-400 font-mono text-[10px] font-bold uppercase tracking-widest relative z-10 h-4">
+                            <span class="material-symbols-outlined text-[14px] align-middle mb-0.5 mr-0.5">lock</span>Caps Lock
                         </div>
                     </div>
 
-                </div>
-                    </div>
-                    <div id="dual-keymap-spacer" class="shrink-0 w-full" style="height: 0;" aria-hidden="true"></div>
                 </div>
             </main>
 
