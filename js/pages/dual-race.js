@@ -48,7 +48,14 @@
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
+        var CURSOR_SYNC_INTERVAL_MS = 150;
+        var OPPONENT_LERP_MS = 150;
+        var OPPONENT_CURSOR_STALE_MS = 600;
+        var OPPONENT_SNAP_OFFSET_CHARS = 80;
+
         var opponentOffset = 0;
+        var opponentTargetOffset = 0;
+        var opponentDisplayOffset = 0;
         var opponentDisplayWpm = 0;
         var opponentTargetWpm = 0;
         var opponentTargetWordIndex = 0;
@@ -664,7 +671,36 @@
         }
 
         function opponentCursorFresh() {
-            return !!(lastOpponentCursorAt && (Date.now() - lastOpponentCursorAt) < 700);
+            return !!(lastOpponentCursorAt && (Date.now() - lastOpponentCursorAt) < OPPONENT_CURSOR_STALE_MS);
+        }
+
+        function opponentLerpTauSeconds() {
+            return Math.max(0.05, OPPONENT_LERP_MS / 1000);
+        }
+
+        function setOpponentTarget(wordIndex, charIndex, wpm) {
+            opponentTargetWordIndex = Math.max(0, wordIndex);
+            opponentTargetCharIndex = Math.max(0, charIndex);
+            opponentTargetWpm = Math.max(0, Number(wpm) || 0);
+            opponentTargetOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
+            opponentHasReport = true;
+            if (Math.abs(opponentTargetOffset - opponentDisplayOffset) > OPPONENT_SNAP_OFFSET_CHARS) {
+                opponentDisplayOffset = opponentTargetOffset;
+                opponentDisplayWpm = opponentTargetWpm;
+            }
+        }
+
+        function maxOpponentOffset() {
+            var last = Math.max(0, words.length - 1);
+            return wordOffset(last) + (words[last] ? words[last].length : 0);
+        }
+
+        function paintOpponentFromDisplayOffset() {
+            var clamped = Math.max(0, Math.min(maxOpponentOffset(), opponentDisplayOffset));
+            opponentDisplayOffset = clamped;
+            opponentOffset = clamped;
+            var pos = offsetToPosition(clamped);
+            paintOpponentCaret(pos.wordIndex, pos.charIndex);
         }
 
         function getLiveCursorWpm() {
@@ -694,7 +730,8 @@
         function queueCursorSend(force) {
             if (state !== 'racing' || isLocalBotMatch() || isBotMatch()) return;
             var now = Date.now();
-            if (!force && now - lastCursorSentAt < 100) return;
+            var minGap = Math.max(50, Math.floor(CURSOR_SYNC_INTERVAL_MS * 0.5));
+            if (!force && now - lastCursorSentAt < minGap) return;
             lastCursorSentAt = now;
             sendCursorPacket();
         }
@@ -709,23 +746,18 @@
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
                 var cursorFresh = opponentCursorFresh();
-                var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
+                var lerpAlpha = 1 - Math.exp(-elapsedSeconds / opponentLerpTauSeconds());
 
-                // When cursor packets are flowing, WPM snaps each packet. Otherwise glide
-                // from sparse progress updates so motion still looks continuous.
-                if (cursorFresh) {
-                    opponentDisplayWpm = desiredWpm;
-                } else {
-                    var blend = 1 - Math.exp(-elapsedSeconds * 3);
-                    opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
-                    if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
-                    if (!isLocalBotMatch() && !isBotMatch() && opponentDisplayWpm > 0) {
-                        opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
-                        var last = Math.max(0, words.length - 1);
-                        var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
-                        opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
-                        var glidePos = offsetToPosition(opponentOffset);
-                        paintOpponentCaret(glidePos.wordIndex, glidePos.charIndex);
+                if (opponentHasReport) {
+                    opponentDisplayWpm += (opponentTargetWpm - opponentDisplayWpm) * lerpAlpha;
+                    if (opponentTargetWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
+
+                    if (cursorFresh || opponentTargetOffset > 0) {
+                        opponentDisplayOffset += (opponentTargetOffset - opponentDisplayOffset) * lerpAlpha;
+                        paintOpponentFromDisplayOffset();
+                    } else if (!isLocalBotMatch() && !isBotMatch() && opponentDisplayWpm > 0) {
+                        opponentDisplayOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                        paintOpponentFromDisplayOffset();
                     }
                 }
 
@@ -1087,7 +1119,7 @@
             queueCursorSend(true);
             cursorSyncTimer = setInterval(function () {
                 queueCursorSend(true);
-            }, 300);
+            }, CURSOR_SYNC_INTERVAL_MS);
         }
 
         function sendCursorPacket() {
@@ -1658,6 +1690,8 @@
             localFinished = false;
             latestResults = null;
             opponentOffset = 0;
+            opponentTargetOffset = 0;
+            opponentDisplayOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
             opponentTargetWordIndex = 0;
@@ -2084,6 +2118,8 @@
             errorHistory = [];
             localFinished = false;
             opponentOffset = 0;
+            opponentTargetOffset = 0;
+            opponentDisplayOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
             opponentTargetWordIndex = 0;
@@ -2213,7 +2249,10 @@
         function resetOpponentCaretInstant() {
             opponentTargetWordIndex = 0;
             opponentTargetCharIndex = 0;
+            opponentTargetOffset = 0;
+            opponentDisplayOffset = 0;
             opponentOffset = 0;
+            opponentTargetWpm = 0;
             opponentHasReport = false;
             opponentDisplayWpm = 0;
             lastOpponentCursorAt = 0;
@@ -2227,17 +2266,12 @@
 
         function applyOpponentCursor(payload) {
             if (!Array.isArray(payload) || Number(payload[0]) !== Number(opponentIndex)) return;
-            opponentTargetWpm = Math.max(0, Number(payload[1]) || 0);
-            opponentTargetWordIndex = Math.max(0, Number(payload[2]) || 0);
-            opponentTargetCharIndex = Math.max(0, Number(payload[3]) || 0);
-            opponentHasReport = true;
-            opponentDisplayWpm = opponentTargetWpm;
+            setOpponentTarget(
+                Math.max(0, Number(payload[2]) || 0),
+                Math.max(0, Number(payload[3]) || 0),
+                Number(payload[1]) || 0
+            );
             lastOpponentCursorAt = Date.now();
-            opponentOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
-            if (opponentWpmDisplay) {
-                opponentWpmDisplay.textContent = String(Math.round(opponentTargetWpm));
-            }
-            paintOpponentCaret(opponentTargetWordIndex, opponentTargetCharIndex);
         }
 
         function applyOpponentProgress(payload) {
@@ -2249,23 +2283,14 @@
             var position = positionFromCompletedWords(completedWords);
 
             if (isBotMatch()) {
-                opponentTargetWpm = wpm;
-                opponentHasReport = true;
-                opponentDisplayWpm = wpm;
-                if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
-                paintOpponentCaret(position.wordIndex, position.charIndex);
+                setOpponentTarget(position.wordIndex, position.charIndex, wpm);
                 return;
             }
 
             // PvP: progress is only a fallback when high-frequency cursor sync is down.
             if (opponentCursorFresh()) return;
 
-            opponentTargetWpm = wpm;
-            opponentHasReport = true;
-            opponentDisplayWpm = wpm;
-            if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
-            opponentOffset = wordOffset(position.wordIndex) + position.charIndex;
-            paintOpponentCaret(position.wordIndex, position.charIndex);
+            setOpponentTarget(position.wordIndex, position.charIndex, wpm);
         }
 
         function fillCard(prefix, data) {
