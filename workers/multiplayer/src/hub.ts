@@ -24,9 +24,16 @@ interface Player {
   sequence: number;
   completedWords: number;
   totalKeystrokes: number;
+  correctChars: number;
   wpm: number;
   accuracy: number;
-  finalStats: Record<string, unknown> | null;
+  finalStats: {
+    validChars?: number;
+    rawChars?: number;
+    errorsMade?: number;
+    extraChars?: number;
+    displaySeconds?: number;
+  } | null;
   finishedAt: number | null;
   leftMidGame: boolean;
 }
@@ -63,6 +70,7 @@ interface Room {
   lastResults: unknown[] | null;
   finishReason: string;
   opponentLeft: boolean;
+  rematchVotes: string[];
 }
 
 interface Listing {
@@ -145,7 +153,13 @@ export class MultiplayerHub implements DurableObject {
       for (const [k, v] of Object.entries(snap.profiles || {})) this.profiles.set(k, v);
       for (const listing of snap.listings || []) this.listings.set(listing.id, listing);
       for (const invite of snap.invites || []) this.invites.set(invite.id, invite);
-      for (const room of snap.rooms || []) this.rooms.set(room.id, room);
+      for (const room of snap.rooms || []) {
+        if (!room.rematchVotes) room.rematchVotes = [];
+        for (const player of Object.values(room.players || {})) {
+          if (player.correctChars == null) player.correctChars = 0;
+        }
+        this.rooms.set(room.id, room);
+      }
       for (const [k, v] of Object.entries(snap.userToRoom || {})) this.userToRoom.set(k, v);
     }
     this.rebuildSocketRegistry();
@@ -453,6 +467,7 @@ export class MultiplayerHub implements DurableObject {
       sequence: 0,
       completedWords: 0,
       totalKeystrokes: 0,
+      correctChars: 0,
       wpm: 0,
       accuracy: 100,
       finalStats: null,
@@ -553,6 +568,7 @@ export class MultiplayerHub implements DurableObject {
       lastResults: null,
       finishReason: '',
       opponentLeft: false,
+      rematchVotes: [],
     };
     this.rooms.set(id, room);
     for (const uid of allowedUserIds) this.userToRoom.set(uid, id);
@@ -668,27 +684,128 @@ export class MultiplayerHub implements DurableObject {
     }
   }
 
+  private async cancelAlarmsForRoom(roomId: string, kind?: string) {
+    const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+    const filtered = pending.filter((entry) => {
+      if (entry.payload.roomId !== roomId) return true;
+      if (kind && entry.payload.kind !== kind) return true;
+      return false;
+    });
+    await this.ctx.storage.put('pendingAlarms', filtered);
+  }
+
+  private resetPlayerForLobby(player: Player) {
+    player.ready = false;
+    player.status = 'waiting';
+    player.sequence = 0;
+    player.completedWords = 0;
+    player.correctChars = 0;
+    player.totalKeystrokes = 0;
+    player.wpm = 0;
+    player.accuracy = 100;
+    player.finalStats = null;
+    player.finishedAt = null;
+    player.leftMidGame = false;
+  }
+
+  private remainingDualHumans(room: Room): Player[] {
+    return Object.values(room.players).filter((p) => p.status !== 'left');
+  }
+
+  private emitRematchState(room: Room) {
+    if (room.type === 'custom' || room.state !== 'finished') return;
+    const votes = room.rematchVotes || [];
+    this.emitRoom(room, 'race:rematch-state', [
+      room.id,
+      votes.length,
+      Math.max(1, this.remainingDualHumans(room).length),
+      votes.slice(),
+    ]);
+  }
+
+  private async startDualRematch(room: Room) {
+    if (room.type === 'custom' || room.state !== 'finished') return;
+    await this.cancelAlarmsForRoom(room.id, 'room-dispose');
+    room.state = 'waiting';
+    room.prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', room.config);
+    room.startsAt = null;
+    room.countdownEndsAt = null;
+    room.opponentLeft = false;
+    room.lastResults = null;
+    room.finishReason = '';
+    room.rematchVotes = [];
+    room.bot = null;
+    for (const player of this.remainingDualHumans(room)) {
+      this.resetPlayerForLobby(player);
+      player.joined = true;
+      this.userToRoom.set(player.userId, room.id);
+    }
+    this.emitRoom(room, 'race:rematch-start', {
+      roomId: room.id,
+      reason: room.type,
+      config: room.config,
+    });
+    this.startCountdown(room);
+    await this.persist();
+  }
+
+  private playerResult(player: Player, room: Room): Array<string | number> {
+    const progress = room.config.mode === 'words'
+      ? Math.min(100, Math.round((player.completedWords / room.prompt.targetWordCount) * 100))
+      : Math.min(100, Math.round(((Date.now() - (room.startsAt || Date.now())) / (room.config.amount * 1000)) * 100));
+    const fs = player.finalStats;
+    const validChars = fs?.validChars ?? player.correctChars ?? 0;
+    const rawChars = fs?.rawChars ?? player.totalKeystrokes ?? 0;
+    const errorsMade = fs?.errorsMade ?? Math.max(0, rawChars - validChars);
+    const extraChars = fs?.extraChars ?? 0;
+    const displaySeconds = fs?.displaySeconds ?? (
+      player.finishedAt && room.startsAt
+        ? Math.floor((player.finishedAt - room.startsAt) / 1000)
+        : 0
+    );
+    const elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+    const exactWpm = (validChars / 5) / elapsedMinutes;
+    const exactRawWpm = (rawChars / 5) / elapsedMinutes;
+    const accuracy = rawChars > 0
+      ? Math.max(0, ((rawChars - errorsMade) / rawChars) * 100)
+      : 100;
+    return [
+      player.index,
+      player.userId,
+      player.name,
+      Math.max(0, Math.round(exactWpm)),
+      Math.max(0, Math.min(100, Math.round(accuracy * 10) / 10)),
+      progress,
+      player.status,
+      player.finishedAt || 0,
+      validChars,
+      rawChars,
+      Math.max(0, Math.round(exactRawWpm)),
+      100,
+      displaySeconds,
+      errorsMade,
+      extraChars,
+    ];
+  }
+
   private async finishRoom(room: Room, reason: string) {
     room.state = 'finished';
     room.finishReason = reason;
-    const results = Object.values(room.players).map((p) => ({
-      index: p.index,
-      userId: p.userId,
-      name: p.name,
-      wpm: p.wpm,
-      accuracy: p.accuracy,
-      status: p.status,
-    }));
-    if (room.bot) {
-      results.push({
-        index: room.bot.index,
-        userId: 'bot',
-        name: room.bot.name,
-        wpm: room.bot.wpm,
-        accuracy: room.bot.accuracy,
-        status: room.bot.status,
-      });
-    }
+    room.bot = null;
+    room.rematchVotes = [];
+    const results = Object.values(room.players).map((p) => this.playerResult(p, room));
+    results.sort((a, b) => {
+      const aFinished = a[6] === 'finished' ? 1 : 0;
+      const bFinished = b[6] === 'finished' ? 1 : 0;
+      if (aFinished !== bFinished) return bFinished - aFinished;
+      const aWpm = Number(a[3]) || 0;
+      const bWpm = Number(b[3]) || 0;
+      if (bWpm !== aWpm) return bWpm - aWpm;
+      const aAcc = Number(a[4]) || 0;
+      const bAcc = Number(b[4]) || 0;
+      if (bAcc !== aAcc) return bAcc - aAcc;
+      return (Number(a[7]) || 0) - (Number(b[7]) || 0);
+    });
     room.lastResults = results;
     this.emitRoom(room, 'race:finished', [
       room.id,
@@ -936,15 +1053,38 @@ export class MultiplayerHub implements DurableObject {
         const completedWords = Number(arr[2]);
         const totalKeystrokes = Number(arr[3]);
         const isFinal = Number(arr[4]) === 1;
-        const finalStats = arr[5] as Record<string, unknown> | null;
+        const finalStatsPayload = Array.isArray(arr[5]) ? arr[5] : null;
         if (sequence >= player.sequence) {
           player.sequence = sequence;
           player.completedWords = completedWords;
           player.totalKeystrokes = totalKeystrokes;
-          if (finalStats) {
-            player.wpm = Number(finalStats.wpm) || player.wpm;
-            player.accuracy = Number(finalStats.accuracy) || player.accuracy;
-            player.finalStats = finalStats;
+          player.correctChars = this.cumulativeCorrectChars(room, completedWords);
+          player.wpm = (player.correctChars / 5) / Math.max((Date.now() - (room.startsAt || Date.now())) / 60_000, 1 / 120);
+          player.accuracy = totalKeystrokes > 0
+            ? (player.correctChars / totalKeystrokes) * 100
+            : 100;
+          if (finalStatsPayload && finalStatsPayload.length >= 4) {
+            const validChars = Number(finalStatsPayload[0]);
+            const rawChars = Number(finalStatsPayload[1]);
+            const errorsMade = Number(finalStatsPayload[2]);
+            const extraChars = Number(finalStatsPayload[3]);
+            const displaySeconds = Number(finalStatsPayload[4]);
+            if (
+              Number.isFinite(validChars)
+              && Number.isFinite(rawChars)
+              && Number.isFinite(errorsMade)
+              && Number.isFinite(extraChars)
+            ) {
+              player.finalStats = {
+                validChars: Math.max(0, Math.floor(validChars)),
+                rawChars: Math.max(0, Math.floor(rawChars)),
+                errorsMade: Math.max(0, Math.floor(errorsMade)),
+                extraChars: Math.max(0, Math.floor(extraChars)),
+                displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
+                  ? Math.floor(displaySeconds)
+                  : undefined,
+              };
+            }
           }
         }
         if (isFinal) {
@@ -953,7 +1093,7 @@ export class MultiplayerHub implements DurableObject {
           await this.maybeFinishRoom(room);
         }
         const elapsed = room.startsAt ? Math.max((Date.now() - room.startsAt) / 60_000, 1 / 120) : 1;
-        const wpm = (player.totalKeystrokes / 5) / elapsed;
+        const wpm = (player.correctChars / 5) / elapsed;
         const progress = room.config.mode === 'words'
           ? Math.round((completedWords / room.prompt.targetWordCount) * 100)
           : Math.round(((Date.now() - (room.startsAt || Date.now())) / (room.config.amount * 1000)) * 100);
@@ -1029,6 +1169,25 @@ export class MultiplayerHub implements DurableObject {
         if (!invite || invite.fromUserId !== userId) throw new Error('invite_not_found');
         this.invites.delete(inviteId);
         this.emitToUser(invite.toUserId, 'duel:expired', [inviteId, userId]);
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
+      if (event === 'race:rematch') {
+        const roomId = String(payload || '');
+        const room = this.rooms.get(roomId);
+        if (!room || room.type === 'custom' || room.state !== 'finished') {
+          throw new Error('rematch_unavailable');
+        }
+        const player = room.players[userId];
+        if (!player || player.status === 'left') throw new Error('rematch_unavailable');
+        if (!room.rematchVotes) room.rematchVotes = [];
+        if (!room.rematchVotes.includes(userId)) room.rematchVotes.push(userId);
+        await this.cancelAlarmsForRoom(room.id, 'room-dispose');
+        this.scheduleAlarm(LIMITS.finishedRoomTtlMs, { kind: 'room-dispose', roomId: room.id });
+        this.emitRematchState(room);
+        const needed = Math.max(1, this.remainingDualHumans(room).length);
+        if (room.rematchVotes.length >= needed) await this.startDualRematch(room);
         safeAck(ws, reqId, { ok: true });
         await this.persist();
         return;

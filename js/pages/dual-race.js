@@ -2068,7 +2068,10 @@
             if (textContainer) textContainer.style.transition = '';
             renderPrompt();
             showTestChrome();
-            if (opponentCaret) opponentCaret.style.display = 'block';
+            requestAnimationFrame(function () {
+                updateLineLayout();
+                resetOpponentCaretInstant();
+            });
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
 
@@ -2151,6 +2154,21 @@
                 Math.max(0, words.length - 1)
             );
             positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+        }
+
+        function resetOpponentCaretInstant() {
+            opponentTargetWordIndex = 0;
+            opponentTargetCharIndex = 0;
+            opponentOffset = 0;
+            opponentHasReport = false;
+            opponentDisplayWpm = 0;
+            lastOpponentCursorAt = 0;
+            if (!opponentCaret || !words.length) return;
+            opponentCaret.style.transition = 'none';
+            opponentCaret.style.display = 'block';
+            paintOpponentCaret(0, 0);
+            void opponentCaret.offsetHeight;
+            opponentCaret.style.transition = '';
         }
 
         function applyOpponentCursor(payload) {
