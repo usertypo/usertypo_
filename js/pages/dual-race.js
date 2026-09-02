@@ -44,8 +44,6 @@
         var lastLiveRawSecond = 0;
         var rawHistory = [];
         var lastRawHistorySecond = 0;
-        var opponentRawHistory = [];
-        var lastOpponentRawHistorySecond = 0;
         var lastSecondKeystrokes = 0;
         var localFinished = false;
         var latestResults = null;
@@ -826,15 +824,6 @@
             rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
         }
 
-        function sampleOpponentRawHistorySecond() {
-            if (!startTime || state !== 'racing' || !opponentHasReport || isLocalBotMatch()) return;
-            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-            if (elapsedSec <= lastOpponentRawHistorySecond) return;
-            lastOpponentRawHistorySecond = elapsedSec;
-            var sampleWpm = Math.max(0, Math.round(opponentDisplayWpm || opponentTargetWpm || 0));
-            opponentRawHistory.push(sampleWpm);
-        }
-
         function computeFinalStats(finishTime) {
             var endTime = finishTime || Date.now();
             var validChars = 0;
@@ -978,7 +967,6 @@
         function updateLiveStats() {
             if (state !== 'racing') return;
             sampleRawHistorySecond();
-            sampleOpponentRawHistorySecond();
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
             var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
@@ -1375,7 +1363,14 @@
                 var finalStats = null;
                 if (forceFinal === true) {
                     var snapshot = computeFinalStats(localFinishTime || Date.now());
-                    finalStats = [snapshot.correct, snapshot.total, snapshot.errors, snapshot.extra, snapshot.time];
+                    finalStats = [
+                        snapshot.correct,
+                        snapshot.total,
+                        snapshot.errors,
+                        snapshot.extra,
+                        snapshot.time,
+                        snapshot.consistency,
+                    ];
                 }
                 packetQueue.push({
                     words: completedCorrectWords,
@@ -1626,8 +1621,6 @@
             lastLiveRawSecond = 0;
             rawHistory = [];
             lastRawHistorySecond = 0;
-            opponentRawHistory = [];
-            lastOpponentRawHistorySecond = 0;
             lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
@@ -2056,8 +2049,6 @@
             lastLiveRawSecond = 0;
             rawHistory = [];
             lastRawHistorySecond = 0;
-            opponentRawHistory = [];
-            lastOpponentRawHistorySecond = 0;
             lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
@@ -2313,7 +2304,6 @@
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
-                sampleOpponentRawHistorySecond();
                 var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
                 var serverMe = parseServerResult(myRow);
                 var localMe = computeFinalStats(localFinishTime || Date.now());
@@ -2322,11 +2312,6 @@
                 var meData = (serverMe && serverMe.wpm > 0)
                     ? Object.assign({}, serverMe)
                     : Object.assign({}, localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
-                // Bot matches send one final progress packet, so the server has too few
-                // snapshots to compute consistency and defaults to 100. Prefer local keystroke data.
-                if (localMe && localMe.consistency != null) {
-                    meData.consistency = localMe.consistency;
-                }
                 var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
@@ -2353,9 +2338,6 @@
             otherData.percentToNext = other.percentToNext;
             otherData.userId = other.userId;
             otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
-            if (opponentRawHistory.length >= 2) {
-                otherData.consistency = computeConsistencyFromRawHistory(opponentRawHistory);
-            }
             meData.userId = me.userId;
                 var meWon = rows.length && rows[0][0] === selfIndex;
                 fillCard('w', meWon ? meData : otherData);

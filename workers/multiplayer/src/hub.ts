@@ -34,6 +34,7 @@ interface Player {
     errorsMade?: number;
     extraChars?: number;
     displaySeconds?: number;
+    consistency?: number;
   } | null;
   finishedAt: number | null;
   leftMidGame: boolean;
@@ -781,6 +782,9 @@ export class MultiplayerHub implements DurableObject {
     const accuracy = rawChars > 0
       ? Math.max(0, ((rawChars - errorsMade) / rawChars) * 100)
       : 100;
+    const consistency = fs?.consistency != null && Number.isFinite(fs.consistency)
+      ? Math.max(0, Math.min(100, Math.round(fs.consistency)))
+      : computeConsistencyFromSnapshots(player.snapshots);
     return [
       player.index,
       player.userId,
@@ -793,7 +797,7 @@ export class MultiplayerHub implements DurableObject {
       validChars,
       rawChars,
       Math.max(0, Math.round(exactRawWpm)),
-      computeConsistencyFromSnapshots(player.snapshots),
+      consistency,
       displaySeconds,
       errorsMade,
       extraChars,
@@ -1095,6 +1099,9 @@ export class MultiplayerHub implements DurableObject {
           const errorsMade = Number(finalStatsPayload[2]);
           const extraChars = Number(finalStatsPayload[3]);
           const displaySeconds = Number(finalStatsPayload[4]);
+          const consistency = finalStatsPayload.length >= 6
+            ? Number(finalStatsPayload[5])
+            : NaN;
           if (
             Number.isFinite(validChars)
             && Number.isFinite(rawChars)
@@ -1108,6 +1115,9 @@ export class MultiplayerHub implements DurableObject {
               extraChars: Math.max(0, Math.floor(extraChars)),
               displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
                 ? Math.floor(displaySeconds)
+                : undefined,
+              consistency: Number.isFinite(consistency)
+                ? Math.max(0, Math.min(100, Math.round(consistency)))
                 : undefined,
             };
           }

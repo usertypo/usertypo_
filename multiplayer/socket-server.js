@@ -557,6 +557,11 @@ function createMultiplayerServer(httpServer, options) {
         const accuracy = totalKeystrokes > 0
             ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100)
             : 100;
+        const consistency = finalStats.consistency != null && Number.isFinite(finalStats.consistency)
+            ? Math.max(0, Math.min(100, Math.round(finalStats.consistency)))
+            : (room.type === 'custom'
+                ? computeRoomConsistencyFromSnapshots(player.snapshots)
+                : computeConsistencyFromSnapshots(player.snapshots));
         return [
             player.index,
             player.userId,
@@ -569,7 +574,7 @@ function createMultiplayerServer(httpServer, options) {
             validChars,
             rawChars,
             Math.max(0, Math.round(exactRawWpm)),
-            room.type === 'custom' ? computeRoomConsistencyFromSnapshots(player.snapshots) : computeConsistencyFromSnapshots(player.snapshots),
+            consistency,
             displaySeconds,
             errorsMade,
             extraChars,
@@ -1549,6 +1554,9 @@ function createMultiplayerServer(httpServer, options) {
                     const errorsMade = Number(finalStatsPayload[2]);
                     const extraChars = Number(finalStatsPayload[3]);
                     const displaySeconds = Number(finalStatsPayload[4]);
+                    const consistency = finalStatsPayload.length >= 6
+                        ? Number(finalStatsPayload[5])
+                        : NaN;
                     if (
                         Number.isInteger(validChars)
                         && Number.isInteger(rawChars)
@@ -1568,6 +1576,9 @@ function createMultiplayerServer(httpServer, options) {
                             displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
                                 ? Math.floor(displaySeconds)
                                 : Math.floor((now - room.startsAt) / 1000),
+                            consistency: Number.isFinite(consistency)
+                                ? Math.max(0, Math.min(100, Math.round(consistency)))
+                                : undefined,
                         };
                     }
                 }
