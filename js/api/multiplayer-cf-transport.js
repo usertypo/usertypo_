@@ -99,10 +99,13 @@
                     if (!connected) reject(new Error('WebSocket connection failed.'));
                     emitLocal('connect_error', new Error('WebSocket error'));
                 });
-                once('connect', function () { resolve(); });
                 once('multiplayer:ready', function () { resolve(); });
                 setTimeout(function () {
-                    if (!connected) reject(new Error('WebSocket connection timed out.'));
+                    if (!connected) {
+                        reject(new Error('WebSocket connection timed out.'));
+                        return;
+                    }
+                    reject(new Error('Multiplayer server did not respond.'));
                 }, 20_000);
             });
         }

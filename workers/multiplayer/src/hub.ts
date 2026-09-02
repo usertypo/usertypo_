@@ -6,7 +6,7 @@ import {
   getProfile,
   hasBlocked,
 } from './auth';
-import { LIMITS, normalizeConfig, type RaceConfig } from './config';
+import { LIMITS, normalizeConfig, configKey, serializeConfig, type RaceConfig } from './config';
 import { createPrompt, type Prompt } from './prompt';
 
 type RoomState = 'waiting' | 'countdown' | 'racing' | 'finished' | 'disposed';
@@ -68,10 +68,18 @@ interface Room {
 interface Listing {
   id: string;
   ownerUserId: string;
+  ownerName: string;
   config: RaceConfig;
+  key: string;
   status: string;
   createdAt: number;
   expiresAt: number;
+  awaitingChoice: boolean;
+}
+
+interface AlarmEntry {
+  at: number;
+  payload: AlarmPayload;
 }
 
 interface Invite {
@@ -140,7 +148,25 @@ export class MultiplayerHub implements DurableObject {
       for (const room of snap.rooms || []) this.rooms.set(room.id, room);
       for (const [k, v] of Object.entries(snap.userToRoom || {})) this.userToRoom.set(k, v);
     }
+    this.rebuildSocketRegistry();
     this.loaded = true;
+  }
+
+  private rebuildSocketRegistry() {
+    this.wsToUser.clear();
+    this.userSockets.clear();
+    for (const ws of this.ctx.getWebSockets()) {
+      const attachment = ws.deserializeAttachment() as { userId?: string } | null;
+      if (attachment?.userId) {
+        this.attachSocket(ws, attachment.userId);
+      }
+    }
+  }
+
+  private attachSocket(ws: WebSocket, userId: string) {
+    this.wsToUser.set(ws, userId);
+    if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
+    this.userSockets.get(userId)!.add(ws);
   }
 
   private async persist() {
@@ -154,18 +180,32 @@ export class MultiplayerHub implements DurableObject {
     await this.ctx.storage.put('snapshot', snapshot);
   }
 
-  private scheduleAlarm(whenMs: number, payload: AlarmPayload) {
+  private async scheduleAlarm(whenMs: number, payload: AlarmPayload) {
     const at = Date.now() + whenMs;
-    this.ctx.storage.put('nextAlarm', { at, payload });
-    this.ctx.storage.setAlarm(at);
+    const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+    pending.push({ at, payload });
+    pending.sort((a, b) => a.at - b.at);
+    await this.ctx.storage.put('pendingAlarms', pending);
+    await this.ctx.storage.setAlarm(pending[0].at);
   }
 
   async alarm() {
     await this.ensureLoaded();
-    const next = await this.ctx.storage.get<{ at: number; payload: AlarmPayload }>('nextAlarm');
-    if (!next) return;
-    await this.ctx.storage.delete('nextAlarm');
-    const { payload } = next;
+    const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+    if (!pending.length) return;
+    const now = Date.now();
+    const due = pending.filter((entry) => entry.at <= now);
+    const remaining = pending.filter((entry) => entry.at > now);
+    await this.ctx.storage.put('pendingAlarms', remaining);
+    for (const entry of due) {
+      await this.handleAlarmPayload(entry.payload);
+    }
+    if (remaining.length) {
+      await this.ctx.storage.setAlarm(remaining[0].at);
+    }
+  }
+
+  private async handleAlarmPayload(payload: AlarmPayload) {
     if (payload.kind === 'invite-expire' && payload.inviteId) {
       const invite = this.invites.get(payload.inviteId);
       if (invite) {
@@ -174,6 +214,8 @@ export class MultiplayerHub implements DurableObject {
         this.emitToUser(invite.toUserId, 'duel:expired', [invite.id, invite.fromUserId]);
         await this.persist();
       }
+    } else if (payload.kind === 'listing-search-timeout' && payload.listingId) {
+      this.promptListingChoice(payload.listingId);
     } else if (payload.kind === 'listing-expire' && payload.listingId) {
       this.removeListing(payload.listingId);
     } else if (payload.kind === 'room-join-expire' && payload.roomId) {
@@ -188,6 +230,17 @@ export class MultiplayerHub implements DurableObject {
     } else if (payload.kind === 'bot-tick' && payload.roomId) {
       await this.handleBotTick(payload.roomId);
     }
+  }
+
+  private promptListingChoice(listingId: string) {
+    const listing = this.listings.get(listingId);
+    if (!listing || listing.status !== 'waiting') return;
+    listing.awaitingChoice = true;
+    this.emitToUser(listing.ownerUserId, 'duel:search-timeout', {
+      listingId: listing.id,
+      config: listing.config,
+    });
+    void this.persist();
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -222,7 +275,14 @@ export class MultiplayerHub implements DurableObject {
       await this.handleAuth(ws, (parsed.p || {}) as { token?: string; guestId?: string });
       return;
     }
-    const userId = this.wsToUser.get(ws);
+    let userId = this.wsToUser.get(ws);
+    if (!userId) {
+      const attachment = ws.deserializeAttachment() as { userId?: string } | null;
+      if (attachment?.userId) {
+        userId = attachment.userId;
+        this.attachSocket(ws, userId);
+      }
+    }
     if (!userId) {
       ws.close(4401, 'unauthorized');
       return;
@@ -252,7 +312,7 @@ export class MultiplayerHub implements DurableObject {
     try {
       const session = await authenticateHandshake(this.env, auth);
       const userId = session.userId;
-      this.wsToUser.set(ws, userId);
+      ws.serializeAttachment({ userId });
       if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
       const sockets = this.userSockets.get(userId)!;
       if (sockets.size >= LIMITS.maxSocketsPerUser) {
@@ -264,7 +324,8 @@ export class MultiplayerHub implements DurableObject {
           this.wsToUser.delete(oldest);
         }
       }
-      sockets.add(ws);
+      this.attachSocket(ws, userId);
+      this.cleanStaleMembership(userId);
       const profile = await getProfile(this.env, userId);
       this.profiles.set(userId, profile);
       const ownListing = [...this.listings.values()].find((l) => l.ownerUserId === userId && l.status === 'waiting');
@@ -299,7 +360,8 @@ export class MultiplayerHub implements DurableObject {
       }));
       this.broadcastAll('multiplayer:presence', [userId, 1]);
       await this.persist();
-    } catch {
+    } catch (error) {
+      console.error('[multiplayer] auth failed:', error);
       ws.close(4401, 'unauthorized');
     }
   }
@@ -337,21 +399,21 @@ export class MultiplayerHub implements DurableObject {
     for (const uid of room.allowedUserIds) this.emitToUser(uid, event, payload);
   }
 
-  private serializeListings() {
+  private serializeListings(): Array<[string, string, ReturnType<typeof serializeConfig>, number]> {
     return [...this.listings.values()]
       .filter((l) => l.status === 'waiting')
+      .sort((a, b) => a.createdAt - b.createdAt)
       .map((listing) => {
-        const owner = this.profiles.get(listing.ownerUserId) || { name: 'Player', avatarUrl: '', level: 1, percentToNext: 0 };
-        return {
-          listingId: listing.id,
-          ownerUserId: listing.ownerUserId,
-          ownerName: owner.name,
-          ownerAvatarUrl: owner.avatarUrl || '',
-          ownerLevel: owner.level || 1,
-          ownerPercentToNext: owner.percentToNext || 0,
-          config: listing.config,
-          createdAt: listing.createdAt,
-        };
+        const owner = this.profiles.get(listing.ownerUserId);
+        const ownerName = listing.ownerName
+          || owner?.name
+          || 'Player';
+        return [
+          listing.id,
+          ownerName,
+          serializeConfig(listing.config),
+          listing.createdAt,
+        ];
       });
   }
 
@@ -650,6 +712,27 @@ export class MultiplayerHub implements DurableObject {
     this.userToRoom.delete(userId);
   }
 
+  private cleanStaleMembership(userId: string) {
+    const roomId = this.userToRoom.get(userId);
+    if (!roomId) return;
+    const room = this.rooms.get(roomId);
+    if (!room || room.state === 'finished' || room.state === 'disposed') {
+      this.userToRoom.delete(userId);
+      return;
+    }
+    if (room.state === 'waiting' && !this.isOnline(userId)) {
+      this.userToRoom.delete(userId);
+    }
+  }
+
+  private purgeStaleListings() {
+    for (const listing of [...this.listings.values()]) {
+      if (!this.isOnline(listing.ownerUserId) || this.userToRoom.has(listing.ownerUserId)) {
+        this.removeListing(listing.id);
+      }
+    }
+  }
+
   private async handleRequest(ws: WebSocket, userId: string, event: string, payload: unknown, reqId: string) {
     try {
       if (event === 'duel:list') {
@@ -658,20 +741,58 @@ export class MultiplayerHub implements DurableObject {
       }
       if (event === 'duel:create') {
         this.abandonStuckMembership(userId);
+        this.purgeStaleListings();
         for (const l of this.listings.values()) {
           if (l.ownerUserId === userId) throw new Error('already_searching');
         }
         const config = normalizeConfig(payload);
+        const profile = this.profiles.get(userId) || await getProfile(this.env, userId);
+        this.profiles.set(userId, profile);
+        for (const listing of [...this.listings.values()]) {
+          if (
+            listing.ownerUserId !== userId
+            && listing.status === 'waiting'
+            && listing.key === configKey(config)
+          ) {
+            if (!this.isOnline(listing.ownerUserId) || this.userToRoom.has(listing.ownerUserId)) {
+              this.removeListing(listing.id);
+              continue;
+            }
+            this.removeListing(listing.id);
+            const room = await this.createRoom('public', config, [listing.ownerUserId, userId]);
+            this.notifyMatchReady(room, 'auto-match');
+            safeAck(ws, reqId, { ok: true, roomId: room.id });
+            await this.persist();
+            return;
+          }
+        }
         const listing: Listing = {
           id: shortId(),
           ownerUserId: userId,
+          ownerName: profile.name,
           config,
+          key: configKey(config),
           status: 'waiting',
           createdAt: Date.now(),
           expiresAt: Date.now() + LIMITS.listingTtlMs,
+          awaitingChoice: false,
         };
         this.listings.set(listing.id, listing);
-        this.scheduleAlarm(LIMITS.listingTtlMs, { kind: 'listing-expire', listingId: listing.id });
+        this.scheduleAlarm(LIMITS.listingTtlMs, { kind: 'listing-search-timeout', listingId: listing.id });
+        this.broadcastListings();
+        safeAck(ws, reqId, { ok: true, listingId: listing.id });
+        await this.persist();
+        return;
+      }
+      if (event === 'duel:extend-search') {
+        const listingId = String(payload || '');
+        const listing = this.listings.get(listingId);
+        if (!listing || listing.ownerUserId !== userId || listing.status !== 'waiting') {
+          throw new Error('listing_unavailable');
+        }
+        listing.awaitingChoice = false;
+        listing.expiresAt = Date.now() + LIMITS.listingTtlMs;
+        this.scheduleAlarm(LIMITS.listingTtlMs, { kind: 'listing-search-timeout', listingId: listing.id });
         this.broadcastListings();
         safeAck(ws, reqId, { ok: true, listingId: listing.id });
         await this.persist();
@@ -691,9 +812,18 @@ export class MultiplayerHub implements DurableObject {
         if (listing.ownerUserId === userId) throw new Error('own_listing');
         if (await areBlocked(this.env, userId, listing.ownerUserId)) throw new Error('blocked');
         this.abandonStuckMembership(userId);
-        if (!this.isOnline(listing.ownerUserId) || this.userToRoom.has(listing.ownerUserId)) {
+        if (!this.isOnline(listing.ownerUserId)) {
           this.removeListing(listing.id);
           throw new Error('listing_unavailable');
+        }
+        if (this.userToRoom.has(listing.ownerUserId)) {
+          const ownerRoomId = this.userToRoom.get(listing.ownerUserId)!;
+          const ownerRoom = this.rooms.get(ownerRoomId);
+          if (!ownerRoom || ownerRoom.state === 'racing') {
+            this.removeListing(listing.id);
+            throw new Error('listing_unavailable');
+          }
+          this.userToRoom.delete(listing.ownerUserId);
         }
         this.removeListing(listing.id);
         const room = await this.createRoom('public', listing.config, [listing.ownerUserId, userId]);

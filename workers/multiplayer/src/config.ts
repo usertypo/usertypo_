@@ -73,3 +73,14 @@ export function configKey(config: RaceConfig): string {
     config.nums ? 1 : 0,
   ].join(':');
 }
+
+/** Wire format expected by the SPA (matches Render socket-server). */
+export function serializeConfig(config: RaceConfig): [string, number, string, number, number] {
+  return [
+    config.mode,
+    config.amount,
+    config.lang,
+    config.punct ? 1 : 0,
+    config.nums ? 1 : 0,
+  ];
+}

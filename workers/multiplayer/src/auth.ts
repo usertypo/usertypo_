@@ -80,15 +80,23 @@ export async function getProfile(env: Env, userId: string): Promise<Profile> {
     fetch(`${base}/rest/v1/profiles?select=user_id,username,display_name,avatar_url&user_id=eq.${encodeURIComponent(userId)}&limit=1`, { headers }),
     fetch(`${base}/rest/v1/user_progression?select=level,xp_into_level&user_id=eq.${encodeURIComponent(userId)}&limit=1`, { headers }),
   ]);
-  const profiles = await profileRes.json() as Array<Record<string, unknown>>;
-  const progs = await progRes.json() as Array<Record<string, unknown>>;
-  const row = profiles[0] || {};
-  const prog = progs[0] || {};
+  let row: Record<string, unknown> = {};
+  if (profileRes.ok) {
+    const profiles = await profileRes.json() as unknown;
+    if (Array.isArray(profiles) && profiles[0]) row = profiles[0] as Record<string, unknown>;
+  }
+  let prog: Record<string, unknown> = {};
+  if (progRes.ok) {
+    const progs = await progRes.json() as unknown;
+    if (Array.isArray(progs) && progs[0]) prog = progs[0] as Record<string, unknown>;
+  }
   const level = Math.max(1, Math.floor(Number(prog.level) || 1));
   const xpInto = Math.max(0, Math.floor(Number(prog.xp_into_level) || 0));
+  const displayName = String(row.display_name || '').trim();
+  const username = String(row.username || '').trim();
   return {
     userId,
-    name: String(row.username || row.display_name || 'Player'),
+    name: displayName || username || 'Player',
     avatarUrl: String(row.avatar_url || ''),
     level,
     percentToNext: percentToNext(xpInto, xpNeededForLevel(level)),
