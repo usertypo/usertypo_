@@ -9,8 +9,9 @@
  *
  * Architecture:
  * - Website: https://usertypo.com (Cloudflare Pages)
- * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + Render)
- * - Backend (Socket.IO, /api/*): https://mp.usertypo.com (Render)
+ * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + CF workers)
+ * - Multiplayer: Cloudflare Workers + Durable Objects (duels); custom rooms Phase B
+ * - Backend (/api/* still on Render where needed): https://mp.usertypo.com
  * - Local `npm run dev`: blank backend URLs → same-origin Express
  */
 window.USERTYPO_CONFIG = {
@@ -40,8 +41,9 @@ window.USERTYPO_CONFIG = {
         url: 'https://mp.usertypo.com',
     },
     multiplayer: {
-        // Socket.IO server. Usually same as backend.url. Blank on localhost.
-        url: 'https://mp.usertypo.com',
+        // Cloudflare Durable Objects (lobby + 1 DO per duel). Custom rooms: Phase B.
+        url: 'https://usertypo-mp.usertypo2026.workers.dev',
+        transport: 'cf',
     },
     // Cloudflare Leaderboards Worker (Postgres — no Upstash).
     leaderboards: {
