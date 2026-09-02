@@ -2146,14 +2146,49 @@
             }
         }
 
+        function opponentCaretMetrics(wordIndex, charIndex) {
+            var wordElement = document.getElementById('word-' + wordIndex);
+            if (!wordElement || !words[wordIndex] || !textContainer) return null;
+            var len = words[wordIndex].length;
+            var idx = Math.max(0, Math.min(charIndex, len));
+            var refChar = document.getElementById('char-' + wordIndex + '-0')
+                || wordElement.querySelector('.char');
+            if (!refChar) return null;
+            var caretWidth = Math.max(1, refChar.offsetWidth || 8);
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+            var left;
+            var top;
+            if (idx === 0) {
+                var startBox = window.getCaretLayoutInContainer
+                    ? window.getCaretLayoutInContainer(textContainer, wordElement, refChar, false, isRtl)
+                    : null;
+                if (!startBox) return null;
+                left = startBox.left;
+                top = startBox.top;
+            } else {
+                var beforeChar = document.getElementById('char-' + wordIndex + '-' + (idx - 1));
+                if (!beforeChar) return null;
+                var endBox = window.getCaretLayoutInContainer
+                    ? window.getCaretLayoutInContainer(textContainer, wordElement, beforeChar, true, isRtl)
+                    : null;
+                if (!endBox) return null;
+                left = endBox.left;
+                top = endBox.top;
+            }
+            return { left: left, top: top, width: caretWidth };
+        }
+
         function paintOpponentCaret(wordIndex, charIndex) {
             if (!opponentCaret || !words.length) return;
-            opponentCaret.style.display = 'block';
             var safeWordIndex = Math.min(
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
-            positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+            var metrics = opponentCaretMetrics(safeWordIndex, charIndex);
+            if (!metrics) return;
+            opponentCaret.style.display = 'block';
+            opponentCaret.style.width = metrics.width + 'px';
+            opponentCaret.style.transform = 'translate3d(' + metrics.left + 'px,' + metrics.top + 'px,0)';
         }
 
         function resetOpponentCaretInstant() {

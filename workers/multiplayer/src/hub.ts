@@ -6,6 +6,7 @@ import {
   getProfile,
   hasBlocked,
 } from './auth';
+import { computeConsistencyFromSnapshots } from './consistency';
 import { LIMITS, normalizeConfig, configKey, serializeConfig, type RaceConfig } from './config';
 import { createPrompt, type Prompt } from './prompt';
 
@@ -36,6 +37,8 @@ interface Player {
   } | null;
   finishedAt: number | null;
   leftMidGame: boolean;
+  snapshots: Array<[number, number, number, number]>;
+  lastSnapshotAt: number;
 }
 
 interface BotPlayer {
@@ -157,6 +160,8 @@ export class MultiplayerHub implements DurableObject {
         if (!room.rematchVotes) room.rematchVotes = [];
         for (const player of Object.values(room.players || {})) {
           if (player.correctChars == null) player.correctChars = 0;
+          if (!player.snapshots) player.snapshots = [];
+          if (player.lastSnapshotAt == null) player.lastSnapshotAt = 0;
         }
         this.rooms.set(room.id, room);
       }
@@ -473,6 +478,8 @@ export class MultiplayerHub implements DurableObject {
       finalStats: null,
       finishedAt: null,
       leftMidGame: false,
+      snapshots: [],
+      lastSnapshotAt: 0,
     };
   }
 
@@ -706,6 +713,8 @@ export class MultiplayerHub implements DurableObject {
     player.finalStats = null;
     player.finishedAt = null;
     player.leftMidGame = false;
+    player.snapshots = [];
+    player.lastSnapshotAt = 0;
   }
 
   private remainingDualHumans(room: Room): Player[] {
@@ -781,7 +790,7 @@ export class MultiplayerHub implements DurableObject {
       validChars,
       rawChars,
       Math.max(0, Math.round(exactRawWpm)),
-      100,
+      computeConsistencyFromSnapshots(player.snapshots),
       displaySeconds,
       errorsMade,
       extraChars,
@@ -1086,6 +1095,12 @@ export class MultiplayerHub implements DurableObject {
               };
             }
           }
+          const now = Date.now();
+          player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
+          if (player.snapshots.length > LIMITS.maxRetainedSnapshots) {
+            player.snapshots.shift();
+          }
+          player.lastSnapshotAt = now;
         }
         if (isFinal) {
           player.status = 'finished';
