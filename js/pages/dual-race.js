@@ -684,74 +684,6 @@
             return String(wordIndex) + ':' + String(charIndex);
         }
 
-        function clearOpponentExtraSpans(wordIndex) {
-            var wordEl = document.getElementById('word-' + wordIndex);
-            if (!wordEl) return;
-            wordEl.querySelectorAll('.char.opponent-extra').forEach(function (el) { el.remove(); });
-        }
-
-        function clearAllOpponentExtraSpans() {
-            if (!textContainer) return;
-            textContainer.querySelectorAll('.char.opponent-extra').forEach(function (el) { el.remove(); });
-        }
-
-        function syncOpponentExtraSpans(wordIndex, charIndex) {
-            var safeWordIndex = Math.max(0, Math.min(wordIndex, Math.max(0, words.length - 1)));
-            for (var w = 0; w < words.length; w += 1) {
-                if (w !== safeWordIndex) clearOpponentExtraSpans(w);
-            }
-            var wordEl = document.getElementById('word-' + safeWordIndex);
-            if (!wordEl) return;
-            var promptLen = (words[safeWordIndex] || '').length;
-            var safeCharIndex = Math.max(0, Math.floor(Number(charIndex) || 0));
-            var typedExtraCount = Math.max(0, safeCharIndex - promptLen);
-            var sampleChar = document.getElementById('char-' + safeWordIndex + '-0');
-            var placeholder = sampleChar && sampleChar.textContent ? sampleChar.textContent : 'm';
-            wordEl.querySelectorAll('.char.opponent-extra').forEach(function (el) {
-                var parts = String(el.id || '').split('-');
-                var idx = Number(parts[parts.length - 1]);
-                if (!Number.isFinite(idx) || idx >= promptLen + typedExtraCount) el.remove();
-            });
-            for (var j = 0; j < typedExtraCount; j += 1) {
-                var extraIndex = promptLen + j;
-                if (document.getElementById('char-' + safeWordIndex + '-' + extraIndex)) continue;
-                var span = document.createElement('span');
-                span.id = 'char-' + safeWordIndex + '-' + extraIndex;
-                span.className = 'char opponent-extra text-error/50 opacity-50 pointer-events-none';
-                span.textContent = placeholder;
-                span.setAttribute('aria-hidden', 'true');
-                wordEl.appendChild(span);
-            }
-        }
-
-        function applyOpponentExpandedCaretWidth(wordIndex, charIndex) {
-            if (!opponentCaret || !textContainer) return;
-            var safeWordIndex = Math.max(0, Math.min(wordIndex, Math.max(0, words.length - 1)));
-            var wordElement = document.getElementById('word-' + safeWordIndex);
-            if (!wordElement) return;
-            var promptLen = (words[safeWordIndex] || '').length;
-            var safeCharIndex = Math.max(0, Math.floor(Number(charIndex) || 0));
-            var extraCount = Math.max(0, safeCharIndex - promptLen);
-            if (extraCount <= 0) {
-                opponentCaret.classList.remove('opponent-caret-expanded');
-                return;
-            }
-            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
-            var caretStyle = (document.body && document.body.getAttribute('data-caret-style')) || 'underscore';
-            var charWidth = estimateOpponentCharWidth(wordElement, safeWordIndex);
-            var resolved = typeof window.resolveCaretCharTarget === 'function'
-                ? window.resolveCaretCharTarget(wordElement, safeWordIndex, promptLen, 'char')
-                : null;
-            if (!resolved || typeof window.getCaretLayoutInContainer !== 'function') return;
-            var box = window.getCaretLayoutInContainer(
-                textContainer, wordElement, resolved.target, resolved.isAfter, isRtl
-            );
-            var width = opponentCaretWidth(caretStyle, charWidth, charWidth, extraCount);
-            opponentCaret.classList.add('opponent-caret-expanded');
-            opponentCaret.style.setProperty('width', width + 'px', 'important');
-            opponentCaret.style.transform = 'translate3d(' + box.left + 'px,' + box.top + 'px,0)';
-        }
-
         function setOpponentTarget(wordIndex, charIndex, wpm) {
             opponentTargetWordIndex = Math.max(0, wordIndex);
             opponentTargetCharIndex = Math.max(0, charIndex);
@@ -2310,15 +2242,34 @@
             var safeCharIndex = Math.max(0, Math.floor(Number(charIndex) || 0));
             var promptLen = (words[safeWordIndex] || '').length;
             var extraCount = Math.max(0, safeCharIndex - promptLen);
+            var wordElement = document.getElementById('word-' + safeWordIndex);
+            var caretStyle = (document.body && document.body.getAttribute('data-caret-style')) || 'underscore';
+            var charWidth = estimateOpponentCharWidth(wordElement, safeWordIndex);
 
-            syncOpponentExtraSpans(safeWordIndex, safeCharIndex);
             opponentCaret.style.display = 'block';
 
+            // Never inject extra letters into the local prompt — only grow the caret.
             if (extraCount > 0) {
-                applyOpponentExpandedCaretWidth(safeWordIndex, safeCharIndex);
+                var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+                var layoutIndex = promptLen;
+                var resolved = typeof window.resolveCaretCharTarget === 'function'
+                    ? window.resolveCaretCharTarget(wordElement, safeWordIndex, layoutIndex, 'char')
+                    : null;
+                if (resolved && typeof window.getCaretLayoutInContainer === 'function') {
+                    var box = window.getCaretLayoutInContainer(
+                        textContainer, wordElement, resolved.target, resolved.isAfter, isRtl
+                    );
+                    var width = opponentCaretWidth(caretStyle, charWidth, charWidth, extraCount);
+                    opponentCaret.classList.add('opponent-caret-expanded');
+                    opponentCaret.style.transform = 'translate3d(' + box.left + 'px,' + box.top + 'px,0)';
+                    opponentCaret.style.setProperty('width', width + 'px', 'important');
+                }
             } else {
                 opponentCaret.classList.remove('opponent-caret-expanded');
                 positionCaretAt(opponentCaret, safeWordIndex, safeCharIndex);
+                if (caretStyle === 'line') {
+                    opponentCaret.style.setProperty('width', '2.5px', 'important');
+                }
             }
 
             opponentOffset = wordOffset(safeWordIndex) + safeCharIndex;
@@ -2339,7 +2290,6 @@
             opponentHasReport = false;
             opponentDisplayWpm = 0;
             lastOpponentCursorAt = 0;
-            clearAllOpponentExtraSpans();
             if (!opponentCaret || !words.length) return;
             opponentCaret.classList.remove('opponent-caret-expanded');
             opponentCaret.style.transition = 'none';
