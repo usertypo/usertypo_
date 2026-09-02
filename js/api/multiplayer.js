@@ -543,6 +543,16 @@
         ], 5000);
     }
 
+    function reportConsistency(roomId, consistency) {
+        if (activeRoomIsBot) {
+            return Promise.resolve({ ok: true, skipped: true });
+        }
+        return emitAck('race:consistency', [
+            roomId,
+            Math.max(0, Math.min(100, Math.round(Number(consistency) || 0))),
+        ], 5000);
+    }
+
     function sendCursorState(roomId, wpm, wordIndex, charIndex) {
         if (activeRoomIsBot) {
             return Promise.resolve({ ok: true, skipped: true });
@@ -669,6 +679,7 @@
         joinListing: joinListing,
         joinMatch: joinMatch,
         sendProgress: sendProgress,
+        reportConsistency: reportConsistency,
         sendCursorState: sendCursorState,
         leaveRace: leaveRace,
         createRoom: createRoom,

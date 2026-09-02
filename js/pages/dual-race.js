@@ -998,6 +998,7 @@
                     state = 'waiting-result';
                     clearInterval(updateTimer);
                     stopCursorSync();
+                    flushConsistencyReports();
                     if (isLocalBotMatch()) {
                         finishLocalBotRace('time');
                         return;
@@ -1350,8 +1351,11 @@
 
         function buildProgressStats(isFinal) {
             sampleRawHistorySecond();
+            var consistency = computeConsistencyFromRawHistory(rawHistory);
+            reportConsistencyToServer(consistency);
             if (isFinal) {
                 var snapshot = computeFinalStats(localFinishTime || Date.now());
+                reportConsistencyToServer(snapshot.consistency);
                 return [
                     snapshot.correct,
                     snapshot.total,
@@ -1361,7 +1365,24 @@
                     snapshot.consistency,
                 ];
             }
-            return [0, 0, 0, 0, 0, computeConsistencyFromRawHistory(rawHistory)];
+            return [0, 0, 0, 0, 0, consistency];
+        }
+
+        function reportConsistencyToServer(consistency) {
+            if (isLocalBotMatch() || isBotMatch() || !roomId || !window.usertypoMultiplayer) return;
+            if (typeof window.usertypoMultiplayer.reportConsistency !== 'function') return;
+            window.usertypoMultiplayer.reportConsistency(roomId, consistency).catch(function () { /* ignore */ });
+        }
+
+        function flushConsistencyReports() {
+            sampleRawHistorySecond();
+            var consistency = computeConsistencyFromRawHistory(rawHistory);
+            reportConsistencyToServer(consistency);
+            setTimeout(function () { reportConsistencyToServer(consistency); }, 350);
+            setTimeout(function () {
+                var latest = computeConsistencyFromRawHistory(rawHistory);
+                reportConsistencyToServer(latest);
+            }, 1000);
         }
 
         function sendThreeWordPacket(forceFinal) {
@@ -1426,6 +1447,7 @@
                 localFinished = true;
                 localFinishTime = Date.now();
             }
+            if (finalWord) flushConsistencyReports();
             sendThreeWordPacket(finalWord);
             if (finalWord) {
                 state = 'waiting-result';
@@ -2306,6 +2328,14 @@
             set(prefix + '-extra', data.extra);
         }
 
+        function findResultRow(rows, userId, index) {
+            var byUser = rows.find(function (row) {
+                return String(row[1]) === String(userId);
+            });
+            if (byUser) return byUser;
+            return rows.find(function (row) { return row[0] === index; }) || [];
+        }
+
         function showResults(payload) {
             var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
             if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
@@ -2330,41 +2360,65 @@
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
-                var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
-                var serverMe = parseServerResult(myRow);
+                var meRow = findResultRow(rows, selfUserId, selfIndex);
+                var otherRow = findResultRow(rows, other.userId, opponentIndex);
+                var serverMe = parseServerResult(meRow);
+                var serverOther = parseServerResult(otherRow);
                 var localMe = computeFinalStats(localFinishTime || Date.now());
-                // Prefer local stats when the server has no meaningful WPM for us
-                // (e.g. bot match where the progress packet was rejected or late).
-                var meData = (serverMe && serverMe.wpm > 0)
-                    ? Object.assign({}, serverMe)
-                    : Object.assign({}, localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
-                var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
+                var meData;
+                var otherData;
+                if (isBotMatch()) {
+                    meData = (serverMe && serverMe.wpm > 0)
+                        ? Object.assign({}, serverMe)
+                        : Object.assign({}, localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                    otherData = serverOther || {
+                        name: other.name,
+                        avatarUrl: other.avatarUrl,
+                        level: other.level,
+                        percentToNext: other.percentToNext,
+                        wpm: 0,
+                        accuracy: 0,
+                        time: config && config.mode === 'time' ? config.amount : 0,
+                        consistency: 0,
+                        raw: 0,
+                        errors: 0,
+                        correct: 0,
+                        total: 0,
+                        extra: 0,
+                    };
+                } else {
+                    meData = serverMe
+                        ? Object.assign({}, serverMe)
+                        : Object.assign({}, localMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                    otherData = serverOther
+                        ? Object.assign({}, serverOther)
+                        : {
+                            name: other.name,
+                            avatarUrl: other.avatarUrl,
+                            level: other.level,
+                            percentToNext: other.percentToNext,
+                            wpm: 0,
+                            accuracy: 0,
+                            time: config && config.mode === 'time' ? config.amount : 0,
+                            consistency: 0,
+                            raw: 0,
+                            errors: 0,
+                            correct: 0,
+                            total: 0,
+                            extra: 0,
+                        };
+                }
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
                 meData.level = me.level;
                 meData.percentToNext = me.percentToNext;
-                var otherData = parseServerResult(otherRow) || {
-                    name: other.name,
-                    avatarUrl: other.avatarUrl,
-                    level: other.level,
-                    percentToNext: other.percentToNext,
-                    wpm: 0,
-                    accuracy: 0,
-                    time: config && config.mode === 'time' ? config.amount : 0,
-                    consistency: 0,
-                    raw: 0,
-                    errors: 0,
-                    correct: 0,
-                    total: 0,
-                    extra: 0,
-                };
-            otherData.name = other.name;
-            otherData.avatarUrl = other.avatarUrl;
-            otherData.level = other.level;
-            otherData.percentToNext = other.percentToNext;
-            otherData.userId = other.userId;
-            otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
-            meData.userId = me.userId;
+                otherData.name = other.name;
+                otherData.avatarUrl = other.avatarUrl;
+                otherData.level = other.level;
+                otherData.percentToNext = other.percentToNext;
+                otherData.userId = other.userId;
+                otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+                meData.userId = me.userId;
                 var meWon = rows.length && rows[0][0] === selfIndex;
                 fillCard('w', meWon ? meData : otherData);
                 fillCard('l', meWon ? otherData : meData);

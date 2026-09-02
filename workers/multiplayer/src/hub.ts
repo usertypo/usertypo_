@@ -248,7 +248,7 @@ export class MultiplayerHub implements DurableObject {
     } else if (payload.kind === 'countdown-tick' && payload.roomId) {
       await this.handleCountdownTick(payload.roomId);
     } else if (payload.kind === 'race-end' && payload.roomId) {
-      this.scheduleAlarm(2000, { kind: 'race-end-finish', roomId: payload.roomId });
+      this.scheduleAlarm(3500, { kind: 'race-end-finish', roomId: payload.roomId });
     } else if (payload.kind === 'race-end-finish' && payload.roomId) {
       await this.finishRoomById(payload.roomId, 'time');
     } else if (payload.kind === 'bot-tick' && payload.roomId) {
@@ -1072,17 +1072,38 @@ export class MultiplayerHub implements DurableObject {
         await this.persist();
         return;
       }
+      if (event === 'race:consistency') {
+        const arr = Array.isArray(payload) ? payload : [];
+        const room = this.rooms.get(String(arr[0] || ''));
+        if (!room || room.state !== 'racing') throw new Error('race_not_active');
+        const player = room.players[userId];
+        if (!player || player.status === 'left') throw new Error('player_not_active');
+        const consistency = Number(arr[1]);
+        if (!Number.isFinite(consistency)) throw new Error('invalid_payload');
+        if (!player.finalStats) player.finalStats = {};
+        player.finalStats.consistency = Math.max(0, Math.min(100, Math.round(consistency)));
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
       if (event === 'race:progress') {
         const arr = Array.isArray(payload) ? payload : [];
         const room = this.rooms.get(String(arr[0] || ''));
         if (!room || room.state !== 'racing') throw new Error('race_not_active');
         const player = room.players[userId];
-        if (!player || player.status !== 'racing') throw new Error('player_not_active');
+        if (!player || player.status === 'left') throw new Error('player_not_active');
         const sequence = Number(arr[1]);
         const completedWords = Number(arr[2]);
         const totalKeystrokes = Number(arr[3]);
         const isFinal = Number(arr[4]) === 1;
         const finalStatsPayload = Array.isArray(arr[5]) ? arr[5] : null;
+        if (player.status === 'finished' && !isFinal) {
+          safeAck(ws, reqId, { ok: true, ignored: true });
+          return;
+        }
+        if (player.status !== 'racing' && player.status !== 'finished') {
+          throw new Error('player_not_active');
+        }
         if (
           sequence === player.sequence
           && completedWords === player.completedWords
