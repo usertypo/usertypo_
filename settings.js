@@ -3730,6 +3730,27 @@ function buildOpponentCaretCSS(style, smoothness) {
     return css;
 }
 
+function buildOpponentCaretExpandedCSS(style) {
+    style = (style || 'underscore').toLowerCase();
+    const ghostWhite = '#ffffff';
+    const ghostWhiteRGB = '255, 255, 255';
+    let css = `
+        #bot-caret.opponent-caret-expanded::after {
+            left: 0 !important;
+            right: 0 !important;
+        }
+    `;
+    if (style === 'line') {
+        css += `
+            #bot-caret.opponent-caret-expanded {
+                background-color: rgba(${ghostWhiteRGB}, 0.35) !important;
+                border-radius: 2px;
+            }
+        `;
+    }
+    return css;
+}
+
 function buildLayoutCSS(smoothLineScroll, tapeMode, caretSmoothness) {
     let css = '';
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
@@ -3837,6 +3858,7 @@ function applyCursorSettings(settings) {
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
         + buildPaceCaretCSS(settings.cursor.paceCaretStyle, settings.cursor.caretSmoothness)
         + buildOpponentCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness)
+        + buildOpponentCaretExpandedCSS(settings.cursor.caretStyle)
         + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode, settings.cursor.caretSmoothness);
 
     // ── Data attributes on <body> ──

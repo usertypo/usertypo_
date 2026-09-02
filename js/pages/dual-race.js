@@ -51,11 +51,12 @@
         var CURSOR_SYNC_INTERVAL_MS = 150;
         var OPPONENT_LERP_MS = 150;
         var OPPONENT_CURSOR_STALE_MS = 600;
-        var OPPONENT_SNAP_OFFSET_CHARS = 80;
 
         var opponentOffset = 0;
         var opponentTargetOffset = 0;
         var opponentDisplayOffset = 0;
+        var opponentDisplayWordIndex = 0;
+        var opponentDisplayCharIndex = 0;
         var opponentDisplayWpm = 0;
         var opponentTargetWpm = 0;
         var opponentTargetWordIndex = 0;
@@ -684,23 +685,35 @@
             opponentTargetWpm = Math.max(0, Number(wpm) || 0);
             opponentTargetOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
             opponentHasReport = true;
-            if (Math.abs(opponentTargetOffset - opponentDisplayOffset) > OPPONENT_SNAP_OFFSET_CHARS) {
-                opponentDisplayOffset = opponentTargetOffset;
-                opponentDisplayWpm = opponentTargetWpm;
+        }
+
+        function snapOpponentDisplayPosition() {
+            opponentDisplayWordIndex = opponentTargetWordIndex;
+            opponentDisplayCharIndex = opponentTargetCharIndex;
+            opponentDisplayOffset = opponentTargetOffset;
+            paintOpponentCaret(opponentDisplayWordIndex, opponentDisplayCharIndex);
+        }
+
+        function estimateOpponentCharWidth(wordElement, wordIndex) {
+            if (!wordElement) return 8;
+            var first = document.getElementById('char-' + wordIndex + '-0');
+            if (first && first.offsetWidth) return first.offsetWidth;
+            var promptWord = words[wordIndex] || '';
+            var promptLen = Math.max(1, promptWord.length);
+            return (wordElement.offsetWidth || promptLen * 8) / promptLen;
+        }
+
+        function opponentCaretWidth(caretStyle, baseWidth, charWidth, extraCount) {
+            caretStyle = (caretStyle || 'underscore').toLowerCase();
+            if (extraCount <= 0) {
+                if (caretStyle === 'line') return 2.5;
+                return Math.max(baseWidth || charWidth, 8);
             }
-        }
-
-        function maxOpponentOffset() {
-            var last = Math.max(0, words.length - 1);
-            return wordOffset(last) + (words[last] ? words[last].length : 0);
-        }
-
-        function paintOpponentFromDisplayOffset() {
-            var clamped = Math.max(0, Math.min(maxOpponentOffset(), opponentDisplayOffset));
-            opponentDisplayOffset = clamped;
-            opponentOffset = clamped;
-            var pos = offsetToPosition(clamped);
-            paintOpponentCaret(pos.wordIndex, pos.charIndex);
+            var extraSpan = extraCount * charWidth;
+            if (caretStyle === 'line') {
+                return Math.max(2.5, extraSpan + 2.5);
+            }
+            return Math.max(charWidth, extraSpan);
         }
 
         function getLiveCursorWpm() {
@@ -752,12 +765,14 @@
                     opponentDisplayWpm += (opponentTargetWpm - opponentDisplayWpm) * lerpAlpha;
                     if (opponentTargetWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
 
-                    if (cursorFresh || opponentTargetOffset > 0) {
-                        opponentDisplayOffset += (opponentTargetOffset - opponentDisplayOffset) * lerpAlpha;
-                        paintOpponentFromDisplayOffset();
-                    } else if (!isLocalBotMatch() && !isBotMatch() && opponentDisplayWpm > 0) {
-                        opponentDisplayOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
-                        paintOpponentFromDisplayOffset();
+                    if (!cursorFresh && opponentTargetWordIndex !== opponentDisplayWordIndex) {
+                        opponentDisplayWordIndex = opponentTargetWordIndex;
+                    }
+                    if (!cursorFresh) {
+                        opponentDisplayCharIndex += (
+                            opponentTargetCharIndex - opponentDisplayCharIndex
+                        ) * lerpAlpha;
+                        paintOpponentCaret(opponentDisplayWordIndex, opponentDisplayCharIndex);
                     }
                 }
 
@@ -1692,6 +1707,8 @@
             opponentOffset = 0;
             opponentTargetOffset = 0;
             opponentDisplayOffset = 0;
+            opponentDisplayWordIndex = 0;
+            opponentDisplayCharIndex = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
             opponentTargetWordIndex = 0;
@@ -2120,6 +2137,8 @@
             opponentOffset = 0;
             opponentTargetOffset = 0;
             opponentDisplayOffset = 0;
+            opponentDisplayWordIndex = 0;
+            opponentDisplayCharIndex = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
             opponentTargetWordIndex = 0;
@@ -2218,38 +2237,64 @@
         }
 
         function paintOpponentCaret(wordIndex, charIndex) {
-            if (!opponentCaret || !words.length) return;
+            if (!opponentCaret || !words.length || !textContainer) return;
             var safeWordIndex = Math.min(
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
-            var promptLen = (words[safeWordIndex] || '').length;
-            var clampedChar = Math.max(0, Math.min(Math.floor(charIndex), promptLen));
             var wordElement = document.getElementById('word-' + safeWordIndex);
-            if (!wordElement || !textContainer) return;
+            if (!wordElement) return;
+            var promptLen = (words[safeWordIndex] || '').length;
+            var safeCharIndex = Math.max(0, Number(charIndex) || 0);
+            var extraCount = Math.max(0, safeCharIndex - promptLen);
             var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
-            var targetEl = document.getElementById('char-' + safeWordIndex + '-0');
-            var isAfter = false;
-            if (clampedChar > 0) {
-                targetEl = document.getElementById('char-' + safeWordIndex + '-' + (clampedChar - 1));
-                isAfter = true;
+            var caretStyle = (document.body && document.body.getAttribute('data-caret-style')) || 'underscore';
+            var charWidth = estimateOpponentCharWidth(wordElement, safeWordIndex);
+            var resolved;
+            var layoutIndex = extraCount > 0 ? promptLen : safeCharIndex;
+
+            if (typeof window.resolveCaretCharTarget === 'function') {
+                resolved = window.resolveCaretCharTarget(
+                    wordElement, safeWordIndex, layoutIndex, 'char'
+                );
+            } else {
+                var target = document.getElementById('char-' + safeWordIndex + '-' + layoutIndex);
+                var isAfter = false;
+                if (!target) {
+                    target = document.getElementById('char-' + safeWordIndex + '-' + (layoutIndex - 1));
+                    isAfter = true;
+                }
+                resolved = { target: target || wordElement, isAfter: isAfter };
             }
-            if (!targetEl) return;
-            var box = window.getCaretLayoutInContainer
-                ? window.getCaretLayoutInContainer(textContainer, wordElement, targetEl, isAfter, isRtl)
-                : null;
-            if (!box) return;
-            var caretStyle = document.body && document.body.getAttribute('data-caret-style');
-            var width = caretStyle === 'line' ? 2.5 : (targetEl.offsetWidth || box.width || 8);
+
+            var left;
+            var top;
+            var baseWidth;
+            if (typeof window.getCaretLayoutInContainer === 'function') {
+                var box = window.getCaretLayoutInContainer(
+                    textContainer, wordElement, resolved.target, resolved.isAfter, isRtl
+                );
+                left = box.left;
+                top = box.top;
+                baseWidth = box.width || charWidth;
+            } else {
+                return;
+            }
+
+            var width = opponentCaretWidth(caretStyle, baseWidth, charWidth, extraCount);
+            opponentOffset = wordOffset(safeWordIndex) + safeCharIndex;
+            opponentCaret.classList.toggle('opponent-caret-expanded', extraCount > 0);
             opponentCaret.style.display = 'block';
-            opponentCaret.style.width = width + 'px';
-            opponentCaret.style.transform = 'translate3d(' + box.left + 'px,' + box.top + 'px,0)';
+            opponentCaret.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
+            opponentCaret.style.setProperty('width', width + 'px', 'important');
         }
 
         function resetOpponentCaretInstant() {
             opponentTargetWordIndex = 0;
             opponentTargetCharIndex = 0;
             opponentTargetOffset = 0;
+            opponentDisplayWordIndex = 0;
+            opponentDisplayCharIndex = 0;
             opponentDisplayOffset = 0;
             opponentOffset = 0;
             opponentTargetWpm = 0;
@@ -2257,6 +2302,7 @@
             opponentDisplayWpm = 0;
             lastOpponentCursorAt = 0;
             if (!opponentCaret || !words.length) return;
+            opponentCaret.classList.remove('opponent-caret-expanded');
             opponentCaret.style.transition = 'none';
             opponentCaret.style.display = 'block';
             paintOpponentCaret(0, 0);
@@ -2272,6 +2318,7 @@
                 Number(payload[1]) || 0
             );
             lastOpponentCursorAt = Date.now();
+            snapOpponentDisplayPosition();
         }
 
         function applyOpponentProgress(payload) {
@@ -2284,6 +2331,7 @@
 
             if (isBotMatch()) {
                 setOpponentTarget(position.wordIndex, position.charIndex, wpm);
+                snapOpponentDisplayPosition();
                 return;
             }
 
