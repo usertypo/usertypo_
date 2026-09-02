@@ -2624,6 +2624,17 @@
                 matchReason = response.room && response.room.reason || '';
                 selfUserId = window.usertypoMultiplayer.getReadyState()
                     && window.usertypoMultiplayer.getReadyState().userId || '';
+                var joinedSelf = players.find(function (player) { return player.userId === selfUserId; });
+                var joinedOpponent = players.find(function (player) { return player.userId !== selfUserId; });
+                selfIndex = joinedSelf ? joinedSelf.index : 0;
+                opponentIndex = joinedOpponent ? joinedOpponent.index : (bot ? bot.index : 1);
+                paintDualOpponentAvatar(joinedOpponent || null);
+                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                    window.usertypoProgression.attachToList(players, 'userId').then(function () {
+                        joinedOpponent = players.find(function (player) { return player.userId !== selfUserId; });
+                        paintDualOpponentAvatar(joinedOpponent || null);
+                    }).catch(function () { /* ignore */ });
+                }
                 if (response.countdownEndsAt) {
                     countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
                 }

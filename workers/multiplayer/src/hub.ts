@@ -494,17 +494,26 @@ export class MultiplayerHub implements DurableObject {
   }
 
   private raceStartPayload(room: Room) {
+    const endsAt = room.config.mode === 'time' && room.startsAt
+      ? room.startsAt + (room.config.amount * 1000)
+      : null;
     return {
       roomId: room.id,
-      config: room.config,
-      prompt: room.prompt,
       startsAt: room.startsAt,
+      startsInMs: room.startsAt ? Math.max(0, room.startsAt - Date.now()) : 0,
+      endsAt,
+      config: room.config,
+      words: room.prompt.words,
+      textHash: room.prompt.textHash,
       players: Object.values(room.players).map((p) => ({
         index: p.index,
         userId: p.userId,
         name: p.name,
+        avatarUrl: p.avatarUrl,
+        level: p.level ?? 1,
+        percentToNext: p.percentToNext ?? 0,
       })),
-      bot: room.bot ? { index: room.bot.index, name: room.bot.name } : null,
+      bot: room.bot ? { index: room.bot.index, name: room.bot.name, isBot: true } : null,
     };
   }
 
@@ -515,6 +524,10 @@ export class MultiplayerHub implements DurableObject {
     extra?: { hostUserId?: string; maxPlayers?: number; bot?: BotPlayer | null },
   ): Promise<Room> {
     if (this.rooms.size >= LIMITS.maxActiveRooms) throw new Error('server_capacity');
+    await Promise.all(allowedUserIds.map(async (uid) => {
+      const profile = await getProfile(this.env, uid);
+      this.profiles.set(uid, profile);
+    }));
     const id = shortId();
     const prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', config);
     const players: Record<string, Player> = {};
