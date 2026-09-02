@@ -43,8 +43,11 @@ window.USERTYPO_CONFIG = {
         // Socket.IO server. Usually same as backend.url. Blank on localhost.
         url: 'https://mp.usertypo.com',
     },
+    // Cloudflare Leaderboards Worker (Postgres — no Upstash).
+    leaderboards: {
+        url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
+    },
     features: {
-        // Global Redis leaderboards — off on the isolated dev environment.
         leaderboards: true,
     },
     analytics: {
@@ -85,17 +88,20 @@ window.USERTYPO_CONFIG = {
         };
         cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
         cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
+        cfg.leaderboards = {
+            url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
+        };
         if (!cfg.features) cfg.features = {};
-        cfg.features.leaderboards = false;
+        cfg.features.leaderboards = true;
         if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
         if (cfg.ads) cfg.ads.adsenseClient = '';
         cfg.environment = 'staging';
     }
 
-    // Staging: Clerk Development + separate Supabase/Render; no Redis leaderboards.
+    // Staging: Clerk Development + dev Supabase + Cloudflare leaderboards Worker.
     if (isStagingHost(host)) {
         applyStagingConfig();
-        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase');
+        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase + CF leaderboards');
     }
 
     // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
@@ -109,10 +115,15 @@ window.USERTYPO_CONFIG = {
         if (cfg.multiplayer) cfg.multiplayer.url = '';
     }
 
-    function hideLeaderboardsNav() {
-        if (!cfg.features || cfg.features.leaderboards !== false) return;
+    function syncLeaderboardsNavVisibility() {
         var el = document.getElementById('nav-leaderboards');
-        if (el) {
+        if (!el) return;
+        var enabled = !(cfg.features && cfg.features.leaderboards === false);
+        if (enabled) {
+            el.hidden = false;
+            el.removeAttribute('aria-hidden');
+            el.style.display = '';
+        } else {
             el.hidden = true;
             el.setAttribute('aria-hidden', 'true');
             el.style.display = 'none';
@@ -120,8 +131,8 @@ window.USERTYPO_CONFIG = {
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', hideLeaderboardsNav);
+        document.addEventListener('DOMContentLoaded', syncLeaderboardsNavVisibility);
     } else {
-        hideLeaderboardsNav();
+        syncLeaderboardsNavVisibility();
     }
 })();

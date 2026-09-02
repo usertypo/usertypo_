@@ -48,7 +48,11 @@
             jobs.push(loadScriptOnce('js/pages/room-race.js?v=56'));
         }
         if (path === '/dual') {
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=48'));
+            var dualParams = new URLSearchParams(window.location.search);
+            if (dualParams.get('local') === 'bot') {
+                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=1'));
+            }
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=74'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -131,6 +135,8 @@
             robots: 'noindex, nofollow',
             navId: null,
             compact: false,
+            hideShellFooter: true,
+            typingLayout: true,
         },
         '/leaderboards': {
             page: 'pages/leaderboards.html',
@@ -629,8 +635,14 @@
         var appViews = document.getElementById('app-views');
         var testView = document.getElementById('test-view');
         var statsView = document.getElementById('stats-view');
+        var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+        var keymapOn = kl && kl.keymapMode && kl.keymapMode !== 'Off';
         if (appViews) {
-            appViews.classList.add('h-full', 'min-h-0');
+            if (keymapOn) {
+                appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+            } else {
+                appViews.classList.add('h-full', 'min-h-0');
+            }
         }
         if (testView) {
             testView.style.display = 'flex';
@@ -642,8 +654,26 @@
             statsView.classList.remove('flex');
             statsView.style.display = 'none';
         }
-        if (typeof window.usertypo_lockTypingScroll === 'function') {
+        var testFooter = document.getElementById('test-view-footer');
+        if (testFooter) testFooter.style.display = '';
+        var headerLeft = document.getElementById('header-left');
+        var headerRight = document.getElementById('header-right');
+        var headerLogo = document.getElementById('header-logo-link');
+        if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
+        if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
+        if (headerLogo) headerLogo.style.pointerEvents = 'none';
+        if (window.usertypo_settingsApi
+            && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+            window.usertypo_settingsApi.syncTypingScrollForKeymap(!!keymapOn);
+        } else if (typeof window.usertypo_lockTypingScroll === 'function') {
             window.usertypo_lockTypingScroll();
+        }
+        if (keymapOn) {
+            var body = document.getElementById('app-body');
+            if (body) body.classList.add('keymap-scrollable');
+        }
+        if (typeof window.usertypoDualPage?.refreshKeymap === 'function') {
+            try { window.usertypoDualPage.refreshKeymap(); } catch (e) { /* ignore */ }
         }
     }
 
@@ -709,7 +739,7 @@
             return;
         }
 
-        // Staging disables global leaderboards — bounce to home.
+        // Staging without leaderboards — bounce to home (dev uses Cloudflare Worker + Postgres).
         var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
         if (path === '/leaderboards' && features && features.leaderboards === false) {
             if (typeof window.navigateTo === 'function') {

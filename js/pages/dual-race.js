@@ -12,7 +12,8 @@
         var abort = new AbortController();
         var signal = abort.signal;
         var params = new URLSearchParams(window.location.search);
-        var roomId = params.get('room') || '';
+        var isLocalBot = params.get('local') === 'bot';
+        var roomId = isLocalBot ? 'local-bot' : (params.get('room') || '');
         var state = 'joining';
         var config = null;
         var words = [];
@@ -41,15 +42,24 @@
         var updateTimer = null;
         var liveRawSecondKeystrokes = 0;
         var lastLiveRawSecond = 0;
+        var rawHistory = [];
+        var lastRawHistorySecond = 0;
+        var lastSecondKeystrokes = 0;
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
         var opponentOffset = 0;
         var opponentDisplayWpm = 0;
         var opponentTargetWpm = 0;
+        var opponentTargetWordIndex = 0;
+        var opponentTargetCharIndex = 0;
         var opponentHasReport = false;
         var opponentFrameAt = 0;
         var opponentAnimationFrame = null;
+        var cursorSyncTimer = null;
+        var localBotTimer = null;
+        var lastOpponentCursorAt = 0;
+        var lastCursorSentAt = 0;
         var localFinishTime = 0;
         var statsHeaderReady = false;
         var rematchVotes = 0;
@@ -82,38 +92,240 @@
         var progressBar = document.getElementById('word-progress-bar');
         var opponentAvatar = document.getElementById('bot-avatar');
         var waitOverlay = null;
-        var zenMouseHandler = null;
+        var zenHandlersBound = false;
+        var zenTypingActive = false;
 
-        // --- Footer visibility helpers ---
+        // --- Footer / header helpers ---
+        var testViewFooter = document.getElementById('test-view-footer');
         var shellFooter = document.getElementById('spa-shell-footer');
-        var footerNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+        var footerNavLinks = testViewFooter ? testViewFooter.querySelector('.footer-nav-links') : null;
+        var shellFooterNavLinks = shellFooter ? shellFooter.querySelector('.footer-nav-links') : null;
+
+        function clearReactKeyHighlights(keys) {
+            keys.forEach(function (key) {
+                key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
+                if (!key.classList.contains('bg-primary/10')) {
+                    key.classList.add('bg-primary/10');
+                }
+            });
+        }
+
+        function configFlag(value) {
+            return value === true || value === 1 || value === '1';
+        }
+
+        function ensureDualKeymapHook() {
+            window.usertypo_getKeymapRenderArgs = function () {
+                if (!config) {
+                    return { useNumbers: false, usePunctuation: false };
+                }
+                return {
+                    useNumbers: configFlag(config.nums),
+                    usePunctuation: configFlag(config.punct),
+                };
+            };
+        }
+
+        function seedConfigFromPendingMatch() {
+            if (config) return;
+            var pending = window.DualMatch && typeof window.DualMatch.loadRequest === 'function'
+                ? window.DualMatch.loadRequest()
+                : null;
+            if (!pending || String(pending.roomId || '') !== roomId || !pending.config) return;
+            config = pending.config;
+        }
+
+        function applyDualRaceConfig(nextConfig) {
+            if (!nextConfig) return;
+            config = nextConfig;
+        }
+
+        function applyDualTestSettings() {
+            if (window.usertypo_settingsApi) {
+                try {
+                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* retain current settings */ }
+            }
+            bindDualKeymapRenderArgs();
+        }
+
+        function setDualFooterMode(mode) {
+            if (mode === 'stats-full') {
+                if (testViewFooter) testViewFooter.style.display = 'none';
+                if (shellFooter) {
+                    shellFooter.classList.remove('hidden');
+                    if (shellFooterNavLinks) shellFooterNavLinks.style.display = '';
+                }
+            } else {
+                if (shellFooter) shellFooter.classList.add('hidden');
+                if (testViewFooter) {
+                    testViewFooter.style.display = '';
+                    if (footerNavLinks) footerNavLinks.style.display = 'none';
+                    testViewFooter.classList.add('justify-end');
+                    testViewFooter.classList.remove('justify-between');
+                }
+            }
+        }
 
         function setFooterCompact(compact) {
-            if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
+            if (compact) {
+                setDualFooterMode('test-compact');
+                return;
+            }
+            if (footerNavLinks) footerNavLinks.style.display = '';
+            if (testViewFooter) {
+                testViewFooter.classList.toggle('justify-end', false);
+                testViewFooter.classList.toggle('justify-between', true);
+            }
+        }
+
+        function setDualHeaderInteractive(enabled) {
+            var headerLeft = document.getElementById('header-left');
+            var headerRight = document.getElementById('header-right');
+            var headerLogo = document.getElementById('header-logo-link');
+            var menuWrapper = document.getElementById('expanding-menu-wrapper');
+            var header = document.querySelector('body > header');
+            if (enabled) {
+                if (headerLeft) {
+                    headerLeft.classList.remove('opacity-0', 'pointer-events-none', 'zen-hidden');
+                    headerLeft.style.overflow = 'visible';
+                }
+                if (headerRight) {
+                    headerRight.classList.remove('opacity-0', 'pointer-events-none', 'zen-hidden');
+                }
+                if (headerLogo) headerLogo.style.pointerEvents = '';
+                if (menuWrapper) menuWrapper.style.overflow = 'visible';
+                if (header) header.style.overflow = 'visible';
+                if (typeof window.usertypoRemeasureExpandingBubble === 'function') {
+                    window.usertypoRemeasureExpandingBubble();
+                }
+            } else {
+                if (headerLeft) headerLeft.classList.add('opacity-0', 'pointer-events-none');
+                if (headerRight) headerRight.classList.add('opacity-0', 'pointer-events-none');
+                if (headerLogo) headerLogo.style.pointerEvents = 'none';
+                if (typeof window.usertypoCloseExpandingBubble === 'function') {
+                    window.usertypoCloseExpandingBubble();
+                }
+            }
+        }
+
+        function syncDualTypingScroll() {
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            var body = document.getElementById('app-body');
+            var content = document.getElementById('spa-content');
+            var pageRoot = document.getElementById('spa-page-root');
+            var appViews = document.getElementById('app-views');
+            var testMain = document.getElementById('dual-test-main');
+            if (keymapOn) {
+                if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                    window.usertypo_unlockStatsScroll();
+                }
+                if (body) {
+                    body.classList.remove('h-screen', 'overflow-hidden');
+                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden', 'keymap-scrollable');
+                }
+                if (content) content.classList.remove('min-h-0', 'overflow-hidden');
+                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
+                if (appViews) appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                if (testMain) testMain.classList.remove('min-h-0');
+            } else {
+                if (body) body.classList.remove('keymap-scrollable');
+                if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+                    window.usertypo_settingsApi.syncTypingScrollForKeymap(false);
+                } else if (typeof window.usertypo_lockTypingScroll === 'function') {
+                    window.usertypo_lockTypingScroll();
+                }
+                if (appViews) appViews.classList.add('h-full', 'min-h-0');
+            }
+            if (keymapOn && window.usertypo_settingsApi
+                && typeof window.usertypo_settingsApi.syncTypingScrollForKeymap === 'function') {
+                window.usertypo_settingsApi.syncTypingScrollForKeymap(true);
+            }
+        }
+
+        function measureDualScrollPad() {
+            var pad = document.getElementById('dual-scroll-pad');
+            if (!pad) return 0;
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            if (!keymapOn) {
+                pad.style.height = '0';
+                return 0;
+            }
+            var keymap = document.getElementById('dynamic-keymap-container');
+            if (!keymap || keymap.classList.contains('hidden')) {
+                pad.style.height = '0';
+                return 0;
+            }
+            var footer = document.getElementById('test-view-footer');
+            var padHeight = 0;
+            if (footer && keymap) {
+                var overlap = keymap.getBoundingClientRect().bottom - footer.getBoundingClientRect().top + 16;
+                if (overlap > 0) padHeight = Math.max(padHeight, overlap);
+            }
+            pad.style.height = Math.ceil(padHeight) + 'px';
+            return padHeight;
+        }
+
+        function afterDualLineLayout() {
+            requestAnimationFrame(function () {
+                syncDualKeymapLayout();
+            });
+        }
+
+        function syncDualKeymapLayout() {
+            syncDualTypingScroll();
+            var kl = window.usertypo_settings && window.usertypo_settings.keyboardLayout;
+            var keymapOn = !!(kl && kl.keymapMode && kl.keymapMode !== 'Off');
+            if (!keymapOn) {
+                measureDualScrollPad();
+                return;
+            }
+            setTimeout(function () {
+                measureDualScrollPad();
+            }, 50);
+        }
+
+        function bindDualKeymapRenderArgs() {
+            ensureDualKeymapHook();
+            if (!config) return;
+            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.applyKeymapDisplay === 'function') {
+                try {
+                    window.usertypo_settingsApi.applyKeymapDisplay(window.usertypo_settingsApi.loadSettings());
+                } catch (_) { /* retain current keymap */ }
+            }
+            syncDualKeymapLayout();
         }
 
         function hideZenElements() {
-            document.querySelectorAll('.zen-element').forEach(function (el) {
+            document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
         }
 
         function showZenElements() {
-            document.querySelectorAll('.zen-element').forEach(function (el) {
+            document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
         }
 
-        function startZenMode() {
-            hideZenElements();
-            if (!zenMouseHandler) {
-                zenMouseHandler = function () { showZenElements(); };
-                document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
-            }
+        function resetZenState() {
+            zenTypingActive = false;
+            showZenElements();
+        }
+
+        function wireZenHandlers() {
+            if (zenHandlersBound) return;
+            zenHandlersBound = true;
+            document.addEventListener('mousemove', function () {
+                if (state !== 'racing' || !zenTypingActive) return;
+                showZenElements();
+            }, { signal: signal });
         }
 
         function stopZenMode() {
-            showZenElements();
+            resetZenState();
         }
 
         function listen(name, handler) {
@@ -141,24 +353,48 @@
                 });
             }
             if (keyboard.keymapMode === 'Static') return;
-            keys.forEach(function (key) {
-                var chars = key.dataset.chars || '';
-                var special = key.dataset.special || '';
-                var matches = false;
-                if (keyboard.keymapMode === 'Next') {
-                    var next = words[currentWordIndex]?.[currentCharIndex] || ' ';
-                    matches = chars.includes(next) || (next === ' ' && special === 'Space');
-                } else if (pressedKey) {
-                    matches = (pressedKey.length === 1 && chars.includes(pressedKey))
-                        || (pressedKey === ' ' && special === 'Space')
-                        || pressedKey === special;
+            if (keyboard.keymapMode === 'React') {
+                if (!pressedKey) return;
+                if (isKeyDown) {
+                    clearReactKeyHighlights(keys);
                 }
-                key.classList.toggle('bg-primary/40', matches);
-                key.classList.toggle('scale-95', matches);
-                key.classList.toggle('ring-2', matches);
-                key.classList.toggle('ring-primary/50', matches);
-                key.classList.toggle('bg-primary/10', !matches);
-            });
+                keys.forEach(function (key) {
+                    var chars = key.dataset.chars || '';
+                    var special = key.dataset.special || '';
+                    var matches = false;
+                    if (pressedKey.length === 1 && chars.includes(pressedKey)) matches = true;
+                    if (pressedKey === ' ' && special === 'Space') matches = true;
+                    if (pressedKey === 'Backspace' && special === 'Backspace') matches = true;
+                    if (pressedKey === 'Tab' && special === 'Tab') matches = true;
+                    if (pressedKey === 'Enter' && special === 'Enter') matches = true;
+                    if (pressedKey === 'Shift' && special === 'Shift') matches = true;
+                    if (pressedKey === 'CapsLock' && special === 'Caps') matches = true;
+                    if (matches) {
+                        if (isKeyDown) {
+                            key.classList.add('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
+                            key.classList.remove('bg-primary/10');
+                        } else {
+                            key.classList.remove('bg-primary/40', 'scale-[0.92]', 'drop-shadow-[0_0_8px_rgba(0,208,255,0.4)]');
+                            key.classList.add('bg-primary/10');
+                        }
+                    }
+                });
+                return;
+            }
+            if (keyboard.keymapMode === 'Next') {
+                var next = words[currentWordIndex]?.[currentCharIndex] || ' ';
+                keys.forEach(function (key) {
+                    var chars = key.dataset.chars || '';
+                    var special = key.dataset.special || '';
+                    if (chars.includes(next) || (next === ' ' && special === 'Space')) {
+                        key.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        key.classList.remove('bg-primary/10');
+                    } else {
+                        key.classList.remove('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                        key.classList.add('bg-primary/10');
+                    }
+                });
+            }
         }
 
         function showMessage(message, detail) {
@@ -308,6 +544,7 @@
                 }
                 typingArea.style.height = lineHeight + 'px';
                 handleScroll();
+                afterDualLineLayout();
                 return;
             }
 
@@ -327,6 +564,7 @@
                 : (parseFloat(getComputedStyle(wordElements[0]).lineHeight) || 43) * 1.3;
             typingArea.style.height = (lineHeight * Math.min(3, currentLine + 1)) + 'px';
             handleScroll();
+            afterDualLineLayout();
         }
 
         function applyTapeScroll() {
@@ -419,6 +657,46 @@
         function updateCaret() {
             handleScroll();
             positionCaretAt(caret, currentWordIndex, currentCharIndex);
+            if (window.usertypo_settings?.keyboardLayout?.keymapMode === 'Next') {
+                updateKeymapHighlight();
+            }
+            queueCursorSend(false);
+        }
+
+        function opponentCursorFresh() {
+            return !!(lastOpponentCursorAt && (Date.now() - lastOpponentCursorAt) < 700);
+        }
+
+        function getLiveCursorWpm() {
+            if (!startTime || state !== 'racing') return 0;
+            var stats = localStats();
+            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedSec > lastLiveRawSecond) {
+                lastLiveRawSecond = elapsedSec;
+                liveRawSecondKeystrokes = totalKeystrokes;
+            }
+            var ksThisSec = totalKeystrokes - liveRawSecondKeystrokes;
+            var liveRawWpm = Math.max(0, Math.round((ksThisSec / 5) * 60));
+            return Math.max(stats.wpm, liveRawWpm);
+        }
+
+        function getCursorSyncState() {
+            var wordIndex = Math.max(0, Math.min(currentWordIndex, Math.max(0, words.length - 1)));
+            var word = words[wordIndex] || '';
+            var maxChar = word.length + 12;
+            return {
+                wpm: getLiveCursorWpm(),
+                wordIndex: wordIndex,
+                charIndex: Math.max(0, Math.min(currentCharIndex, maxChar)),
+            };
+        }
+
+        function queueCursorSend(force) {
+            if (state !== 'racing' || isLocalBotMatch() || isBotMatch()) return;
+            var now = Date.now();
+            if (!force && now - lastCursorSentAt < 100) return;
+            lastCursorSentAt = now;
+            sendCursorPacket();
         }
 
         function animateOpponent(now) {
@@ -430,19 +708,30 @@
             var elapsedSeconds = Math.min(0.1, Math.max(0, (now - opponentFrameAt) / 1000));
             opponentFrameAt = now;
             if (state === 'racing' || state === 'waiting-result') {
-                // Never mirror the local player. No report / 0 WPM => ghost stays still.
+                var cursorFresh = opponentCursorFresh();
                 var desiredWpm = opponentHasReport ? Math.max(0, opponentTargetWpm) : 0;
-                var blend = 1 - Math.exp(-elapsedSeconds * 3);
-                opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
-                if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
-                if (opponentDisplayWpm > 0) {
-                    opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+
+                // When cursor packets are flowing, WPM snaps each packet. Otherwise glide
+                // from sparse progress updates so motion still looks continuous.
+                if (cursorFresh) {
+                    opponentDisplayWpm = desiredWpm;
+                } else {
+                    var blend = 1 - Math.exp(-elapsedSeconds * 3);
+                    opponentDisplayWpm += (desiredWpm - opponentDisplayWpm) * blend;
+                    if (desiredWpm <= 0 && opponentDisplayWpm < 0.5) opponentDisplayWpm = 0;
+                    if (!isLocalBotMatch() && !isBotMatch() && opponentDisplayWpm > 0) {
+                        opponentOffset += (opponentDisplayWpm * 5 / 60) * elapsedSeconds;
+                        var last = Math.max(0, words.length - 1);
+                        var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
+                        opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
+                        var glidePos = offsetToPosition(opponentOffset);
+                        paintOpponentCaret(glidePos.wordIndex, glidePos.charIndex);
+                    }
                 }
-                var last = Math.max(0, words.length - 1);
-                var maxOffset = wordOffset(last) + (words[last] ? words[last].length : 0);
-                opponentOffset = Math.max(0, Math.min(maxOffset, opponentOffset));
-                var position = offsetToPosition(opponentOffset);
-                positionCaretAt(opponentCaret, position.wordIndex, position.charIndex);
+
+                if (opponentWpmDisplay && opponentHasReport) {
+                    opponentWpmDisplay.textContent = String(Math.round(opponentDisplayWpm));
+                }
             }
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
         }
@@ -514,17 +803,25 @@
             return localStats().wpm;
         }
 
-        function computeConsistencyFromTimes(times) {
-            if (!Array.isArray(times) || times.length < 2) return 100;
-            var intervals = [];
-            for (var i = 1; i < times.length; i += 1) intervals.push(times[i] - times[i - 1]);
-            if (intervals.length < 2) return 100;
-            var mean = intervals.reduce(function (sum, value) { return sum + value; }, 0) / intervals.length;
-            if (!mean) return 100;
-            var variance = intervals.reduce(function (sum, value) { return sum + Math.pow(value - mean, 2); }, 0) / intervals.length;
-            var cov = Math.sqrt(variance) / mean;
-            var consistencyTransform = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
-            return Math.max(0, Math.min(100, Math.round(consistencyTransform)));
+        function computeConsistencyFromRawHistory(history) {
+            if (!Array.isArray(history) || history.length < 2) return 100;
+            var mean = history.reduce(function (sum, value) { return sum + value; }, 0) / history.length;
+            if (mean <= 0) return 100;
+            var stdDev = Math.sqrt(history.map(function (x) { return Math.pow(x - mean, 2); })
+                .reduce(function (sum, value) { return sum + value; }, 0) / history.length);
+            var cov = stdDev / mean;
+            var kogasa = 100 * (1 - Math.tanh(cov + Math.pow(cov, 3) / 3 + Math.pow(cov, 5) / 5));
+            return Math.max(0, Math.min(100, Math.round(kogasa)));
+        }
+
+        function sampleRawHistorySecond() {
+            if (!startTime || state !== 'racing') return;
+            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedSec <= lastRawHistorySecond) return;
+            lastRawHistorySecond = elapsedSec;
+            var ksThisSec = totalKeystrokes - lastSecondKeystrokes;
+            lastSecondKeystrokes = totalKeystrokes;
+            rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
         }
 
         function computeFinalStats(finishTime) {
@@ -551,11 +848,12 @@
             var accuracy = totalKeystrokes > 0
                 ? Math.max(0, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100)
                 : 100;
+            sampleRawHistorySecond();
             return {
                 wpm: Math.max(0, Math.round(exactWpm)),
                 raw: Math.max(0, Math.round(exactRawWpm)),
                 accuracy: Math.round(accuracy * 10) / 10,
-                consistency: computeConsistencyFromTimes(keystrokeTimes),
+                consistency: computeConsistencyFromRawHistory(rawHistory),
                 correct: validChars,
                 total: rawChars,
                 errors: errorsMade,
@@ -652,14 +950,7 @@
             var accuracy = totalKeystrokes
                 ? Math.max(0, Math.min(100, ((totalKeystrokes - errorsMade) / totalKeystrokes) * 100))
                 : 100;
-            var consistency = 100;
-            if (keystrokeTimes.length > 2) {
-                var intervals = [];
-                for (var i = 1; i < keystrokeTimes.length; i += 1) intervals.push(keystrokeTimes[i] - keystrokeTimes[i - 1]);
-                var mean = intervals.reduce(function (sum, value) { return sum + value; }, 0) / intervals.length;
-                var variance = intervals.reduce(function (sum, value) { return sum + Math.pow(value - mean, 2); }, 0) / intervals.length;
-                consistency = Math.max(0, Math.min(100, Math.round(100 * (1 - Math.min(1, Math.sqrt(variance) / Math.max(1, mean))))));
-            }
+            var consistency = computeConsistencyFromRawHistory(rawHistory);
             return {
                 wpm: wpm,
                 raw: Math.max(wpm, Math.round(((totalKeystrokes / 5) / elapsedMinutes))),
@@ -675,6 +966,7 @@
 
         function updateLiveStats() {
             if (state !== 'racing') return;
+            sampleRawHistorySecond();
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
             var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
@@ -695,7 +987,7 @@
                 var endAt = raceEndsAt();
                 var remainingMs = Math.max(0, endAt - Date.now());
                 var remaining = Math.max(0, Math.ceil(remainingMs / 1000));
-                progressDisplay.textContent = remaining;
+                if (progressDisplay) progressDisplay.textContent = remaining;
                 if (progressBar) {
                     var elapsed = Math.max(0, (Date.now() - startTime) / 1000);
                     progressBar.style.width = Math.min(100, (elapsed / config.amount) * 100) + '%';
@@ -705,6 +997,11 @@
                     localFinishTime = endAt;
                     state = 'waiting-result';
                     clearInterval(updateTimer);
+                    stopCursorSync();
+                    if (isLocalBotMatch()) {
+                        finishLocalBotRace('time');
+                        return;
+                    }
                     sendThreeWordPacket(true);
                     if (!isBotMatch()) {
                         showMessage(
@@ -721,8 +1018,325 @@
             }
         }
 
+        function isLocalBotMatch() {
+            return isLocalBot;
+        }
+
         function isBotMatch() {
-            return matchReason === 'bot' || !!(bot && (bot.isBot !== false));
+            return isLocalBotMatch() || matchReason === 'bot' || !!(bot && (bot.isBot !== false));
+        }
+
+        function getLocalUserId() {
+            if (window.usertypoMultiplayer && typeof window.usertypoMultiplayer.getReadyState === 'function') {
+                var ready = window.usertypoMultiplayer.getReadyState();
+                if (ready && ready.userId) return ready.userId;
+            }
+            if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+                var auth = window.usertypoAuth.getState();
+                if (auth && auth.user && auth.user.id) return auth.user.id;
+            }
+            try {
+                var guestKey = 'usertypo:guest-id';
+                var guest = localStorage.getItem(guestKey);
+                if (guest) return guest;
+            } catch (_) { /* ignore */ }
+            return 'guest_local';
+        }
+
+        function getLocalUserName() {
+            var profile = window.__USERTYPO_PROFILE__ || {};
+            if (profile.display_name || profile.username) {
+                return profile.display_name || profile.username;
+            }
+            if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+                var auth = window.usertypoAuth.getState();
+                if (auth && auth.user) {
+                    return auth.user.username || auth.user.firstName || 'You';
+                }
+            }
+            return 'You';
+        }
+
+        function cumulativeCorrectChars(completedWords) {
+            var total = 0;
+            for (var i = 0; i < completedWords && i < words.length; i += 1) {
+                total += words[i].length + 1;
+            }
+            return total;
+        }
+
+        function positionFromCompletedWords(count) {
+            var safeCount = Math.max(0, Math.min(count, words.length));
+            if (!words.length) return { wordIndex: 0, charIndex: 0 };
+            if (safeCount >= words.length) {
+                var last = words.length - 1;
+                return { wordIndex: last, charIndex: words[last] ? words[last].length : 0 };
+            }
+            return { wordIndex: safeCount, charIndex: 0 };
+        }
+
+        function stopCursorSync() {
+            if (cursorSyncTimer) clearInterval(cursorSyncTimer);
+            cursorSyncTimer = null;
+        }
+
+        function startCursorSync() {
+            if (isLocalBotMatch() || isBotMatch()) return;
+            stopCursorSync();
+            queueCursorSend(true);
+            cursorSyncTimer = setInterval(function () {
+                queueCursorSend(true);
+            }, 300);
+        }
+
+        function sendCursorPacket() {
+            if (state !== 'racing' || isLocalBotMatch()) return;
+            var mp = window.usertypoMultiplayer;
+            if (!mp || typeof mp.sendCursorState !== 'function') return;
+            var sync = getCursorSyncState();
+            mp.sendCursorState(roomId, sync.wpm, sync.wordIndex, sync.charIndex);
+        }
+
+        function stopLocalBotTimer() {
+            if (localBotTimer) clearInterval(localBotTimer);
+            localBotTimer = null;
+        }
+
+        function startLocalBotTimer() {
+            if (!isLocalBotMatch()) return;
+            stopLocalBotTimer();
+            localBotTimer = setInterval(updateLocalBotPosition, 200);
+        }
+
+        function updateLocalBotPosition() {
+            if (!bot || !startTime || (state !== 'racing' && state !== 'waiting-result')) return;
+            var elapsedMinutes = Math.max((Date.now() - startTime) / 60000, 1 / 120);
+            var targetChars = Math.floor(bot.targetWpm * 5 * elapsedMinutes);
+            var completedWords = 0;
+            while (
+                completedWords < words.length
+                && cumulativeCorrectChars(completedWords + 1) <= targetChars
+            ) {
+                completedWords += 1;
+            }
+            bot.completedWords = completedWords;
+            var validChars = cumulativeCorrectChars(completedWords);
+            bot.wpm = (validChars / 5) / elapsedMinutes;
+            var position = offsetToPosition(targetChars);
+            applyOpponentCursor([opponentIndex, bot.wpm, position.wordIndex, position.charIndex]);
+            if (config.mode === 'words' && completedWords >= config.amount) {
+                bot.finished = true;
+                bot.finishedAt = Date.now();
+                stopLocalBotTimer();
+                maybeFinishLocalBotRace();
+            }
+        }
+
+        function computeLocalBotFinalStats() {
+            var finishedAt = bot && bot.finishedAt ? bot.finishedAt : Date.now();
+            var displaySeconds = Math.max(0, Math.floor((finishedAt - startTime) / 1000));
+            var elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+            var validChars = cumulativeCorrectChars(bot ? bot.completedWords : 0);
+            var rawChars = Math.ceil(validChars / ((bot && bot.accuracy) || 97) * 100);
+            var errors = Math.max(0, rawChars - validChars);
+            return {
+                wpm: Math.max(0, Math.round((validChars / 5) / elapsedMinutes)),
+                raw: Math.max(0, Math.round((rawChars / 5) / elapsedMinutes)),
+                accuracy: Math.max(0, Math.min(100, Math.round((bot && bot.accuracy) || 97))),
+                consistency: 100,
+                correct: validChars,
+                total: rawChars,
+                errors: errors,
+                extra: 0,
+                time: displaySeconds,
+            };
+        }
+
+        function buildLocalResultRow(index, userId, name, stats, progress, status, finishedAt, isBotPlayer) {
+            return [
+                index,
+                userId,
+                name,
+                stats.wpm,
+                stats.accuracy,
+                progress,
+                status,
+                finishedAt,
+                stats.correct,
+                stats.total,
+                stats.raw,
+                stats.consistency,
+                stats.time,
+                stats.errors,
+                stats.extra,
+                isBotPlayer ? 1 : 0,
+            ];
+        }
+
+        function finishLocalBotRace(reason) {
+            if (!isLocalBotMatch() || state === 'finished') return;
+            stopLocalBotTimer();
+            stopCursorSync();
+            clearInterval(updateTimer);
+            updateLocalBotPosition();
+            var meStats = computeFinalStats(localFinishTime || Date.now());
+            var botStats = computeLocalBotFinalStats();
+            var myProgress = config.mode === 'words'
+                ? Math.min(100, Math.round((completedCorrectWords / config.amount) * 100))
+                : 100;
+            var botProgress = config.mode === 'words'
+                ? Math.min(100, Math.round(((bot && bot.completedWords) || 0) / config.amount * 100))
+                : 100;
+            var rows = [
+                buildLocalResultRow(
+                    selfIndex,
+                    selfUserId,
+                    getLocalUserName(),
+                    meStats,
+                    myProgress,
+                    'finished',
+                    localFinishTime || Date.now(),
+                    false
+                ),
+                buildLocalResultRow(
+                    opponentIndex,
+                    'bot',
+                    bot && bot.name || 'TypeBot',
+                    botStats,
+                    botProgress,
+                    'finished',
+                    bot && bot.finishedAt || Date.now(),
+                    true
+                ),
+            ];
+            rows.sort(function (a, b) {
+                if (b[3] !== a[3]) return b[3] - a[3];
+                if (b[4] !== a[4]) return b[4] - a[4];
+                return (a[7] || 0) - (b[7] || 0);
+            });
+            showResults([roomId, reason || 'complete', rows, 0, 'bot']);
+        }
+
+        function maybeFinishLocalBotRace() {
+            if (!isLocalBotMatch() || state === 'finished') return;
+            if (!localFinished) return;
+            if (config.mode === 'words' && !(bot && bot.finished)) return;
+            finishLocalBotRace(config.mode === 'time' ? 'time' : 'complete');
+        }
+
+        function buildLocalRacePayload(promptWords) {
+            var startsAt = Date.now() + 7000;
+            return {
+                roomId: roomId,
+                config: config,
+                words: promptWords,
+                startsAt: startsAt,
+                startsInMs: Math.max(0, startsAt - Date.now()),
+                endsAt: config.mode === 'time' ? startsAt + (config.amount * 1000) : null,
+                players: players,
+                bot: bot,
+            };
+        }
+
+        async function restartLocalBotRace() {
+            if (!window.usertypoLocalPrompt || typeof window.usertypoLocalPrompt.createPrompt !== 'function') {
+                throw new Error('Local prompt generator is unavailable.');
+            }
+            resetLocalRaceState();
+            rematchNeeded = 1;
+            abortCountdownIntro();
+            countdownSequenceStarted = false;
+            pendingRacePayload = null;
+            state = 'joining';
+            bot.targetWpm = 55 + Math.floor(Math.random() * 61);
+            bot.accuracy = 97 + Math.floor(Math.random() * 4);
+            bot.completedWords = 0;
+            bot.finished = false;
+            bot.finishedAt = 0;
+            var prompt = await window.usertypoLocalPrompt.createPrompt(config);
+            pendingRacePayload = buildLocalRacePayload(prompt.words);
+            rematchVotes = 0;
+            selfRematchVoted = false;
+            updateRematchButton();
+            prepareWaitingTestView();
+            ensureCountdownSequence();
+        }
+
+        async function initLocalBotRace() {
+            var raceConfig = null;
+            try {
+                var stored = sessionStorage.getItem('usertypo:local-bot-config');
+                if (stored) raceConfig = JSON.parse(stored);
+            } catch (_) { /* ignore */ }
+            if (!raceConfig) {
+                var pending = window.DualMatch && typeof window.DualMatch.loadRequest === 'function'
+                    ? window.DualMatch.loadRequest()
+                    : null;
+                raceConfig = pending && pending.config;
+            }
+            if (!raceConfig || !window.usertypoLocalPrompt) {
+                if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
+                return;
+            }
+            config = raceConfig;
+            matchReason = 'bot';
+            bindDualKeymapRenderArgs();
+            setDualFooterMode('test-compact');
+            setDualHeaderInteractive(false);
+            wireZenHandlers();
+            bindResultActions();
+            window.addEventListener('resize', function () {
+                if (!words.length) return;
+                if (state === 'countdown' || state === 'joining') {
+                    syncCountdownLayout(!!document.getElementById('char-0-0')
+                        && document.getElementById('char-0-0').style.opacity !== '0');
+                    syncDualKeymapLayout();
+                    return;
+                }
+                updateLineLayout();
+                updateCaret();
+                syncDualKeymapLayout();
+            }, { signal: signal });
+            selfUserId = getLocalUserId();
+            players = [
+                {
+                    index: 0,
+                    userId: selfUserId,
+                    name: getLocalUserName(),
+                    avatarUrl: (window.__USERTYPO_PROFILE__ && window.__USERTYPO_PROFILE__.avatar_url) || '',
+                },
+                {
+                    index: 1,
+                    userId: 'bot',
+                    name: 'TypeBot',
+                    isBot: true,
+                },
+            ];
+            selfIndex = 0;
+            opponentIndex = 1;
+            bot = {
+                index: 1,
+                name: 'TypeBot',
+                isBot: true,
+                targetWpm: 55 + Math.floor(Math.random() * 61),
+                accuracy: 97 + Math.floor(Math.random() * 4),
+                completedWords: 0,
+                finished: false,
+                finishedAt: 0,
+            };
+            rematchNeeded = 1;
+            try {
+                var prompt = await window.usertypoLocalPrompt.createPrompt(raceConfig);
+                pendingRacePayload = buildLocalRacePayload(prompt.words);
+                paintDualOpponentAvatar(players[1]);
+                prepareWaitingTestView();
+                ensureCountdownSequence();
+            } catch (error) {
+                showMessage('Could not start bot dual', error.message || 'Prompt generation failed.');
+                setTimeout(function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
+                }, 1800);
+            }
         }
 
         function closeDualToFriends(toastMessage, toastIcon) {
@@ -736,6 +1350,7 @@
 
         function sendThreeWordPacket(forceFinal) {
             if (state !== 'racing' && state !== 'waiting-result') return;
+            if (isLocalBotMatch()) return;
             if (!window.usertypoMultiplayer) return;
             // Bot matches: never stream live progress — only the final packet so the
             // server can settle results / rematch. No intermediate race:progress traffic.
@@ -801,6 +1416,17 @@
                 localFinished = true;
                 localFinishTime = Date.now();
                 state = 'waiting-result';
+                stopCursorSync();
+                if (isLocalBotMatch()) {
+                    showMessage(
+                        'Finished',
+                        bot && bot.finished
+                            ? 'Calculating race results.'
+                            : 'Waiting for TypeBot to finish.'
+                    );
+                    maybeFinishLocalBotRace();
+                    return;
+                }
                 showMessage(
                     'Finished',
                     opponentLeft
@@ -952,6 +1578,8 @@
                 event.preventDefault();
                 return;
             }
+            zenTypingActive = true;
+            hideZenElements();
             updateKeymapHighlight(event.key, true);
             if (event.key === 'Backspace') handleBackspace(event);
             else handlePrintable(event);
@@ -962,6 +1590,7 @@
             raceKeysBound = true;
             document.addEventListener('keydown', onKeyDown, { signal: signal });
             document.addEventListener('keyup', function (event) {
+                if (window.usertypo_footerPicker?.isOpen()) return;
                 if (state !== 'racing') return;
                 updateKeymapHighlight(event.key, false);
             }, { signal: signal });
@@ -983,6 +1612,9 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
+            rawHistory = [];
+            lastRawHistorySecond = 0;
+            lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -993,8 +1625,12 @@
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
+            opponentTargetWordIndex = 0;
+            opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
+            lastOpponentCursorAt = 0;
+            lastCursorSentAt = 0;
             localFinishTime = 0;
             rematchVotes = 0;
             rematchNeeded = 2;
@@ -1043,6 +1679,8 @@
                 testView.classList.remove('hidden');
                 testView.style.display = '';
             }
+            setDualHeaderInteractive(false);
+            setDualFooterMode('test-compact');
             updateRematchButton();
             prepareWaitingTestView();
         }
@@ -1240,14 +1878,12 @@
                 caret.classList.add('animate-breath');
                 caret.style.display = 'block';
             }
-            if (window.usertypo_settingsApi) {
-                try {
-                    window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
-                } catch (_) { /* defaults */ }
-            }
+            ensureDualKeymapHook();
+            applyDualTestSettings();
             showTestChrome();
             requestAnimationFrame(function () {
                 syncCountdownLayout(false);
+                syncDualKeymapLayout();
             });
         }
 
@@ -1370,19 +2006,17 @@
             if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
             var token = raceStartToken;
-            config = payload.config;
+            applyDualRaceConfig(payload.config);
             words = payload.words || [];
-            window.usertypo_getKeymapRenderArgs = function () {
-                return { useNumbers: !!config.nums, usePunctuation: !!config.punct };
-            };
+            bindDualKeymapRenderArgs();
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
             // Local unlock clock from relative delay — avoids skew delaying typing.
             var unlockDelay = raceUnlockDelayMs(payload);
             startTime = Date.now() + unlockDelay;
-            selfUserId = window.usertypoMultiplayer.getReadyState()
-                && window.usertypoMultiplayer.getReadyState().userId || '';
+            selfUserId = (window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState()
+                && window.usertypoMultiplayer.getReadyState().userId) || getLocalUserId();
             var self = players.find(function (player) { return player.userId === selfUserId; });
             var opponent = players.find(function (player) { return player.userId !== selfUserId; });
             selfIndex = self ? self.index : 0;
@@ -1406,6 +2040,9 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
+            rawHistory = [];
+            lastRawHistorySecond = 0;
+            lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -1414,8 +2051,12 @@
             opponentOffset = 0;
             opponentDisplayWpm = 0;
             opponentTargetWpm = 0;
+            opponentTargetWordIndex = 0;
+            opponentTargetCharIndex = 0;
             opponentHasReport = false;
             opponentFrameAt = 0;
+            lastOpponentCursorAt = 0;
+            lastCursorSentAt = 0;
             localFinishTime = 0;
             countdownAnimToken += 1;
             introBusy = false;
@@ -1439,6 +2080,11 @@
                 localFinishTime = endAt;
                 bindRaceKeys();
                 clearInterval(updateTimer);
+                stopCursorSync();
+                if (isLocalBotMatch()) {
+                    finishLocalBotRace('time');
+                    return;
+                }
                 sendThreeWordPacket(true);
                 showMessage('Finished', 'Calculating race results.');
                 return;
@@ -1447,22 +2093,24 @@
             function unlockTyping() {
                 if (token !== raceStartToken) return;
                 state = 'racing';
-                startZenMode();
+                resetZenState();
                 hideMessage();
                 opponentDisplayWpm = 0;
                 if (window.usertypo_settingsApi) {
-                    try {
-                        window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
-                    } catch (_) { /* retain race defaults */ }
+                    applyDualTestSettings();
+                } else {
+                    bindDualKeymapRenderArgs();
                 }
                 updateLineLayout();
-                updateCaret();
                 showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 bindRaceKeys();
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
+                if (isLocalBotMatch()) startLocalBotTimer();
+                else startCursorSync();
+                updateCaret();
             }
 
             var wait = Math.max(0, startTime - Date.now());
@@ -1495,12 +2143,57 @@
             }
         }
 
-        function applyOpponentProgress(payload) {
-            if (!Array.isArray(payload) || payload[0] !== opponentIndex) return;
-            var nextWpm = Math.max(0, Number(payload[1]) || 0);
-            opponentTargetWpm = nextWpm;
+        function paintOpponentCaret(wordIndex, charIndex) {
+            if (!opponentCaret || !words.length) return;
+            opponentCaret.style.display = 'block';
+            var safeWordIndex = Math.min(
+                Math.max(0, wordIndex),
+                Math.max(0, words.length - 1)
+            );
+            positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+        }
+
+        function applyOpponentCursor(payload) {
+            if (!Array.isArray(payload) || Number(payload[0]) !== Number(opponentIndex)) return;
+            opponentTargetWpm = Math.max(0, Number(payload[1]) || 0);
+            opponentTargetWordIndex = Math.max(0, Number(payload[2]) || 0);
+            opponentTargetCharIndex = Math.max(0, Number(payload[3]) || 0);
             opponentHasReport = true;
-            if (opponentWpmDisplay) opponentWpmDisplay.textContent = Math.round(nextWpm);
+            opponentDisplayWpm = opponentTargetWpm;
+            lastOpponentCursorAt = Date.now();
+            opponentOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
+            if (opponentWpmDisplay) {
+                opponentWpmDisplay.textContent = String(Math.round(opponentTargetWpm));
+            }
+            paintOpponentCaret(opponentTargetWordIndex, opponentTargetCharIndex);
+        }
+
+        function applyOpponentProgress(payload) {
+            if (!Array.isArray(payload) || Number(payload[0]) !== Number(opponentIndex)) return;
+            if (isLocalBotMatch()) return;
+
+            var wpm = Math.max(0, Number(payload[1]) || 0);
+            var completedWords = Number(payload[4]) || 0;
+            var position = positionFromCompletedWords(completedWords);
+
+            if (isBotMatch()) {
+                opponentTargetWpm = wpm;
+                opponentHasReport = true;
+                opponentDisplayWpm = wpm;
+                if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
+                paintOpponentCaret(position.wordIndex, position.charIndex);
+                return;
+            }
+
+            // PvP: progress is only a fallback when high-frequency cursor sync is down.
+            if (opponentCursorFresh()) return;
+
+            opponentTargetWpm = wpm;
+            opponentHasReport = true;
+            opponentDisplayWpm = wpm;
+            if (opponentWpmDisplay) opponentWpmDisplay.textContent = String(Math.round(wpm));
+            opponentOffset = wordOffset(position.wordIndex) + position.charIndex;
+            paintOpponentCaret(position.wordIndex, position.charIndex);
         }
 
         function fillCard(prefix, data) {
@@ -1573,6 +2266,8 @@
                 statsView.classList.remove('hidden', 'opacity-0');
                 statsView.classList.add('flex');
                 statsView.style.display = 'flex';
+                setDualFooterMode('stats-full');
+                setDualHeaderInteractive(true);
                 return;
             }
             state = 'finished';
@@ -1590,7 +2285,14 @@
                 var localMe = computeFinalStats(localFinishTime || Date.now());
                 // Prefer local stats when the server has no meaningful WPM for us
                 // (e.g. bot match where the progress packet was rejected or late).
-                var meData = (serverMe && serverMe.wpm > 0) ? serverMe : (localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                var meData = (serverMe && serverMe.wpm > 0)
+                    ? Object.assign({}, serverMe)
+                    : Object.assign({}, localMe || serverMe || { wpm: 0, raw: 0, accuracy: 100, consistency: 100, correct: 0, total: 0, errors: 0, extra: 0, time: 0 });
+                // Bot matches send one final progress packet, so the server has too few
+                // snapshots to compute consistency and defaults to 100. Prefer local keystroke data.
+                if (localMe && localMe.consistency != null) {
+                    meData.consistency = localMe.consistency;
+                }
                 var otherRow = rows.find(function (row) { return row[0] === opponentIndex; }) || [];
                 meData.name = me.name;
                 meData.avatarUrl = me.avatarUrl;
@@ -1650,7 +2352,8 @@
             statsView.classList.add('flex');
             statsView.style.display = 'flex';
             stopZenMode();
-            setFooterCompact(false);
+            setDualFooterMode('stats-full');
+            setDualHeaderInteractive(true);
             initStatsHeader();
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
@@ -1661,7 +2364,7 @@
         async function leaveDual() {
             if (!closingDual) closingDual = true;
             try {
-                if (roomId && window.usertypoMultiplayer) {
+                if (!isLocalBotMatch() && roomId && window.usertypoMultiplayer) {
                     await window.usertypoMultiplayer.leaveRace(roomId);
                 }
             } catch (_) { /* ignore */ }
@@ -1672,6 +2375,21 @@
             if (state !== 'finished' || !config || selfRematchVoted) return;
             if (opponentLeft && !isBotMatch()) {
                 window.usertypoNotifications?.showToast('Your opponent left — rematch is unavailable.', 'person_remove');
+                return;
+            }
+            if (isLocalBotMatch()) {
+                selfRematchVoted = true;
+                rematchVotes = 1;
+                updateRematchButton();
+                try {
+                    leaveStatsForRematch();
+                    await restartLocalBotRace();
+                } catch (error) {
+                    selfRematchVoted = false;
+                    rematchVotes = 0;
+                    updateRematchButton();
+                    window.usertypoNotifications?.showToast(error.message || 'Could not rematch', 'error');
+                }
                 return;
             }
             var button = document.getElementById('rematch-btn');
@@ -1743,6 +2461,7 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
+                if (!config) return;
                 if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
                 // Local 3→2→1 tape animation paced to countdownEndsAt.
                 if (Number(payload[1]) === 0) return;
@@ -1758,6 +2477,7 @@
                 if (state === 'racing') updateLiveStats();
             }, { signal: signal });
             listen('race-progress', function (event) { applyOpponentProgress(event.detail); });
+            listen('race-cursor', function (event) { applyOpponentCursor(event.detail); });
             listen('race-player-left', function (event) {
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId || payload[1] === selfIndex) return;
@@ -1822,7 +2542,10 @@
                 var payload = event.detail || {};
                 if (!payload.roomId || payload.roomId !== roomId) return;
                 matchReason = payload.reason || matchReason;
-                if (payload.config) config = payload.config;
+                if (payload.config) {
+                    applyDualRaceConfig(payload.config);
+                    bindDualKeymapRenderArgs();
+                }
                 leaveStatsForRematch();
             });
             listen('match-resumed', function (event) {
@@ -1855,7 +2578,15 @@
         }
 
         async function init() {
-            setFooterCompact(false);
+            ensureDualKeymapHook();
+            seedConfigFromPendingMatch();
+            if (config) bindDualKeymapRenderArgs();
+            setDualFooterMode('test-compact');
+            setDualHeaderInteractive(false);
+            wireZenHandlers();
+            if (isLocalBotMatch()) {
+                return initLocalBotRace();
+            }
             if (!roomId || !window.usertypoMultiplayer) {
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
@@ -1864,7 +2595,6 @@
                 redirectAfterRefresh();
                 return;
             }
-            prepareWaitingTestView();
             bindEvents();
             bindResultActions();
             window.addEventListener('resize', function () {
@@ -1872,16 +2602,23 @@
                 if (state === 'countdown' || state === 'joining') {
                     syncCountdownLayout(!!document.getElementById('char-0-0')
                         && document.getElementById('char-0-0').style.opacity !== '0');
+                    syncDualKeymapLayout();
                     return;
                 }
                 updateLineLayout();
                 updateCaret();
+                syncDualKeymapLayout();
             }, { signal: signal });
             try {
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 markDualMembership(true);
                 setSessionFlag(refreshHandledKey, '');
-                config = response.room && response.room.config;
+                applyDualRaceConfig(response.room && response.room.config);
+                if (response.race && response.race.config) {
+                    applyDualRaceConfig(response.race.config);
+                }
+                if (response.race) pendingRacePayload = response.race;
+                bindDualKeymapRenderArgs();
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;
                 matchReason = response.room && response.room.reason || '';
@@ -1897,6 +2634,7 @@
                     return;
                 }
                 if (response.state === 'countdown') {
+                    prepareWaitingTestView();
                     ensureCountdownSequence();
                     return;
                 }
@@ -1915,10 +2653,12 @@
             pendingRacePayload = null;
             countdownSequenceStarted = false;
             clearInterval(updateTimer);
+            stopCursorSync();
+            stopLocalBotTimer();
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = null;
             // Always leave so dual membership cannot stick after navigating away.
-            if (roomId && window.usertypoMultiplayer) {
+            if (roomId && window.usertypoMultiplayer && !isLocalBotMatch()) {
                 window.usertypoMultiplayer.leaveRace(roomId);
             }
             markDualMembership(false);
@@ -1938,6 +2678,7 @@
         return {
             init: init,
             cleanup: cleanup,
+            refreshKeymap: bindDualKeymapRenderArgs,
             isActive: function () {
                 return state === 'racing' || state === 'countdown' || state === 'waiting-result';
             },

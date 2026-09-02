@@ -6,6 +6,7 @@
     'use strict';
 
     var nativeSetTimeout = window.setTimeout.bind(window);
+    var nativeSetInterval = window.setInterval.bind(window);
     var socket = null;
     var connectPromise = null;
     var readyState = null;
@@ -285,7 +286,7 @@
             dispatch('room-kicked', payload || {});
         });
         [
-            'race:joined', 'race:countdown', 'race:start', 'race:progress',
+            'race:joined', 'race:countdown', 'race:start', 'race:progress', 'race:cursor',
             'race:finished', 'race:player-left', 'race:invalid', 'race:rematch-state',
             'race:rematch-start', 'room:state',
             'room:return-lobby-state', 'room:returned-to-lobby',
@@ -509,6 +510,26 @@
         ], 5000);
     }
 
+    function sendCursorState(roomId, wpm, wordIndex, charIndex) {
+        if (activeRoomIsBot) {
+            return Promise.resolve({ ok: true, skipped: true });
+        }
+        if (!socket || !socket.connected) {
+            return Promise.resolve({ ok: false, offline: true });
+        }
+        var targetRoom = String(roomId || activeRoomId || '');
+        if (!targetRoom) {
+            return Promise.resolve({ ok: false, missingRoom: true });
+        }
+        socket.volatile.emit('race:cursor', [
+            targetRoom,
+            Math.max(0, Math.round(Number(wpm) || 0)),
+            Math.max(0, Math.floor(Number(wordIndex) || 0)),
+            Math.max(0, Math.floor(Number(charIndex) || 0)),
+        ]);
+        return Promise.resolve({ ok: true });
+    }
+
     function leaveRace(roomId) {
         activeRoomId = '';
         activeRoomIsBot = false;
@@ -615,6 +636,7 @@
         joinListing: joinListing,
         joinMatch: joinMatch,
         sendProgress: sendProgress,
+        sendCursorState: sendCursorState,
         leaveRace: leaveRace,
         createRoom: createRoom,
         joinRoomCode: joinRoomCode,
