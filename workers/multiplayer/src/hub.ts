@@ -61,6 +61,7 @@ interface BotPlayer {
   accuracy: number;
   targetWpm: number;
   finishedAt: number | null;
+  snapshots: Array<[number, number, number, number]>;
 }
 
 interface Room {
@@ -157,6 +158,7 @@ export class MultiplayerHub implements DurableObject {
   private wsToUser = new Map<WebSocket, string>();
   private userSockets = new Map<string, Set<WebSocket>>();
   private loaded = false;
+  private alarmWriteChain: Promise<void> = Promise.resolve();
   /** lobby = matchmaking; race = one duel DO (idFromName room:{id}) */
   private role: 'lobby' | 'race' | 'unknown' = 'unknown';
   private boundRoomId = '';
@@ -253,6 +255,7 @@ export class MultiplayerHub implements DurableObject {
           if (player.lastSnapshotAt == null) player.lastSnapshotAt = 0;
           if (player.lastCursorAt == null) player.lastCursorAt = 0;
         }
+        if (room.bot && !room.bot.snapshots) room.bot.snapshots = [];
         this.rooms.set(room.id, room);
       }
       for (const [k, v] of Object.entries(snap.userToRoom || {})) this.userToRoom.set(k, v);
@@ -301,12 +304,17 @@ export class MultiplayerHub implements DurableObject {
   }
 
   private async scheduleAlarm(whenMs: number, payload: AlarmPayload) {
-    const at = Date.now() + whenMs;
-    const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
-    pending.push({ at, payload });
-    pending.sort((a, b) => a.at - b.at);
-    await this.ctx.storage.put('pendingAlarms', pending);
-    await this.ctx.storage.setAlarm(pending[0].at);
+    const run = async () => {
+      const at = Date.now() + whenMs;
+      const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+      pending.push({ at, payload });
+      pending.sort((a, b) => a.at - b.at);
+      await this.ctx.storage.put('pendingAlarms', pending);
+      await this.ctx.storage.setAlarm(pending[0].at);
+    };
+    // Serialize alarm writes — concurrent scheduleAlarm calls can clobber each other.
+    this.alarmWriteChain = this.alarmWriteChain.then(run, run);
+    await this.alarmWriteChain;
   }
 
   async alarm() {
@@ -320,8 +328,14 @@ export class MultiplayerHub implements DurableObject {
     for (const entry of due) {
       await this.handleAlarmPayload(entry.payload);
     }
-    if (remaining.length) {
-      await this.ctx.storage.setAlarm(remaining[0].at);
+    // Handlers may have scheduled more alarms (e.g. next bot-tick). Always
+    // re-read storage — using the pre-handler `remaining` list overwrites the
+    // DO alarm clock and drops those follow-up ticks.
+    const after = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+    if (after.length) {
+      after.sort((a, b) => a.at - b.at);
+      await this.ctx.storage.put('pendingAlarms', after);
+      await this.ctx.storage.setAlarm(after[0].at);
     }
   }
 
@@ -346,7 +360,7 @@ export class MultiplayerHub implements DurableObject {
     } else if (payload.kind === 'countdown-tick' && payload.roomId) {
       await this.handleCountdownTick(payload.roomId);
     } else if (payload.kind === 'race-end' && payload.roomId) {
-      this.scheduleAlarm(3500, { kind: 'race-end-finish', roomId: payload.roomId });
+      await this.scheduleAlarm(3500, { kind: 'race-end-finish', roomId: payload.roomId });
     } else if (payload.kind === 'race-end-finish' && payload.roomId) {
       await this.finishRoomById(payload.roomId, 'time');
     } else if (payload.kind === 'bot-tick' && payload.roomId) {
@@ -812,6 +826,7 @@ export class MultiplayerHub implements DurableObject {
       accuracy: 97 + Math.floor(Math.random() * 4),
       targetWpm: 55 + Math.floor(Math.random() * 61),
       finishedAt: null,
+      snapshots: [],
     };
   }
 
@@ -1055,12 +1070,14 @@ export class MultiplayerHub implements DurableObject {
   ): Promise<Room> {
     const activeRooms = new Set(this.userToRoom.values()).size;
     if (activeRooms >= LIMITS.maxActiveRooms) throw new Error('server_capacity');
-    await Promise.all(allowedUserIds.map(async (uid) => {
-      const profile = await getProfile(this.env, uid);
-      this.profiles.set(uid, profile);
-    }));
+    const [, prompt] = await Promise.all([
+      Promise.all(allowedUserIds.map(async (uid) => {
+        const profile = await getProfile(this.env, uid);
+        this.profiles.set(uid, profile);
+      })),
+      createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', config),
+    ]);
     const id = shortId();
-    const prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', config);
     const players: Record<string, Player> = {};
     allowedUserIds.forEach((uid, index) => {
       players[uid] = this.createPlayer(uid, index);
@@ -1126,14 +1143,14 @@ export class MultiplayerHub implements DurableObject {
     return Object.values(room.players).every((p) => p.joined && p.status !== 'left');
   }
 
-  private startCountdown(room: Room) {
+  private async startCountdown(room: Room) {
     if (room.state !== 'waiting') return;
     room.state = 'countdown';
     let seconds = LIMITS.countdownSeconds;
     room.countdownEndsAt = Date.now() + seconds * 1000;
     this.emitRoom(room, 'race:countdown', [room.id, seconds, room.countdownEndsAt]);
-    this.scheduleAlarm(1000, { kind: 'countdown-tick', roomId: room.id });
-    void this.persist();
+    await this.scheduleAlarm(1000, { kind: 'countdown-tick', roomId: room.id });
+    await this.persist();
   }
 
   private async handleCountdownTick(roomId: string) {
@@ -1142,7 +1159,7 @@ export class MultiplayerHub implements DurableObject {
     const seconds = Math.max(0, Math.ceil((room.countdownEndsAt - Date.now()) / 1000));
     if (seconds > 0) {
       this.emitRoom(room, 'race:countdown', [room.id, seconds, room.countdownEndsAt]);
-      this.scheduleAlarm(1000, { kind: 'countdown-tick', roomId });
+      await this.scheduleAlarm(1000, { kind: 'countdown-tick', roomId });
       return;
     }
     this.emitRoom(room, 'race:countdown', [room.id, 0, room.countdownEndsAt]);
@@ -1159,11 +1176,11 @@ export class MultiplayerHub implements DurableObject {
     this.emitRoom(room, 'race:start', this.raceStartPayload(room));
     if (room.bot) {
       room.bot.status = 'racing';
-      this.scheduleAlarm(1000, { kind: 'bot-tick', roomId: room.id });
+      await this.scheduleAlarm(500, { kind: 'bot-tick', roomId: room.id });
     }
     if (room.config.mode === 'time') {
       const delay = room.config.amount * 1000 + 750;
-      this.scheduleAlarm(delay, { kind: 'race-end', roomId: room.id });
+      await this.scheduleAlarm(delay, { kind: 'race-end', roomId: room.id });
     }
     await this.persist();
   }
@@ -1172,6 +1189,7 @@ export class MultiplayerHub implements DurableObject {
     const room = this.rooms.get(roomId);
     if (!room || room.state !== 'racing' || !room.bot || !room.startsAt) return;
     const bot = room.bot;
+    if (!bot.snapshots) bot.snapshots = [];
     const elapsedMinutes = Math.max((Date.now() - room.startsAt) / 60_000, 1 / 120);
     const targetChars = Math.floor(bot.targetWpm * 5 * elapsedMinutes);
     let words = bot.completedWords;
@@ -1184,23 +1202,28 @@ export class MultiplayerHub implements DurableObject {
     bot.correctChars = this.cumulativeCorrectChars(room, words);
     bot.totalKeystrokes = Math.ceil(bot.correctChars / (bot.accuracy / 100));
     bot.wpm = (bot.correctChars / 5) / elapsedMinutes;
+    bot.snapshots.push([0, bot.completedWords, bot.totalKeystrokes, Date.now()]);
+    if (bot.snapshots.length > LIMITS.maxRetainedSnapshots) bot.snapshots.shift();
     const progress = room.config.mode === 'words'
       ? Math.round((words / room.prompt.targetWordCount) * 100)
       : Math.round(((Date.now() - room.startsAt) / (room.config.amount * 1000)) * 100);
+    const finished = room.config.mode === 'words' && words >= room.prompt.targetWordCount;
     this.emitRoom(room, 'race:progress', [
       bot.index,
       bot.wpm,
       Math.min(100, progress),
-      1,
+      finished ? 1 : 0,
       bot.completedWords,
     ]);
-    if (room.config.mode === 'words' && words >= room.prompt.targetWordCount) {
+    if (finished) {
       bot.status = 'finished';
       bot.finishedAt = Date.now();
+      await this.persist();
       await this.maybeFinishRoom(room);
       return;
     }
-    this.scheduleAlarm(1000, { kind: 'bot-tick', roomId });
+    await this.scheduleAlarm(1000, { kind: 'bot-tick', roomId });
+    await this.persist();
   }
 
   private cumulativeCorrectChars(room: Room, wordCount: number): number {
@@ -1221,13 +1244,21 @@ export class MultiplayerHub implements DurableObject {
   }
 
   private async cancelAlarmsForRoom(roomId: string, kind?: string) {
-    const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
-    const filtered = pending.filter((entry) => {
-      if (entry.payload.roomId !== roomId) return true;
-      if (kind && entry.payload.kind !== kind) return true;
-      return false;
-    });
-    await this.ctx.storage.put('pendingAlarms', filtered);
+    const run = async () => {
+      const pending = await this.ctx.storage.get<AlarmEntry[]>('pendingAlarms') || [];
+      const filtered = pending.filter((entry) => {
+        if (entry.payload.roomId !== roomId) return true;
+        if (kind && entry.payload.kind !== kind) return true;
+        return false;
+      });
+      await this.ctx.storage.put('pendingAlarms', filtered);
+      if (filtered.length) {
+        filtered.sort((a, b) => a.at - b.at);
+        await this.ctx.storage.setAlarm(filtered[0].at);
+      }
+    };
+    this.alarmWriteChain = this.alarmWriteChain.then(run, run);
+    await this.alarmWriteChain;
   }
 
   private resetPlayerForLobby(player: Player) {
@@ -1329,12 +1360,44 @@ export class MultiplayerHub implements DurableObject {
     ];
   }
 
+  private botResult(bot: BotPlayer, room: Room): Array<string | number> {
+    const progress = room.config.mode === 'words'
+      ? Math.min(100, Math.round((bot.completedWords / room.prompt.targetWordCount) * 100))
+      : Math.min(100, Math.round(((Date.now() - (room.startsAt || Date.now())) / (room.config.amount * 1000)) * 100));
+    const displaySeconds = bot.finishedAt && room.startsAt
+      ? Math.floor((bot.finishedAt - room.startsAt) / 1000)
+      : (room.startsAt ? Math.max(0, Math.floor((Date.now() - room.startsAt) / 1000)) : 0);
+    const elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+    const validChars = bot.correctChars || 0;
+    const rawChars = bot.totalKeystrokes || 0;
+    const errorsMade = Math.max(0, rawChars - validChars);
+    return [
+      bot.index,
+      'bot',
+      bot.name,
+      Math.max(0, Math.round((validChars / 5) / elapsedMinutes)),
+      Math.max(0, Math.min(100, Math.round(bot.accuracy * 10) / 10)),
+      progress,
+      bot.status,
+      bot.finishedAt || 0,
+      validChars,
+      rawChars,
+      Math.max(0, Math.round((rawChars / 5) / elapsedMinutes)),
+      computeConsistencyFromSnapshots(bot.snapshots || []),
+      displaySeconds,
+      errorsMade,
+      0,
+    ];
+  }
+
   private async finishRoom(room: Room, reason: string) {
     room.state = 'finished';
     room.finishReason = reason;
-    room.bot = null;
     room.rematchVotes = [];
     const results = Object.values(room.players).map((p) => this.playerResult(p, room));
+    if (room.bot) {
+      results.push(this.botResult(room.bot, room));
+    }
     results.sort((a, b) => {
       const aFinished = a[6] === 'finished' ? 1 : 0;
       const bFinished = b[6] === 'finished' ? 1 : 0;
@@ -1348,6 +1411,7 @@ export class MultiplayerHub implements DurableObject {
       return (Number(a[7]) || 0) - (Number(b[7]) || 0);
     });
     room.lastResults = results;
+    room.bot = null;
     this.emitRoom(room, 'race:finished', [
       room.id,
       reason,
@@ -1585,6 +1649,7 @@ export class MultiplayerHub implements DurableObject {
           accuracy: 97 + Math.floor(Math.random() * 4),
           targetWpm: 55 + Math.floor(Math.random() * 61),
           finishedAt: null,
+          snapshots: [],
         };
         const room = await this.createRoom('public', listing.config, [userId], { bot });
         this.notifyMatchReady(room, 'bot');

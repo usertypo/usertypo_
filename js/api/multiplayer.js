@@ -338,7 +338,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=6';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=7';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -648,12 +648,9 @@
 
     function createRoom(options) {
         return emitAck('room:create', options).then(function (response) {
+            // Connect race socket in the background — do not block lobby navigation.
             if (socket && typeof socket.ensureRaceConnected === 'function' && response && response.roomId) {
-                return socket.ensureRaceConnected(response.roomId).then(function () {
-                    return response;
-                }).catch(function () {
-                    return response;
-                });
+                socket.ensureRaceConnected(response.roomId).catch(function () { /* joinMatch retries */ });
             }
             return response;
         }).catch(function (error) {
@@ -663,11 +660,7 @@
             return leaveRace('').then(function () {
                 return emitAck('room:create', options).then(function (response) {
                     if (socket && typeof socket.ensureRaceConnected === 'function' && response && response.roomId) {
-                        return socket.ensureRaceConnected(response.roomId).then(function () {
-                            return response;
-                        }).catch(function () {
-                            return response;
-                        });
+                        socket.ensureRaceConnected(response.roomId).catch(function () { /* joinMatch retries */ });
                     }
                     return response;
                 });
@@ -678,11 +671,7 @@
     function joinRoomCode(code) {
         return emitAck('room:join-code', String(code || '')).then(function (response) {
             if (socket && typeof socket.ensureRaceConnected === 'function' && response && response.roomId) {
-                return socket.ensureRaceConnected(response.roomId).then(function () {
-                    return response;
-                }).catch(function () {
-                    return response;
-                });
+                socket.ensureRaceConnected(response.roomId).catch(function () { /* joinMatch retries */ });
             }
             return response;
         }).catch(function (error) {
@@ -691,11 +680,7 @@
             return leaveRace('').then(function () {
                 return emitAck('room:join-code', String(code || '')).then(function (response) {
                     if (socket && typeof socket.ensureRaceConnected === 'function' && response && response.roomId) {
-                        return socket.ensureRaceConnected(response.roomId).then(function () {
-                            return response;
-                        }).catch(function () {
-                            return response;
-                        });
+                        socket.ensureRaceConnected(response.roomId).catch(function () { /* joinMatch retries */ });
                     }
                     return response;
                 });

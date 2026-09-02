@@ -1,12 +1,24 @@
 import type { RaceConfig } from './config';
 
+/** Used when the language file is slow/unavailable so room create stays snappy. */
 const FALLBACK_WORDS = [
-  'the', 'quick', 'brown', 'fox', 'jumps', 'over', 'bright', 'keys', 'while',
-  'friends', 'race', 'across', 'every', 'line', 'with', 'steady', 'focus',
-  'typing', 'speed', 'accuracy', 'practice', 'makes', 'progress', 'possible',
+  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I',
+  'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+  'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+  'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
+  'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
+  'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
+  'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
+  'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
+  'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
+  'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
+  'quick', 'brown', 'fox', 'jumps', 'bright', 'keys', 'while', 'friends', 'race',
+  'across', 'every', 'line', 'steady', 'focus', 'typing', 'speed', 'accuracy',
+  'practice', 'makes', 'progress', 'possible', 'words', 'flow', 'smooth', 'hands',
 ];
 
 const cache = new Map<string, string[]>();
+const inflight = new Map<string, Promise<string[]>>();
 
 function normalizeLanguageFile(language: string): string {
   const safe = String(language || 'english')
@@ -27,28 +39,59 @@ function decorateWord(word: string, index: number, config: RaceConfig): string {
   return value;
 }
 
+function parseWordList(parsed: unknown): string[] | null {
+  const list = Array.isArray(parsed) ? parsed : (parsed as { words?: string[] })?.words;
+  if (!Array.isArray(list) || list.length < 10) return null;
+  return list
+    .filter((w) => typeof w === 'string' && w.length > 0 && w.length <= 40)
+    .slice(0, 100_000);
+}
+
+async function fetchWordList(siteOrigin: string, file: string, timeoutMs: number): Promise<string[] | null> {
+  const origin = siteOrigin.replace(/\/+$/, '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${origin}/lang/${file}.json`, { signal: controller.signal });
+    if (!res.ok) return null;
+    return parseWordList(await res.json());
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function loadWordList(siteOrigin: string, language: string): Promise<string[]> {
   const file = normalizeLanguageFile(language);
   if (cache.has(file)) return cache.get(file)!;
-  let words = FALLBACK_WORDS;
-  try {
-    const origin = siteOrigin.replace(/\/+$/, '');
-    const res = await fetch(`${origin}/lang/${file}.json`);
-    if (res.ok) {
-      const parsed = await res.json() as unknown;
-      const list = Array.isArray(parsed) ? parsed : (parsed as { words?: string[] })?.words;
-      if (Array.isArray(list) && list.length >= 10) {
-        words = list
-          .filter((w) => typeof w === 'string' && w.length > 0 && w.length <= 40)
-          .slice(0, 100_000);
-      }
+  const existing = inflight.get(file);
+  if (existing) return existing;
+
+  const load = (async () => {
+    // Prefer a fast response for room create; warm the full list in the background if needed.
+    let words = await fetchWordList(siteOrigin, file, 280);
+    if (!words) {
+      words = FALLBACK_WORDS;
+      // Background warm (best-effort) so later rooms get the real list.
+      void fetchWordList(siteOrigin, file, 8_000).then((full) => {
+        if (full && full.length >= 10) {
+          cache.set(file, full);
+        }
+      });
+    } else {
+      cache.set(file, words);
     }
-  } catch {
-    /* fallback */
+    if (cache.size > 12) cache.delete(cache.keys().next().value!);
+    return words;
+  })();
+
+  inflight.set(file, load);
+  try {
+    return await load;
+  } finally {
+    inflight.delete(file);
   }
-  cache.set(file, words);
-  if (cache.size > 12) cache.delete(cache.keys().next().value!);
-  return words;
 }
 
 export interface Prompt {
