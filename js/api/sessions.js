@@ -80,9 +80,8 @@
             payload.failed ? '(failed)' : (inserted.data && inserted.data.is_pb ? '(PB)' : '')
         );
 
-        // Keep Postgres as source of truth for history. Redis rankings are updated
-        // separately through a secure Edge Function (never from browser Redis keys).
-        // Staging (dev.usertypo.com) disables leaderboards entirely — no Redis / no ingest.
+        // Rankings via Cloudflare Worker (Postgres) when configured; otherwise Postgres RPC fallback.
+        // Staging (dev.usertypo.com) uses the dev Worker — no Upstash Redis.
         var leaderboardsEnabled = !(
             window.USERTYPO_CONFIG
             && window.USERTYPO_CONFIG.features

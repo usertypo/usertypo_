@@ -98,10 +98,10 @@ window.USERTYPO_CONFIG = {
         cfg.environment = 'staging';
     }
 
-    // Staging: Clerk Development + separate Supabase/Render; no Redis leaderboards.
+    // Staging: Clerk Development + dev Supabase + Cloudflare leaderboards Worker.
     if (isStagingHost(host)) {
         applyStagingConfig();
-        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase');
+        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase + CF leaderboards');
     }
 
     // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
@@ -115,10 +115,15 @@ window.USERTYPO_CONFIG = {
         if (cfg.multiplayer) cfg.multiplayer.url = '';
     }
 
-    function hideLeaderboardsNav() {
-        if (!cfg.features || cfg.features.leaderboards !== false) return;
+    function syncLeaderboardsNavVisibility() {
         var el = document.getElementById('nav-leaderboards');
-        if (el) {
+        if (!el) return;
+        var enabled = !(cfg.features && cfg.features.leaderboards === false);
+        if (enabled) {
+            el.hidden = false;
+            el.removeAttribute('aria-hidden');
+            el.style.display = '';
+        } else {
             el.hidden = true;
             el.setAttribute('aria-hidden', 'true');
             el.style.display = 'none';
@@ -126,8 +131,8 @@ window.USERTYPO_CONFIG = {
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', hideLeaderboardsNav);
+        document.addEventListener('DOMContentLoaded', syncLeaderboardsNavVisibility);
     } else {
-        hideLeaderboardsNav();
+        syncLeaderboardsNavVisibility();
     }
 })();

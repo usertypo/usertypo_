@@ -739,7 +739,7 @@
             return;
         }
 
-        // Staging disables global leaderboards — bounce to home.
+        // Staging without leaderboards — bounce to home (dev uses Cloudflare Worker + Postgres).
         var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
         if (path === '/leaderboards' && features && features.leaderboards === false) {
             if (typeof window.navigateTo === 'function') {
