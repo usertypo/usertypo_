@@ -43,9 +43,9 @@ window.USERTYPO_CONFIG = {
         // Socket.IO server. Usually same as backend.url. Blank on localhost.
         url: 'https://mp.usertypo.com',
     },
-    // Cloudflare Leaderboards Worker (Postgres). Set after deploy — see docs/cloudflare-migration/STEP-01-leaderboards.md
+    // Cloudflare Leaderboards Worker (Postgres — no Upstash).
     leaderboards: {
-        url: '',
+        url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
     },
     features: {
         leaderboards: true,
