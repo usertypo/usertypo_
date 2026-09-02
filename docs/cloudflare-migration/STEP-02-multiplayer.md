@@ -1,6 +1,10 @@
 # Step 2 — Multiplayer on Cloudflare (dev first)
 
-This step deploys a **Cloudflare Worker + Durable Object** for real-time multiplayer (dual races, friend challenges, bot races). **Production** (`mp.usertypo.com` on Render) stays unchanged until dev is verified.
+This step deploys a **Cloudflare Worker + Durable Object** for real-time multiplayer (dual races, friend challenges, bot races).
+
+**Dev:** `usertypo-mp-dev` · **Production:** `usertypo-mp` (duels live).
+
+**Scaling:** lobby DO (`lobby`) for matchmaking + **one DO per duel/room** (`room:{roomId}`).
 
 ---
 
@@ -13,9 +17,8 @@ This step deploys a **Cloudflare Worker + Durable Object** for real-time multipl
 | State | In-memory on Render | Durable Object `MultiplayerHub` |
 | Auth / profiles / friends | Supabase (unchanged) | Supabase (unchanged) |
 
-**Phase A (this step):** public duels, friend challenges, bot races, match join/resume, race progress/cursor.  
-**Dev scaling:** lobby Durable Object (`lobby`) for matchmaking + **one Durable Object per duel** (`room:{roomId}`) for race traffic.  
-**Phase B (later):** custom rooms (`/room`) — not yet on CF.
+**Phase A:** public duels, friend challenges, bot races (lobby + 1 DO per duel).  
+**Phase B:** custom rooms (`/room`) — 1 DO per room; opponent WPM via `race:progress` ~500ms (no ghost caret).
 
 ---
 

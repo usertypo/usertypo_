@@ -7,7 +7,14 @@ import {
   hasBlocked,
 } from './auth';
 import { computeConsistencyFromSnapshots } from './consistency';
-import { LIMITS, normalizeConfig, configKey, serializeConfig, type RaceConfig } from './config';
+import {
+  LIMITS,
+  normalizeConfig,
+  configKey,
+  serializeConfig,
+  clampInteger,
+  type RaceConfig,
+} from './config';
 import { createPrompt, type Prompt } from './prompt';
 
 type RoomState = 'waiting' | 'countdown' | 'racing' | 'finished' | 'disposed';
@@ -76,6 +83,7 @@ interface Room {
   finishReason: string;
   opponentLeft: boolean;
   rematchVotes: string[];
+  returnLobbyVotes: string[];
 }
 
 interface Listing {
@@ -110,6 +118,7 @@ interface HubSnapshot {
   invites: Invite[];
   rooms: Room[];
   userToRoom: Record<string, string>;
+  roomCodes?: Record<string, string>;
 }
 
 interface AlarmPayload {
@@ -143,6 +152,8 @@ export class MultiplayerHub implements DurableObject {
   private invites = new Map<string, Invite>();
   private rooms = new Map<string, Room>();
   private userToRoom = new Map<string, string>();
+  /** Lobby only: join code → roomId for custom rooms. */
+  private roomCodes = new Map<string, string>();
   private wsToUser = new Map<WebSocket, string>();
   private userSockets = new Map<string, Set<WebSocket>>();
   private loaded = false;
@@ -164,11 +175,35 @@ export class MultiplayerHub implements DurableObject {
     );
   }
 
-  private async fetchRaceMeta(roomId: string): Promise<{ roomId: string; state: string; allowedUserIds: string[] } | null> {
+  private async fetchRaceMeta(roomId: string): Promise<{
+    roomId: string;
+    state: string;
+    type?: string;
+    allowedUserIds: string[];
+    maxPlayers?: number;
+    occupiedSlots?: number;
+    roomCode?: string;
+    roomName?: string;
+    hostUserId?: string;
+    config?: RaceConfig;
+    playerStatuses?: Record<string, string>;
+  } | null> {
     try {
       const res = await this.raceStub(roomId).fetch('https://race-do/internal/meta');
       if (!res.ok) return null;
-      return await res.json() as { roomId: string; state: string; allowedUserIds: string[] };
+      return await res.json() as {
+        roomId: string;
+        state: string;
+        type?: string;
+        allowedUserIds: string[];
+        maxPlayers?: number;
+        occupiedSlots?: number;
+        roomCode?: string;
+        roomName?: string;
+        hostUserId?: string;
+        config?: RaceConfig;
+        playerStatuses?: Record<string, string>;
+      };
     } catch {
       return null;
     }
@@ -182,7 +217,20 @@ export class MultiplayerHub implements DurableObject {
         body: JSON.stringify({
           roomId: room.id,
           userIds: room.allowedUserIds,
+          roomCode: room.roomCode || undefined,
         }),
+      });
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async notifyLobbyMembershipClear(roomId: string, userIds: string[]) {
+    try {
+      await this.lobbyStub().fetch('https://lobby-do/internal/room-disposed', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ roomId, userIds }),
       });
     } catch {
       /* best-effort */
@@ -198,6 +246,7 @@ export class MultiplayerHub implements DurableObject {
       for (const invite of snap.invites || []) this.invites.set(invite.id, invite);
       for (const room of snap.rooms || []) {
         if (!room.rematchVotes) room.rematchVotes = [];
+        if (!room.returnLobbyVotes) room.returnLobbyVotes = [];
         for (const player of Object.values(room.players || {})) {
           if (player.correctChars == null) player.correctChars = 0;
           if (!player.snapshots) player.snapshots = [];
@@ -207,6 +256,7 @@ export class MultiplayerHub implements DurableObject {
         this.rooms.set(room.id, room);
       }
       for (const [k, v] of Object.entries(snap.userToRoom || {})) this.userToRoom.set(k, v);
+      for (const [k, v] of Object.entries(snap.roomCodes || {})) this.roomCodes.set(k, v);
     }
     if (this.rooms.size === 1 && this.listings.size === 0) {
       const only = [...this.rooms.values()][0];
@@ -245,6 +295,7 @@ export class MultiplayerHub implements DurableObject {
       invites: [...this.invites.values()],
       rooms: [...this.rooms.values()],
       userToRoom: Object.fromEntries(this.userToRoom),
+      roomCodes: Object.fromEntries(this.roomCodes),
     };
     await this.ctx.storage.put('snapshot', snapshot);
   }
@@ -336,6 +387,7 @@ export class MultiplayerHub implements DurableObject {
       const room = await request.json() as Room;
       if (!room || !room.id) return Response.json({ ok: false, error: 'invalid_room' }, { status: 400 });
       if (!room.rematchVotes) room.rematchVotes = [];
+      if (!room.returnLobbyVotes) room.returnLobbyVotes = [];
       this.role = 'race';
       this.boundRoomId = room.id;
       this.rooms.clear();
@@ -360,21 +412,92 @@ export class MultiplayerHub implements DurableObject {
         ? this.rooms.get(this.boundRoomId)
         : [...this.rooms.values()][0];
       if (!room) return Response.json({ ok: false, error: 'missing' }, { status: 404 });
+      const playerStatuses: Record<string, string> = {};
+      for (const [uid, player] of Object.entries(room.players || {})) {
+        playerStatuses[uid] = player.status;
+      }
       return Response.json({
         ok: true,
         roomId: room.id,
         state: room.state,
+        type: room.type,
         allowedUserIds: room.allowedUserIds,
+        maxPlayers: room.maxPlayers,
+        occupiedSlots: this.occupiedSlots(room),
+        roomCode: room.roomCode,
+        roomName: room.roomName,
+        hostUserId: room.hostUserId,
+        config: room.config,
+        playerStatuses,
       });
+    }
+
+    if (url.pathname === '/internal/room-add-player' && request.method === 'POST') {
+      const body = await request.json() as {
+        userId?: string;
+        profile?: {
+          userId?: string;
+          name?: string;
+          avatarUrl?: string;
+          level?: number;
+          percentToNext?: number;
+        };
+      };
+      const userId = String(body.userId || '').trim();
+      if (!userId) return Response.json({ ok: false, error: 'invalid_user' }, { status: 400 });
+      const room = this.boundRoomId
+        ? this.rooms.get(this.boundRoomId)
+        : [...this.rooms.values()][0];
+      if (!room || room.type !== 'custom' || room.state === 'disposed') {
+        return Response.json({ ok: false, error: 'room_not_found' }, { status: 404 });
+      }
+      if (body.profile) {
+        this.profiles.set(userId, {
+          userId,
+          name: String(body.profile.name || 'Player'),
+          avatarUrl: String(body.profile.avatarUrl || ''),
+          level: Number(body.profile.level) || 1,
+          percentToNext: Number(body.profile.percentToNext) || 0,
+        } as Profile);
+      }
+      const existing = room.players[userId];
+      if (!existing) {
+        if (this.occupiedSlots(room) >= room.maxPlayers) {
+          return Response.json({ ok: false, error: 'room_full' }, { status: 400 });
+        }
+        if (!room.allowedUserIds.includes(userId)) room.allowedUserIds.push(userId);
+        room.players[userId] = this.createPlayer(userId, this.nextPlayerIndex(room));
+      } else if (existing.status === 'left') {
+        if (this.occupiedSlots(room) >= room.maxPlayers) {
+          return Response.json({ ok: false, error: 'room_full' }, { status: 400 });
+        }
+        if (!room.allowedUserIds.includes(userId)) room.allowedUserIds.push(userId);
+        room.players[userId] = this.createPlayer(userId, existing.index);
+      }
+      this.userToRoom.set(userId, room.id);
+      this.emitRoomState(room);
+      await this.persist();
+      return Response.json({ ok: true, roomId: room.id });
     }
 
     if (url.pathname === '/internal/room-disposed' && request.method === 'POST') {
       this.role = 'lobby';
-      const body = await request.json() as { roomId?: string; userIds?: string[] };
+      const body = await request.json() as {
+        roomId?: string;
+        userIds?: string[];
+        roomCode?: string;
+      };
       const roomId = String(body.roomId || '');
       const userIds = Array.isArray(body.userIds) ? body.userIds : [];
       for (const uid of userIds) {
         if (this.userToRoom.get(String(uid)) === roomId) this.userToRoom.delete(String(uid));
+      }
+      const code = String(body.roomCode || '').trim();
+      if (code) {
+        this.roomCodes.delete(code);
+        for (const [c, id] of [...this.roomCodes.entries()]) {
+          if (id === roomId) this.roomCodes.delete(c);
+        }
       }
       this.rooms.delete(roomId);
       await this.persist();
@@ -663,6 +786,205 @@ export class MultiplayerHub implements DurableObject {
     };
   }
 
+  private occupiedSlots(room: Room): number {
+    const humans = Object.values(room.players).filter((p) => p.status !== 'left').length;
+    return humans + (room.bot ? 1 : 0);
+  }
+
+  private nextPlayerIndex(room: Room): number {
+    let max = -1;
+    for (const player of Object.values(room.players)) {
+      if (player.index > max) max = player.index;
+    }
+    if (room.bot && room.bot.index > max) max = room.bot.index;
+    return max + 1;
+  }
+
+  private createCustomRoomBot(room: Room): BotPlayer {
+    return {
+      index: this.nextPlayerIndex(room),
+      name: ROOM_BOT_NAMES[Math.floor(Math.random() * ROOM_BOT_NAMES.length)],
+      status: 'waiting',
+      completedWords: 0,
+      correctChars: 0,
+      totalKeystrokes: 0,
+      wpm: 0,
+      accuracy: 97 + Math.floor(Math.random() * 4),
+      targetWpm: 55 + Math.floor(Math.random() * 61),
+      finishedAt: null,
+    };
+  }
+
+  private emitRoomState(room: Room) {
+    this.emitRoom(room, 'room:state', this.publicRoomPayload(room, 'custom'));
+  }
+
+  private remainingCustomPlayers(room: Room): Player[] {
+    return Object.values(room.players).filter((p) => p.status !== 'left');
+  }
+
+  private emitReturnLobbyState(room: Room) {
+    if (room.type !== 'custom') return;
+    const remaining = this.remainingCustomPlayers(room);
+    const votes = room.returnLobbyVotes || [];
+    const agreed = remaining.filter((p) => votes.includes(p.userId));
+    const needed = Math.min(LIMITS.minReturnToLobby, Math.max(1, remaining.length));
+    this.emitRoom(room, 'room:return-lobby-state', [
+      room.id,
+      agreed.length,
+      needed,
+      agreed.map((p) => p.userId),
+    ]);
+  }
+
+  private async resetCustomRoomToLobby(room: Room) {
+    if (room.type !== 'custom' || room.state === 'disposed') return;
+    await this.cancelAlarmsForRoom(room.id);
+    room.state = 'waiting';
+    room.prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', room.config);
+    room.startsAt = null;
+    room.countdownEndsAt = null;
+    room.opponentLeft = false;
+    room.lastResults = null;
+    room.finishReason = '';
+    room.returnLobbyVotes = [];
+    room.bot = null;
+    for (const [uid, player] of Object.entries(room.players)) {
+      if (player.status === 'left') {
+        delete room.players[uid];
+        room.allowedUserIds = room.allowedUserIds.filter((id) => id !== uid);
+        this.userToRoom.delete(uid);
+      }
+    }
+    Object.values(room.players).forEach((item, index) => { item.index = index; });
+    for (const player of this.remainingCustomPlayers(room)) {
+      this.resetPlayerForLobby(player);
+      player.joined = true;
+      this.userToRoom.set(player.userId, room.id);
+    }
+    this.emitRoomState(room);
+    this.emitRoom(room, 'room:returned-to-lobby', this.publicRoomPayload(room, 'custom'));
+    await this.persist();
+  }
+
+  private async maybeReturnCustomRoomToLobby(room: Room) {
+    if (room.type !== 'custom' || room.state !== 'finished') return;
+    const remaining = this.remainingCustomPlayers(room);
+    if (!remaining.length) {
+      room.bot = null;
+      this.emitRoom(room, 'room:closed', [room.id, 'empty', room.roomCode || '']);
+      this.disposeRoom(room.id);
+      return;
+    }
+    const votes = room.returnLobbyVotes || [];
+    const agreed = remaining.filter((p) => votes.includes(p.userId));
+    const needed = Math.min(LIMITS.minReturnToLobby, Math.max(1, remaining.length));
+    if (agreed.length >= needed) {
+      await this.resetCustomRoomToLobby(room);
+    }
+  }
+
+  private allocateRoomCode(): string {
+    for (let attempt = 0; attempt < 64; attempt += 1) {
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      if (!this.roomCodes.has(code)) return code;
+    }
+    throw new Error('server_capacity');
+  }
+
+  private closeCustomRoom(room: Room, reason: string, excludeUserId?: string) {
+    if (room.type !== 'custom' || room.state === 'disposed') return;
+    const payload = [room.id, reason || 'closed', room.roomCode || ''];
+    for (const uid of room.allowedUserIds) {
+      if (excludeUserId && uid === excludeUserId) continue;
+      this.emitToUser(uid, 'room:closed', payload);
+    }
+    this.disposeRoom(room.id);
+  }
+
+  private async handleCustomRaceLeave(userId: string, room: Room, explicit: boolean) {
+    const player = room.players[userId];
+    if (!player || player.status === 'left') {
+      this.userToRoom.delete(userId);
+      await this.notifyLobbyMembershipClear(room.id, [userId]);
+      if (!this.remainingCustomPlayers(room).length) {
+        room.bot = null;
+        this.closeCustomRoom(room, 'empty');
+      }
+      return;
+    }
+
+    if (room.state === 'finished') {
+      player.status = 'left';
+      player.joined = false;
+      if (room.returnLobbyVotes) {
+        room.returnLobbyVotes = room.returnLobbyVotes.filter((id) => id !== userId);
+      }
+      this.userToRoom.delete(userId);
+      await this.notifyLobbyMembershipClear(room.id, [userId]);
+      if (userId === room.hostUserId) {
+        this.closeCustomRoom(room, 'host-left', userId);
+        return;
+      }
+      delete room.players[userId];
+      room.allowedUserIds = room.allowedUserIds.filter((id) => id !== userId);
+      Object.values(room.players).forEach((item, index) => { item.index = index; });
+      this.emitReturnLobbyState(room);
+      await this.maybeReturnCustomRoomToLobby(room);
+      if (this.rooms.has(room.id) && !this.remainingCustomPlayers(room).length) {
+        room.bot = null;
+        this.closeCustomRoom(room, 'empty');
+      }
+      return;
+    }
+
+    if (room.state === 'waiting' || room.state === 'countdown') {
+      player.status = 'left';
+      player.joined = false;
+      this.userToRoom.delete(userId);
+      await this.notifyLobbyMembershipClear(room.id, [userId]);
+      if (userId === room.hostUserId) {
+        this.closeCustomRoom(room, 'host-left', userId);
+        return;
+      }
+      if (room.state === 'countdown') {
+        await this.cancelAlarmsForRoom(room.id, 'countdown-tick');
+        room.state = 'waiting';
+        room.countdownEndsAt = null;
+        room.startsAt = null;
+      }
+      delete room.players[userId];
+      room.allowedUserIds = room.allowedUserIds.filter((id) => id !== userId);
+      Object.values(room.players).forEach((item, index) => { item.index = index; });
+      this.emitRoomState(room);
+      if (!this.remainingCustomPlayers(room).length) {
+        room.bot = null;
+        this.closeCustomRoom(room, 'empty');
+      }
+      return;
+    }
+
+    // racing
+    player.status = 'left';
+    player.leftMidGame = true;
+    player.joined = false;
+    room.opponentLeft = true;
+    this.userToRoom.delete(userId);
+    await this.notifyLobbyMembershipClear(room.id, [userId]);
+    this.emitRoom(room, 'race:player-left', [
+      room.id,
+      player.index,
+      explicit ? 'left' : 'disconnected',
+    ]);
+    const remaining = this.remainingCustomPlayers(room);
+    if (!remaining.length) {
+      room.bot = null;
+      this.closeCustomRoom(room, 'empty');
+    } else {
+      await this.maybeFinishRoom(room);
+    }
+  }
+
   private publicRoomPayload(room: Room, reason?: string) {
     return {
       roomId: room.id,
@@ -723,7 +1045,13 @@ export class MultiplayerHub implements DurableObject {
     type: string,
     config: RaceConfig,
     allowedUserIds: string[],
-    extra?: { hostUserId?: string; maxPlayers?: number; bot?: BotPlayer | null },
+    extra?: {
+      hostUserId?: string;
+      maxPlayers?: number;
+      bot?: BotPlayer | null;
+      roomCode?: string;
+      roomName?: string;
+    },
   ): Promise<Room> {
     const activeRooms = new Set(this.userToRoom.values()).size;
     if (activeRooms >= LIMITS.maxActiveRooms) throw new Error('server_capacity');
@@ -746,8 +1074,8 @@ export class MultiplayerHub implements DurableObject {
       allowedUserIds,
       hostUserId: extra?.hostUserId || allowedUserIds[0],
       maxPlayers: extra?.maxPlayers || allowedUserIds.length,
-      roomName: '',
-      roomCode: '',
+      roomName: extra?.roomName || '',
+      roomCode: extra?.roomCode || '',
       bot: extra?.bot || null,
       state: 'waiting',
       createdAt: Date.now(),
@@ -757,6 +1085,7 @@ export class MultiplayerHub implements DurableObject {
       finishReason: '',
       opponentLeft: false,
       rematchVotes: [],
+      returnLobbyVotes: [],
     };
 
     // One DO per duel: race state lives on room:{id}, lobby only tracks membership.
@@ -768,13 +1097,18 @@ export class MultiplayerHub implements DurableObject {
       });
       if (!initRes.ok) throw new Error('race_init_failed');
       for (const uid of allowedUserIds) this.userToRoom.set(uid, id);
+      if (type === 'custom' && room.roomCode) {
+        this.roomCodes.set(room.roomCode, room.id);
+      }
       await this.persist();
       return room;
     }
 
     this.rooms.set(id, room);
     for (const uid of allowedUserIds) this.userToRoom.set(uid, id);
-    if (type !== 'custom') {
+    if (type === 'custom' && room.roomCode) {
+      this.roomCodes.set(room.roomCode, room.id);
+    } else if (type !== 'custom') {
       this.scheduleAlarm(LIMITS.joinTtlMs, { kind: 'room-join-expire', roomId: id });
     }
     await this.persist();
@@ -1021,6 +1355,12 @@ export class MultiplayerHub implements DurableObject {
       room.opponentLeft ? 1 : 0,
       room.type,
     ]);
+    if (room.type === 'custom') {
+      room.returnLobbyVotes = [];
+      this.emitReturnLobbyState(room);
+      await this.persist();
+      return;
+    }
     this.scheduleAlarm(LIMITS.finishedRoomTtlMs, { kind: 'room-dispose', roomId: room.id });
     await this.persist();
   }
@@ -1104,8 +1444,23 @@ export class MultiplayerHub implements DurableObject {
 
   private async handleRequest(ws: WebSocket, userId: string, event: string, payload: unknown, reqId: string) {
     try {
-      const isRaceEvent = event.startsWith('match:') || event.startsWith('race:');
-      const isLobbyEvent = event.startsWith('duel:');
+      const lobbyRoomEvents = new Set([
+        'room:create',
+        'room:join-code',
+        'room:invite',
+      ]);
+      const raceRoomEvents = new Set([
+        'room:ready',
+        'room:update-config',
+        'room:add-bot',
+        'room:remove-player',
+        'room:start',
+        'room:return-lobby',
+      ]);
+      const isRaceEvent = event.startsWith('match:')
+        || event.startsWith('race:')
+        || raceRoomEvents.has(event);
+      const isLobbyEvent = event.startsWith('duel:') || lobbyRoomEvents.has(event);
       if (this.role === 'lobby' && isRaceEvent) {
         throw new Error('connect_race_socket');
       }
@@ -1275,6 +1630,9 @@ export class MultiplayerHub implements DurableObject {
           race: null,
         });
         this.emitRoom(room, 'race:joined', [room.id, player.index, Object.keys(room.players).length]);
+        if (room.type === 'custom') {
+          this.emitRoomState(room);
+        }
         if (room.type !== 'custom' && this.requiredPlayersJoined(room)) {
           this.startCountdown(room);
         }
@@ -1285,6 +1643,12 @@ export class MultiplayerHub implements DurableObject {
         const roomId = String(payload || '');
         const rid = roomId || this.userToRoom.get(userId) || '';
         const room = this.rooms.get(rid);
+        if (room && room.type === 'custom') {
+          await this.handleCustomRaceLeave(userId, room, true);
+          safeAck(ws, reqId, { ok: true });
+          await this.persist();
+          return;
+        }
         if (room) {
           const player = room.players[userId];
           if (player) {
@@ -1295,13 +1659,7 @@ export class MultiplayerHub implements DurableObject {
           if (room.state === 'racing') room.opponentLeft = true;
         }
         if (this.role === 'race' && rid) {
-          try {
-            await this.lobbyStub().fetch('https://lobby-do/internal/room-disposed', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ roomId: rid, userIds: [userId] }),
-            });
-          } catch { /* best-effort */ }
+          await this.notifyLobbyMembershipClear(rid, [userId]);
         }
         safeAck(ws, reqId, { ok: true });
         await this.persist();
@@ -1354,6 +1712,17 @@ export class MultiplayerHub implements DurableObject {
         if (!Number.isInteger(totalKeystrokes) || totalKeystrokes < player.totalKeystrokes) {
           throw new Error('invalid_keystrokes');
         }
+        if (completedWords > room.prompt.targetWordCount) throw new Error('target_overflow');
+        const now = Date.now();
+        if (room.startsAt && now < room.startsAt) throw new Error('early_progress');
+        const deltaWords = completedWords - player.completedWords;
+        if (room.type === 'custom') {
+          if (!isFinal && (now - player.lastSnapshotAt) < 450) {
+            safeAck(ws, reqId, { ok: true, throttled: true });
+            return;
+          }
+          if (deltaWords < 0) throw new Error('invalid_progress');
+        }
         if (Array.isArray(finalStatsPayload)) {
           if (finalStatsPayload.length >= 6) {
             const consistency = Number(finalStatsPayload[5]);
@@ -1400,7 +1769,6 @@ export class MultiplayerHub implements DurableObject {
         player.accuracy = totalKeystrokes > 0
           ? (player.correctChars / totalKeystrokes) * 100
           : 100;
-        const now = Date.now();
         player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
         if (player.snapshots.length > LIMITS.maxRetainedSnapshots) {
           player.snapshots.shift();
@@ -1507,6 +1875,243 @@ export class MultiplayerHub implements DurableObject {
         this.emitRematchState(room);
         const needed = Math.max(1, this.remainingDualHumans(room).length);
         if (room.rematchVotes.length >= needed) await this.startDualRematch(room);
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:create') {
+        await this.abandonStuckMembership(userId);
+        const body = (payload && typeof payload === 'object')
+          ? payload as Record<string, unknown>
+          : {};
+        const config = normalizeConfig(body.config);
+        const maxPlayers = clampInteger(body.maxPlayers, 2, LIMITS.maxPlayersPerRoom, 8);
+        const roomCode = this.allocateRoomCode();
+        const roomName = String(body.name || body.roomName || 'Private Room').slice(0, 48);
+        const room = await this.createRoom('custom', config, [userId], {
+          hostUserId: userId,
+          maxPlayers,
+          roomCode,
+          roomName,
+        });
+        safeAck(ws, reqId, { ok: true, roomId: room.id, roomCode });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:join-code') {
+        const roomCodeValue = String(payload || '').trim();
+        const existingRoomId = this.userToRoom.get(userId);
+        if (existingRoomId) {
+          const meta = await this.fetchRaceMeta(existingRoomId);
+          if (
+            meta
+            && meta.type === 'custom'
+            && meta.roomCode === roomCodeValue
+          ) {
+            safeAck(ws, reqId, { ok: true, roomId: existingRoomId });
+            return;
+          }
+          await this.abandonStuckMembership(userId);
+        }
+        const roomId = this.roomCodes.get(roomCodeValue);
+        if (!roomId) throw new Error('room_not_found');
+        const profile = await getProfile(this.env, userId);
+        this.profiles.set(userId, profile);
+        const addRes = await this.raceStub(roomId).fetch('https://race-do/internal/room-add-player', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            profile: {
+              userId,
+              name: profile.name,
+              avatarUrl: profile.avatarUrl,
+              level: profile.level,
+              percentToNext: profile.percentToNext,
+            },
+          }),
+        });
+        const addBody = await addRes.json().catch(() => ({})) as { ok?: boolean; error?: string; roomId?: string };
+        if (!addRes.ok || !addBody.ok) {
+          throw new Error(addBody.error || (addRes.status === 404 ? 'room_not_found' : 'room_full'));
+        }
+        this.userToRoom.set(userId, roomId);
+        safeAck(ws, reqId, { ok: true, roomId });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:invite') {
+        const body = (payload && typeof payload === 'object')
+          ? payload as { roomId?: string; toUserId?: string }
+          : {};
+        const roomId = String(body.roomId || '');
+        const toUserId = String(body.toUserId || '');
+        const meta = await this.fetchRaceMeta(roomId);
+        if (!meta || meta.type !== 'custom' || meta.state !== 'waiting') {
+          throw new Error('room_not_found');
+        }
+        if (!meta.allowedUserIds.includes(userId)) throw new Error('forbidden');
+        if (!toUserId || toUserId === userId) throw new Error('invalid_target');
+        const targetStatus = meta.playerStatuses?.[toUserId];
+        if (targetStatus && targetStatus !== 'left') throw new Error('already_in_room');
+        if (this.userToRoom.has(toUserId)) throw new Error('already_in_match');
+        if (!this.isOnline(toUserId)) throw new Error('friend_offline');
+        if ((meta.occupiedSlots || 0) >= (meta.maxPlayers || LIMITS.maxPlayersPerRoom)) {
+          throw new Error('room_full');
+        }
+        if (!(await areFriends(this.env, userId, toUserId))) throw new Error('not_friends');
+        const from = this.profiles.get(userId) || { name: 'Player', avatarUrl: '' };
+        this.emitToUser(toUserId, 'room:invite', {
+          roomId: meta.roomId,
+          roomCode: meta.roomCode,
+          roomName: meta.roomName,
+          fromUserId: userId,
+          fromName: from.name,
+          config: meta.config,
+        });
+        safeAck(ws, reqId, { ok: true });
+        return;
+      }
+      if (event === 'room:ready') {
+        const room = this.rooms.get(String(payload || ''));
+        const player = room && room.players[userId];
+        if (!room || room.type !== 'custom' || room.state !== 'waiting' || !player) {
+          throw new Error('room_not_found');
+        }
+        player.ready = true;
+        this.emitRoomState(room);
+        safeAck(ws, reqId, { ok: true });
+        if (userId === room.hostUserId) {
+          for (const [uid, item] of Object.entries(room.players)) {
+            if (uid !== userId && item.status !== 'left') {
+              this.emitToUser(uid, 'room:host-ready', {
+                roomId: room.id,
+                roomName: room.roomName,
+                hostName: player.name,
+              });
+            }
+          }
+        }
+        await this.persist();
+        return;
+      }
+      if (event === 'room:return-lobby') {
+        const room = this.rooms.get(String(payload || ''));
+        const player = room && room.players[userId];
+        if (!room || room.type !== 'custom' || room.state !== 'finished' || !player || player.status === 'left') {
+          throw new Error('room_not_found');
+        }
+        if (!room.returnLobbyVotes) room.returnLobbyVotes = [];
+        if (!room.returnLobbyVotes.includes(userId)) room.returnLobbyVotes.push(userId);
+        this.emitReturnLobbyState(room);
+        await this.maybeReturnCustomRoomToLobby(room);
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:add-bot') {
+        const room = this.rooms.get(String(payload || ''));
+        if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+          throw new Error('room_not_found');
+        }
+        if (room.hostUserId !== userId) throw new Error('forbidden');
+        if (room.bot) throw new Error('bot_already_added');
+        if (this.occupiedSlots(room) >= room.maxPlayers) throw new Error('room_full');
+        room.bot = this.createCustomRoomBot(room);
+        this.emitRoomState(room);
+        safeAck(ws, reqId, { ok: true, bot: this.publicRoomPayload(room, 'custom').bot });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:update-config') {
+        const body = (payload && typeof payload === 'object')
+          ? payload as { roomId?: string; config?: unknown }
+          : {};
+        const room = this.rooms.get(String(body.roomId || ''));
+        if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+          throw new Error('room_not_found');
+        }
+        if (room.hostUserId !== userId) throw new Error('forbidden');
+        const newConfig = normalizeConfig(body.config);
+        room.config = newConfig;
+        room.prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', newConfig);
+        for (const player of Object.values(room.players)) player.ready = false;
+        this.emitRoomState(room);
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:remove-player') {
+        const body = (payload && typeof payload === 'object')
+          ? payload as { roomId?: string; targetUserId?: string }
+          : {};
+        const room = this.rooms.get(String(body.roomId || ''));
+        if (!room || room.type !== 'custom' || room.state !== 'waiting') {
+          throw new Error('room_not_found');
+        }
+        if (room.hostUserId !== userId) throw new Error('forbidden');
+        const targetUserId = String(body.targetUserId || '');
+        if (!targetUserId || targetUserId === userId) throw new Error('invalid_target');
+        if (targetUserId === 'bot') {
+          if (!room.bot) throw new Error('bot_not_found');
+          room.bot = null;
+          this.emitRoomState(room);
+          if (!this.remainingCustomPlayers(room).length) {
+            this.closeCustomRoom(room, 'empty');
+          }
+          safeAck(ws, reqId, { ok: true });
+          await this.persist();
+          return;
+        }
+        const target = room.players[targetUserId];
+        if (!target || target.status === 'left') throw new Error('player_not_found');
+        this.emitToUser(targetUserId, 'room:kicked', {
+          roomId: room.id,
+          roomCode: room.roomCode || '',
+          byUserId: userId,
+        });
+        target.status = 'left';
+        target.joined = false;
+        this.userToRoom.delete(targetUserId);
+        await this.notifyLobbyMembershipClear(room.id, [targetUserId]);
+        delete room.players[targetUserId];
+        room.allowedUserIds = room.allowedUserIds.filter((id) => id !== targetUserId);
+        Object.values(room.players).forEach((item, index) => { item.index = index; });
+        this.emitRoomState(room);
+        if (!this.remainingCustomPlayers(room).length) {
+          room.bot = null;
+          this.closeCustomRoom(room, 'empty');
+        }
+        safeAck(ws, reqId, { ok: true });
+        await this.persist();
+        return;
+      }
+      if (event === 'room:start') {
+        const body = (payload && typeof payload === 'object')
+          ? payload as { roomId?: string; force?: boolean }
+          : { roomId: String(payload || ''), force: false };
+        const roomId = String(body.roomId || '');
+        const force = !!body.force;
+        const room = this.rooms.get(roomId);
+        if (!room || room.type !== 'custom') throw new Error('room_not_found');
+        if (room.hostUserId !== userId) throw new Error('forbidden');
+        if (room.state === 'countdown' || room.state === 'racing') {
+          safeAck(ws, reqId, { ok: true, alreadyStarted: true });
+          return;
+        }
+        if (room.state !== 'waiting') throw new Error('race_not_active');
+        const readyPlayers = Object.values(room.players).filter(
+          (item) => item.ready && item.status !== 'left',
+        );
+        const readyCount = readyPlayers.length + (room.bot ? 1 : 0);
+        if (readyCount < LIMITS.minReadyToStart) throw new Error('not_enough_ready');
+        if (!force) {
+          const activePlayers = Object.values(room.players).filter((item) => item.status !== 'left');
+          const allReady = activePlayers.length >= 2
+            && activePlayers.every((item) => item.joined && item.ready);
+          if (!allReady) throw new Error('players_not_ready');
+        }
+        this.startCountdown(room);
         safeAck(ws, reqId, { ok: true });
         await this.persist();
         return;

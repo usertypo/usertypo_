@@ -31,7 +31,13 @@
 
     function isRaceEvent(event) {
         var e = String(event || '');
-        return e.indexOf('match:') === 0 || e.indexOf('race:') === 0;
+        if (e.indexOf('match:') === 0 || e.indexOf('race:') === 0) return true;
+        return e === 'room:ready'
+            || e === 'room:update-config'
+            || e === 'room:add-bot'
+            || e === 'room:remove-player'
+            || e === 'room:start'
+            || e === 'room:return-lobby';
     }
 
     function createCfSocket(options) {
@@ -258,7 +264,15 @@
         }
 
         function roomIdFromPayload(event, payload) {
-            if (event === 'match:join' || event === 'match:resume' || event === 'race:leave' || event === 'race:rematch') {
+            if (
+                event === 'match:join'
+                || event === 'match:resume'
+                || event === 'race:leave'
+                || event === 'race:rematch'
+                || event === 'room:ready'
+                || event === 'room:return-lobby'
+                || event === 'room:add-bot'
+            ) {
                 return String(payload || '');
             }
             if (Array.isArray(payload) && payload[0]) return String(payload[0]);
