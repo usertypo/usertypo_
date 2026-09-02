@@ -87,7 +87,10 @@ window.USERTYPO_CONFIG = {
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM',
         };
         cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
-        cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
+        cfg.multiplayer = {
+            url: 'https://usertypo-mp-dev.usertypo2026.workers.dev',
+            transport: 'cf',
+        };
         cfg.leaderboards = {
             url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
         };

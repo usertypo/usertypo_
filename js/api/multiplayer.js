@@ -323,6 +323,31 @@
         return id;
     }
 
+    function usesCfTransport() {
+        var cfg = window.USERTYPO_CONFIG || {};
+        var mp = cfg.multiplayer || {};
+        if (mp.transport === 'cf') return true;
+        if (window.usertypoMultiplayerCf && window.usertypoMultiplayerCf.isCloudflareUrl(mp.url)) return true;
+        return false;
+    }
+
+    function ensureCfTransport() {
+        if (window.usertypoMultiplayerCf) return Promise.resolve();
+        return new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = '/js/api/multiplayer-cf-transport.js?v=1';
+            script.async = true;
+            script.onload = function () {
+                if (window.usertypoMultiplayerCf) resolve();
+                else reject(new Error('Cloudflare multiplayer transport is not loaded.'));
+            };
+            script.onerror = function () {
+                reject(new Error('Cloudflare multiplayer transport is not loaded.'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
     function socketIoClientSrc() {
         var cfg = window.USERTYPO_CONFIG || {};
         var base = String(
@@ -363,35 +388,41 @@
         if (socket && socket.connected && readyState) return socket;
         if (connectPromise) return connectPromise;
         connectPromise = (async function () {
-            await ensureSocketIoClient();
-            if (!window.io) throw new Error('Socket.IO client is not loaded.');
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
             if (!socket) {
-                var url = window.USERTYPO_CONFIG
-                    && window.USERTYPO_CONFIG.multiplayer
-                    && window.USERTYPO_CONFIG.multiplayer.url;
-                socket = window.io(url || undefined, {
-                    autoConnect: false,
-                    transports: ['websocket', 'polling'],
-                    reconnection: true,
-                    reconnectionAttempts: Infinity,
-                    reconnectionDelay: 500,
-                    reconnectionDelayMax: 4000,
-                    auth: function (callback) {
-                        var state = window.usertypoAuth.getState();
-                        if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
-                            window.Clerk.session.getToken()
-                                .then(function (token) { callback({ token: token }); })
-                                .catch(function () { callback({ guestId: getOrCreateGuestId() }); });
-                            return;
-                        }
-                        callback({ guestId: getOrCreateGuestId() });
-                    },
-                });
+                var authFn = function (callback) {
+                    var state = window.usertypoAuth.getState();
+                    if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
+                        window.Clerk.session.getToken()
+                            .then(function (token) { callback({ token: token }); })
+                            .catch(function () { callback({ guestId: getOrCreateGuestId() }); });
+                        return;
+                    }
+                    callback({ guestId: getOrCreateGuestId() });
+                };
+                if (usesCfTransport()) {
+                    await ensureCfTransport();
+                    socket = window.usertypoMultiplayerCf.createSocket({ auth: authFn });
+                } else {
+                    await ensureSocketIoClient();
+                    if (!window.io) throw new Error('Socket.IO client is not loaded.');
+                    var url = window.USERTYPO_CONFIG
+                        && window.USERTYPO_CONFIG.multiplayer
+                        && window.USERTYPO_CONFIG.multiplayer.url;
+                    socket = window.io(url || undefined, {
+                        autoConnect: false,
+                        transports: ['websocket', 'polling'],
+                        reconnection: true,
+                        reconnectionAttempts: Infinity,
+                        reconnectionDelay: 500,
+                        reconnectionDelayMax: 4000,
+                        auth: authFn,
+                    });
+                }
                 bindSocketEvents(socket);
             }
-            if (!socket.active) socket.connect();
+            if (!socket.active) await socket.connect();
             await new Promise(function (resolve, reject) {
                 var timeout = nativeSetTimeout(function () {
                     reject(new Error('Could not connect to the multiplayer server.'));
