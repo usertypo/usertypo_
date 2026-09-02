@@ -505,7 +505,6 @@
             requestAnimationFrame(function () {
                 updateLineLayout();
                 updateCaret();
-                showOpponentCaretAtStart();
             });
         }
 
@@ -1084,8 +1083,10 @@
         function startCursorSync() {
             if (isLocalBotMatch() || isBotMatch()) return;
             stopCursorSync();
-            sendCursorPacket();
-            cursorSyncTimer = setInterval(sendCursorPacket, 300);
+            queueCursorSend(true);
+            cursorSyncTimer = setInterval(function () {
+                queueCursorSend(true);
+            }, 300);
         }
 
         function sendCursorPacket() {
@@ -1104,7 +1105,6 @@
         function startLocalBotTimer() {
             if (!isLocalBotMatch()) return;
             stopLocalBotTimer();
-            updateLocalBotPosition();
             localBotTimer = setInterval(updateLocalBotPosition, 200);
         }
 
@@ -2069,7 +2069,6 @@
             renderPrompt();
             showTestChrome();
             if (opponentCaret) opponentCaret.style.display = 'block';
-            showOpponentCaretAtStart();
             if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
             opponentAnimationFrame = requestAnimationFrame(animateOpponent);
 
@@ -2109,7 +2108,6 @@
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
-                showOpponentCaretAtStart();
                 if (isLocalBotMatch()) startLocalBotTimer();
                 else startCursorSync();
                 updateCaret();
@@ -2145,30 +2143,13 @@
             }
         }
 
-        function showOpponentCaretAtStart() {
-            if (!opponentCaret || !words.length) return;
-            paintOpponentCaret(0, 0, true);
-            requestAnimationFrame(function () {
-                paintOpponentCaret(0, 0, true);
-            });
-        }
-
-        function paintOpponentCaret(wordIndex, charIndex, snap) {
+        function paintOpponentCaret(wordIndex, charIndex) {
             if (!opponentCaret || !words.length) return;
             opponentCaret.style.display = 'block';
             var safeWordIndex = Math.min(
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
-            if (snap) {
-                var prevTransition = opponentCaret.style.transition;
-                opponentCaret.style.transition = 'none';
-                positionCaretAt(opponentCaret, safeWordIndex, charIndex);
-                requestAnimationFrame(function () {
-                    opponentCaret.style.transition = prevTransition;
-                });
-                return;
-            }
             positionCaretAt(opponentCaret, safeWordIndex, charIndex);
         }
 
