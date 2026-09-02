@@ -16,7 +16,10 @@
     "build:cloudflare": "node scripts/build-cloudflare.js",
     "serve": "npx --yes serve . --single --listen 3000",
     "build:css": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify",
-    "build": "npm run build:css && npm run build:pages"
+    "build": "npm run build:css && npm run build:pages",
+    "worker:leaderboards:dev": "npm run dev --prefix workers/leaderboards",
+    "worker:leaderboards:deploy:dev": "npm run deploy:dev --prefix workers/leaderboards",
+    "worker:leaderboards:deploy:prod": "npm run deploy:prod --prefix workers/leaderboards"
   },
   "engines": {
     "node": ">=20.0.0"

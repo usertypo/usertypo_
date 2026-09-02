@@ -43,8 +43,11 @@ window.USERTYPO_CONFIG = {
         // Socket.IO server. Usually same as backend.url. Blank on localhost.
         url: 'https://mp.usertypo.com',
     },
+    // Cloudflare Leaderboards Worker (Postgres). Set after deploy — see docs/cloudflare-migration/STEP-01-leaderboards.md
+    leaderboards: {
+        url: '',
+    },
     features: {
-        // Global Redis leaderboards — off on the isolated dev environment.
         leaderboards: true,
     },
     analytics: {
@@ -85,8 +88,11 @@ window.USERTYPO_CONFIG = {
         };
         cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
         cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
+        cfg.leaderboards = {
+            url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
+        };
         if (!cfg.features) cfg.features = {};
-        cfg.features.leaderboards = false;
+        cfg.features.leaderboards = true;
         if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
         if (cfg.ads) cfg.ads.adsenseClient = '';
         cfg.environment = 'staging';

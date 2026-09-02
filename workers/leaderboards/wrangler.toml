@@ -1,0 +1,19 @@
+# usertypo_ Leaderboards Worker (Postgres via Supabase — no Upstash).
+# Deploy dev:  npm run worker:leaderboards:deploy:dev
+# Deploy prod: npm run worker:leaderboards:deploy:prod
+
+name = "usertypo-leaderboards-dev"
+main = "src/index.ts"
+compatibility_date = "2026-07-27"
+
+[vars]
+ENVIRONMENT = "dev"
+ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+
+[env.production]
+name = "usertypo-leaderboards"
+vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev" }
+
+[env.dev]
+name = "usertypo-leaderboards-dev"
+vars = { ENVIRONMENT = "dev", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000" }

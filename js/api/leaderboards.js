@@ -16,7 +16,7 @@
         'bg-teal-500/20 text-teal-400 border-teal-500/30',
     ];
 
-    var redisAvailable = null; // null unknown, true/false after first probe
+    var edgeLeaderboardsAvailable = null; // null unknown, true/false after first probe
 
     function leaderboardsFeatureEnabled() {
         var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
@@ -354,22 +354,28 @@
         };
     }
 
+    function getLeaderboardApiUrl() {
+        var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.leaderboards) || {};
+        return String(cfg.url || '').replace(/\/+$/, '');
+    }
+
     async function callLeaderboardFunction(payload, requireAuth) {
         if (!leaderboardsFeatureEnabled()) {
             return { ok: false, status: 503, data: { error: 'LEADERBOARDS_DISABLED' } };
         }
-        if (redisAvailable === false) {
+
+        var workerUrl = getLeaderboardApiUrl();
+        if (!workerUrl && edgeLeaderboardsAvailable === false) {
             return { ok: false, status: 503, data: { error: 'REDIS_NOT_CONFIGURED' } };
         }
 
         var cfg = getSupabasePublicConfig();
-        if (!cfg.url || !cfg.key) {
+        if (!workerUrl && (!cfg.url || !cfg.key)) {
             return { ok: false, status: 0, data: { error: 'missing_supabase_config' } };
         }
 
         var headers = {
             'Content-Type': 'application/json',
-            apikey: cfg.key,
         };
 
         if (requireAuth) {
@@ -381,18 +387,22 @@
                 return { ok: false, status: 401, data: { error: 'missing_auth' } };
             }
             headers.Authorization = 'Bearer ' + token;
-        } else {
-            // Public top-list still needs the anon apikey; attach Clerk token if present.
-            headers.Authorization = 'Bearer ' + cfg.key;
-            if (window.usertypoDb && typeof window.usertypoDb.getClerkToken === 'function') {
-                try {
-                    var maybeToken = await window.usertypoDb.getClerkToken();
-                    if (maybeToken) headers.Authorization = 'Bearer ' + maybeToken;
-                } catch (e) { /* ignore */ }
+        } else if (window.usertypoDb && typeof window.usertypoDb.getClerkToken === 'function') {
+            try {
+                var maybeToken = await window.usertypoDb.getClerkToken();
+                if (maybeToken) headers.Authorization = 'Bearer ' + maybeToken;
+            } catch (e) { /* ignore */ }
+        }
+
+        var endpoint = workerUrl || (cfg.url + '/functions/v1/leaderboards');
+        if (!workerUrl) {
+            headers.apikey = cfg.key;
+            if (!headers.Authorization) {
+                headers.Authorization = 'Bearer ' + cfg.key;
             }
         }
 
-        var res = await fetch(cfg.url + '/functions/v1/leaderboards', {
+        var res = await fetch(endpoint, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(payload),
@@ -406,9 +416,9 @@
         }
 
         if (res.status === 503 && data && data.error === 'REDIS_NOT_CONFIGURED') {
-            redisAvailable = false;
-        } else if (res.ok && data && data.source === 'redis') {
-            redisAvailable = true;
+            edgeLeaderboardsAvailable = false;
+        } else if (res.ok && data && (data.source === 'redis' || data.source === 'postgres')) {
+            edgeLeaderboardsAvailable = true;
         }
 
         return { ok: res.ok, status: res.status, data: data };
@@ -514,11 +524,11 @@
                     timeframe: timeframe,
                     limit: limit,
                     scope: 'global',
-                    source: 'redis',
+                    source: redisResult.data.source === 'postgres' ? 'postgres' : 'redis',
                 };
             }
         } catch (err) {
-            console.warn('[usertypo leaderboards] redis top failed, using postgres', err);
+            console.warn('[usertypo leaderboards] edge top failed, using postgres', err);
         }
 
         return getLeaderboardFromPostgres({ mode: mode, amount: amount, timeframe: timeframe, limit: limit });
