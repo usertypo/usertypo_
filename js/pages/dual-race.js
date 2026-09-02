@@ -44,6 +44,8 @@
         var lastLiveRawSecond = 0;
         var rawHistory = [];
         var lastRawHistorySecond = 0;
+        var opponentRawHistory = [];
+        var lastOpponentRawHistorySecond = 0;
         var lastSecondKeystrokes = 0;
         var localFinished = false;
         var latestResults = null;
@@ -824,6 +826,15 @@
             rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
         }
 
+        function sampleOpponentRawHistorySecond() {
+            if (!startTime || state !== 'racing' || !opponentHasReport || isLocalBotMatch()) return;
+            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+            if (elapsedSec <= lastOpponentRawHistorySecond) return;
+            lastOpponentRawHistorySecond = elapsedSec;
+            var sampleWpm = Math.max(0, Math.round(opponentDisplayWpm || opponentTargetWpm || 0));
+            opponentRawHistory.push(sampleWpm);
+        }
+
         function computeFinalStats(finishTime) {
             var endTime = finishTime || Date.now();
             var validChars = 0;
@@ -967,6 +978,7 @@
         function updateLiveStats() {
             if (state !== 'racing') return;
             sampleRawHistorySecond();
+            sampleOpponentRawHistorySecond();
             var stats = localStats();
             if (wpmDisplay) wpmDisplay.textContent = stats.wpm;
             var elapsedSec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
@@ -1614,6 +1626,8 @@
             lastLiveRawSecond = 0;
             rawHistory = [];
             lastRawHistorySecond = 0;
+            opponentRawHistory = [];
+            lastOpponentRawHistorySecond = 0;
             lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
@@ -2042,6 +2056,8 @@
             lastLiveRawSecond = 0;
             rawHistory = [];
             lastRawHistorySecond = 0;
+            opponentRawHistory = [];
+            lastOpponentRawHistorySecond = 0;
             lastSecondKeystrokes = 0;
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
@@ -2146,49 +2162,13 @@
             }
         }
 
-        function opponentCaretMetrics(wordIndex, charIndex) {
-            var wordElement = document.getElementById('word-' + wordIndex);
-            if (!wordElement || !words[wordIndex] || !textContainer) return null;
-            var len = words[wordIndex].length;
-            var idx = Math.max(0, Math.min(charIndex, len));
-            var refChar = document.getElementById('char-' + wordIndex + '-0')
-                || wordElement.querySelector('.char');
-            if (!refChar) return null;
-            var caretWidth = Math.max(1, refChar.offsetWidth || 8);
-            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
-            var left;
-            var top;
-            if (idx === 0) {
-                var startBox = window.getCaretLayoutInContainer
-                    ? window.getCaretLayoutInContainer(textContainer, wordElement, refChar, false, isRtl)
-                    : null;
-                if (!startBox) return null;
-                left = startBox.left;
-                top = startBox.top;
-            } else {
-                var beforeChar = document.getElementById('char-' + wordIndex + '-' + (idx - 1));
-                if (!beforeChar) return null;
-                var endBox = window.getCaretLayoutInContainer
-                    ? window.getCaretLayoutInContainer(textContainer, wordElement, beforeChar, true, isRtl)
-                    : null;
-                if (!endBox) return null;
-                left = endBox.left;
-                top = endBox.top;
-            }
-            return { left: left, top: top, width: caretWidth };
-        }
-
         function paintOpponentCaret(wordIndex, charIndex) {
             if (!opponentCaret || !words.length) return;
             var safeWordIndex = Math.min(
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
-            var metrics = opponentCaretMetrics(safeWordIndex, charIndex);
-            if (!metrics) return;
-            opponentCaret.style.display = 'block';
-            opponentCaret.style.width = metrics.width + 'px';
-            opponentCaret.style.transform = 'translate3d(' + metrics.left + 'px,' + metrics.top + 'px,0)';
+            positionCaretAt(opponentCaret, safeWordIndex, charIndex);
         }
 
         function resetOpponentCaretInstant() {
@@ -2333,6 +2313,7 @@
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
+                sampleOpponentRawHistorySecond();
                 var myRow = rows.find(function (row) { return row[0] === selfIndex; }) || [];
                 var serverMe = parseServerResult(myRow);
                 var localMe = computeFinalStats(localFinishTime || Date.now());
@@ -2372,6 +2353,9 @@
             otherData.percentToNext = other.percentToNext;
             otherData.userId = other.userId;
             otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+            if (opponentRawHistory.length >= 2) {
+                otherData.consistency = computeConsistencyFromRawHistory(opponentRawHistory);
+            }
             meData.userId = me.userId;
                 var meWon = rows.length && rows[0][0] === selfIndex;
                 fillCard('w', meWon ? meData : otherData);

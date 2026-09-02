@@ -39,6 +39,7 @@ interface Player {
   leftMidGame: boolean;
   snapshots: Array<[number, number, number, number]>;
   lastSnapshotAt: number;
+  lastCursorAt?: number;
 }
 
 interface BotPlayer {
@@ -162,6 +163,7 @@ export class MultiplayerHub implements DurableObject {
           if (player.correctChars == null) player.correctChars = 0;
           if (!player.snapshots) player.snapshots = [];
           if (player.lastSnapshotAt == null) player.lastSnapshotAt = 0;
+          if (player.lastCursorAt == null) player.lastCursorAt = 0;
         }
         this.rooms.set(room.id, room);
       }
@@ -480,6 +482,7 @@ export class MultiplayerHub implements DurableObject {
       leftMidGame: false,
       snapshots: [],
       lastSnapshotAt: 0,
+      lastCursorAt: 0,
     };
   }
 
@@ -1063,45 +1066,58 @@ export class MultiplayerHub implements DurableObject {
         const totalKeystrokes = Number(arr[3]);
         const isFinal = Number(arr[4]) === 1;
         const finalStatsPayload = Array.isArray(arr[5]) ? arr[5] : null;
-        if (sequence >= player.sequence) {
-          player.sequence = sequence;
-          player.completedWords = completedWords;
-          player.totalKeystrokes = totalKeystrokes;
-          player.correctChars = this.cumulativeCorrectChars(room, completedWords);
-          player.wpm = (player.correctChars / 5) / Math.max((Date.now() - (room.startsAt || Date.now())) / 60_000, 1 / 120);
-          player.accuracy = totalKeystrokes > 0
-            ? (player.correctChars / totalKeystrokes) * 100
-            : 100;
-          if (finalStatsPayload && finalStatsPayload.length >= 4) {
-            const validChars = Number(finalStatsPayload[0]);
-            const rawChars = Number(finalStatsPayload[1]);
-            const errorsMade = Number(finalStatsPayload[2]);
-            const extraChars = Number(finalStatsPayload[3]);
-            const displaySeconds = Number(finalStatsPayload[4]);
-            if (
-              Number.isFinite(validChars)
-              && Number.isFinite(rawChars)
-              && Number.isFinite(errorsMade)
-              && Number.isFinite(extraChars)
-            ) {
-              player.finalStats = {
-                validChars: Math.max(0, Math.floor(validChars)),
-                rawChars: Math.max(0, Math.floor(rawChars)),
-                errorsMade: Math.max(0, Math.floor(errorsMade)),
-                extraChars: Math.max(0, Math.floor(extraChars)),
-                displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
-                  ? Math.floor(displaySeconds)
-                  : undefined,
-              };
-            }
-          }
-          const now = Date.now();
-          player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
-          if (player.snapshots.length > LIMITS.maxRetainedSnapshots) {
-            player.snapshots.shift();
-          }
-          player.lastSnapshotAt = now;
+        if (
+          sequence === player.sequence
+          && completedWords === player.completedWords
+          && totalKeystrokes === player.totalKeystrokes
+        ) {
+          safeAck(ws, reqId, { ok: true, duplicate: true });
+          return;
         }
+        if (!Number.isInteger(sequence) || sequence <= player.sequence) throw new Error('invalid_sequence');
+        if (!Number.isInteger(completedWords) || completedWords < player.completedWords) {
+          throw new Error('invalid_progress');
+        }
+        if (!Number.isInteger(totalKeystrokes) || totalKeystrokes < player.totalKeystrokes) {
+          throw new Error('invalid_keystrokes');
+        }
+        player.sequence = sequence;
+        player.completedWords = completedWords;
+        player.totalKeystrokes = totalKeystrokes;
+        player.correctChars = this.cumulativeCorrectChars(room, completedWords);
+        player.wpm = (player.correctChars / 5) / Math.max((Date.now() - (room.startsAt || Date.now())) / 60_000, 1 / 120);
+        player.accuracy = totalKeystrokes > 0
+          ? (player.correctChars / totalKeystrokes) * 100
+          : 100;
+        if (finalStatsPayload && finalStatsPayload.length >= 4) {
+          const validChars = Number(finalStatsPayload[0]);
+          const rawChars = Number(finalStatsPayload[1]);
+          const errorsMade = Number(finalStatsPayload[2]);
+          const extraChars = Number(finalStatsPayload[3]);
+          const displaySeconds = Number(finalStatsPayload[4]);
+          if (
+            Number.isFinite(validChars)
+            && Number.isFinite(rawChars)
+            && Number.isFinite(errorsMade)
+            && Number.isFinite(extraChars)
+          ) {
+            player.finalStats = {
+              validChars: Math.max(0, Math.floor(validChars)),
+              rawChars: Math.max(0, Math.floor(rawChars)),
+              errorsMade: Math.max(0, Math.floor(errorsMade)),
+              extraChars: Math.max(0, Math.floor(extraChars)),
+              displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
+                ? Math.floor(displaySeconds)
+                : undefined,
+            };
+          }
+        }
+        const now = Date.now();
+        player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
+        if (player.snapshots.length > LIMITS.maxRetainedSnapshots) {
+          player.snapshots.shift();
+        }
+        player.lastSnapshotAt = now;
         if (isFinal) {
           player.status = 'finished';
           player.finishedAt = Date.now();
@@ -1221,11 +1237,22 @@ export class MultiplayerHub implements DurableObject {
     if (!room || room.state !== 'racing') return;
     const player = room.players[userId];
     if (!player || player.status !== 'racing') return;
+    const now = Date.now();
+    if (now < (room.startsAt || 0)) return;
+    let wordIndex = Math.max(0, Math.floor(Number(arr[2]) || 0));
+    let charIndex = Math.max(0, Math.floor(Number(arr[3]) || 0));
+    const lastWord = Math.max(0, room.prompt.words.length - 1);
+    wordIndex = Math.min(wordIndex, lastWord);
+    const maxChar = room.prompt.words[wordIndex]
+      ? room.prompt.words[wordIndex].length + 12
+      : 12;
+    charIndex = Math.min(charIndex, maxChar);
+    player.lastCursorAt = now;
     this.emitRoom(room, 'race:cursor', [
       player.index,
       Math.max(0, Math.round(Number(arr[1]) || 0)),
-      Math.max(0, Math.floor(Number(arr[2]) || 0)),
-      Math.max(0, Math.floor(Number(arr[3]) || 0)),
+      wordIndex,
+      charIndex,
     ]);
   }
 }

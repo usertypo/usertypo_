@@ -8,6 +8,7 @@ export function computeConsistencyFromSnapshots(
     const dtMs = snapshots[i][3] - snapshots[i - 1][3];
     if (dtMs <= 0) continue;
     const deltaKeystrokes = snapshots[i][2] - snapshots[i - 1][2];
+    if (deltaKeystrokes <= 0) continue;
     const dtMin = dtMs / 60_000;
     rawWpms.push(Math.max(0, (deltaKeystrokes / 5) / dtMin));
   }
