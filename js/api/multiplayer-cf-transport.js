@@ -93,6 +93,11 @@
                     var auth = options && options.auth;
                     if (typeof auth === 'function') {
                         auth(function (payload) {
+                            if (payload && payload.authError) {
+                                finish(new Error(String(payload.authError)));
+                                try { ws.close(); } catch (_) { /* ignore */ }
+                                return;
+                            }
                             sendJson({ t: 'auth', p: payload || {} });
                         });
                     } else {

@@ -113,6 +113,9 @@
         });
         activeSocket.on('multiplayer:ready', function (state) {
             readyState = state;
+            if (state && state.userId) {
+                lastAuthIdentity = String(state.userId);
+            }
             listings = Array.isArray(state.listings) ? state.listings : [];
             dispatch('ready', state);
             dispatch('listings', listings.slice());
@@ -335,7 +338,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=3';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=4';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -384,26 +387,58 @@
         }, Promise.reject(new Error('start')));
     }
 
+    async function resolveSocketAuth() {
+        await window.usertypoAuth.ready();
+        var state = window.usertypoAuth.getState();
+        if (state && state.isSignedIn) {
+            for (var attempt = 0; attempt < 10; attempt += 1) {
+                if (window.Clerk && window.Clerk.session) {
+                    try {
+                        var token = await window.Clerk.session.getToken();
+                        if (token) return { token: token };
+                    } catch (_) { /* retry */ }
+                }
+                await new Promise(function (resolve) {
+                    nativeSetTimeout(resolve, 200);
+                });
+            }
+            throw new Error('Could not obtain a sign-in token for multiplayer.');
+        }
+        return { guestId: getOrCreateGuestId() };
+    }
+
+    function authPayloadCallback(callback) {
+        resolveSocketAuth()
+            .then(function (payload) { callback(payload); })
+            .catch(function (error) {
+                callback({ authError: error && error.message ? error.message : 'auth_failed' });
+            });
+    }
+
     async function ensureConnected() {
-        if (socket && socket.connected && readyState) return socket;
+        if (socket && socket.connected && readyState) {
+            var authState = window.usertypoAuth.getState();
+            if (authState && authState.isSignedIn && authState.user && authState.user.id) {
+                var expectedId = String(authState.user.id);
+                if (String(readyState.userId) !== expectedId) {
+                    socket.disconnect();
+                    socket = null;
+                    readyState = null;
+                } else {
+                    return socket;
+                }
+            } else {
+                return socket;
+            }
+        }
         if (connectPromise) return connectPromise;
         connectPromise = (async function () {
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
             if (!socket) {
-                var authFn = function (callback) {
-                    var state = window.usertypoAuth.getState();
-                    if (state && state.isSignedIn && window.Clerk && window.Clerk.session) {
-                        window.Clerk.session.getToken()
-                            .then(function (token) { callback({ token: token }); })
-                            .catch(function () { callback({ guestId: getOrCreateGuestId() }); });
-                        return;
-                    }
-                    callback({ guestId: getOrCreateGuestId() });
-                };
                 if (usesCfTransport()) {
                     await ensureCfTransport();
-                    socket = window.usertypoMultiplayerCf.createSocket({ auth: authFn });
+                    socket = window.usertypoMultiplayerCf.createSocket({ auth: authPayloadCallback });
                 } else {
                     await ensureSocketIoClient();
                     if (!window.io) throw new Error('Socket.IO client is not loaded.');
@@ -417,7 +452,7 @@
                         reconnectionAttempts: Infinity,
                         reconnectionDelay: 500,
                         reconnectionDelayMax: 4000,
-                        auth: authFn,
+                        auth: authPayloadCallback,
                     });
                 }
                 bindSocketEvents(socket);
@@ -433,6 +468,17 @@
                         resolve();
                     });
                 });
+            }
+            var signedIn = window.usertypoAuth.getState();
+            if (signedIn && signedIn.isSignedIn && signedIn.user && signedIn.user.id && readyState) {
+                var expectedUserId = String(signedIn.user.id);
+                if (String(readyState.userId) !== expectedUserId) {
+                    socket.disconnect();
+                    socket = null;
+                    readyState = null;
+                    throw new Error('Multiplayer session did not match your signed-in account. Please try again.');
+                }
+                lastAuthIdentity = expectedUserId;
             }
             return socket;
         })();
@@ -645,6 +691,14 @@
                     : 'guest');
             // Clerk fires on token refresh — only tear down when identity actually changes.
             if (!identity || identity === lastAuthIdentity) return;
+            var connectedUserId = readyState && readyState.userId ? String(readyState.userId) : '';
+            if (connectedUserId && identity === connectedUserId) {
+                lastAuthIdentity = identity;
+                return;
+            }
+            if (identity === 'guest' && connectedUserId && !String(connectedUserId).startsWith('guest_')) {
+                return;
+            }
             lastAuthIdentity = identity;
             if (activeRoomId) {
                 pendingLeaveRoomId = pendingLeaveRoomId || activeRoomId;

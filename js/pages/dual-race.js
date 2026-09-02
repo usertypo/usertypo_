@@ -2336,6 +2336,41 @@
             return rows.find(function (row) { return row[0] === index; }) || [];
         }
 
+        function resolveMyResultRow(rows) {
+            var candidates = [];
+            var ready = window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState();
+            if (ready && ready.userId) candidates.push(String(ready.userId));
+            if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
+                var auth = window.usertypoAuth.getState();
+                if (auth && auth.user && auth.user.id) candidates.push(String(auth.user.id));
+            }
+            candidates.push(String(getLocalUserId()));
+            if (players[selfIndex] && players[selfIndex].userId) {
+                candidates.push(String(players[selfIndex].userId));
+            }
+            var seen = {};
+            for (var i = 0; i < candidates.length; i += 1) {
+                var candidate = candidates[i];
+                if (!candidate || seen[candidate]) continue;
+                seen[candidate] = true;
+                var hit = rows.find(function (row) { return String(row[1]) === candidate; });
+                if (hit) {
+                    selfUserId = String(hit[1]);
+                    selfIndex = hit[0];
+                    return hit;
+                }
+            }
+            return findResultRow(rows, selfUserId, selfIndex);
+        }
+
+        function resolveOtherResultRow(rows, myRow) {
+            if (myRow && myRow.length) {
+                var byIndex = rows.find(function (row) { return row[0] !== myRow[0]; });
+                if (byIndex) return byIndex;
+            }
+            return findResultRow(rows, other.userId, opponentIndex);
+        }
+
         function showResults(payload) {
             var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
             if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
@@ -2360,8 +2395,8 @@
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
-                var meRow = findResultRow(rows, selfUserId, selfIndex);
-                var otherRow = findResultRow(rows, other.userId, opponentIndex);
+                var meRow = resolveMyResultRow(rows);
+                var otherRow = resolveOtherResultRow(rows, meRow);
                 var serverMe = parseServerResult(meRow);
                 var serverOther = parseServerResult(otherRow);
                 var localMe = computeFinalStats(localFinishTime || Date.now());
@@ -2722,8 +2757,13 @@
                 bot = response.room && response.room.bot || null;
                 matchReason = response.room && response.room.reason || '';
                 selfUserId = window.usertypoMultiplayer.getReadyState()
-                    && window.usertypoMultiplayer.getReadyState().userId || '';
+                    && window.usertypoMultiplayer.getReadyState().userId || getLocalUserId();
                 var joinedSelf = players.find(function (player) { return player.userId === selfUserId; });
+                if (!joinedSelf && players.length === 2) {
+                    var authId = getLocalUserId();
+                    joinedSelf = players.find(function (player) { return player.userId === authId; }) || joinedSelf;
+                }
+                if (joinedSelf) selfUserId = joinedSelf.userId;
                 var joinedOpponent = players.find(function (player) { return player.userId !== selfUserId; });
                 selfIndex = joinedSelf ? joinedSelf.index : 0;
                 opponentIndex = joinedOpponent ? joinedOpponent.index : (bot ? bot.index : 1);
