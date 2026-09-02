@@ -2363,19 +2363,25 @@
             return findResultRow(rows, selfUserId, selfIndex);
         }
 
-        function resolveOtherResultRow(rows, myRow) {
+        function resolveOtherResultRow(rows, myRow, otherUserId, otherIdx) {
             if (myRow && myRow.length) {
                 var byIndex = rows.find(function (row) { return row[0] !== myRow[0]; });
                 if (byIndex) return byIndex;
             }
-            return findResultRow(rows, other.userId, opponentIndex);
+            return findResultRow(rows, otherUserId, otherIdx);
+        }
+
+        function resultsRowsKey(payload) {
+            var rows = Array.isArray(payload) ? (payload[2] || []) : [];
+            return JSON.stringify(rows);
         }
 
         function showResults(payload) {
             var payloadRoom = Array.isArray(payload) ? String(payload[0] || '') : '';
             if (!Array.isArray(payload) || payloadRoom !== String(roomId || '')) return;
-            if (state === 'finished' && latestResults) {
-                // Idempotent — resume + live event may both arrive.
+            var rows = payload[2] || [];
+            var alreadyFinished = state === 'finished' && latestResults;
+            if (alreadyFinished && resultsRowsKey(payload) === resultsRowsKey(latestResults)) {
                 testView.classList.add('hidden');
                 testView.style.display = 'none';
                 statsView.classList.remove('hidden', 'opacity-0');
@@ -2385,18 +2391,24 @@
                 setDualHeaderInteractive(true);
                 return;
             }
+            var firstPaint = !alreadyFinished;
             state = 'finished';
             latestResults = payload;
-            clearInterval(updateTimer);
-            if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
-            opponentAnimationFrame = null;
-            var rows = payload[2] || [];
+            if (firstPaint) {
+                clearInterval(updateTimer);
+                if (opponentAnimationFrame) cancelAnimationFrame(opponentAnimationFrame);
+                opponentAnimationFrame = null;
+            }
             var me = players.find(function (player) { return player.userId === selfUserId; }) || { name: 'You', avatarUrl: '' };
             var other = players.find(function (player) { return player.userId !== selfUserId; })
                 || { name: bot && bot.name || 'Opponent', avatarUrl: '' };
             var paintResults = function () {
                 var meRow = resolveMyResultRow(rows);
-                var otherRow = resolveOtherResultRow(rows, meRow);
+                var otherRow = resolveOtherResultRow(rows, meRow, other.userId, opponentIndex);
+                var mePlayer = players.find(function (player) { return String(player.userId) === String(meRow[1]); });
+                var otherPlayer = players.find(function (player) { return String(player.userId) === String(otherRow[1]); });
+                if (mePlayer) me = mePlayer;
+                if (otherPlayer) other = otherPlayer;
                 var serverMe = parseServerResult(meRow);
                 var serverOther = parseServerResult(otherRow);
                 var localMe = computeFinalStats(localFinishTime || Date.now());
@@ -2454,7 +2466,7 @@
                 otherData.userId = other.userId;
                 otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
                 meData.userId = me.userId;
-                var meWon = rows.length && rows[0][0] === selfIndex;
+                var meWon = meRow.length && rows.length && rows[0][0] === meRow[0];
                 fillCard('w', meWon ? meData : otherData);
                 fillCard('l', meWon ? otherData : meData);
             };
@@ -2463,6 +2475,7 @@
             } else {
                 paintResults();
             }
+            if (!firstPaint) return;
             var label = document.getElementById('stats-race-label');
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3]) opponentLeft = true;

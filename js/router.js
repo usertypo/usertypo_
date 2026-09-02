@@ -52,7 +52,7 @@
             if (dualParams.get('local') === 'bot') {
                 jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=1'));
             }
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=83'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=84'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
