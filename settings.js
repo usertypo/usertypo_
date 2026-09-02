@@ -3644,6 +3644,113 @@ function buildPaceCaretCSS(style, smoothness) {
     return css;
 }
 
+/**
+ * Dual-race opponent ghost caret — mirrors the user's caretStyle and
+ * caretSmoothness at 50% white (same ghost treatment as pace-caret).
+ * Width changes snap instantly (0s) so backspace does not animate a wide caret.
+ */
+function buildOpponentCaretCSS(style, smoothness) {
+    style = (style || 'underscore').toLowerCase();
+    const dur = SMOOTHNESS_DURATION[smoothness] || SMOOTHNESS_DURATION.medium;
+    const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
+    const transition = `transform ${dur} ${ease}, width 0s, opacity 0.5s ease-in-out`;
+    const ghostWhite = '#ffffff';
+    const ghostWhiteRGB = '255, 255, 255';
+
+    let css = `
+        #bot-caret {
+            transition: ${transition} !important;
+            opacity: 0.5 !important;
+            filter: drop-shadow(0 0 8px rgba(${ghostWhiteRGB}, 0.3));
+        }
+    `;
+
+    switch (style) {
+        case 'line':
+            css += `
+                #bot-caret {
+                    width: 2.5px !important;
+                    background-color: ${ghostWhite};
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                #bot-caret::after { display: none !important; }
+            `;
+            break;
+
+        case 'block':
+            css += `
+                #bot-caret {
+                    background-color: rgba(${ghostWhiteRGB}, 0.25);
+                    border: none !important;
+                    border-radius: 2px;
+                    box-shadow: none;
+                }
+                #bot-caret::after { display: none !important; }
+            `;
+            break;
+
+        case 'outline':
+            css += `
+                #bot-caret {
+                    background-color: transparent;
+                    border: 2px solid rgba(${ghostWhiteRGB}, 0.6) !important;
+                    border-radius: 3px;
+                    box-shadow: 0 0 6px rgba(${ghostWhiteRGB}, 0.15);
+                }
+                #bot-caret::after { display: none !important; }
+            `;
+            break;
+
+        case 'underscore':
+        default:
+            css += `
+                #bot-caret {
+                    background-color: transparent;
+                    border: none !important;
+                    box-shadow: none;
+                }
+                #bot-caret::after {
+                    content: '' !important;
+                    display: block !important;
+                    position: absolute;
+                    bottom: -2.5px;
+                    left: 0;
+                    right: 0;
+                    height: 2.5px;
+                    background-color: ${ghostWhite};
+                    border-radius: 9999px;
+                    box-shadow: 0 0 6px rgba(${ghostWhiteRGB}, 0.25);
+                }
+            `;
+            break;
+    }
+
+    return css;
+}
+
+function buildOpponentCaretExpandedCSS(style) {
+    style = (style || 'underscore').toLowerCase();
+    const ghostWhite = '#ffffff';
+    const ghostWhiteRGB = '255, 255, 255';
+    let css = `
+        #bot-caret.opponent-caret-expanded::after {
+            left: 0 !important;
+            right: 0 !important;
+        }
+    `;
+    if (style === 'line') {
+        css += `
+            #bot-caret.opponent-caret-expanded {
+                background-color: rgba(${ghostWhiteRGB}, 0.35) !important;
+                border-radius: 2px;
+            }
+        `;
+    }
+    return css;
+}
+
 function buildLayoutCSS(smoothLineScroll, tapeMode, caretSmoothness) {
     let css = '';
     const ease = 'cubic-bezier(0.2, 0, 0.2, 1)';
@@ -3750,6 +3857,8 @@ function applyCursorSettings(settings) {
     const _caretRGB = _hexToRGB(_caretAccent);
     styleEl.textContent = buildCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness, _caretAccent, _caretRGB)
         + buildPaceCaretCSS(settings.cursor.paceCaretStyle, settings.cursor.caretSmoothness)
+        + buildOpponentCaretCSS(settings.cursor.caretStyle, settings.cursor.caretSmoothness)
+        + buildOpponentCaretExpandedCSS(settings.cursor.caretStyle)
         + buildLayoutCSS(settings.cursor.smoothLineScroll, effectiveTapeMode, settings.cursor.caretSmoothness);
 
     // ── Data attributes on <body> ──

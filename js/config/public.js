@@ -9,8 +9,9 @@
  *
  * Architecture:
  * - Website: https://usertypo.com (Cloudflare Pages)
- * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + Render)
- * - Backend (Socket.IO, /api/*): https://mp.usertypo.com (Render)
+ * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + CF workers)
+ * - Multiplayer: Cloudflare Workers + Durable Objects (duels); custom rooms Phase B
+ * - Backend (/api/* still on Render where needed): https://mp.usertypo.com
  * - Local `npm run dev`: blank backend URLs → same-origin Express
  */
 window.USERTYPO_CONFIG = {
@@ -40,8 +41,9 @@ window.USERTYPO_CONFIG = {
         url: 'https://mp.usertypo.com',
     },
     multiplayer: {
-        // Socket.IO server. Usually same as backend.url. Blank on localhost.
-        url: 'https://mp.usertypo.com',
+        // Cloudflare Durable Objects (lobby + 1 DO per duel). Custom rooms: Phase B.
+        url: 'https://usertypo-mp.usertypo2026.workers.dev',
+        transport: 'cf',
     },
     // Cloudflare Leaderboards Worker (Postgres — no Upstash).
     leaderboards: {
@@ -87,7 +89,10 @@ window.USERTYPO_CONFIG = {
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM',
         };
         cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
-        cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
+        cfg.multiplayer = {
+            url: 'https://usertypo-mp-dev.usertypo2026.workers.dev',
+            transport: 'cf',
+        };
         cfg.leaderboards = {
             url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
         };

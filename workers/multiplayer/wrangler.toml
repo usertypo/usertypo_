@@ -1,0 +1,47 @@
+# usertypo_ multiplayer — Cloudflare Durable Objects (dev first).
+# Deploy dev:  npm run deploy:dev
+
+name = "usertypo-mp-dev"
+main = "src/index.ts"
+compatibility_date = "2026-07-27"
+
+[durable_objects]
+bindings = [
+  { name = "MULTIPLAYER_HUB", class_name = "MultiplayerHub" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MultiplayerHub"]
+
+[vars]
+ENVIRONMENT = "dev"
+PUBLIC_SITE_URL = "https://dev.usertypo.com"
+ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000"
+
+[env.production]
+name = "usertypo-mp"
+vars = { ENVIRONMENT = "production", PUBLIC_SITE_URL = "https://usertypo.com", ALLOWED_ORIGINS = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev", CLERK_AUTHORIZED_PARTIES = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev" }
+
+[env.production.durable_objects]
+bindings = [
+  { name = "MULTIPLAYER_HUB", class_name = "MultiplayerHub" }
+]
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["MultiplayerHub"]
+
+[env.dev]
+name = "usertypo-mp-dev"
+vars = { ENVIRONMENT = "dev", PUBLIC_SITE_URL = "https://dev.usertypo.com", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000" }
+
+[env.dev.durable_objects]
+bindings = [
+  { name = "MULTIPLAYER_HUB", class_name = "MultiplayerHub" }
+]
+
+[[env.dev.migrations]]
+tag = "v1"
+new_sqlite_classes = ["MultiplayerHub"]
