@@ -1,4 +1,4 @@
-import type { Env, Profile } from './auth';
+﻿import type { Env, Profile } from './auth';
 import {
   areBlocked,
   areFriends,
@@ -146,9 +146,47 @@ export class MultiplayerHub implements DurableObject {
   private wsToUser = new Map<WebSocket, string>();
   private userSockets = new Map<string, Set<WebSocket>>();
   private loaded = false;
+  /** lobby = matchmaking; race = one duel DO (idFromName room:{id}) */
+  private role: 'lobby' | 'race' | 'unknown' = 'unknown';
+  private boundRoomId = '';
 
   constructor(private ctx: DurableObjectState, env: Env) {
     this.env = env;
+  }
+
+  private lobbyStub() {
+    return this.env.MULTIPLAYER_HUB.get(this.env.MULTIPLAYER_HUB.idFromName('lobby'));
+  }
+
+  private raceStub(roomId: string) {
+    return this.env.MULTIPLAYER_HUB.get(
+      this.env.MULTIPLAYER_HUB.idFromName(`room:${String(roomId || '').trim()}`),
+    );
+  }
+
+  private async fetchRaceMeta(roomId: string): Promise<{ roomId: string; state: string; allowedUserIds: string[] } | null> {
+    try {
+      const res = await this.raceStub(roomId).fetch('https://race-do/internal/meta');
+      if (!res.ok) return null;
+      return await res.json() as { roomId: string; state: string; allowedUserIds: string[] };
+    } catch {
+      return null;
+    }
+  }
+
+  private async notifyLobbyRoomDisposed(room: Room) {
+    try {
+      await this.lobbyStub().fetch('https://lobby-do/internal/room-disposed', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          roomId: room.id,
+          userIds: room.allowedUserIds,
+        }),
+      });
+    } catch {
+      /* best-effort */
+    }
   }
 
   private async ensureLoaded() {
@@ -169,6 +207,15 @@ export class MultiplayerHub implements DurableObject {
         this.rooms.set(room.id, room);
       }
       for (const [k, v] of Object.entries(snap.userToRoom || {})) this.userToRoom.set(k, v);
+    }
+    if (this.rooms.size === 1 && this.listings.size === 0) {
+      const only = [...this.rooms.values()][0];
+      if (only) {
+        this.role = 'race';
+        this.boundRoomId = only.id;
+      }
+    } else if (this.listings.size > 0 || this.invites.size > 0 || this.rooms.size === 0) {
+      if (this.role === 'unknown') this.role = 'lobby';
     }
     this.rebuildSocketRegistry();
     this.loaded = true;
@@ -270,16 +317,107 @@ export class MultiplayerHub implements DurableObject {
   async fetch(request: Request): Promise<Response> {
     await this.ensureLoaded();
     const url = new URL(request.url);
-    if (url.pathname === '/health') {
-      return Response.json({ ok: true, service: 'usertypo-multiplayer' });
+    const roomParam = String(url.searchParams.get('room') || '').trim();
+    if (roomParam) {
+      this.role = 'race';
+      this.boundRoomId = roomParam;
     }
+
+    if (url.pathname === '/health') {
+      return Response.json({
+        ok: true,
+        service: 'usertypo-multiplayer',
+        role: this.role === 'unknown' ? (roomParam ? 'race' : 'lobby') : this.role,
+        roomId: this.boundRoomId || null,
+      });
+    }
+
+    if (url.pathname === '/internal/init-room' && request.method === 'POST') {
+      const room = await request.json() as Room;
+      if (!room || !room.id) return Response.json({ ok: false, error: 'invalid_room' }, { status: 400 });
+      if (!room.rematchVotes) room.rematchVotes = [];
+      this.role = 'race';
+      this.boundRoomId = room.id;
+      this.rooms.clear();
+      this.userToRoom.clear();
+      this.rooms.set(room.id, room);
+      for (const uid of room.allowedUserIds) this.userToRoom.set(uid, room.id);
+      for (const player of Object.values(room.players || {})) {
+        if (player.correctChars == null) player.correctChars = 0;
+        if (!player.snapshots) player.snapshots = [];
+        if (player.lastSnapshotAt == null) player.lastSnapshotAt = 0;
+        if (player.lastCursorAt == null) player.lastCursorAt = 0;
+      }
+      if (room.type !== 'custom') {
+        this.scheduleAlarm(LIMITS.joinTtlMs, { kind: 'room-join-expire', roomId: room.id });
+      }
+      await this.persist();
+      return Response.json({ ok: true, roomId: room.id });
+    }
+
+    if (url.pathname === '/internal/meta') {
+      const room = this.boundRoomId
+        ? this.rooms.get(this.boundRoomId)
+        : [...this.rooms.values()][0];
+      if (!room) return Response.json({ ok: false, error: 'missing' }, { status: 404 });
+      return Response.json({
+        ok: true,
+        roomId: room.id,
+        state: room.state,
+        allowedUserIds: room.allowedUserIds,
+      });
+    }
+
+    if (url.pathname === '/internal/room-disposed' && request.method === 'POST') {
+      this.role = 'lobby';
+      const body = await request.json() as { roomId?: string; userIds?: string[] };
+      const roomId = String(body.roomId || '');
+      const userIds = Array.isArray(body.userIds) ? body.userIds : [];
+      for (const uid of userIds) {
+        if (this.userToRoom.get(String(uid)) === roomId) this.userToRoom.delete(String(uid));
+      }
+      this.rooms.delete(roomId);
+      await this.persist();
+      return Response.json({ ok: true });
+    }
+
+    if (url.pathname === '/internal/player-abandon' && request.method === 'POST') {
+      const body = await request.json() as { userId?: string };
+      const userId = String(body.userId || '');
+      const room = this.boundRoomId
+        ? this.rooms.get(this.boundRoomId)
+        : [...this.rooms.values()][0];
+      if (room && userId && room.players[userId]) {
+        const player = room.players[userId];
+        if (room.state !== 'racing') {
+          player.status = 'left';
+          player.joined = false;
+          this.userToRoom.delete(userId);
+          await this.persist();
+        }
+      }
+      return Response.json({ ok: true });
+    }
+
     if (request.headers.get('Upgrade') !== 'websocket') {
       return Response.json({
         ok: true,
         service: 'usertypo-multiplayer',
-        hint: 'Connect via WebSocket at /ws',
+        hint: 'Connect via WebSocket at /ws (lobby) or /ws?room=<id> (duel)',
+        role: this.role,
       });
     }
+
+    if (roomParam) {
+      this.role = 'race';
+      this.boundRoomId = roomParam;
+      if (!this.rooms.has(roomParam)) {
+        return Response.json({ ok: false, error: 'room_unavailable' }, { status: 404 });
+      }
+    } else if (this.role === 'unknown') {
+      this.role = 'lobby';
+    }
+
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
@@ -327,7 +465,9 @@ export class MultiplayerHub implements DurableObject {
       set.delete(ws);
       if (!set.size) {
         this.userSockets.delete(userId);
-        this.broadcastAll('multiplayer:presence', [userId, 0]);
+        if (this.role !== 'race') {
+          this.broadcastAll('multiplayer:presence', [userId, 0]);
+        }
       }
     }
   }
@@ -336,6 +476,18 @@ export class MultiplayerHub implements DurableObject {
     try {
       const session = await authenticateHandshake(this.env, auth);
       const userId = session.userId;
+
+      if (this.role === 'race') {
+        const room = this.rooms.get(this.boundRoomId) || [...this.rooms.values()][0];
+        if (!room || !room.allowedUserIds.includes(userId)) {
+          ws.close(4403, 'forbidden');
+          return;
+        }
+        this.boundRoomId = room.id;
+      } else if (this.role === 'unknown') {
+        this.role = 'lobby';
+      }
+
       ws.serializeAttachment({ userId });
       if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
       const sockets = this.userSockets.get(userId)!;
@@ -349,9 +501,33 @@ export class MultiplayerHub implements DurableObject {
         }
       }
       this.attachSocket(ws, userId);
-      this.cleanStaleMembership(userId);
+      if (this.role !== 'race') this.cleanStaleMembership(userId);
       const profile = await getProfile(this.env, userId);
       this.profiles.set(userId, profile);
+
+      ws.send(JSON.stringify({
+        t: 'ev',
+        e: 'connect',
+        p: null,
+      }));
+
+      if (this.role === 'race') {
+        ws.send(JSON.stringify({
+          t: 'ev',
+          e: 'multiplayer:ready',
+          p: {
+            userId,
+            profile,
+            listings: [],
+            search: null,
+            outgoingChallenges: [],
+            raceRoomId: this.boundRoomId,
+          },
+        }));
+        await this.persist();
+        return;
+      }
+
       const ownListing = [...this.listings.values()].find((l) => l.ownerUserId === userId && l.status === 'waiting');
       const outgoingChallenges = [...this.invites.values()]
         .filter((i) => i.fromUserId === userId)
@@ -362,11 +538,6 @@ export class MultiplayerHub implements DurableObject {
           config: invite.config,
           createdAt: invite.createdAt,
         }));
-      ws.send(JSON.stringify({
-        t: 'ev',
-        e: 'connect',
-        p: null,
-      }));
       ws.send(JSON.stringify({
         t: 'ev',
         e: 'multiplayer:ready',
@@ -459,6 +630,9 @@ export class MultiplayerHub implements DurableObject {
       if (this.userToRoom.get(uid) === roomId) this.userToRoom.delete(uid);
     }
     this.rooms.delete(roomId);
+    if (this.role === 'race') {
+      void this.notifyLobbyRoomDisposed(room);
+    }
     void this.persist();
   }
 
@@ -551,7 +725,8 @@ export class MultiplayerHub implements DurableObject {
     allowedUserIds: string[],
     extra?: { hostUserId?: string; maxPlayers?: number; bot?: BotPlayer | null },
   ): Promise<Room> {
-    if (this.rooms.size >= LIMITS.maxActiveRooms) throw new Error('server_capacity');
+    const activeRooms = new Set(this.userToRoom.values()).size;
+    if (activeRooms >= LIMITS.maxActiveRooms) throw new Error('server_capacity');
     await Promise.all(allowedUserIds.map(async (uid) => {
       const profile = await getProfile(this.env, uid);
       this.profiles.set(uid, profile);
@@ -583,6 +758,20 @@ export class MultiplayerHub implements DurableObject {
       opponentLeft: false,
       rematchVotes: [],
     };
+
+    // One DO per duel: race state lives on room:{id}, lobby only tracks membership.
+    if (this.role !== 'race') {
+      const initRes = await this.raceStub(id).fetch('https://race-do/internal/init-room', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(room),
+      });
+      if (!initRes.ok) throw new Error('race_init_failed');
+      for (const uid of allowedUserIds) this.userToRoom.set(uid, id);
+      await this.persist();
+      return room;
+    }
+
     this.rooms.set(id, room);
     for (const uid of allowedUserIds) this.userToRoom.set(uid, id);
     if (type !== 'custom') {
@@ -852,25 +1041,51 @@ export class MultiplayerHub implements DurableObject {
     await this.finishRoom(room, reason);
   }
 
-  private abandonStuckMembership(userId: string) {
+  private async abandonStuckMembership(userId: string) {
     const roomId = this.userToRoom.get(userId);
     if (!roomId) return;
-    const room = this.rooms.get(roomId);
-    if (!room || room.state === 'racing') return;
+    if (this.role === 'race') {
+      const room = this.rooms.get(roomId);
+      if (!room || room.state === 'racing') return;
+      this.userToRoom.delete(userId);
+      return;
+    }
+    const meta = await this.fetchRaceMeta(roomId);
+    if (meta && meta.state === 'racing') return;
     this.userToRoom.delete(userId);
+    try {
+      await this.raceStub(roomId).fetch('https://race-do/internal/player-abandon', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+    } catch { /* best-effort */ }
   }
 
   private cleanStaleMembership(userId: string) {
     const roomId = this.userToRoom.get(userId);
     if (!roomId) return;
-    const room = this.rooms.get(roomId);
-    if (!room || room.state === 'finished' || room.state === 'disposed') {
-      this.userToRoom.delete(userId);
+    if (this.role === 'race') {
+      const room = this.rooms.get(roomId);
+      if (!room || room.state === 'finished' || room.state === 'disposed') {
+        this.userToRoom.delete(userId);
+        return;
+      }
+      if (room.state === 'waiting' && !this.isOnline(userId)) {
+        this.userToRoom.delete(userId);
+      }
       return;
     }
-    if (room.state === 'waiting' && !this.isOnline(userId)) {
-      this.userToRoom.delete(userId);
-    }
+    // Lobby: membership is authoritative here; race DO holds live state.
+    // Drop only if race DO is gone / finished.
+    void this.fetchRaceMeta(roomId).then((meta) => {
+      if (!meta || meta.state === 'finished' || meta.state === 'disposed') {
+        if (this.userToRoom.get(userId) === roomId) {
+          this.userToRoom.delete(userId);
+          void this.persist();
+        }
+      }
+    });
   }
 
   private purgeStaleListings() {
@@ -889,12 +1104,20 @@ export class MultiplayerHub implements DurableObject {
 
   private async handleRequest(ws: WebSocket, userId: string, event: string, payload: unknown, reqId: string) {
     try {
+      const isRaceEvent = event.startsWith('match:') || event.startsWith('race:');
+      const isLobbyEvent = event.startsWith('duel:');
+      if (this.role === 'lobby' && isRaceEvent) {
+        throw new Error('connect_race_socket');
+      }
+      if (this.role === 'race' && isLobbyEvent) {
+        throw new Error('use_lobby_socket');
+      }
       if (event === 'duel:list') {
         safeAck(ws, reqId, { ok: true, listings: this.serializeListings() });
         return;
       }
       if (event === 'duel:create') {
-        this.abandonStuckMembership(userId);
+        await this.abandonStuckMembership(userId);
         this.purgeStaleListings();
         for (const l of this.listings.values()) {
           if (l.ownerUserId === userId) throw new Error('already_searching');
@@ -970,15 +1193,15 @@ export class MultiplayerHub implements DurableObject {
         if (!listing || listing.status !== 'waiting') throw new Error('listing_unavailable');
         if (listing.ownerUserId === userId) throw new Error('own_listing');
         if (await areBlocked(this.env, userId, listing.ownerUserId)) throw new Error('blocked');
-        this.abandonStuckMembership(userId);
+        await this.abandonStuckMembership(userId);
         if (!this.isOnline(listing.ownerUserId)) {
           this.removeListing(listing.id);
           throw new Error('listing_unavailable');
         }
         if (this.userToRoom.has(listing.ownerUserId)) {
           const ownerRoomId = this.userToRoom.get(listing.ownerUserId)!;
-          const ownerRoom = this.rooms.get(ownerRoomId);
-          if (!ownerRoom || ownerRoom.state === 'racing') {
+          const meta = await this.fetchRaceMeta(ownerRoomId);
+          if (!meta || meta.state === 'racing') {
             this.removeListing(listing.id);
             throw new Error('listing_unavailable');
           }
@@ -995,7 +1218,7 @@ export class MultiplayerHub implements DurableObject {
         const listing = this.listings.get(listingId);
         if (!listing || listing.ownerUserId !== userId) throw new Error('listing_unavailable');
         this.removeListing(listing.id);
-        this.abandonStuckMembership(userId);
+        await this.abandonStuckMembership(userId);
         const bot: BotPlayer = {
           index: 1,
           name: ROOM_BOT_NAMES[Math.floor(Math.random() * ROOM_BOT_NAMES.length)],
@@ -1014,6 +1237,9 @@ export class MultiplayerHub implements DurableObject {
         return;
       }
       if (event === 'match:join' || event === 'match:resume') {
+        if (this.role !== 'race') {
+          throw new Error('connect_race_socket');
+        }
         const roomId = String(payload || '');
         const room = this.rooms.get(roomId);
         if (!room || !room.allowedUserIds.includes(userId)) throw new Error('room_unavailable');
@@ -1067,6 +1293,15 @@ export class MultiplayerHub implements DurableObject {
           }
           this.userToRoom.delete(userId);
           if (room.state === 'racing') room.opponentLeft = true;
+        }
+        if (this.role === 'race' && rid) {
+          try {
+            await this.lobbyStub().fetch('https://lobby-do/internal/room-disposed', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ roomId: rid, userIds: [userId] }),
+            });
+          } catch { /* best-effort */ }
         }
         safeAck(ws, reqId, { ok: true });
         await this.persist();
@@ -1198,7 +1433,7 @@ export class MultiplayerHub implements DurableObject {
         const toUserId = String(body?.toUserId || '');
         if (!toUserId || toUserId === userId) throw new Error('invalid_target');
         if (!this.isOnline(toUserId)) throw new Error('friend_offline');
-        this.abandonStuckMembership(userId);
+        await this.abandonStuckMembership(userId);
         if (this.userToRoom.has(toUserId)) throw new Error('already_in_match');
         if (await areBlocked(this.env, userId, toUserId)) throw new Error('blocked');
         if (!(await areFriends(this.env, userId, toUserId))) throw new Error('not_friends');
@@ -1285,6 +1520,7 @@ export class MultiplayerHub implements DurableObject {
 
   private async handleEmit(_ws: WebSocket, userId: string, event: string, payload: unknown) {
     if (event !== 'race:cursor') return;
+    if (this.role === 'lobby') return;
     const arr = Array.isArray(payload) ? payload : [];
     const room = this.rooms.get(String(arr[0] || ''));
     if (!room || room.state !== 'racing') return;

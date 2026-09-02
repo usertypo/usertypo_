@@ -338,7 +338,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=4';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=5';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -563,8 +563,15 @@
     }
 
     function joinMatch(roomId) {
-        return emitAck('match:join', roomId).then(function (response) {
-            activeRoomId = String(roomId || '');
+        var target = String(roomId || '');
+        var ready = Promise.resolve();
+        if (socket && typeof socket.ensureRaceConnected === 'function' && target) {
+            ready = socket.ensureRaceConnected(target);
+        }
+        return ready.then(function () {
+            return emitAck('match:join', target);
+        }).then(function (response) {
+            activeRoomId = target;
             var room = response && response.room;
             activeRoomIsBot = !!(room && (
                 room.reason === 'bot'
@@ -620,16 +627,22 @@
     }
 
     function leaveRace(roomId) {
+        var leaveTarget = roomId || activeRoomId || '';
         activeRoomId = '';
         activeRoomIsBot = false;
         if (!socket || !socket.connected) {
             // Queue so reconnect can clear server membership (avoids "already in a match").
-            pendingLeaveRoomId = roomId || pendingLeaveRoomId || '';
+            pendingLeaveRoomId = leaveTarget || pendingLeaveRoomId || '';
             return Promise.resolve({ ok: true, queued: true });
         }
         pendingLeaveRoomId = null;
-        return emitAck('race:leave', roomId || '', 2000).catch(function () {
+        return emitAck('race:leave', leaveTarget, 2000).catch(function () {
             return { ok: true };
+        }).then(function (result) {
+            if (socket && typeof socket.closeRace === 'function') {
+                try { socket.closeRace(); } catch (_) { /* ignore */ }
+            }
+            return result;
         });
     }
 

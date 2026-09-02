@@ -14,6 +14,7 @@ This step deploys a **Cloudflare Worker + Durable Object** for real-time multipl
 | Auth / profiles / friends | Supabase (unchanged) | Supabase (unchanged) |
 
 **Phase A (this step):** public duels, friend challenges, bot races, match join/resume, race progress/cursor.  
+**Dev scaling:** lobby Durable Object (`lobby`) for matchmaking + **one Durable Object per duel** (`room:{roomId}`) for race traffic.  
 **Phase B (later):** custom rooms (`/room`) — not yet on CF.
 
 ---
