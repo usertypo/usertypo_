@@ -248,6 +248,8 @@ export class MultiplayerHub implements DurableObject {
     } else if (payload.kind === 'countdown-tick' && payload.roomId) {
       await this.handleCountdownTick(payload.roomId);
     } else if (payload.kind === 'race-end' && payload.roomId) {
+      this.scheduleAlarm(2000, { kind: 'race-end-finish', roomId: payload.roomId });
+    } else if (payload.kind === 'race-end-finish' && payload.roomId) {
       await this.finishRoomById(payload.roomId, 'time');
     } else if (payload.kind === 'bot-tick' && payload.roomId) {
       await this.handleBotTick(payload.roomId);
@@ -872,8 +874,14 @@ export class MultiplayerHub implements DurableObject {
   }
 
   private purgeStaleListings() {
+    const now = Date.now();
     for (const listing of [...this.listings.values()]) {
-      if (!this.isOnline(listing.ownerUserId) || this.userToRoom.has(listing.ownerUserId)) {
+      if (this.userToRoom.has(listing.ownerUserId)) {
+        this.removeListing(listing.id);
+        continue;
+      }
+      if (!this.isOnline(listing.ownerUserId)) {
+        if (now - listing.createdAt < 8000) continue;
         this.removeListing(listing.id);
       }
     }
@@ -900,7 +908,12 @@ export class MultiplayerHub implements DurableObject {
             && listing.status === 'waiting'
             && listing.key === configKey(config)
           ) {
-            if (!this.isOnline(listing.ownerUserId) || this.userToRoom.has(listing.ownerUserId)) {
+            if (this.userToRoom.has(listing.ownerUserId)) {
+              this.removeListing(listing.id);
+              continue;
+            }
+            if (!this.isOnline(listing.ownerUserId)) {
+              if (Date.now() - listing.createdAt < 8000) continue;
               this.removeListing(listing.id);
               continue;
             }
@@ -1085,6 +1098,44 @@ export class MultiplayerHub implements DurableObject {
         if (!Number.isInteger(totalKeystrokes) || totalKeystrokes < player.totalKeystrokes) {
           throw new Error('invalid_keystrokes');
         }
+        if (Array.isArray(finalStatsPayload)) {
+          if (finalStatsPayload.length >= 6) {
+            const consistency = Number(finalStatsPayload[5]);
+            if (Number.isFinite(consistency)) {
+              if (!player.finalStats) player.finalStats = {};
+              player.finalStats.consistency = Math.max(0, Math.min(100, Math.round(consistency)));
+            }
+          }
+          if (isFinal && finalStatsPayload.length >= 4) {
+            const validChars = Number(finalStatsPayload[0]);
+            const rawChars = Number(finalStatsPayload[1]);
+            const errorsMade = Number(finalStatsPayload[2]);
+            const extraChars = Number(finalStatsPayload[3]);
+            const displaySeconds = Number(finalStatsPayload[4]);
+            if (
+              Number.isFinite(validChars)
+              && Number.isFinite(rawChars)
+              && Number.isFinite(errorsMade)
+              && Number.isFinite(extraChars)
+            ) {
+              const reportedConsistency = finalStatsPayload.length >= 6
+                ? Number(finalStatsPayload[5])
+                : NaN;
+              player.finalStats = {
+                validChars: Math.max(0, Math.floor(validChars)),
+                rawChars: Math.max(0, Math.floor(rawChars)),
+                errorsMade: Math.max(0, Math.floor(errorsMade)),
+                extraChars: Math.max(0, Math.floor(extraChars)),
+                displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
+                  ? Math.floor(displaySeconds)
+                  : undefined,
+                consistency: Number.isFinite(reportedConsistency)
+                  ? Math.max(0, Math.min(100, Math.round(reportedConsistency)))
+                  : player.finalStats?.consistency,
+              };
+            }
+          }
+        }
         player.sequence = sequence;
         player.completedWords = completedWords;
         player.totalKeystrokes = totalKeystrokes;
@@ -1093,35 +1144,6 @@ export class MultiplayerHub implements DurableObject {
         player.accuracy = totalKeystrokes > 0
           ? (player.correctChars / totalKeystrokes) * 100
           : 100;
-        if (finalStatsPayload && finalStatsPayload.length >= 4) {
-          const validChars = Number(finalStatsPayload[0]);
-          const rawChars = Number(finalStatsPayload[1]);
-          const errorsMade = Number(finalStatsPayload[2]);
-          const extraChars = Number(finalStatsPayload[3]);
-          const displaySeconds = Number(finalStatsPayload[4]);
-          const consistency = finalStatsPayload.length >= 6
-            ? Number(finalStatsPayload[5])
-            : NaN;
-          if (
-            Number.isFinite(validChars)
-            && Number.isFinite(rawChars)
-            && Number.isFinite(errorsMade)
-            && Number.isFinite(extraChars)
-          ) {
-            player.finalStats = {
-              validChars: Math.max(0, Math.floor(validChars)),
-              rawChars: Math.max(0, Math.floor(rawChars)),
-              errorsMade: Math.max(0, Math.floor(errorsMade)),
-              extraChars: Math.max(0, Math.floor(extraChars)),
-              displaySeconds: Number.isFinite(displaySeconds) && displaySeconds >= 0
-                ? Math.floor(displaySeconds)
-                : undefined,
-              consistency: Number.isFinite(consistency)
-                ? Math.max(0, Math.min(100, Math.round(consistency)))
-                : undefined,
-            };
-          }
-        }
         const now = Date.now();
         player.snapshots.push([sequence, completedWords, totalKeystrokes, now]);
         if (player.snapshots.length > LIMITS.maxRetainedSnapshots) {

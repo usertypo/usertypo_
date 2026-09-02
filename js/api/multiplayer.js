@@ -335,7 +335,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=2';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=3';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -423,15 +423,17 @@
                 bindSocketEvents(socket);
             }
             if (!socket.active) await socket.connect();
-            await new Promise(function (resolve, reject) {
-                var timeout = nativeSetTimeout(function () {
-                    reject(new Error('Could not connect to the multiplayer server.'));
-                }, 20_000);
-                socket.once('multiplayer:ready', function () {
-                    clearTimeout(timeout);
-                    resolve();
+            if (!readyState) {
+                await new Promise(function (resolve, reject) {
+                    var timeout = nativeSetTimeout(function () {
+                        reject(new Error('Could not connect to the multiplayer server.'));
+                    }, 20_000);
+                    socket.once('multiplayer:ready', function () {
+                        clearTimeout(timeout);
+                        resolve();
+                    });
                 });
-            });
+            }
             return socket;
         })();
         try {

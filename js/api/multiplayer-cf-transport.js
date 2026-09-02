@@ -18,6 +18,7 @@
         var ws = null;
         var connected = false;
         var active = false;
+        var readyStateReceived = false;
         var id = 'cf-' + Math.random().toString(36).slice(2, 10);
         var handlers = Object.create(null);
         var pendingAcks = Object.create(null);
@@ -71,11 +72,21 @@
         }
 
         function connect() {
-            if (active && connected) return Promise.resolve();
+            if (active && connected && readyStateReceived) return Promise.resolve();
             var url = wsBaseUrl();
             if (!url) return Promise.reject(new Error('Multiplayer URL is not configured.'));
             return new Promise(function (resolve, reject) {
+                var settled = false;
+                var connectTimer = null;
+                function finish(err) {
+                    if (settled) return;
+                    settled = true;
+                    if (connectTimer) clearTimeout(connectTimer);
+                    if (err) reject(err);
+                    else resolve();
+                }
                 active = true;
+                readyStateReceived = false;
                 ws = new WebSocket(url);
                 ws.addEventListener('open', function () {
                     connected = true;
@@ -93,19 +104,23 @@
                 });
                 ws.addEventListener('close', function () {
                     connected = false;
+                    readyStateReceived = false;
                     emitLocal('disconnect', 'transport close');
                 });
                 ws.addEventListener('error', function () {
-                    if (!connected) reject(new Error('WebSocket connection failed.'));
+                    if (!connected) finish(new Error('WebSocket connection failed.'));
                     emitLocal('connect_error', new Error('WebSocket error'));
                 });
-                once('multiplayer:ready', function () { resolve(); });
-                setTimeout(function () {
+                once('multiplayer:ready', function () {
+                    readyStateReceived = true;
+                    finish(null);
+                });
+                connectTimer = setTimeout(function () {
                     if (!connected) {
-                        reject(new Error('WebSocket connection timed out.'));
+                        finish(new Error('WebSocket connection timed out.'));
                         return;
                     }
-                    reject(new Error('Multiplayer server did not respond.'));
+                    finish(new Error('Multiplayer server did not respond.'));
                 }, 20_000);
             });
         }
@@ -113,6 +128,7 @@
         function disconnect() {
             active = false;
             connected = false;
+            readyStateReceived = false;
             if (ws) {
                 try { ws.close(); } catch (_) { /* ignore */ }
                 ws = null;

@@ -1348,6 +1348,22 @@
             leaveDual();
         }
 
+        function buildProgressStats(isFinal) {
+            sampleRawHistorySecond();
+            if (isFinal) {
+                var snapshot = computeFinalStats(localFinishTime || Date.now());
+                return [
+                    snapshot.correct,
+                    snapshot.total,
+                    snapshot.errors,
+                    snapshot.extra,
+                    snapshot.time,
+                    snapshot.consistency,
+                ];
+            }
+            return [0, 0, 0, 0, 0, computeConsistencyFromRawHistory(rawHistory)];
+        }
+
         function sendThreeWordPacket(forceFinal) {
             if (state !== 'racing' && state !== 'waiting-result') return;
             if (isLocalBotMatch()) return;
@@ -1360,23 +1376,11 @@
             if (!shouldSend) return;
             var lastQueued = packetQueue.length ? packetQueue[packetQueue.length - 1] : null;
             if (!lastQueued || lastQueued.words !== completedCorrectWords || (forceFinal && !lastQueued.final)) {
-                var finalStats = null;
-                if (forceFinal === true) {
-                    var snapshot = computeFinalStats(localFinishTime || Date.now());
-                    finalStats = [
-                        snapshot.correct,
-                        snapshot.total,
-                        snapshot.errors,
-                        snapshot.extra,
-                        snapshot.time,
-                        snapshot.consistency,
-                    ];
-                }
                 packetQueue.push({
                     words: completedCorrectWords,
                     keystrokes: totalKeystrokes,
                     final: forceFinal === true,
-                    finalStats: finalStats,
+                    finalStats: buildProgressStats(forceFinal === true),
                     attempts: 0,
                 });
             }
@@ -1418,10 +1422,12 @@
             unresolvedError = null;
             errorHistory = [];
             var finalWord = config.mode === 'words' && completedCorrectWords >= config.amount;
-            sendThreeWordPacket(finalWord);
             if (finalWord) {
                 localFinished = true;
                 localFinishTime = Date.now();
+            }
+            sendThreeWordPacket(finalWord);
+            if (finalWord) {
                 state = 'waiting-result';
                 stopCursorSync();
                 if (isLocalBotMatch()) {
@@ -2159,7 +2165,27 @@
                 Math.max(0, wordIndex),
                 Math.max(0, words.length - 1)
             );
-            positionCaretAt(opponentCaret, safeWordIndex, charIndex);
+            var promptLen = (words[safeWordIndex] || '').length;
+            var clampedChar = Math.max(0, Math.min(Math.floor(charIndex), promptLen));
+            var wordElement = document.getElementById('word-' + safeWordIndex);
+            if (!wordElement || !textContainer) return;
+            var isRtl = typeof window.isTypingRTL === 'function' ? window.isTypingRTL() : false;
+            var targetEl = document.getElementById('char-' + safeWordIndex + '-0');
+            var isAfter = false;
+            if (clampedChar > 0) {
+                targetEl = document.getElementById('char-' + safeWordIndex + '-' + (clampedChar - 1));
+                isAfter = true;
+            }
+            if (!targetEl) return;
+            var box = window.getCaretLayoutInContainer
+                ? window.getCaretLayoutInContainer(textContainer, wordElement, targetEl, isAfter, isRtl)
+                : null;
+            if (!box) return;
+            var caretStyle = document.body && document.body.getAttribute('data-caret-style');
+            var width = caretStyle === 'line' ? 2.5 : (targetEl.offsetWidth || box.width || 8);
+            opponentCaret.style.display = 'block';
+            opponentCaret.style.width = width + 'px';
+            opponentCaret.style.transform = 'translate3d(' + box.left + 'px,' + box.top + 'px,0)';
         }
 
         function resetOpponentCaretInstant() {
