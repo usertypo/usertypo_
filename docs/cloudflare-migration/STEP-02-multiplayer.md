@@ -1,174 +1,40 @@
-# Step 2 — Multiplayer on Cloudflare (dev first)
+# Step 2 — Multiplayer on Cloudflare
 
-This step deploys a **Cloudflare Worker + Durable Object** for real-time multiplayer (dual races, friend challenges, bot races).
-
-**Dev:** `usertypo-mp-dev` · **Production:** `usertypo-mp` (duels live).
+Real-time multiplayer runs on a **Cloudflare Worker + Durable Object** (`usertypo-mp` / `usertypo-mp-dev`).
 
 **Scaling:** lobby DO (`lobby`) for matchmaking + **one DO per duel/room** (`room:{roomId}`).
 
----
+Frontend config: `js/config/public.js` → `multiplayer.url` + `transport: 'cf'`.
 
-## What moves where
+## Secrets
 
-| Component | Before (dev) | After (dev) |
-|-----------|--------------|-------------|
-| Multiplayer server | Render `usertypo-dev.onrender.com` | CF Worker `usertypo-mp-dev` |
-| Transport | Socket.IO | Native WebSocket (Socket.IO-compatible client shim) |
-| State | In-memory on Render | Durable Object `MultiplayerHub` |
-| Auth / profiles / friends | Supabase (unchanged) | Supabase (unchanged) |
-
-**Phase A:** public duels, friend challenges, bot races (lobby + 1 DO per duel).  
-**Phase B:** custom rooms (`/room`) — 1 DO per room; opponent WPM via `race:progress` ~500ms (no ghost caret).
-
----
-
-## Part A — Install dependencies
-
-```bash
-cd workers/multiplayer
-npm install
-```
-
-If you are not logged in to Cloudflare yet:
-
-```bash
-npx wrangler login
-npx wrangler whoami
-```
-
----
-
-## Part B — Add secrets (dev worker)
-
-From `workers/multiplayer`, set secrets for the **dev** environment:
-
-### B1 — Clerk (Development)
-
-1. Open [Clerk Dashboard](https://dashboard.clerk.com) → your **Development** instance
-2. **Configure → API Keys** → copy **Secret key** (`sk_test_...`)
+From `workers/multiplayer`:
 
 ```bash
 npx wrangler secret put CLERK_SECRET_KEY --env dev
-```
-
-Paste your dev Clerk secret key.
-
-Optional (if you use JWT verification key):
-
-```bash
-npx wrangler secret put CLERK_JWT_KEY --env dev
-```
-
-### B2 — Supabase (dev project `dzpbkyqsshdruwhffwhw`)
-
-Same keys as Step 1 leaderboards:
-
-```bash
 npx wrangler secret put SUPABASE_URL --env dev
-```
-Paste: `https://dzpbkyqsshdruwhffwhw.supabase.co`
-
-```bash
 npx wrangler secret put SUPABASE_ANON_KEY --env dev
-```
-
-```bash
 npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env dev
 ```
 
----
+Use `--env production` for production.
 
-## Part C — Deploy the dev worker
-
-```bash
-npm run deploy:dev
-```
-
-Or from repo root:
+## Deploy
 
 ```bash
 npm run worker:multiplayer:deploy:dev
+npm run worker:multiplayer:deploy:prod
 ```
 
-Note the deploy URL, e.g.:
+Health: `https://usertypo-mp-dev.usertypo2026.workers.dev/health`  
+WebSocket: `wss://usertypo-mp-dev.usertypo2026.workers.dev/ws`
 
-`https://usertypo-mp-dev.usertypo2026.workers.dev`
+Local: `npm run worker:multiplayer:dev` then set `MULTIPLAYER_SERVER_URL=http://127.0.0.1:8787` in `.env`.
 
-### Health check
-
-Open in browser:
-
-`https://usertypo-mp-dev.usertypo2026.workers.dev/health`
-
-Expected: `{"ok":true,"service":"usertypo-multiplayer-gateway"}`
-
-WebSocket endpoint: `wss://usertypo-mp-dev.usertypo2026.workers.dev/ws`
-
----
-
-## Part D — Frontend config (already in `dev` branch)
-
-`js/config/public.js` staging block should point dev to the CF worker:
-
-```javascript
-cfg.multiplayer = {
-  url: 'https://usertypo-mp-dev.usertypo2026.workers.dev',
-  transport: 'cf',
-};
-```
-
-Push to the **`dev`** branch so Cloudflare Pages rebuilds `dev.usertypo.com`.
-
----
-
-## Part E — Test on dev.usertypo.com
-
-1. Open **https://dev.usertypo.com/multiplayer** (or `/dual`)
-2. Open browser DevTools → **Network** → filter **WS**
-3. You should see a WebSocket to `usertypo-mp-dev...workers.dev/ws`
-4. Test:
-   - **Find a dual** (public listing) — two browsers/accounts
-   - **Play vs bot**
-   - **Challenge a friend** (signed-in users who are friends)
-   - Full race: countdown → typing → results
-
-### If connection fails
-
-- Confirm secrets are set (`wrangler secret list --env dev`)
-- Confirm Clerk **authorized parties** include `https://dev.usertypo.com` (set in `wrangler.toml` vars)
-- Check worker logs: `npx wrangler tail --env dev`
-
----
-
-## Part F — Production (do not run until dev is stable)
-
-When dev multiplayer works for a few days:
-
-1. Set **production** Clerk + Supabase secrets on `--env production`
-2. `npm run deploy:prod`
-3. Update `js/config/public.js` production `multiplayer.url` + `transport: 'cf'`
-4. Merge `dev` → `main`, verify `usertypo.com`
-5. Decommission Render multiplayer (`mp.usertypo.com`) after soak period
-
----
-
-## Files added/changed
+## Files
 
 | Path | Purpose |
 |------|---------|
 | `workers/multiplayer/` | CF Worker + `MultiplayerHub` Durable Object |
-| `js/api/multiplayer-cf-transport.js` | WebSocket client shim (Socket.IO-like API) |
-| `js/api/multiplayer.js` | Auto-selects CF transport when `transport: 'cf'` |
-| `js/config/public.js` | Dev staging points to CF worker |
-
----
-
-## Rollback (dev)
-
-In `js/config/public.js` staging block, revert to Render:
-
-```javascript
-cfg.multiplayer = { url: 'https://usertypo-dev.onrender.com' };
-```
-
-Remove `transport: 'cf'`. Push to `dev`. No worker delete required.
+| `js/api/multiplayer-cf-transport.js` | WebSocket client shim |
+| `js/api/multiplayer.js` | SPA multiplayer client |

@@ -1,5 +1,5 @@
 /**
- * Ephemeral multiplayer Socket.IO client.
+ * Multiplayer client (Cloudflare Workers + Durable Objects).
  * Public API: window.usertypoMultiplayer
  */
 (function () {
@@ -371,14 +371,6 @@
         return id;
     }
 
-    function usesCfTransport() {
-        var cfg = window.USERTYPO_CONFIG || {};
-        var mp = cfg.multiplayer || {};
-        if (mp.transport === 'cf') return true;
-        if (window.usertypoMultiplayerCf && window.usertypoMultiplayerCf.isCloudflareUrl(mp.url)) return true;
-        return false;
-    }
-
     function ensureCfTransport() {
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
@@ -394,42 +386,6 @@
             };
             document.head.appendChild(script);
         });
-    }
-
-    function socketIoClientSrc() {
-        var cfg = window.USERTYPO_CONFIG || {};
-        var base = String(
-            (cfg.multiplayer && cfg.multiplayer.url)
-            || (cfg.backend && cfg.backend.url)
-            || ''
-        ).replace(/\/+$/, '');
-        return (base || '') + '/socket.io/socket.io.js';
-    }
-
-    function ensureSocketIoClient() {
-        if (window.io) return Promise.resolve();
-        var candidates = [socketIoClientSrc(), '/js/socket.io.min.js', '/js/vendor/socket.io.min.js'];
-        var unique = [];
-        candidates.forEach(function (src) {
-            if (src && unique.indexOf(src) === -1) unique.push(src);
-        });
-        return unique.reduce(function (chain, src) {
-            return chain.catch(function () {
-                return new Promise(function (resolve, reject) {
-                    var script = document.createElement('script');
-                    script.src = src;
-                    script.async = true;
-                    script.onload = function () {
-                        if (window.io) resolve();
-                        else reject(new Error('Socket.IO client is not loaded.'));
-                    };
-                    script.onerror = function () {
-                        reject(new Error('Socket.IO client is not loaded.'));
-                    };
-                    document.head.appendChild(script);
-                });
-            });
-        }, Promise.reject(new Error('start')));
     }
 
     async function resolveSocketAuth() {
@@ -481,25 +437,8 @@
             if (!window.usertypoAuth) throw new Error('Authentication is not loaded.');
             await window.usertypoAuth.ready();
             if (!socket) {
-                if (usesCfTransport()) {
-                    await ensureCfTransport();
-                    socket = window.usertypoMultiplayerCf.createSocket({ auth: authPayloadCallback });
-                } else {
-                    await ensureSocketIoClient();
-                    if (!window.io) throw new Error('Socket.IO client is not loaded.');
-                    var url = window.USERTYPO_CONFIG
-                        && window.USERTYPO_CONFIG.multiplayer
-                        && window.USERTYPO_CONFIG.multiplayer.url;
-                    socket = window.io(url || undefined, {
-                        autoConnect: false,
-                        transports: ['websocket', 'polling'],
-                        reconnection: true,
-                        reconnectionAttempts: Infinity,
-                        reconnectionDelay: 500,
-                        reconnectionDelayMax: 4000,
-                        auth: authPayloadCallback,
-                    });
-                }
+                await ensureCfTransport();
+                socket = window.usertypoMultiplayerCf.createSocket({ auth: authPayloadCallback });
                 bindSocketEvents(socket);
             }
             if (!socket.active) await socket.connect();

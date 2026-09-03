@@ -74,7 +74,7 @@ export function configKey(config: RaceConfig): string {
   ].join(':');
 }
 
-/** Wire format expected by the SPA (matches Render socket-server). */
+/** Wire format expected by the SPA. */
 export function serializeConfig(config: RaceConfig): [string, number, string, number, number] {
   return [
     config.mode,

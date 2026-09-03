@@ -28,11 +28,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@clerk/backend": "^3.11.7",
-    "@supabase/supabase-js": "^2.110.7",
-    "express": "^5.2.1",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

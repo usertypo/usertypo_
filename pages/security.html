@@ -162,8 +162,7 @@
                         — the main typing app and static frontend
                     </li>
                     <li>
-                        <a class="security-link" href="https://mp.usertypo.com" target="_blank" rel="noopener noreferrer">mp.usertypo.com</a>
-                        — multiplayer / API and realtime race infrastructure
+                        Cloudflare Workers used for multiplayer (Durable Objects) and leaderboards
                     </li>
                     <li>
                         Authentication and session handling (via Clerk), including account takeover paths
@@ -176,7 +175,7 @@
                     </li>
                     <li>
                         Server-side request issues, broken access control, injection, or privilege escalation
-                        in our APIs and Edge Functions
+                        in our Workers and APIs
                     </li>
                     <li>
                         Exposure of secret credentials (service-role keys, secret API keys, private tokens)
@@ -217,7 +216,7 @@
                         unless you can demonstrate a practical bypass with real impact
                     </li>
                     <li>
-                        Issues in third-party services (Clerk, Supabase, Cloudflare, Upstash, and similar)
+                        Issues in third-party services (Clerk, Supabase, Cloudflare, and similar)
                         that are outside our control — please report those to the provider when appropriate
                     </li>
                     <li>
@@ -249,13 +248,13 @@
                     </li>
                     <li>
                         <strong class="text-slate-200 font-semibold">Edge &amp; hosting.</strong>
-                        The frontend is served through Cloudflare. Multiplayer and API traffic run on
-                        our backend service with origin and CORS controls.
+                        The frontend is served through Cloudflare Pages. Multiplayer and leaderboards
+                        run on Cloudflare Workers with origin and CORS controls.
                     </li>
                     <li>
                         <strong class="text-slate-200 font-semibold">Leaderboards.</strong>
-                        Leaderboard writes go through controlled paths (including Edge Functions and
-                        Redis caching) rather than exposing raw admin credentials to the browser.
+                        Leaderboard writes go through a Cloudflare Worker (Postgres) rather than
+                        exposing raw admin credentials to the browser.
                     </li>
                 </ul>
                 <p class="mt-3 text-sm text-slate-400">

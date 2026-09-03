@@ -35,7 +35,6 @@ Do **not** put any of the following in issues, PR descriptions, screenshots, or 
 
 - Clerk secret keys (`sk_…`)
 - Supabase `service_role` keys
-- Upstash Redis tokens
 - Resend / Web3Forms / other API keys
 - Real `.env` files
 

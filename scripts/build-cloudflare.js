@@ -15,10 +15,11 @@ const SKIP_DIR_NAMES = new Set([
     '.cursor',
     'node_modules',
     'dist',
-    'multiplayer',
     'scripts',
     'test',
     'supabase',
+    'workers',
+    'docs',
     'agent-tools',
     'agent-transcripts',
 ]);
@@ -74,13 +75,6 @@ function main() {
     rimraf(DIST);
     fs.mkdirSync(DIST, { recursive: true });
     copyDir(ROOT, DIST);
-
-    const vendorSrc = path.join(ROOT, 'js', 'vendor', 'socket.io.min.js');
-    const socketOut = path.join(DIST, 'js', 'socket.io.min.js');
-    if (fs.existsSync(vendorSrc)) {
-        fs.mkdirSync(path.dirname(socketOut), { recursive: true });
-        fs.copyFileSync(vendorSrc, socketOut);
-    }
 
     const indexHtml = path.join(DIST, 'index.html');
     if (!fs.existsSync(indexHtml)) {

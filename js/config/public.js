@@ -10,9 +10,9 @@
  * Architecture:
  * - Website: https://usertypo.com (Cloudflare Pages)
  * - Dev site: https://dev.usertypo.com (Pages `dev` branch → separate Supabase + CF workers)
- * - Multiplayer: Cloudflare Workers + Durable Objects (duels); custom rooms Phase B
- * - Backend (/api/* still on Render where needed): https://mp.usertypo.com
- * - Local `npm run dev`: blank backend URLs → same-origin Express
+ * - Multiplayer: Cloudflare Workers + Durable Objects
+ * - Leaderboards: Cloudflare Worker + Supabase Postgres
+ * - Local `npm run dev`: same public URLs, or MULTIPLAYER_SERVER_URL / LEADERBOARDS_WORKER_URL in `.env`
  */
 window.USERTYPO_CONFIG = {
     clerk: {
@@ -28,6 +28,8 @@ window.USERTYPO_CONFIG = {
             'https://usertypo.com',
             'https://www.usertypo.com',
             'https://dev.usertypo.com',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
         ],
     },
     supabase: {
@@ -36,16 +38,10 @@ window.USERTYPO_CONFIG = {
         publishableKey: 'sb_publishable_NvfpUKNOtSQ8KuIP1H-JkA_ZriwgB72',
         anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZWJvc2VwZWRheG52Y2FpemthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMjc5MDEsImV4cCI6MjA5OTYwMzkwMX0.OhFRFJQfzlL3DJJXtv-lKWZYDWnrkJ5cQhu3dwduDFI',
     },
-    // Render backend host (no trailing slash). Blank on localhost / onrender.com.
-    backend: {
-        url: 'https://mp.usertypo.com',
-    },
     multiplayer: {
-        // Cloudflare Durable Objects (lobby + 1 DO per duel). Custom rooms: Phase B.
         url: 'https://usertypo-mp.usertypo2026.workers.dev',
         transport: 'cf',
     },
-    // Cloudflare Leaderboards Worker (Postgres — no Upstash).
     leaderboards: {
         url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
     },
@@ -82,13 +78,13 @@ window.USERTYPO_CONFIG = {
             'https://dev.usertypo.com',
             'https://dev.usertypo.pages.dev',
             'http://localhost:3000',
+            'http://127.0.0.1:3000',
         ];
         cfg.supabase = {
             url: 'https://dzpbkyqsshdruwhffwhw.supabase.co',
             publishableKey: 'sb_publishable_nnRcpE_zT8Vtv0Z4MNTBKw_TqJhGC10',
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM',
         };
-        cfg.backend = { url: 'https://usertypo-dev.onrender.com' };
         cfg.multiplayer = {
             url: 'https://usertypo-mp-dev.usertypo2026.workers.dev',
             transport: 'cf',
@@ -103,21 +99,9 @@ window.USERTYPO_CONFIG = {
         cfg.environment = 'staging';
     }
 
-    // Staging: Clerk Development + dev Supabase + Cloudflare leaderboards Worker.
     if (isStagingHost(host)) {
         applyStagingConfig();
-        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase + CF leaderboards');
-    }
-
-    // Same-origin hosts: leave blank so Socket.IO uses this page's origin.
-    if (
-        host === 'localhost'
-        || host === '127.0.0.1'
-        || host === 'usertypo.onrender.com'
-        || host === 'usertypo-dev.onrender.com'
-    ) {
-        if (cfg.backend) cfg.backend.url = '';
-        if (cfg.multiplayer) cfg.multiplayer.url = '';
+        console.info('[usertypo] staging environment:', host, '→ Clerk Development + usertypo-dev Supabase + CF workers');
     }
 
     function syncLeaderboardsNavVisibility() {

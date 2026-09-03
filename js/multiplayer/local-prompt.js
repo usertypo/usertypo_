@@ -1,6 +1,5 @@
 /**
  * Client-side prompt generation for offline bot duals.
- * Mirrors multiplayer/prompt.js without Node dependencies.
  */
 (function () {
     'use strict';

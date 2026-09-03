@@ -1,5 +1,5 @@
 /**
- * Leaderboard helpers — prefer Upstash Redis via Edge Function, fall back to Postgres RPC.
+ * Leaderboard helpers — Cloudflare Worker (Postgres), with RPC fallback.
  * Public API: window.usertypoLeaderboards
  */
 (function () {
@@ -15,8 +15,6 @@
         'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
         'bg-teal-500/20 text-teal-400 border-teal-500/30',
     ];
-
-    var edgeLeaderboardsAvailable = null; // null unknown, true/false after first probe
 
     function leaderboardsFeatureEnabled() {
         var features = window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.features;
@@ -279,7 +277,7 @@
         return list;
     }
 
-    /** Redis top lists may omit country_code until the edge function is redeployed. */
+    /** Fill country_code when a board row omits it. */
     async function enrichMissingCountryCodes(entries) {
         if (!entries || !entries.length || !window.usertypoDb) return;
         var missingIds = [];
@@ -346,14 +344,6 @@
         return window.usertypoDb.getClient();
     }
 
-    function getSupabasePublicConfig() {
-        var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.supabase) || {};
-        return {
-            url: cfg.url || '',
-            key: cfg.anonKey || cfg.publishableKey || '',
-        };
-    }
-
     function getLeaderboardApiUrl() {
         var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.leaderboards) || {};
         return String(cfg.url || '').replace(/\/+$/, '');
@@ -365,13 +355,8 @@
         }
 
         var workerUrl = getLeaderboardApiUrl();
-        if (!workerUrl && edgeLeaderboardsAvailable === false) {
-            return { ok: false, status: 503, data: { error: 'REDIS_NOT_CONFIGURED' } };
-        }
-
-        var cfg = getSupabasePublicConfig();
-        if (!workerUrl && (!cfg.url || !cfg.key)) {
-            return { ok: false, status: 0, data: { error: 'missing_supabase_config' } };
+        if (!workerUrl) {
+            return { ok: false, status: 503, data: { error: 'LEADERBOARDS_NOT_CONFIGURED' } };
         }
 
         var headers = {
@@ -394,15 +379,7 @@
             } catch (e) { /* ignore */ }
         }
 
-        var endpoint = workerUrl || (cfg.url + '/functions/v1/leaderboards');
-        if (!workerUrl) {
-            headers.apikey = cfg.key;
-            if (!headers.Authorization) {
-                headers.Authorization = 'Bearer ' + cfg.key;
-            }
-        }
-
-        var res = await fetch(endpoint, {
+        var res = await fetch(workerUrl, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(payload),
@@ -413,12 +390,6 @@
             data = await res.json();
         } catch (e) {
             data = { error: 'invalid_response' };
-        }
-
-        if (res.status === 503 && data && data.error === 'REDIS_NOT_CONFIGURED') {
-            edgeLeaderboardsAvailable = false;
-        } else if (res.ok && data && (data.source === 'redis' || data.source === 'postgres')) {
-            edgeLeaderboardsAvailable = true;
         }
 
         return { ok: res.ok, status: res.status, data: data };
@@ -507,7 +478,7 @@
         }
 
         try {
-            var redisResult = await callLeaderboardFunction({
+            var workerResult = await callLeaderboardFunction({
                 action: 'top',
                 mode: mode,
                 amount: amount,
@@ -515,8 +486,8 @@
                 limit: limit,
             }, false);
 
-            if (redisResult.ok && redisResult.data && Array.isArray(redisResult.data.entries)) {
-                var entries = await finalizeEntries(redisResult.data.entries.map(mapEntry));
+            if (workerResult.ok && workerResult.data && Array.isArray(workerResult.data.entries)) {
+                var entries = await finalizeEntries(workerResult.data.entries.map(mapEntry));
                 return {
                     entries: entries,
                     mode: mode,
@@ -524,11 +495,11 @@
                     timeframe: timeframe,
                     limit: limit,
                     scope: 'global',
-                    source: redisResult.data.source === 'postgres' ? 'postgres' : 'redis',
+                    source: workerResult.data.source || 'postgres',
                 };
             }
         } catch (err) {
-            console.warn('[usertypo leaderboards] edge top failed, using postgres', err);
+            console.warn('[usertypo leaderboards] worker top failed, using postgres', err);
         }
 
         return getLeaderboardFromPostgres({ mode: mode, amount: amount, timeframe: timeframe, limit: limit });
@@ -619,7 +590,7 @@
 
     /**
      * Resolve rank by scanning the same top list the leaderboards page renders.
-     * Tries Redis first, then Postgres, so a Redis miss still finds Postgres ranks.
+     * Tries the worker first, then Postgres RPC.
      */
     async function findMyRankOnBoard(options) {
         var mode = normalizeMode(options && options.mode);
@@ -644,16 +615,16 @@
         }
 
         try {
-            var redisBoard = await getLeaderboard({
+            var workerBoard = await getLeaderboard({
                 mode: mode,
                 amount: amount,
                 timeframe: timeframe,
                 limit: 100,
             });
-            var fromRedis = await scan(redisBoard);
-            if (fromRedis) return fromRedis;
+            var fromWorker = await scan(workerBoard);
+            if (fromWorker) return fromWorker;
         } catch (err) {
-            console.warn('[usertypo leaderboards] redis board-scan failed', err);
+            console.warn('[usertypo leaderboards] worker board-scan failed', err);
         }
 
         try {
@@ -769,29 +740,29 @@
             console.warn('[usertypo leaderboards] board-scan rank failed', err);
         }
 
-        // 2) Dedicated Redis rank endpoint (works beyond the visible top list).
+        // 2) Dedicated worker rank endpoint (works beyond the visible top list).
         try {
-            var redisResult = await callLeaderboardFunction({
+            var workerResult = await callLeaderboardFunction({
                 action: 'rank',
                 mode: mode,
                 amount: amount,
                 timeframe: timeframe,
             }, true);
 
-            if (redisResult.ok && redisResult.data && redisResult.data.source === 'redis') {
-                var redisRank = redisResult.data.rank == null ? null : Number(redisResult.data.rank);
-                if (redisRank != null && isFinite(redisRank) && redisRank > 0) {
+            if (workerResult.ok && workerResult.data) {
+                var workerRank = workerResult.data.rank == null ? null : Number(workerResult.data.rank);
+                if (workerRank != null && isFinite(workerRank) && workerRank > 0) {
                     return {
-                        rank: redisRank,
-                        wpm: redisResult.data.wpm == null ? null : Number(redisResult.data.wpm),
-                        accuracy: redisResult.data.accuracy == null ? null : Number(redisResult.data.accuracy),
-                        totalPlayers: redisResult.data.totalPlayers == null ? 0 : Number(redisResult.data.totalPlayers),
-                        source: 'redis',
+                        rank: workerRank,
+                        wpm: workerResult.data.wpm == null ? null : Number(workerResult.data.wpm),
+                        accuracy: workerResult.data.accuracy == null ? null : Number(workerResult.data.accuracy),
+                        totalPlayers: workerResult.data.totalPlayers == null ? 0 : Number(workerResult.data.totalPlayers),
+                        source: workerResult.data.source || 'postgres',
                     };
                 }
             }
         } catch (err) {
-            console.warn('[usertypo leaderboards] redis rank failed, using postgres', err);
+            console.warn('[usertypo leaderboards] worker rank failed, using postgres', err);
         }
 
         // 3) Postgres RPC — full board, not capped at top 100.
@@ -821,8 +792,7 @@
     }
 
     /**
-     * Push a qualifying score into Redis (non-blocking helper for sessions.js).
-     * Safe no-op when Redis is not configured.
+     * Push a qualifying score into the leaderboard worker (non-blocking helper for sessions.js).
      */
     async function ingestScore(session) {
         if (!leaderboardsFeatureEnabled()) {
@@ -846,8 +816,8 @@
             }, true);
 
             if (!result.ok) {
-                if (result.data && result.data.error === 'REDIS_NOT_CONFIGURED') {
-                    return { skipped: true, reason: 'redis_not_configured' };
+                if (result.data && result.data.error === 'LEADERBOARDS_NOT_CONFIGURED') {
+                    return { skipped: true, reason: 'leaderboards_not_configured' };
                 }
                 console.warn('[usertypo leaderboards] ingest failed', result.data);
                 return { skipped: true, reason: 'ingest_failed', details: result.data };
@@ -861,7 +831,7 @@
     }
 
     /**
-     * After profiles.show_on_leaderboard changes, sync Redis membership.
+     * After profiles.show_on_leaderboard changes, sync leaderboard membership.
      * Opt-out removes the user from boards; opt-in reseeds bests from Postgres.
      */
     async function syncVisibility(showOnLeaderboard) {

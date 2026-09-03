@@ -3,24 +3,23 @@
 A modern typing-test web app with profiles, friends, leaderboards, and real-time multiplayer races.
 
 **Live site:** [https://usertypo.com](https://usertypo.com)  
-**Multiplayer / API:** [https://mp.usertypo.com](https://mp.usertypo.com)  
 **Repository:** [https://github.com/usertypo/usertypo](https://github.com/usertypo/usertypo)
 
 License: [AGPLv3](./LICENSE)
 
-> **For the site owner:** Making this repository public lets anyone **read and fork** the code. It does **not** let strangers push to `main`, change your Cloudflare/Render deploy, or access your database, Redis, or Clerk users. Other people can only propose changes by opening a Pull Request, which you can accept or reject.
+> **For the site owner:** Making this repository public lets anyone **read and fork** the code. It does **not** let strangers push to `main`, change your Cloudflare deploy, or access your database or Clerk users. Other people can only propose changes by opening a Pull Request, which you can accept or reject.
 
 ## Architecture
 
 | Layer | Host | Role |
 |-------|------|------|
 | Static frontend (SPA) | Cloudflare Pages | HTML/CSS/JS at usertypo.com |
-| Backend + Socket.IO | Render | Auth-backed API, multiplayer at mp.usertypo.com |
-| Database + Edge Functions | Supabase | Postgres, RLS, leaderboard Edge Function |
-| Leaderboard cache | Upstash Redis | Sorted sets via Edge Function only |
+| Multiplayer | Cloudflare Workers + Durable Objects | Real-time races (`usertypo-mp`) |
+| Leaderboards | Cloudflare Worker + Supabase Postgres | Rankings (`usertypo-leaderboards`) |
+| Database | Supabase | Postgres, RLS |
 | Auth | Clerk | Sign-in / sessions |
 
-Publishable/anon keys in `js/config/public.js` are safe to ship in the browser (and in a public repo). **Secret** keys (`sk_…`, `service_role`, Upstash tokens) stay only in Render / Supabase Edge / Clerk dashboards — never in committed files.
+Publishable/anon keys in `js/config/public.js` are safe to ship in the browser (and in a public repo). **Secret** keys (`sk_…`, `service_role`) stay only in Cloudflare Worker secrets / Clerk dashboards — never in committed files.
 
 ## Local setup
 
@@ -30,40 +29,42 @@ Publishable/anon keys in `js/config/public.js` are safe to ship in the browser (
 npm ci
 ```
 
-2. Copy `.env.example` → `.env` and fill in your own Clerk / Supabase / multiplayer values (placeholders only in the example file).
+2. Copy `.env.example` → `.env` and fill in your own Clerk / Supabase values (placeholders only in the example file).
 
-3. Run the local server:
+3. Run the local static server:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Multiplayer and leaderboards use the Cloudflare workers in `js/config/public.js` unless you override `MULTIPLAYER_SERVER_URL` / `LEADERBOARDS_WORKER_URL`. To run workers locally: `npm run worker:multiplayer:dev` and `npm run worker:leaderboards:dev`.
 
 Useful scripts:
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` / `npm start` | Express + Socket.IO app |
+| `npm run dev` / `npm start` | Local Express static SPA + `/api/geo` |
 | `npm run build:pages` | Rebuild `js/page-fragments.js` from `pages/` |
 | `npm run build:cloudflare` | Build static `dist/` for Cloudflare Pages |
 | `npm test` | Node test suite |
+| `npm run worker:multiplayer:deploy:dev` | Deploy multiplayer worker (dev) |
+| `npm run worker:leaderboards:deploy:dev` | Deploy leaderboards worker (dev) |
 
 ## Environment variables (names only)
 
 | Name | Where | Secret? |
 |------|-------|---------|
 | `CLERK_PUBLISHABLE_KEY` | Browser / `.env` | No |
-| `CLERK_SECRET_KEY` | Render | **Yes** |
-| `SUPABASE_URL` | Browser + server | No (URL) |
+| `CLERK_SECRET_KEY` | Cloudflare Worker secrets | **Yes** |
+| `SUPABASE_URL` | Browser + workers | No (URL) |
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY` | Browser | No |
-| `SUPABASE_SERVICE_ROLE_KEY` | Render / Edge | **Yes** |
-| `ALLOWED_ORIGINS` | Render | No |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Supabase Edge secrets | **Yes** |
-| `WEB3FORMS_ACCESS_KEY` / `RESEND_API_KEY` | Server (optional contact) | **Yes** |
-| `SELF_PING_ENABLED` / `SELF_PING_URL` | Render keep-awake | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | Cloudflare Worker secrets | **Yes** |
+| `ALLOWED_ORIGINS` | Worker `wrangler.toml` | No |
+| `MULTIPLAYER_SERVER_URL` | Local `.env` override | No |
+| `LEADERBOARDS_WORKER_URL` | Local `.env` override | No |
+| `WEB3FORMS_ACCESS_KEY` / `RESEND_API_KEY` | Optional contact | **Yes** |
 
-See `.env.example` and `supabase/LEADERBOARDS_REDIS.md` for setup details.
+See `.env.example` for setup details.
 
 ## Ads
 

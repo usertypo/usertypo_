@@ -1,4 +1,4 @@
-/** WPM consistency (kogasa-style) from progress snapshots — matches Render socket-server. */
+/** WPM consistency (kogasa-style) from progress snapshots. */
 export function computeConsistencyFromSnapshots(
   snapshots: Array<[number, number, number, number]>,
 ): number {

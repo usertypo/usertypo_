@@ -307,26 +307,26 @@
     }
 
     /**
-     * Update leaderboard privacy preference in Postgres, then sync Redis.
+     * Update leaderboard privacy preference in Postgres, then sync the worker.
      */
     async function setShowOnLeaderboard(enabled) {
         var show = !!enabled;
         var profile = await updateMyProfileFields({ show_on_leaderboard: show });
 
-        var redisSync = null;
+        var visibilitySync = null;
         if (window.usertypoLeaderboards && typeof window.usertypoLeaderboards.syncVisibility === 'function') {
-            redisSync = await window.usertypoLeaderboards.syncVisibility(show);
+            visibilitySync = await window.usertypoLeaderboards.syncVisibility(show);
         }
 
         console.info(
             '[usertypo profiles] show_on_leaderboard =',
             show,
-            redisSync && redisSync.ok ? '(redis synced)' : '(redis sync skipped/failed)'
+            visibilitySync && visibilitySync.ok ? '(worker synced)' : '(worker sync skipped/failed)'
         );
 
         return {
             profile: profile,
-            redisSync: redisSync,
+            visibilitySync: visibilitySync,
         };
     }
 

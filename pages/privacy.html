@@ -259,19 +259,9 @@
                                 <td>Database and backend storage</td>
                             </tr>
                             <tr>
-                                <td>Upstash Redis</td>
-                                <td>Leaderboard scores and related cache keys</td>
-                                <td>Performance caching</td>
-                            </tr>
-                            <tr>
                                 <td>Cloudflare</td>
-                                <td>IP address, request metadata, security/CDN logs; may set cookies such as <code class="text-slate-300">__cf_bm</code> / <code class="text-slate-300">cf_clearance</code> when proxied through Cloudflare</td>
-                                <td>Website hosting, CDN, and network security</td>
-                            </tr>
-                            <tr>
-                                <td>Multiplayer realtime infrastructure</td>
-                                <td>Connection metadata, room/race participation data</td>
-                                <td>WebSocket multiplayer races and validation</td>
+                                <td>IP address, request metadata, security/CDN logs; may set cookies such as <code class="text-slate-300">__cf_bm</code> / <code class="text-slate-300">cf_clearance</code> when proxied through Cloudflare; connection metadata and room/race participation for multiplayer</td>
+                                <td>Website hosting, CDN, Workers, Durable Objects, and network security</td>
                             </tr>
                             <tr>
                                 <td>Google Analytics 4</td>
@@ -298,7 +288,6 @@
                     <li><a class="privacy-link" href="https://clerk.com/legal/privacy" target="_blank" rel="noopener noreferrer">Clerk Privacy Policy</a></li>
                     <li><a class="privacy-link" href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Supabase Privacy Policy</a></li>
                     <li><a class="privacy-link" href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare Privacy Policy</a></li>
-                    <li><a class="privacy-link" href="https://upstash.com/trust/privacy.pdf" target="_blank" rel="noopener noreferrer">Upstash Privacy Policy</a></li>
                     <li><a class="privacy-link" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a></li>
                 </ul>
                 <p class="mt-4">
@@ -468,7 +457,7 @@
                 <p class="mb-3">
                     Your information may be processed in countries where our service providers operate.
                     For example, our database provider (Supabase) stores data in the European Union
-                    (Stockholm region), while providers such as Clerk, Google, Cloudflare, and Upstash
+                    (Stockholm region), while providers such as Clerk, Google, and Cloudflare
                     may process data in the United States or other locations. Because the Service is
                     operated under Indian law, some data may also be processed in connection with that
                     jurisdiction.

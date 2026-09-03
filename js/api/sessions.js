@@ -80,8 +80,7 @@
             payload.failed ? '(failed)' : (inserted.data && inserted.data.is_pb ? '(PB)' : '')
         );
 
-        // Rankings via Cloudflare Worker (Postgres) when configured; otherwise Postgres RPC fallback.
-        // Staging (dev.usertypo.com) uses the dev Worker — no Upstash Redis.
+        // Rankings via Cloudflare Worker (Postgres).
         var leaderboardsEnabled = !(
             window.USERTYPO_CONFIG
             && window.USERTYPO_CONFIG.features
@@ -97,14 +96,14 @@
             window.usertypoLeaderboards.ingestScore(inserted.data).then(function (ingest) {
                 if (ingest && !ingest.skipped) {
                     console.info(
-                        '[usertypo leaderboards] redis ingest',
+                        '[usertypo leaderboards] ingest',
                         ingest.updated ? 'updated' : 'unchanged',
                         payload.mode + ' ' + payload.amount,
                         payload.wpm + ' wpm'
                     );
                 }
             }).catch(function (err) {
-                console.warn('[usertypo leaderboards] redis ingest failed', err);
+                console.warn('[usertypo leaderboards] ingest failed', err);
             });
         }
 

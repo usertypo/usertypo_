@@ -1,8 +1,7 @@
 /**
- * usertypo_ Leaderboards Worker — Postgres-only (Supabase RPCs).
- * Replaces the Supabase Edge Function + Upstash Redis stack.
+ * usertypo_ Leaderboards Worker — Postgres via Supabase RPCs.
  *
- * POST JSON actions (same contract as the old edge function):
+ * POST JSON actions:
  *   { action: "top", mode, amount, timeframe, limit }
  *   { action: "rank", mode, amount, timeframe }
  *   { action: "ingest", session_id }

@@ -94,10 +94,6 @@
         try {
             var result = await window.usertypoLeaderboards.syncVisibility(false);
             if (result && result.ok) return { ok: true, data: result.data || null };
-            // Postgres-only mode (no Redis) still counts as cleaned for app data.
-            if (result && result.data && result.data.redis === 'skipped') {
-                return { ok: true, skipped: true, data: result.data };
-            }
             if (required) throw new Error('leaderboard_purge_failed');
             return { ok: false, details: result };
         } catch (err) {
@@ -407,7 +403,7 @@
 
         var client = await window.usertypoDb.getClient();
 
-        // Must clear Redis before deleting the profile (visibility sync needs the profile JWT path).
+        // Visibility sync needs a live profile JWT path before the row is deleted.
         await purgeLeaderboards({ required: true });
 
         var result = await client.rpc('delete_my_account_data');
