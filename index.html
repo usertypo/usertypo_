@@ -5,6 +5,15 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <!-- Ezoic Step 2: privacy CMP must load before header scripts (data-cfasync required on Cloudflare) -->
+    <script data-cfasync="false" src="https://cmp.gatekeeperconsent.com/min.js"></script>
+    <script data-cfasync="false" src="https://the.gatekeeperconsent.com/cmp.min.js"></script>
+    <script async src="https://www.ezojs.com/ezoic/sa.min.js" data-usertypo-ezoic></script>
+    <script>
+    window.ezstandalone = window.ezstandalone || {};
+    window.ezstandalone.cmd = window.ezstandalone.cmd || [];
+    </script>
+    <script src="https://ezoicanalytics.com/analytics.js"></script>
     <!-- Boot overlay: first-paint full-screen cover (text injected centered by JS ? no FOUC) -->
     <style id="usertypo-boot-overlay-critical">
         #spa-boot-overlay {
@@ -69,12 +78,6 @@
 
     <!-- Google AdSense account meta only ? script loads after idle to avoid blocking first paint -->
     <meta name="google-adsense-account" content="ca-pub-4215657077722335">
-    <!-- Ezoic Incubator / JS integration (required for Connect Your Site) -->
-    <script async src="https://www.ezojs.com/ezoic/sa.min.js" data-usertypo-ezoic></script>
-    <script>
-    window.ezstandalone = window.ezstandalone || {};
-    window.ezstandalone.cmd = window.ezstandalone.cmd || [];
-    </script>
     <script>
     (function loadAdSenseWhenIdle() {
         function inject() {
