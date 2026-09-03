@@ -76,26 +76,7 @@
         content="Free online typing test by usertypo_. Track WPM and accuracy, climb leaderboards, and race friends in real-time multiplayer." />
     <meta name="twitter:image" content="https://usertypo.com/og-image.png" />
 
-    <!-- Google AdSense account meta only ? script loads after idle to avoid blocking first paint -->
-    <meta name="google-adsense-account" content="ca-pub-4215657077722335">
-    <script>
-    (function loadAdSenseWhenIdle() {
-        function inject() {
-            if (document.querySelector('script[data-usertypo-adsense]')) return;
-            var s = document.createElement('script');
-            s.async = true;
-            s.dataset.usertypoAdsense = '1';
-            s.crossOrigin = 'anonymous';
-            s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4215657077722335';
-            document.head.appendChild(s);
-        }
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(inject, { timeout: 4000 });
-        } else {
-            setTimeout(inject, 2500);
-        }
-    })();
-    </script>
+    <!-- AdSense removed: Ezoic manages all ad networks (inc. AdSense) via its platform -->
 
     <base href="/" />
     <script>window.__usertypoBootPath = window.location.pathname;</script>
