@@ -2,8 +2,6 @@
 
 Leaderboards are served by a **Cloudflare Worker** using **Supabase Postgres** (`usertypo-leaderboards` / `usertypo-leaderboards-dev`).
 
-Leaderboards are served by a **Cloudflare Worker** using **Supabase Postgres** (`usertypo-leaderboards` / `usertypo-leaderboards-dev`).
-
 Frontend config: `js/config/public.js` → `leaderboards.url`.
 
 ## Deploy

@@ -10,4 +10,4 @@ usertypo_ runs entirely on Cloudflare, with Clerk for auth and Supabase for Post
 | Database | Supabase Postgres | Profiles, sessions, friends, RLS |
 | Auth | Clerk | Sign-in / sessions |
 
-Deploy notes: [leaderboards](./cloudflare-migration/STEP-01-leaderboards.md) · [multiplayer](./cloudflare-migration/STEP-02-multiplayer.md)
+Worker notes: [leaderboards](./workers/leaderboards.md) · [multiplayer](./workers/multiplayer.md)

@@ -7,6 +7,7 @@ Thanks for helping improve usertypo_.
 1. Fork the repo on GitHub, then clone **your** fork.
 2. Copy `.env.example` to `.env` and use **your own** Clerk/Supabase projects for local work. Do not ask maintainers for production secret keys.
 3. Run `npm ci` then `npm run dev`.
+4. Optional local workers: `npm run worker:multiplayer:dev` and `npm run worker:leaderboards:dev`.
 
 ## Making changes
 
