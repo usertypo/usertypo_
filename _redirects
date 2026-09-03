@@ -5,6 +5,9 @@
 # Do NOT add `/* /index.html 200` — that fights Pages SPA/404 behavior.
 # https://developers.cloudflare.com/pages/configuration/serving-pages/
 # https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# /ads.txt is served by functions/ads.txt.js (Ezoic managed file with AdSense fallback).
+# Do not 301 /ads.txt to Ezoic while their URL still 404s — that would break AdSense.
 
 # Invite links (same behavior as Express /join/:code)
 /join/:code       /room?code=:code       302

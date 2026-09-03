@@ -55,6 +55,9 @@ window.USERTYPO_CONFIG = {
     ads: {
         // Google AdSense publisher client. Ad units wired after approval.
         adsenseClient: 'ca-pub-4215657077722335',
+        // Ezoic Incubator / JS connection (sa.min.js loaded from index.html).
+        ezoicEnabled: true,
+        ezoicAdsTxtUrl: 'https://srv.adstxtmanager.com/19390/usertypo.com',
     },
 };
 
@@ -95,7 +98,10 @@ window.USERTYPO_CONFIG = {
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;
         if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
-        if (cfg.ads) cfg.ads.adsenseClient = '';
+        if (cfg.ads) {
+            cfg.ads.adsenseClient = '';
+            cfg.ads.ezoicEnabled = false;
+        }
         cfg.environment = 'staging';
     }
 
