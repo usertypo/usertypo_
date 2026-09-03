@@ -1545,7 +1545,7 @@ if ('scrollRestoration' in history) {
                     }
 
                     var user = state.user;
-                    var fallbackName = user.username || user.fullName || user.firstName || 'Player';
+                    var fallbackName = user.username || 'Player';
                     var fallbackAvatar = (user.hasImage === true && user.imageUrl) ? user.imageUrl : null;
                     apply(fallbackName, fallbackAvatar, '');
 
@@ -1554,7 +1554,7 @@ if ('scrollRestoration' in history) {
                         window.__USERTYPO_PROFILE__ = profile;
                         if (profile) {
                             apply(
-                                profile.username || profile.display_name || fallbackName,
+                                profile.username || fallbackName,
                                 profile.avatar_url || fallbackAvatar,
                                 profile.public_id || ''
                             );

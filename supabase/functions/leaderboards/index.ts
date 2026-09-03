@@ -257,7 +257,7 @@ async function hydrateProfiles(userIds: string[]) {
   for (const row of result.data || []) {
     const rawCode = row.country_code ? String(row.country_code).trim().toUpperCase() : "";
     map.set(row.user_id, {
-      username: row.username || row.display_name || "Player",
+      username: row.username || "Player",
       avatar_url: row.avatar_url || null,
       show_on_leaderboard: row.show_on_leaderboard !== false,
       country_code: /^[A-Z]{2}$/.test(rawCode) ? rawCode : null,

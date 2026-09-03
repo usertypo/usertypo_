@@ -520,12 +520,12 @@
                     return '<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">' +
                         playerAvatarHtml({
                             avatarUrl: friend.avatar_url,
-                            name: friend.username || friend.display_name || 'Friend',
+                            name: friend.username || 'Friend',
                             level: friend.level,
                             percentToNext: friend.percent_to_next != null ? friend.percent_to_next : friend.percentToNext,
                             userId: friend.user_id,
                         }, 'sm') +
-                        '<span class="flex-1 text-sm font-semibold text-on-surface truncate">' + escapeHtml(friend.username || friend.display_name || 'Friend') + '</span>' +
+                        '<span class="flex-1 text-sm font-semibold text-on-surface truncate">' + escapeHtml(friend.username || 'Friend') + '</span>' +
                         '<button type="button" class="room-invite-friend-btn text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all ' +
                             (invited
                                 ? 'bg-white/5 text-slate-500 border-white/10 cursor-default'

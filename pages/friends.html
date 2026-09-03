@@ -645,7 +645,7 @@ window.__spaPageInit = function() {
             }
 
             function displayName(profile) {
-                return profile.username || profile.display_name || profile.public_id || 'Unknown';
+                return profile.username || profile.public_id || 'Unknown';
             }
 
             function formatPublicId(profile) {
@@ -1086,7 +1086,6 @@ window.__spaPageInit = function() {
                                     created_at: new Date().toISOString(),
                                     user_id: user.user_id,
                                     username: user.username,
-                                    display_name: user.display_name,
                                     avatar_url: user.avatar_url,
                                     level: user.level,
                                     percent_to_next: user.percent_to_next != null ? user.percent_to_next : user.percentToNext,

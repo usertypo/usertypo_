@@ -47,8 +47,8 @@
         return {
             userId: raw.user_id,
             publicId: raw.public_id || null,
-            username: raw.username || raw.display_name || 'Player',
-            displayName: raw.display_name || null,
+            username: raw.username || 'Player',
+            displayName: null,
             avatarUrl: raw.avatar_url || '',
             isSelf: !!raw.is_self,
             relationship: raw.relationship || 'none',

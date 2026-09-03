@@ -157,7 +157,7 @@
         var progress = pickProgress(source);
         return render(Object.assign({
             avatarUrl: source.avatarUrl || source.avatar_url || '',
-            name: source.name || source.username || source.display_name || 'Player',
+            name: source.username || source.name || 'Player',
             level: progress.level,
             percentToNext: progress.percentToNext,
             isBot: !!(source.isBot || source.is_bot),

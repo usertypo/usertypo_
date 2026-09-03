@@ -4023,8 +4023,8 @@
                                         ? window.usertypoAuth.getState()
                                         : null;
                                     var user = state && state.user;
-                                    var username = (profile && (profile.username || profile.display_name))
-                                        || (user && (user.username || user.fullName))
+                                    var username = (profile && profile.username)
+                                        || (user && user.username)
                                         || '—';
                                     var email = (user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress)
                                         || '—';
@@ -4106,7 +4106,7 @@
                                     if (empty) empty.classList.add('hidden');
 
                                     items.forEach(function (row) {
-                                        var name = row.username || row.display_name || 'Player';
+                                        var name = row.username || 'Player';
                                         var card = document.createElement('div');
                                         card.className =
                                             'glass-card border border-white/5 bg-black/20 rounded-xl p-3 flex items-center justify-between transition-all group';

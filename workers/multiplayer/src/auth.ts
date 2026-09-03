@@ -158,11 +158,11 @@ export async function getProfile(env: Env, userId: string): Promise<Profile> {
     xpInto = rpcProg.xpInto;
   }
 
-  const displayName = String(row.display_name || '').trim();
   const username = String(row.username || '').trim();
+  // Always prefer the app username — never surface Google/OAuth display names.
   return {
     userId,
-    name: displayName || username || 'Player',
+    name: username || 'Player',
     avatarUrl: String(row.avatar_url || ''),
     level,
     percentToNext: percentToNext(xpInto, xpNeededForLevel(level)),

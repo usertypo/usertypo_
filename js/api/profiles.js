@@ -11,12 +11,17 @@
 
     function pickUsername(user) {
         if (!user) return null;
-        if (user.username) return user.username;
-        if (user.fullName) return user.fullName;
-        if (user.firstName) return user.firstName;
-        var email = user.primaryEmailAddress && user.primaryEmailAddress.emailAddress;
-        if (email) return email.split('@')[0];
+        // App username only — never Google/OAuth fullName or firstName.
+        if (user.username) return String(user.username).trim() || null;
         return null;
+    }
+
+    /** Public-facing name for any profile-like object. Never returns Google display names. */
+    function publicUsername(source, fallback) {
+        if (!source || typeof source !== 'object') return fallback || 'Player';
+        var name = String(source.username || '').trim();
+        if (name) return name;
+        return fallback || 'Player';
     }
 
     function pickAvatar(user) {
@@ -32,8 +37,6 @@
         return [
             user.id,
             user.username || '',
-            user.fullName || '',
-            user.firstName || '',
             user.hasImage ? '1' : '0',
             user.imageUrl || '',
             email || '',
@@ -192,7 +195,6 @@
 
             var username = pickUsername(user);
             var avatarUrl = pickAvatar(user);
-            var displayName = user.fullName || username;
 
             if (existing.data) {
                 var nextAvatar = avatarUrl || null;
@@ -203,9 +205,8 @@
                 // Once a profile username exists, it is app-managed (setUsername / settings).
                 // Do not clobber it with a stale Clerk user object or Google fullName.
                 var nextUsername = existing.data.username || username;
-                var nextDisplayName = existing.data.username
-                    ? (existing.data.display_name || existing.data.username)
-                    : (displayName || existing.data.display_name || username);
+                // Keep display_name mirrored to username so Google names never linger.
+                var nextDisplayName = nextUsername || existing.data.username || null;
 
                 var needsUpdate =
                     (nextUsername && existing.data.username !== nextUsername) ||
@@ -224,7 +225,7 @@
                     .from('profiles')
                     .update({
                         username: nextUsername || existing.data.username,
-                        display_name: nextDisplayName || existing.data.display_name,
+                        display_name: nextDisplayName || existing.data.username || existing.data.display_name,
                         avatar_url: nextAvatar,
                     })
                     .eq('user_id', user.id)
@@ -239,12 +240,17 @@
                 return updated.data;
             }
 
+            if (!username) {
+                // Wait for username choice / Clerk username — never insert a Google fullName.
+                throw new Error('username_required');
+            }
+
             var inserted = await client
                 .from('profiles')
                 .insert({
                     user_id: user.id,
                     username: username,
-                    display_name: displayName,
+                    display_name: username,
                     avatar_url: avatarUrl,
                 })
                 .select('*')
@@ -458,5 +464,6 @@
         updateMyAvatar: updateMyAvatar,
         removeMyAvatar: removeMyAvatar,
         clearCache: clearProfileCache,
+        publicUsername: publicUsername,
     };
 })();

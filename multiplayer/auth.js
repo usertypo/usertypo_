@@ -92,7 +92,7 @@ function createAuthServices(env, logger) {
         const xpToNext = xpNeededForLevel(level);
         return {
             userId,
-            name: row.username || row.display_name || 'Player',
+            name: row.username || 'Player',
             avatarUrl: row.avatar_url || '',
             level,
             percentToNext: percentToNext(xpInto, xpToNext),

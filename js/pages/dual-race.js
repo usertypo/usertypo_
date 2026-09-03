@@ -934,8 +934,8 @@
             var authState = window.usertypoAuth && window.usertypoAuth.getState
                 ? window.usertypoAuth.getState()
                 : null;
-            var name = profile.username || profile.display_name
-                || (authState && authState.user && (authState.user.username || authState.user.fullName))
+            var name = profile.username
+                || (authState && authState.user && authState.user.username)
                 || 'Player';
             var tier = authState && authState.isSignedIn ? 'Signed in' : 'Guest';
             var initial = String(name || 'P').trim().charAt(0).toUpperCase() || 'P';
@@ -1088,13 +1088,11 @@
 
         function getLocalUserName() {
             var profile = window.__USERTYPO_PROFILE__ || {};
-            if (profile.display_name || profile.username) {
-                return profile.display_name || profile.username;
-            }
+            if (profile.username) return profile.username;
             if (window.usertypoAuth && typeof window.usertypoAuth.getState === 'function') {
                 var auth = window.usertypoAuth.getState();
-                if (auth && auth.user) {
-                    return auth.user.username || auth.user.firstName || 'You';
+                if (auth && auth.user && auth.user.username) {
+                    return auth.user.username;
                 }
             }
             return 'You';

@@ -10,14 +10,15 @@
     var lastAccountOpts = null;
 
     function displayName(user, profile) {
+        if (window.usertypoProfiles && typeof window.usertypoProfiles.publicUsername === 'function') {
+            var fromProfile = window.usertypoProfiles.publicUsername(profile, '');
+            if (fromProfile) return fromProfile;
+            if (user && user.username) return String(user.username).trim();
+            return user ? 'Player' : 'Guest';
+        }
         if (profile && profile.username) return profile.username;
-        if (profile && profile.display_name) return profile.display_name;
         if (!user) return 'Guest';
         if (user.username) return user.username;
-        if (user.fullName) return user.fullName;
-        if (user.firstName) return user.firstName;
-        var email = user.primaryEmailAddress && user.primaryEmailAddress.emailAddress;
-        if (email) return email.split('@')[0];
         return 'Player';
     }
 
