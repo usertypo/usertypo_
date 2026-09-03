@@ -115,7 +115,7 @@
             page: 'pages/multiplayer.html',
             title: 'Multiplayer | usertypo_',
             description: 'Play multiplayer typing races on usertypo_. Duel opponents or create private rooms.',
-            robots: 'noindex, follow',
+            robots: 'index, follow',
             navId: 'nav-multiplayer',
             compact: false,
         },
