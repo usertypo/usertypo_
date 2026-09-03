@@ -375,7 +375,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=8';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=9';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();

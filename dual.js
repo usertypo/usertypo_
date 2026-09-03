@@ -1,6 +1,6 @@
 /**
  * Compatibility facade for the Friends page dual controls.
- * Real state lives only in the multiplayer Socket.IO server/client.
+ * Real state lives only in the Cloudflare multiplayer client.
  */
 (function () {
     'use strict';

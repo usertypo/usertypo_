@@ -69,7 +69,7 @@
         <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">Legal</p>
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">Privacy Policy</h1>
         <p class="text-xs sm:text-sm text-slate-400 mb-2">
-            <span class="text-slate-500">Last updated:</span> July 26, 2026
+            <span class="text-slate-500">Last updated:</span> September 3, 2026
             <span class="text-slate-600 mx-2">·</span>
             <span class="text-slate-500">Effective:</span> July 25, 2026
         </p>
@@ -256,7 +256,7 @@
                             <tr>
                                 <td>Supabase</td>
                                 <td>Account-linked app data described in Section 2</td>
-                                <td>Database and backend storage</td>
+                                <td>Database (Postgres)</td>
                             </tr>
                             <tr>
                                 <td>Cloudflare</td>
@@ -420,7 +420,7 @@
                     <li><strong class="text-slate-200">Account data:</strong> kept while your account remains active.</li>
                     <li><strong class="text-slate-200">Typing sessions and progress:</strong> kept while your account exists.</li>
                     <li><strong class="text-slate-200">Session diagnostics:</strong> we retain the most recent 50 diagnostics per user; older diagnostics are automatically deleted.</li>
-                    <li><strong class="text-slate-200">After account deletion:</strong> associated app data in our database is deleted (including cascade deletes of related records). Cached leaderboard entries are removed. Authentication records are deleted through Clerk. Some residual copies may remain briefly in backups or logs until those systems rotate.</li>
+                    <li><strong class="text-slate-200">After account deletion:</strong> associated app data in our database is deleted (including cascade deletes of related records). Leaderboard rankings for that account are removed via our Cloudflare Worker. Authentication records are deleted through Clerk. Some residual copies may remain briefly in backups or logs until those systems rotate.</li>
                 </ul>
             </section>
 

@@ -1,6 +1,6 @@
 /**
  * Cloudflare WebSocket transport for usertypo_ multiplayer.
- * Socket.IO-compatible surface used by js/api/multiplayer.js on dev (workers.dev).
+ * Socket.IO-compatible client API over native WebSockets.
  *
  * Dual connection:
  *   - Lobby DO  → /ws              (matchmaking, listings, challenges, presence)

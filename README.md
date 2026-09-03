@@ -64,7 +64,7 @@ Useful scripts:
 | `LEADERBOARDS_WORKER_URL` | Local `.env` override | No |
 | `WEB3FORMS_ACCESS_KEY` / `RESEND_API_KEY` | Optional contact | **Yes** |
 
-See `.env.example` for setup details.
+See [docs/architecture.md](./docs/architecture.md) for the current stack.
 
 ## Ads
 

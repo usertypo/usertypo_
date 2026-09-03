@@ -1,4 +1,4 @@
-# Step 2 — Multiplayer on Cloudflare
+# Multiplayer worker
 
 Real-time multiplayer runs on a **Cloudflare Worker + Durable Object** (`usertypo-mp` / `usertypo-mp-dev`).
 

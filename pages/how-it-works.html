@@ -159,7 +159,7 @@
         <p class="text-[0.586rem] font-bold uppercase tracking-[0.2em] text-primary mb-3">Docs</p>
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">How usertypo_ scoring works</h1>
         <p class="text-xs sm:text-sm text-slate-400 mb-2">
-            <span class="text-slate-500">Last updated:</span> July 30, 2026
+            <span class="text-slate-500">Last updated:</span> September 3, 2026
         </p>
         <p class="text-sm text-slate-400 mb-8 sm:mb-10 leading-relaxed">
             A technical walkthrough of how <strong class="text-slate-200 font-semibold">usertypo_</strong>
@@ -209,7 +209,8 @@
                 </p>
                 <div class="hiw-callout">
                     Guest tests still show live results and graphs. Signed-in tests also persist to
-                    Postgres, award XP, update personal bests, and may update leaderboards.
+                    Supabase Postgres, award XP, update personal bests, and may update leaderboards
+                    through a Cloudflare Worker.
                 </div>
             </section>
 
@@ -675,8 +676,8 @@
                 <p class="mb-3">
                     Leaderboards cover the same standard presets as best cards (timed 15/30/60/120
                     and words 10/25/50/100), across daily, weekly, and all-time windows. Scores are
-                    ingested through a secure server path—never by writing rankings directly from
-                    the browser.
+                    ingested by a Cloudflare Worker that reads the saved Postgres session—never by
+                    writing rankings directly from the browser.
                 </p>
                 <ul class="list-disc pl-5 space-y-2 mb-3">
                     <li>Opt out anytime with <strong class="text-slate-200">Show on leaderboard</strong> in settings.</li>

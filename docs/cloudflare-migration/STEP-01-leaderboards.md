@@ -1,4 +1,6 @@
-# Step 1 — Leaderboards on Cloudflare
+# Leaderboards worker
+
+Leaderboards are served by a **Cloudflare Worker** using **Supabase Postgres** (`usertypo-leaderboards` / `usertypo-leaderboards-dev`).
 
 Leaderboards are served by a **Cloudflare Worker** using **Supabase Postgres** (`usertypo-leaderboards` / `usertypo-leaderboards-dev`).
 
