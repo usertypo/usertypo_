@@ -73,28 +73,73 @@
             forbidden: 'You do not have permission to do that.',
             server_capacity: 'The multiplayer server is currently full.',
             rate_limited: 'Too many multiplayer actions. Please wait a moment.',
+            timeout: 'Multiplayer server did not respond.',
+            offline: 'Could not reach the multiplayer server.',
+            race_connect_failed: 'Could not connect to the race server.',
+            missing_room: 'Room not found. Check the Room ID and try again.',
         };
         return messages[code] || String(code || 'Multiplayer request failed.');
     }
 
+    function isRaceBoundEvent(event) {
+        if (window.usertypoMultiplayerCf && typeof window.usertypoMultiplayerCf.isRaceEvent === 'function') {
+            return window.usertypoMultiplayerCf.isRaceEvent(event);
+        }
+        var e = String(event || '');
+        if (e.indexOf('match:') === 0 || e.indexOf('race:') === 0) return true;
+        return e === 'room:ready'
+            || e === 'room:update-config'
+            || e === 'room:add-bot'
+            || e === 'room:remove-player'
+            || e === 'room:start'
+            || e === 'room:return-lobby';
+    }
+
+    function roomIdForRaceEvent(event, payload) {
+        if (activeRoomId) return String(activeRoomId);
+        if (
+            event === 'match:join'
+            || event === 'match:resume'
+            || event === 'race:leave'
+            || event === 'race:rematch'
+            || event === 'room:ready'
+            || event === 'room:return-lobby'
+            || event === 'room:add-bot'
+        ) {
+            return String(payload || '');
+        }
+        if (Array.isArray(payload) && payload[0]) return String(payload[0]);
+        if (payload && typeof payload === 'object' && payload.roomId) return String(payload.roomId);
+        return '';
+    }
+
     function emitAck(event, payload, timeoutMs) {
         return ensureConnected().then(function (activeSocket) {
-            return new Promise(function (resolve, reject) {
-                var settled = false;
-                var timeout = nativeSetTimeout(function () {
-                    if (settled) return;
-                    settled = true;
-                    reject(new Error('Multiplayer server did not respond.'));
-                }, timeoutMs || 8000);
-                activeSocket.emit(event, payload, function (response) {
-                    if (settled) return;
-                    settled = true;
-                    clearTimeout(timeout);
-                    if (!response || response.ok === false) {
-                        reject(new Error(friendlyError(response && response.error)));
-                        return;
-                    }
-                    resolve(response);
+            var prepare = Promise.resolve();
+            // Connect the race DO before starting the ack timer — otherwise Ready/bot/progress
+            // time out while the race WebSocket is still authenticating.
+            if (isRaceBoundEvent(event) && typeof activeSocket.ensureRaceConnected === 'function') {
+                var rid = roomIdForRaceEvent(event, payload);
+                if (rid) prepare = activeSocket.ensureRaceConnected(rid);
+            }
+            return prepare.then(function () {
+                return new Promise(function (resolve, reject) {
+                    var settled = false;
+                    var timeout = nativeSetTimeout(function () {
+                        if (settled) return;
+                        settled = true;
+                        reject(new Error('Multiplayer server did not respond.'));
+                    }, timeoutMs || 8000);
+                    activeSocket.emit(event, payload, function (response) {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timeout);
+                        if (!response || response.ok === false) {
+                            reject(new Error(friendlyError(response && response.error)));
+                            return;
+                        }
+                        resolve(response);
+                    });
                 });
             });
         });
@@ -338,7 +383,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=7';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=8';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -593,7 +638,13 @@
             totalKeystrokes,
             finalPacket ? 1 : 0,
             finalStats || null,
-        ], 5000);
+        ], finalPacket ? 8000 : 4000).catch(function (error) {
+            // Live WPM sync failures are transient — never surface as hard errors mid-race.
+            if (!finalPacket) {
+                return { ok: false, soft: true, error: String(error && error.message || '') };
+            }
+            throw error;
+        });
     }
 
     function reportConsistency(roomId, consistency) {
@@ -781,6 +832,14 @@
         removeRoomPlayer: removeRoomPlayer,
         navigateToRoom: navigateToRoom,
         navigateToMatch: navigateToMatch,
+        ensureRaceConnected: function (roomId) {
+            return ensureConnected().then(function (activeSocket) {
+                if (!activeSocket || typeof activeSocket.ensureRaceConnected !== 'function') {
+                    return activeSocket;
+                }
+                return activeSocket.ensureRaceConnected(String(roomId || activeRoomId || ''));
+            });
+        },
         describeConfig: describeConfig,
         getListings: function () { return listings.slice(); },
         getPendingMatch: function (roomId) { return pendingMatches[roomId] || null; },

@@ -54,6 +54,8 @@
         var pendingAcks = Object.create(null);
         var ackSeq = 0;
         var raceConnectPromise = null;
+        var raceReconnectTimer = null;
+        var intentionalRaceClose = false;
 
         function on(event, fn) {
             if (!handlers[event]) handlers[event] = [];
@@ -87,12 +89,17 @@
             return true;
         }
 
-        function handleMessage(raw) {
+        function handleMessage(raw, fromRace) {
             var msg;
             try { msg = JSON.parse(raw); } catch (_) { return; }
             if (msg.t === 'ev' && msg.e) {
                 if (msg.e === 'duel:ready' && msg.p && msg.p.roomId) {
                     ensureRaceConnected(String(msg.p.roomId)).catch(function () { /* joinMatch will retry */ });
+                }
+                // Race sockets also emit multiplayer:ready — do not treat that as lobby ready.
+                if (fromRace && msg.e === 'multiplayer:ready') {
+                    emitLocal('race-socket-ready', msg.p);
+                    return;
                 }
                 emitLocal(msg.e, msg.p);
                 return;
@@ -106,7 +113,9 @@
             }
         }
 
-        function openSocket(url) {
+        function openSocket(url, opts) {
+            var fromRace = !!(opts && opts.fromRace);
+            var timeoutMs = (opts && opts.timeoutMs) || 20_000;
             return new Promise(function (resolve, reject) {
                 var settled = false;
                 var connectTimer = null;
@@ -160,7 +169,7 @@
                     if (msg.t === 'ev' && msg.e === 'multiplayer:ready' && !localReady) {
                         onReady();
                     }
-                    handleMessage(raw);
+                    handleMessage(raw, fromRace);
                 });
 
                 socket.addEventListener('close', function () {
@@ -173,11 +182,27 @@
 
                 connectTimer = setTimeout(function () {
                     finish(new Error('WebSocket connection timed out.'));
-                }, 20_000);
+                }, timeoutMs);
             });
         }
 
+        function scheduleRaceReconnect() {
+            if (intentionalRaceClose || !active || !raceRoomId) return;
+            if (raceReconnectTimer) clearTimeout(raceReconnectTimer);
+            var want = raceRoomId;
+            raceReconnectTimer = setTimeout(function () {
+                raceReconnectTimer = null;
+                if (intentionalRaceClose || !active || raceRoomId !== want || raceConnected) return;
+                ensureRaceConnected(want).catch(function () { /* next emit retries */ });
+            }, 350);
+        }
+
         function closeRace() {
+            intentionalRaceClose = true;
+            if (raceReconnectTimer) {
+                clearTimeout(raceReconnectTimer);
+                raceReconnectTimer = null;
+            }
             raceRoomId = '';
             raceReady = false;
             raceConnected = false;
@@ -186,6 +211,7 @@
                 try { raceWs.close(); } catch (_) { /* ignore */ }
                 raceWs = null;
             }
+            intentionalRaceClose = false;
         }
 
         function ensureRaceConnected(roomId) {
@@ -198,11 +224,12 @@
 
             if (raceWs && raceRoomId !== roomId) closeRace();
 
+            intentionalRaceClose = false;
             raceRoomId = roomId;
             var url = wsRaceUrl(roomId);
             if (!url) return Promise.reject(new Error('Multiplayer URL is not configured.'));
 
-            raceConnectPromise = openSocket(url).then(function (socket) {
+            raceConnectPromise = openSocket(url, { fromRace: true, timeoutMs: 12_000 }).then(function (socket) {
                 raceWs = socket;
                 raceConnected = true;
                 raceReady = true;
@@ -212,6 +239,7 @@
                         raceReady = false;
                         raceWs = null;
                         raceConnectPromise = null;
+                        scheduleRaceReconnect();
                     }
                 });
                 return socket;
@@ -231,7 +259,7 @@
             var url = wsLobbyUrl();
             if (!url) return Promise.reject(new Error('Multiplayer URL is not configured.'));
             active = true;
-            return openSocket(url).then(function (socket) {
+            return openSocket(url, { fromRace: false }).then(function (socket) {
                 lobbyWs = socket;
                 lobbyConnected = true;
                 lobbyReady = true;
@@ -256,11 +284,6 @@
                 try { lobbyWs.close(); } catch (_) { /* ignore */ }
                 lobbyWs = null;
             }
-        }
-
-        function pickSocketForEvent(event) {
-            if (isRaceEvent(event)) return raceWs;
-            return lobbyWs;
         }
 
         function roomIdFromPayload(event, payload) {
@@ -329,6 +352,7 @@
             disconnect: disconnect,
             ensureRaceConnected: ensureRaceConnected,
             closeRace: closeRace,
+            isRaceEvent: isRaceEvent,
         };
 
         Object.defineProperty(socket, 'connected', {
@@ -344,6 +368,7 @@
     global.usertypoMultiplayerCf = {
         createSocket: createCfSocket,
         wsBaseUrl: wsLobbyUrl,
+        isRaceEvent: isRaceEvent,
         isCloudflareUrl: function (url) {
             var u = String(url || '').toLowerCase();
             return u.includes('.workers.dev') || u.includes('usertypo-mp');

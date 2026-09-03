@@ -521,7 +521,12 @@ window.__spaPageInit = function() {
                 submitJoinRoomBtn.disabled = true;
                 try {
                     const result = await window.usertypoMultiplayer.joinRoomCode(code);
-                    navigateTo('/room?' + new URLSearchParams({join:'1',room:result.roomId,code}).toString());
+                    navigateTo('/room?' + new URLSearchParams({
+                        join: '1',
+                        room: result.roomId,
+                        code: code,
+                        name: 'Private Room',
+                    }).toString());
                 } catch (error) {
                     const msg = String(error && error.message || '');
                     if (/full/i.test(msg)) {
@@ -715,6 +720,7 @@ window.__spaPageInit = function() {
                         navigateTo('/room?' + new URLSearchParams({
                             room: result.roomId,
                             code: result.roomCode,
+                            name: roomName || result.roomName || 'Private Room',
                             host: '1',
                         }).toString());
                     } catch (error) {

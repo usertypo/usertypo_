@@ -11,6 +11,7 @@
         var params = new URLSearchParams(window.location.search);
         var roomId = params.get('room') || '';
         var roomCode = params.get('code') || '';
+        var roomNameHint = params.get('name') || '';
         if (!roomCode) {
             var joinPath = String(window.location.pathname || '').match(/^\/join\/(\d{4})$/);
             if (joinPath) roomCode = joinPath[1];
@@ -1746,6 +1747,10 @@
             sequence += 1;
             window.usertypoMultiplayer
                 .sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket)
+                .then(function (response) {
+                    // Soft failures from live sync are ignored (next tick retries).
+                    if (response && response.soft) return;
+                })
                 .catch(function (error) {
                     var message = String(error && error.message || '');
                     // Race already ended on the server — stop polling silently (no toast flood).
@@ -1756,6 +1761,9 @@
                         }
                         return;
                     }
+                    // Only toast hard failures on the final settle packet.
+                    if (!finalPacket) return;
+                    if (/did not respond|Could not connect|offline|timeout|race_connect/i.test(message)) return;
                     window.usertypoNotifications?.showToast(message, 'error');
                 });
         }
@@ -2476,6 +2484,13 @@
                 return;
             }
             refreshDomRefs();
+            // Paint title/code from the URL immediately so lobby never sits on Room-0000.
+            var titleEl = document.getElementById('lobby-room-name');
+            var idEl = document.getElementById('lobby-room-id');
+            var inviteIdEl = document.getElementById('invite-panel-room-id');
+            if (titleEl) titleEl.textContent = roomNameHint || 'Private Room';
+            if (idEl) idEl.textContent = roomCode ? ('Room ID: ' + roomCode) : 'Connecting…';
+            if (inviteIdEl && roomCode) inviteIdEl.textContent = roomCode;
             setFooterCompact(true);
             bindLobbyUI();
             bindEditConfigUI();
@@ -2492,6 +2507,10 @@
                 }
                 if (!roomId) {
                     throw new Error('Room not found. Check the Room ID and try again.');
+                }
+                // Warm the race socket while joinMatch runs so Ready/bot are instant.
+                if (window.usertypoMultiplayer.ensureRaceConnected) {
+                    window.usertypoMultiplayer.ensureRaceConnected(roomId).catch(function () { /* joinMatch retries */ });
                 }
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
                 if (!response || response.ok === false) {

@@ -48,6 +48,7 @@ interface Player {
   snapshots: Array<[number, number, number, number]>;
   lastSnapshotAt: number;
   lastCursorAt?: number;
+  lastPersistAt?: number;
 }
 
 interface BotPlayer {
@@ -360,7 +361,8 @@ export class MultiplayerHub implements DurableObject {
     } else if (payload.kind === 'countdown-tick' && payload.roomId) {
       await this.handleCountdownTick(payload.roomId);
     } else if (payload.kind === 'race-end' && payload.roomId) {
-      await this.scheduleAlarm(3500, { kind: 'race-end-finish', roomId: payload.roomId });
+      // Short grace so final progress packets can land, then show stats (~1s total).
+      await this.scheduleAlarm(800, { kind: 'race-end-finish', roomId: payload.roomId });
     } else if (payload.kind === 'race-end-finish' && payload.roomId) {
       await this.finishRoomById(payload.roomId, 'time');
     } else if (payload.kind === 'bot-tick' && payload.roomId) {
@@ -616,7 +618,11 @@ export class MultiplayerHub implements DurableObject {
 
       if (this.role === 'race') {
         const room = this.rooms.get(this.boundRoomId) || [...this.rooms.values()][0];
-        if (!room || !room.allowedUserIds.includes(userId)) {
+        const allowed = !!(room && (
+          room.allowedUserIds.includes(userId)
+          || !!room.players[userId]
+        ));
+        if (!room || !allowed) {
           ws.close(4403, 'forbidden');
           return;
         }
@@ -639,16 +645,28 @@ export class MultiplayerHub implements DurableObject {
       }
       this.attachSocket(ws, userId);
       if (this.role !== 'race') this.cleanStaleMembership(userId);
-      const profile = await getProfile(this.env, userId);
-      this.profiles.set(userId, profile);
 
-      ws.send(JSON.stringify({
-        t: 'ev',
-        e: 'connect',
-        p: null,
-      }));
-
+      // Race sockets must authenticate quickly — avoid Supabase profile fetches + persist.
       if (this.role === 'race') {
+        const room = this.rooms.get(this.boundRoomId)!;
+        const player = room.players[userId];
+        let profile = this.profiles.get(userId);
+        if (!profile) {
+          profile = {
+            userId,
+            name: player?.name || 'Player',
+            avatarUrl: player?.avatarUrl || '',
+            level: player?.level ?? 1,
+            percentToNext: player?.percentToNext ?? 0,
+          };
+          this.profiles.set(userId, profile);
+        }
+
+        ws.send(JSON.stringify({
+          t: 'ev',
+          e: 'connect',
+          p: null,
+        }));
         ws.send(JSON.stringify({
           t: 'ev',
           e: 'multiplayer:ready',
@@ -661,9 +679,17 @@ export class MultiplayerHub implements DurableObject {
             raceRoomId: this.boundRoomId,
           },
         }));
-        await this.persist();
         return;
       }
+
+      const profile = await getProfile(this.env, userId);
+      this.profiles.set(userId, profile);
+
+      ws.send(JSON.stringify({
+        t: 'ev',
+        e: 'connect',
+        p: null,
+      }));
 
       const ownListing = [...this.listings.values()].find((l) => l.ownerUserId === userId && l.status === 'waiting');
       const outgoingChallenges = [...this.invites.values()]
@@ -1179,7 +1205,7 @@ export class MultiplayerHub implements DurableObject {
       await this.scheduleAlarm(500, { kind: 'bot-tick', roomId: room.id });
     }
     if (room.config.mode === 'time') {
-      const delay = room.config.amount * 1000 + 750;
+      const delay = room.config.amount * 1000 + 200;
       await this.scheduleAlarm(delay, { kind: 'race-end', roomId: room.id });
     }
     await this.persist();
@@ -1856,8 +1882,12 @@ export class MultiplayerHub implements DurableObject {
           isFinal ? 1 : 0,
           completedWords,
         ]);
+        // Ack immediately so clients do not time out during typing.
         safeAck(ws, reqId, { ok: true });
-        await this.persist();
+        if (isFinal || (now - (player.lastPersistAt || 0)) > 2500) {
+          player.lastPersistAt = now;
+          await this.persist();
+        }
         return;
       }
       if (event === 'duel:challenge') {
@@ -1959,7 +1989,7 @@ export class MultiplayerHub implements DurableObject {
           roomCode,
           roomName,
         });
-        safeAck(ws, reqId, { ok: true, roomId: room.id, roomCode });
+        safeAck(ws, reqId, { ok: true, roomId: room.id, roomCode, roomName: room.roomName });
         await this.persist();
         return;
       }
