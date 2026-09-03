@@ -313,6 +313,37 @@
 
     async function fetchPublicChunk(client, ids) {
         var out = {};
+        // Prefer a raw anon RPC call so a mismatched Clerk↔Supabase JWT cannot
+        // 401 the public level lookup (security definer + grant to anon).
+        try {
+            var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.supabase) || {};
+            var base = String(cfg.url || '').replace(/\/+$/, '');
+            var anon = String(cfg.anonKey || cfg.publishableKey || '').trim();
+            if (base && anon) {
+                var res = await fetch(base + '/rest/v1/rpc/get_public_progression_batch', {
+                    method: 'POST',
+                    headers: {
+                        apikey: anon,
+                        Authorization: 'Bearer ' + anon,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ p_user_ids: ids }),
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    if (Array.isArray(data)) {
+                        data.forEach(function (row) {
+                            var normalized = normalizePublicRow(row);
+                            if (normalized && normalized.userId) out[normalized.userId] = normalized;
+                        });
+                        if (Object.keys(out).length) return out;
+                    }
+                }
+            }
+        } catch (_) { /* fall through to supabase client */ }
+
+        if (!client) return out;
+
         var rpc = await client.rpc('get_public_progression_batch', { p_user_ids: ids });
         if (!rpc.error && Array.isArray(rpc.data)) {
             rpc.data.forEach(function (row) {
@@ -361,10 +392,10 @@
             }
         });
 
-        if (!missing.length || !window.usertypoDb) return out;
+        if (!missing.length) return out;
 
         try {
-            var client = await window.usertypoDb.getClient();
+            var client = window.usertypoDb ? await window.usertypoDb.getClient().catch(function () { return null; }) : null;
             var chunks = chunkIds(missing);
             for (var c = 0; c < chunks.length; c += 1) {
                 var fetched = await fetchPublicChunk(client, chunks[c]);

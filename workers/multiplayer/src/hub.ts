@@ -1694,6 +1694,28 @@ export class MultiplayerHub implements DurableObject {
         player.joined = true;
         player.status = player.status === 'left' ? 'waiting' : player.status;
         this.userToRoom.set(userId, room.id);
+
+        // Refresh levels/names for anyone still stuck at the level-1 stub.
+        const needsRefresh = Object.values(room.players).filter((p) => (
+          p.status !== 'left' && (!p.level || p.level <= 1)
+        ));
+        if (needsRefresh.length) {
+          await Promise.all(needsRefresh.map(async (p) => {
+            try {
+              const profile = await getProfile(this.env, p.userId);
+              this.profiles.set(p.userId, profile);
+              if (profile.name) p.name = profile.name;
+              if (profile.avatarUrl) p.avatarUrl = profile.avatarUrl;
+              if (profile.level > 1 || (p.level || 1) <= 1) {
+                p.level = profile.level;
+                p.percentToNext = profile.percentToNext;
+              }
+            } catch {
+              /* keep existing stub */
+            }
+          }));
+        }
+
         const base = this.publicRoomPayload(room, room.type);
         if (room.state === 'countdown' || room.state === 'racing' || room.state === 'finished') {
           safeAck(ws, reqId, {

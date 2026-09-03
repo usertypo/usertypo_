@@ -1238,13 +1238,14 @@
                     };
                 }
             }
-            // Cache server-provided levels > 1 so they are never lost across room:state events.
+            // Cache any known real levels so later room:state stubs (level 1) cannot wipe them.
             (room.players || []).forEach(function (player) {
                 if (!player || !player.userId) return;
-                if (player.level != null && Number(player.level) > 1 && !levelCache[player.userId]) {
+                if (player.level != null && Number(player.level) > 1) {
                     levelCache[player.userId] = {
                         level: player.level,
                         percentToNext: player.percentToNext || 0,
+                        xpIntoLevel: player.xpIntoLevel,
                     };
                 }
             });
@@ -1427,6 +1428,16 @@
                 var paintRoom = room;
                 window.usertypoProgression.attachToList(room.players, 'userId', { force: true }).then(function () {
                     if (!room || room !== paintRoom) return;
+                    (room.players || []).forEach(function (player) {
+                        if (!player || !player.userId) return;
+                        if (player.level != null && Number(player.level) > 1) {
+                            levelCache[player.userId] = {
+                                level: player.level,
+                                percentToNext: player.percentToNext || 0,
+                                xpIntoLevel: player.xpIntoLevel,
+                            };
+                        }
+                    });
                     // Re-render host avatar.
                     var h = room.players.find(function (p) { return p.userId === room.hostUserId; });
                     var slot = document.getElementById('lobby-host-avatar-slot')
