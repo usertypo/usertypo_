@@ -983,15 +983,30 @@
             return true;
         }
 
+        function racePromptLanguage() {
+            return (config && config.lang)
+                || (room && room.config && room.config.lang)
+                || 'english';
+        }
+
+        function applyRaceTextDirection() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection(racePromptLanguage());
+            }
+        }
+
         function syncCountdownLayout(digitVisible) {
             if (!textContainer || !typingArea) return;
             currentWordIndex = 0;
             var tapeMode = getTapeMode();
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
+            var isRtl = typeof window.isTypingRTL === 'function'
+                ? !!window.isTypingRTL()
+                : (document.body && document.body.dataset.textDirection === 'rtl');
 
             if (isTape) {
-                // Caret stays visually fixed. Digit sits to its left by shifting the tape
-                // left by the digit width when shown (no caret movement on screen).
+                // Caret stays visually fixed. Digit sits before the caret by shifting the tape
+                // (LTR: left / RTL: right) by the digit width when shown.
                 if (!countdownTapeLocked) {
                     currentCharIndex = 0;
                     updateLineLayout();
@@ -1004,7 +1019,8 @@
                     currentCharIndex = digitVisible ? 1 : 0;
                     var digitEl = document.getElementById('room-char-0-0');
                     var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
-                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                    var shift = isRtl ? digitWidth : -digitWidth;
+                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX + shift) + 'px)';
                     positionCaretAt(caret, 0, currentCharIndex);
                 }
             } else {
@@ -1025,6 +1041,8 @@
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* defaults */ }
             }
+            // Direction follows the race prompt language — not the user's solo language setting.
+            applyRaceTextDirection();
             progressByIndex = {};
             renderLeaderboard();
             countdownTapeLocked = false;
@@ -1076,33 +1094,57 @@
             syncCountdownLayout(false);
         }
 
+        // Digits are paced to the server countdownEndsAt wall clock so late joins
+        // sync into the remaining 3→2→1 window instead of restarting from 3.
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
             await waitForLayout();
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
-            if (caret) caret.classList.add('animate-breath');
-            await delay(650);
+
+            var endsAt = countdownEndsAtTarget > 0
+                ? countdownEndsAtTarget
+                : (Date.now() + 3000);
+            if (!countdownEndsAtTarget) countdownEndsAtTarget = endsAt;
+
+            var firstDigitAt = endsAt - 3000;
+            var breatheUntil = Math.min(firstDigitAt, Date.now() + 650);
+            if (breatheUntil > Date.now() + 40) {
+                if (caret) caret.classList.add('animate-breath');
+                await delay(breatheUntil - Date.now());
+            }
             if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
-            var digits = ['3', '2', '1'];
+            var digits = [
+                { label: '3', showAt: endsAt - 3000, hideAt: endsAt - 2000 },
+                { label: '2', showAt: endsAt - 2000, hideAt: endsAt - 1000 },
+                { label: '1', showAt: endsAt - 1000, hideAt: endsAt },
+            ];
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+                var step = digits[i];
+                var now = Date.now();
+                if (now >= step.hideAt) continue;
+                if (now < step.showAt) {
+                    if (caret) caret.classList.add('animate-breath');
+                    await delay(step.showAt - now);
+                    if (token !== countdownAnimToken) return;
+                    if (beginRaceIfAlreadyLive()) return;
+                }
                 if (caret) caret.classList.remove('animate-breath');
-                await typeCountdownDigit(digits[i], token);
+                await typeCountdownDigit(step.label, token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                await delay(1000);
+                var holdMs = step.hideAt - Date.now();
+                if (holdMs > 0) await delay(holdMs);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                if (caret) caret.classList.add('animate-breath');
-                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
@@ -1178,6 +1220,7 @@
                         window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                     } catch (_) { /* retain defaults */ }
                 }
+                applyRaceTextDirection();
                 if (typeof window.applyRoomLiveFeedSettings === 'function') {
                     window.applyRoomLiveFeedSettings();
                 }
@@ -1225,6 +1268,8 @@
             isHost = room.hostUserId === selfUserId;
             if (response.countdownEndsAt) {
                 countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
+            } else if (response.countdown != null && Number(response.countdown) > 0) {
+                countdownEndsAtTarget = Date.now() + (Number(response.countdown) * 1000);
             }
             if (response.state === 'finished') {
                 applyFinishedFromResume(response);
@@ -1562,9 +1607,7 @@
         }
 
         function renderText() {
-            if (typeof window.applyTypingTextDirection === 'function') {
-                window.applyTypingTextDirection();
-            }
+            applyRaceTextDirection();
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             wordOffsets = [];
             var runningOffset = 0;
@@ -2355,7 +2398,11 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished' || state === 'closed') return;
-                if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                if (payload[2]) {
+                    countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                } else if (payload[1] != null && Number(payload[1]) > 0) {
+                    countdownEndsAtTarget = Date.now() + (Number(payload[1]) * 1000);
+                }
                 if (Number(payload[1]) === 0) return;
                 ensureCountdownSequence();
             });

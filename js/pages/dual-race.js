@@ -162,12 +162,23 @@
             config = nextConfig;
         }
 
+        function racePromptLanguage() {
+            return (config && config.lang) || 'english';
+        }
+
+        function applyRaceTextDirection() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection(racePromptLanguage());
+            }
+        }
+
         function applyDualTestSettings() {
             if (window.usertypo_settingsApi) {
                 try {
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* retain current settings */ }
             }
+            applyRaceTextDirection();
             bindDualKeymapRenderArgs();
         }
 
@@ -640,9 +651,7 @@
         }
 
         function renderPrompt() {
-            if (typeof window.applyTypingTextDirection === 'function') {
-                window.applyTypingTextDirection();
-            }
+            applyRaceTextDirection();
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             wordOffsets = [];
             var runningOffset = 0;
@@ -1546,6 +1555,7 @@
             rematchVotes = 0;
             selfRematchVoted = false;
             updateRematchButton();
+            countdownEndsAtTarget = Date.now() + 3000;
             prepareWaitingTestView();
             ensureCountdownSequence();
         }
@@ -1617,6 +1627,7 @@
                 var prompt = await window.usertypoLocalPrompt.createPrompt(raceConfig);
                 pendingRacePayload = buildLocalRacePayload(prompt.words);
                 paintDualOpponentAvatar(players[1]);
+                countdownEndsAtTarget = Date.now() + 3000;
                 prepareWaitingTestView();
                 ensureCountdownSequence();
             } catch (error) {
@@ -2061,6 +2072,9 @@
             currentWordIndex = 0;
             var tapeMode = getTapeMode();
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
+            var isRtl = typeof window.isTypingRTL === 'function'
+                ? !!window.isTypingRTL()
+                : (document.body && document.body.dataset.textDirection === 'rtl');
 
             if (isTape) {
                 if (!countdownTapeLocked) {
@@ -2075,7 +2089,8 @@
                     currentCharIndex = digitVisible ? 1 : 0;
                     var digitEl = document.getElementById('char-0-0');
                     var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
-                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                    var shift = isRtl ? digitWidth : -digitWidth;
+                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX + shift) + 'px)';
                     positionCaretAt(caret, 0, currentCharIndex);
                 }
             } else {
@@ -2248,35 +2263,56 @@
             return true;
         }
 
-        // Fixed local 3→2→1 tape animation (type → hold → backspace → gap).
-        // Race unlock still uses shared startsAt via startRace / beginRaceIfAlreadyLive.
+        // Digits paced to server countdownEndsAt so late joins sync into the remaining window.
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
             await waitForLayout();
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
-            if (caret) caret.classList.add('animate-breath');
-            await delay(650);
+
+            var endsAt = countdownEndsAtTarget > 0
+                ? countdownEndsAtTarget
+                : (Date.now() + 3000);
+            if (!countdownEndsAtTarget) countdownEndsAtTarget = endsAt;
+
+            var firstDigitAt = endsAt - 3000;
+            var breatheUntil = Math.min(firstDigitAt, Date.now() + 650);
+            if (breatheUntil > Date.now() + 40) {
+                if (caret) caret.classList.add('animate-breath');
+                await delay(breatheUntil - Date.now());
+            }
             if (token !== countdownAnimToken) return;
             if (beginRaceIfAlreadyLive()) return;
 
-            var digits = ['3', '2', '1'];
+            var digits = [
+                { label: '3', showAt: endsAt - 3000, hideAt: endsAt - 2000 },
+                { label: '2', showAt: endsAt - 2000, hideAt: endsAt - 1000 },
+                { label: '1', showAt: endsAt - 1000, hideAt: endsAt },
+            ];
             for (var i = 0; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
+                var step = digits[i];
+                var now = Date.now();
+                if (now >= step.hideAt) continue;
+                if (now < step.showAt) {
+                    if (caret) caret.classList.add('animate-breath');
+                    await delay(step.showAt - now);
+                    if (token !== countdownAnimToken) return;
+                    if (beginRaceIfAlreadyLive()) return;
+                }
                 if (caret) caret.classList.remove('animate-breath');
-                await typeCountdownDigit(digits[i], token);
+                await typeCountdownDigit(step.label, token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                await delay(1000);
+                var holdMs = step.hideAt - Date.now();
+                if (holdMs > 0) await delay(holdMs);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                if (caret) caret.classList.add('animate-breath');
-                await delay(280);
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
@@ -3347,9 +3383,12 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
-                if (!config) return;
-                if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
-                // Local 3→2→1 tape animation paced to countdownEndsAt.
+                if (payload[2]) {
+                    countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                } else if (payload[1] != null && Number(payload[1]) > 0) {
+                    countdownEndsAtTarget = Date.now() + (Number(payload[1]) * 1000);
+                }
+                // Digits paced to countdownEndsAt (including mid-countdown joins).
                 if (Number(payload[1]) === 0) return;
                 ensureCountdownSequence();
             });
@@ -3528,6 +3567,8 @@
                 }
                 if (response.countdownEndsAt) {
                     countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
+                } else if (response.countdown != null && Number(response.countdown) > 0) {
+                    countdownEndsAtTarget = Date.now() + (Number(response.countdown) * 1000);
                 }
                 if (response.state === 'racing' && response.race) {
                     countdownSequenceStarted = true;

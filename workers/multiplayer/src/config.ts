@@ -14,7 +14,7 @@ export const LIMITS = Object.freeze({
   roomInactivityMs: 600_000,
   minReadyToStart: 3,
   minReturnToLobby: 2,
-  countdownSeconds: 5,
+  countdownSeconds: 3,
   maxRetainedSnapshots: 32,
   maxConnectionsPerIp: 20,
   maxConnectAttemptsPerIpWindow: 40,
