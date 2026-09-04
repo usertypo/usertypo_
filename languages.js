@@ -347,7 +347,7 @@ const _langCache = {};
 async function loadLanguage(filename) {
     if (!filename || filename === 'Off') return wordList;
 
-    // Normalize: UI buttons use _Xk naming but actual files use _XT naming
+    // Language files use the same names as the UI (english, english_10k, …).
 
     // Check cache first
     if (_langCache[filename]) {

@@ -50,9 +50,9 @@
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
             if (dualParams.get('local') === 'bot') {
-                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=1'));
+                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=2'));
             }
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=97'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=100'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));

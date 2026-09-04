@@ -1293,7 +1293,7 @@ window.__spaPageInit = function() {
                 return {
                     mode: 'time',
                     amount: selectedAmount,
-                    lang: 'english',
+                    lang: (typeof getSavedLanguage === 'function' ? getSavedLanguage() : null) || 'english',
                     punct: usePunct,
                     nums: useNums,
                     avatar: dualTargetAvatar || ''

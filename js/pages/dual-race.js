@@ -58,6 +58,7 @@
         var graphPillBound = false;
         var graphResizeBound = false;
         var localFinished = false;
+        var statsShellRevealed = false;
         var latestResults = null;
         var lineHeight = 0;
         var CURSOR_SYNC_INTERVAL_MS = 150;
@@ -439,6 +440,134 @@
             setTimeout(function () {
                 if (waitOverlay) waitOverlay.classList.add('hidden');
             }, 220);
+        }
+
+        function revealDualStatsView() {
+            hideMessage();
+            if (!statsView || !testView) return;
+            statsShellRevealed = true;
+            testView.classList.add('hidden');
+            testView.style.display = 'none';
+            statsView.classList.remove('hidden', 'opacity-0');
+            statsView.classList.add('flex');
+            statsView.style.display = 'flex';
+            setDualFooterMode('stats-full');
+            setDualHeaderInteractive(true);
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            var body = document.getElementById('app-body');
+            var content = document.getElementById('spa-content');
+            var pageRoot = document.getElementById('spa-page-root');
+            var appViews = document.getElementById('app-views');
+            if (body) {
+                body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
+                body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
+                body.style.height = '';
+                body.style.overflow = '';
+            }
+            if (content) {
+                content.classList.remove('min-h-0', 'overflow-hidden');
+                content.style.overflow = '';
+            }
+            if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
+            if (appViews) {
+                appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                appViews.style.height = '';
+                appViews.style.minHeight = '';
+            }
+            statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
+            statsView.style.overflow = 'visible';
+            statsView.style.height = 'auto';
+        }
+
+        function playDualStatsEnterAnimation() {
+            if (!statsView) return;
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                void card.offsetWidth;
+                card.style.animation = '';
+                card.style.opacity = '';
+                card.style.transform = '';
+            });
+        }
+
+        function freezeDualStatsEnterAnimation() {
+            if (!statsView) return;
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                card.style.opacity = '1';
+                card.style.transform = 'none';
+            });
+        }
+
+        /** Skip the Finished overlay — open stats immediately with local/live numbers. */
+        function paintAwaitingResultsStats() {
+            var firstReveal = !statsShellRevealed
+                || !statsView
+                || statsView.classList.contains('hidden');
+            revealDualStatsView();
+            if (firstReveal) {
+                window.scrollTo(0, 0);
+                playDualStatsEnterAnimation();
+            } else {
+                freezeDualStatsEnterAnimation();
+            }
+            if (state === 'finished') return;
+            var me = players.find(function (player) { return player.userId === selfUserId; })
+                || { name: getLocalUserName(), avatarUrl: '', userId: selfUserId };
+            var other = players.find(function (player) { return player.userId !== selfUserId; })
+                || { name: (bot && bot.name) || 'Opponent', avatarUrl: '', userId: 'bot' };
+            var localMe = computeFinalStats(localFinishTime || Date.now());
+            var meData = Object.assign({}, localMe, {
+                name: me.name,
+                avatarUrl: me.avatarUrl,
+                level: me.level,
+                percentToNext: me.percentToNext,
+                userId: me.userId,
+            });
+            var liveOppWpm = Math.max(0, Math.round(Number(opponentTargetWpm || opponentDisplayWpm) || 0));
+            var otherData = {
+                name: other.name || 'Opponent',
+                avatarUrl: other.avatarUrl,
+                level: other.level,
+                percentToNext: other.percentToNext,
+                userId: other.userId,
+                isBot: !!(bot && other.userId === 'bot') || !!(other.isBot),
+                wpm: liveOppWpm,
+                raw: liveOppWpm,
+                accuracy: 100,
+                consistency: 100,
+                correct: 0,
+                total: 0,
+                errors: 0,
+                extra: 0,
+                time: config && config.mode === 'time' ? config.amount : 0,
+            };
+            if (isLocalBotMatch() && bot) {
+                var botStats = computeLocalBotFinalStats();
+                otherData = Object.assign({}, botStats, {
+                    name: other.name || bot.name || 'TypeBot',
+                    avatarUrl: other.avatarUrl,
+                    level: other.level,
+                    percentToNext: other.percentToNext,
+                    userId: other.userId || 'bot',
+                    isBot: true,
+                });
+            }
+            var meWon = meData.wpm > otherData.wpm
+                || (meData.wpm === otherData.wpm && meData.accuracy >= otherData.accuracy);
+            var winnerData = meWon ? meData : otherData;
+            var loserData = meWon ? otherData : meData;
+            fillCard('w', winnerData);
+            fillCard('l', loserData);
+            updateDualGraphPillLabels(winnerData, loserData);
+            setupDualResultsGraph(winnerData, loserData, meWon, localFinishTime || Date.now());
+            initStatsHeader();
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            window.scrollTo(0, 0);
         }
 
         function escapeHtml(value) {
@@ -1171,14 +1300,7 @@
                         return;
                     }
                     sendThreeWordPacket(true);
-                    if (!isBotMatch()) {
-                        showMessage(
-                            'Finished',
-                            opponentLeft
-                                ? 'Opponent left. Calculating race results.'
-                                : 'Calculating race results.'
-                        );
-                    }
+                    paintAwaitingResultsStats();
                 }
             } else {
                 progressDisplay.innerHTML = completedCorrectWords + '<span class="text-slate-500">/</span>' + config.amount;
@@ -1618,23 +1740,11 @@
                 state = 'waiting-result';
                 stopCursorSync();
                 if (isLocalBotMatch()) {
-                    showMessage(
-                        'Finished',
-                        bot && bot.finished
-                            ? 'Calculating race results.'
-                            : 'Waiting for TypeBot to finish.'
-                    );
+                    paintAwaitingResultsStats();
                     maybeFinishLocalBotRace();
                     return;
                 }
-                showMessage(
-                    'Finished',
-                    opponentLeft
-                        ? 'Opponent left. Calculating race results.'
-                        : (isBotMatch()
-                            ? 'Calculating race results.'
-                            : 'Waiting for your opponent to complete the test.')
-                );
+                paintAwaitingResultsStats();
                 return;
             }
             updateCaret();
@@ -1819,6 +1929,7 @@
             errorHistory = [];
             opponentLeft = false;
             localFinished = false;
+            statsShellRevealed = false;
             latestResults = null;
             opponentOffset = 0;
             opponentTargetOffset = 0;
@@ -1875,9 +1986,15 @@
                 statsView.classList.add('hidden', 'opacity-0');
                 statsView.classList.remove('flex');
                 statsView.style.display = 'none';
+                statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                    card.style.animation = '';
+                    card.style.opacity = '';
+                    card.style.transform = '';
+                });
                 var notice = statsView.querySelector('[data-dual-opponent-left-notice]');
                 if (notice) notice.remove();
             }
+            statsShellRevealed = false;
             if (testView) {
                 testView.classList.remove('hidden');
                 testView.style.display = '';
@@ -2295,7 +2412,7 @@
                     return;
                 }
                 sendThreeWordPacket(true);
-                showMessage('Finished', 'Calculating race results.');
+                paintAwaitingResultsStats();
                 return;
             }
 
@@ -3107,53 +3224,18 @@
             rematchNeeded = bot ? 1 : 2;
             selfRematchVoted = false;
             updateRematchButton();
-            testView.classList.add('hidden');
-            testView.style.display = 'none';
-            statsView.classList.remove('hidden', 'opacity-0');
-            statsView.classList.add('flex');
-            statsView.style.display = 'flex';
+            var statsAlreadyOpen = !!statsShellRevealed
+                && !!statsView
+                && !statsView.classList.contains('hidden');
+            revealDualStatsView();
             stopZenMode();
-            setDualFooterMode('stats-full');
-            setDualHeaderInteractive(true);
             initStatsHeader();
-            if (typeof window.usertypo_unlockStatsScroll === 'function') {
-                window.usertypo_unlockStatsScroll();
+            if (!statsAlreadyOpen) {
+                window.scrollTo(0, 0);
+                playDualStatsEnterAnimation();
+            } else {
+                freezeDualStatsEnterAnimation();
             }
-            // Force document scroll for dual stats (typing layout must not clamp the page).
-            (function unlockDualStatsPageScroll() {
-                var body = document.getElementById('app-body');
-                var content = document.getElementById('spa-content');
-                var pageRoot = document.getElementById('spa-page-root');
-                var appViews = document.getElementById('app-views');
-                if (body) {
-                    body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
-                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
-                    body.style.height = '';
-                    body.style.overflow = '';
-                }
-                if (content) {
-                    content.classList.remove('min-h-0', 'overflow-hidden');
-                    content.style.overflow = '';
-                }
-                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
-                if (appViews) {
-                    appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
-                    appViews.style.height = '';
-                    appViews.style.minHeight = '';
-                }
-                if (statsView) {
-                    statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
-                    statsView.style.overflow = 'visible';
-                    statsView.style.height = 'auto';
-                }
-            })();
-            window.scrollTo(0, 0);
-            // Retrigger enter animations (they may have completed while stats-view was hidden).
-            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
-                card.style.animation = 'none';
-                void card.offsetWidth;
-                card.style.animation = '';
-            });
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
                 window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
             } else {
@@ -3225,15 +3307,19 @@
                 }, { signal: signal });
             }
             document.addEventListener('keydown', function (event) {
-                if (state !== 'finished') return;
                 var tag = (event.target && event.target.tagName || '').toLowerCase();
                 var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
-                if (inEditable) return;
+                var statsOpen = !!statsShellRevealed
+                    || !!(statsView && !statsView.classList.contains('hidden') && statsView.style.display !== 'none');
 
-                if (event.key === ' ' || event.key === 'Spacebar') {
+                // Space scrolls the page when stats are open (incl. provisional waiting-result).
+                if ((event.key === ' ' || event.key === 'Spacebar') && !inEditable && statsOpen) {
                     event.preventDefault();
                     return;
                 }
+
+                if (state !== 'finished') return;
+                if (inEditable) return;
 
                 var leaveBtn = document.getElementById('leave-dual-btn');
                 if (event.key === 'Tab') {
@@ -3307,7 +3393,7 @@
                     );
                 }
                 if (state === 'waiting-result') {
-                    showMessage('Finished', 'Opponent left. Calculating race results.');
+                    paintAwaitingResultsStats();
                 }
             });
             listen('race-finished', function (event) {
