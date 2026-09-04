@@ -1358,7 +1358,12 @@ export class MultiplayerHub implements DurableObject {
         ? Math.floor((player.finishedAt - room.startsAt) / 1000)
         : 0
     );
-    const elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+    // Match live race:progress WPM (continuous elapsed). Floored seconds inflated finals vs LB.
+    const elapsedMinutes = (player.finishedAt && room.startsAt)
+      ? Math.max((player.finishedAt - room.startsAt) / 60_000, 1 / 120)
+      : (fs?.displaySeconds != null
+        ? Math.max(displaySeconds / 60, 2 / 60)
+        : Math.max(displaySeconds / 60, 1 / 120));
     const exactWpm = (validChars / 5) / elapsedMinutes;
     const exactRawWpm = (rawChars / 5) / elapsedMinutes;
     const accuracy = rawChars > 0
@@ -1393,7 +1398,9 @@ export class MultiplayerHub implements DurableObject {
     const displaySeconds = bot.finishedAt && room.startsAt
       ? Math.floor((bot.finishedAt - room.startsAt) / 1000)
       : (room.startsAt ? Math.max(0, Math.floor((Date.now() - room.startsAt) / 1000)) : 0);
-    const elapsedMinutes = Math.max(displaySeconds / 60, 2 / 60);
+    const elapsedMinutes = (bot.finishedAt && room.startsAt)
+      ? Math.max((bot.finishedAt - room.startsAt) / 60_000, 1 / 120)
+      : Math.max(displaySeconds / 60, 1 / 120);
     const validChars = bot.correctChars || 0;
     const rawChars = bot.totalKeystrokes || 0;
     const errorsMade = Math.max(0, rawChars - validChars);

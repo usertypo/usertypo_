@@ -386,6 +386,221 @@
             animation: cardReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
+        /* Room results — duel-style podium + pills */
+        #stats-view {
+            overflow: visible;
+            flex: 1 0 auto;
+            min-height: auto;
+            height: auto;
+        }
+        #stats-view > main {
+            width: 100%;
+            max-width: min(56rem, 100%);
+            margin-inline: auto;
+            padding: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 4vw, 2rem) clamp(2.5rem, 8vh, 4rem);
+            box-sizing: border-box;
+        }
+        #stats-podium.room-stats-podium {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            align-items: start;
+            gap: clamp(0.5rem, 2vw, 1.25rem);
+            width: 100%;
+            min-width: 0;
+            padding: clamp(1rem, 3vh, 2rem) 0 clamp(0.5rem, 2vh, 1rem);
+        }
+        #stats-podium .room-podium-slot {
+            min-width: 0;
+            display: flex;
+            justify-content: center;
+        }
+        #stats-podium .room-podium-slot.is-empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #stats-podium .room-podium-player {
+            width: 100%;
+            max-width: 14rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #stats-podium .room-podium-player.is-first {
+            transform: translateY(clamp(-1.1rem, -2.2vh, -0.5rem));
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-name {
+            font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-label {
+            font-size: clamp(0.55rem, 1.8vw, 0.65rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-side {
+            font-size: clamp(1rem, 3.2vw, 1.35rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-wpm {
+            font-size: clamp(1.85rem, 7vw, 2.75rem);
+        }
+        #stats-podium .dual-stats-avatar-wrap {
+            margin-bottom: clamp(0.85rem, 2vh, 1.35rem);
+            transform: none;
+        }
+        #stats-podium .player-level-avatar {
+            --pla-size: 5rem;
+            --pla-photo: 74%;
+            --pla-stroke: 2.1;
+            --pla-badge-min: 1.15rem;
+            --pla-badge-h: 1.15rem;
+            --pla-badge-px: 0.3rem;
+            --pla-badge-font: 0.5rem;
+            --pla-initial-font: 1.1rem;
+            --pla-bot-font: 1.55rem;
+        }
+        #stats-podium .player-level-avatar__level {
+            bottom: -0.2rem;
+            font-size: 0.5rem;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            line-height: 1.15rem;
+            padding: 0 0.28rem;
+        }
+        #stats-podium .room-podium-player.is-first .player-level-avatar {
+            --pla-size: 6.75rem;
+            --pla-badge-min: 1.35rem;
+            --pla-badge-h: 1.35rem;
+            --pla-badge-font: 0.55rem;
+            --pla-initial-font: 1.35rem;
+            --pla-bot-font: 2rem;
+        }
+        @media (min-width: 640px) {
+            #stats-podium .player-level-avatar {
+                --pla-size: 5.75rem;
+                --pla-badge-min: 1.25rem;
+                --pla-badge-h: 1.25rem;
+                --pla-badge-font: 0.533rem;
+            }
+            #stats-podium .player-level-avatar__level {
+                min-width: 1.25rem;
+                height: 1.25rem;
+                line-height: 1.25rem;
+                font-size: 0.533rem;
+            }
+            #stats-podium .room-podium-player.is-first .player-level-avatar {
+                --pla-size: 8rem;
+                --pla-badge-min: 1.45rem;
+                --pla-badge-h: 1.45rem;
+                --pla-badge-font: 0.6rem;
+                --pla-initial-font: 1.55rem;
+                --pla-bot-font: 2.25rem;
+            }
+            #stats-podium .room-podium-player.is-first .player-level-avatar__level {
+                min-width: 1.45rem;
+                height: 1.45rem;
+                line-height: 1.45rem;
+                font-size: 0.6rem;
+            }
+        }
+        #stats-podium .dual-stats-name {
+            max-width: 100%;
+            font-size: clamp(0.7rem, 2.2vw, 0.875rem);
+            margin-bottom: clamp(0.4rem, 1.2vh, 0.75rem);
+        }
+        #stats-podium .dual-stats-metrics {
+            width: 100%;
+            max-width: min(16rem, 100%);
+            gap: clamp(0.15rem, 1vw, 0.5rem);
+        }
+        #stats-podium .dual-stats-metrics .dual-metric-label {
+            font-size: clamp(0.5rem, 1.6vw, 0.5625rem);
+        }
+        #stats-podium .dual-stats-metrics .dual-metric-side {
+            font-size: clamp(0.85rem, 2.8vw, 1.125rem);
+        }
+        #stats-podium .dual-stats-metrics .dual-metric-wpm {
+            font-size: clamp(1.4rem, 5.5vw, 2.1rem);
+        }
+        #stats-rankings-list.room-stats-pills {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 0.65rem;
+            width: 100%;
+            max-width: 28rem;
+            margin: clamp(0.75rem, 2vh, 1.25rem) auto 0;
+        }
+        #stats-rankings-list .room-rank-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 0.7rem;
+            border-radius: 9999px;
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-sizing: border-box;
+        }
+        #stats-rankings-list .room-rank-pill.is-me {
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 14px rgba(var(--theme-primary-rgb), calc(0.18 * var(--glow-intensity, 1)));
+            background: rgba(var(--theme-primary-rgb), 0.08);
+        }
+        #stats-rankings-list .room-rank-pill .pill-rank {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #64748b;
+            font-variant-numeric: tabular-nums;
+            min-width: 1.75rem;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #stats-rankings-list .room-rank-pill.is-me .pill-rank {
+            color: var(--theme-primary);
+        }
+        #stats-rankings-list .room-rank-pill .pill-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #stats-rankings-list .room-rank-pill.is-me .pill-name {
+            color: #fff;
+        }
+        #stats-rankings-list .room-rank-pill .pill-stats {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.65rem;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        #stats-rankings-list .room-rank-pill .pill-wpm {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+        #stats-rankings-list .room-rank-pill.is-me .pill-wpm {
+            color: var(--theme-primary);
+            text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.35 * var(--glow-intensity, 1)));
+        }
+        #stats-rankings-list .room-rank-pill .pill-stat-side {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        #stats-rankings-list .room-rank-pill.is-me .pill-stat-side {
+            color: #cbd5e1;
+        }
+
         /* View transitions */
         .view-transition { transition: opacity 0.4s ease-in-out; }
 
@@ -749,17 +964,15 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <div id="stats-view" class="view-transition hidden flex-1 flex flex-col relative z-10 opacity-0"
         style="display:none;">
-        <main class="flex-1 w-full max-w-7xl mx-auto px-6 pt-2 pb-6 flex flex-col lg:flex-row gap-6 relative z-10">
-            <div class="flex-1 flex flex-col gap-6 min-w-0">
-                <div id="stats-capture-area" class="flex flex-col gap-6 w-full">
-                <!-- TOP 3 PODIUM (dynamic) -->
-                <section id="stats-podium" class="flex flex-row items-end justify-center gap-6 pt-16 pb-4"></section>
+        <main class="flex-1 w-full flex flex-col relative z-10">
+            <div id="stats-capture-area" class="flex flex-col gap-5 sm:gap-6 w-full items-stretch">
+                <!-- TOP 3: 2nd | 1st | 3rd (duel-style cards) -->
+                <section id="stats-podium" class="room-stats-podium" aria-label="Top three"></section>
 
-                <!-- RANKINGS LIST (dynamic) -->
-                <section id="stats-rankings-list" class="flex flex-col gap-3"></section>
+                <!-- 4th+ as stacked WPM pills (your pill also pinned on top if outside top 4) -->
+                <section id="stats-rankings-list" class="room-stats-pills" aria-label="Other rankings"></section>
 
-                <!-- Stats CTA below player cards -->
-                <div id="stats-action-buttons" class="flex items-center justify-center gap-5 pt-10 pb-4">
+                <div id="stats-action-buttons" class="flex items-center justify-center gap-5 pt-12 sm:pt-16 pb-2 flex-wrap">
                     <button id="stats-return-lobby-btn" type="button"
                         class="px-12 py-4 rounded-xl font-display font-bold text-lg uppercase tracking-widest transition-all duration-300 transform active:scale-95 bg-primary text-on-primary neon-glow-primary-strong inline-flex items-center justify-center whitespace-nowrap flex-nowrap">
                         <span id="stats-return-lobby-label" class="whitespace-nowrap">Back to Lobby</span>
@@ -776,32 +989,8 @@
                         <span class="material-symbols-outlined text-[20px]">ios_share</span>
                     </button>
                 </div>
-                </div>
-            </div>
-
-            <!-- Right: Ad -->
-            <div id="ad-slot-room" class="w-[10rem] shrink-0 glass-panel rounded-xl flex flex-col relative overflow-hidden hidden lg:flex sticky top-4"
-                style="height: calc(100vh - 2rem); align-self: flex-start;" data-ad-slot="room">
-                <div class="w-full py-2 bg-black/20 text-center border-b border-white/5">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sponsored</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center p-3">
-                    <div
-                        class="w-full h-full border border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center gap-6 bg-black/10 py-8">
-                        <span class="material-symbols-outlined text-slate-600 text-4xl">ads_click</span>
-                        <div class="text-center px-1">
-                            <p class="text-xs text-slate-400 font-bold">YOUR AD HERE</p>
-                            <p class="text-[10px] text-slate-600 font-mono">160x600 Skyscraper</p>
-                        </div>
-                        <button
-                            class="px-4 py-2 bg-white/5 rounded text-[10px] font-bold text-slate-400 border border-white/5">Learn
-                            More</button>
-                    </div>
-                </div>
             </div>
         </main>
-
-
     </div>
 
 </div> <!-- End app-views -->
