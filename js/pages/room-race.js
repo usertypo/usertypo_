@@ -2065,86 +2065,97 @@
         }
 
         function buildPodiumCard(player, place) {
-            var themes = {
-                1: {
-                    delay: '0ms', border: 'rgba(var(--theme-primary-rgb), 0.15)', boxShadow: '0 0 25px rgba(var(--theme-primary-rgb), calc(0.1 * var(--glow-intensity, 1)))',
-                    gradient: 'from-primary', avatarBg: 'bg-primary/20 border-primary/30 text-primary',
-                    avatarShadow: 'shadow-[0_0_12px_rgba(0,208,255,0.25)]',
-                    wpmClass: 'text-primary', wpmShadow: '0 0 30px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)))', glow: true,
-                    badge: 'bg-primary/10 border-primary/25', badgeText: 'text-primary', label: '1st', trophy: false,
-                },
-                2: {
-                    delay: '200ms', border: 'rgba(192,192,192,0.15)', boxShadow: '',
-                    gradient: 'from-slate-400', avatarBg: 'bg-slate-400/15 border-slate-400/25 text-slate-300',
-                    avatarShadow: '', wpmClass: 'text-slate-200', wpmShadow: '0 0 12px rgba(255,255,255, calc(0.15 * var(--glow-intensity, 1)))', glow: false,
-                    badge: 'bg-slate-400/10 border-slate-400/20', badgeText: 'text-slate-400', label: '2nd', trophy: false,
-                },
-                3: {
-                    delay: '400ms', border: 'rgba(205,127,50,0.12)', boxShadow: '',
-                    gradient: 'from-amber-700', avatarBg: 'bg-amber-700/10 border-amber-700/20 text-amber-600',
-                    avatarShadow: '', wpmClass: 'text-amber-600', wpmShadow: '0 0 12px rgba(205,127,50, calc(0.3 * var(--glow-intensity, 1)))', glow: false,
-                    badge: 'bg-amber-700/10 border-amber-700/20', badgeText: 'text-amber-700', label: '3rd', trophy: false,
-                },
-            };
-            var theme = themes[place];
-            var cardBorderStyle = player.isMe
-                ? 'border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.08 * var(--glow-intensity, 1)));'
-                : 'border:1px solid ' + theme.border + ';' + (theme.boxShadow ? ' box-shadow: ' + theme.boxShadow + ';' : '');
-            var meBarHtml = player.isMe ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' : '';
-            var nameHtml = escapeHtml(player.name)
-                + (player.isMe ? ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span>' : '');
-            var trophyHtml = theme.trophy
-                ? '<span class="material-symbols-outlined text-amber-400 text-[28px] mb-1 block" style="text-shadow: 0 0 12px rgba(251,191,36, calc(0.5 * var(--glow-intensity, 1)));">emoji_events</span>'
+            if (!player) return '';
+            var placeLabel = place === 1 ? '1st' : (place === 2 ? '2nd' : '3rd');
+            var placeClass = place === 1
+                ? 'text-[11px] font-black text-primary uppercase tracking-widest'
+                : 'text-[11px] font-bold text-slate-500 uppercase tracking-widest';
+            var delay = place === 1 ? '0ms' : (place === 2 ? '120ms' : '240ms');
+            var wpmClass = place === 1
+                ? 'dual-metric-wpm font-black text-primary leading-none tracking-tighter'
+                : 'dual-metric-wpm font-black text-slate-300 leading-none tracking-tighter';
+            var wpmShadow = place === 1
+                ? 'text-shadow: 0 0 20px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));'
+                : 'text-shadow: 0 0 12px rgba(255, 255, 255, var(--gi-15, 0.15));';
+            var glowHtml = place === 1
+                ? '<div class="absolute -inset-5 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);"></div>'
                 : '';
-            var glowHtml = theme.glow
-                ? '<div class="absolute -inset-4 bg-primary/15 blur-2xl rounded-full" data-screenshot-glow></div>'
-                : '';
-            var avatarHtml = player.isBot
-                ? botAvatarHtml('w-12 h-12 mx-auto mb-2', 24)
-                : playerAvatarHtml(player, 'xl', 'mx-auto mb-2');
+            var avatarHtml = playerAvatarHtml(player, 'xl', place === 1
+                ? 'shadow-[0_0_16px_rgba(var(--theme-primary-rgb),0.3)]'
+                : '');
+            var youHtml = player.isMe
+                ? ' <span class="text-[10px] font-semibold text-slate-500">(you)</span>'
+                : (player.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '');
 
-            return '<div class="flex flex-col items-center gap-3 w-[220px] anim-card" style="animation-delay: ' + theme.delay + ';">' +
-                '<div class="panel-surface rounded-xl p-5 w-full text-center relative overflow-hidden" style="' + cardBorderStyle + '">' +
-                '<div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b ' + theme.gradient + ' to-transparent opacity-' + (place === 1 ? '80' : '50') + '"></div>' +
-                meBarHtml + trophyHtml + avatarHtml +
-                '<p class="text-white font-bold text-sm mb-3">' + nameHtml + '</p>' +
-                '<div class="relative inline-block mb-1">' + glowHtml +
-                '<span class="text-5xl font-black ' + theme.wpmClass + ' relative z-10 leading-none tracking-tighter" style="text-shadow: ' + theme.wpmShadow + ';">' + player.wpm + '</span>' +
-                '</div><p class="text-xs font-bold text-slate-500 uppercase tracking-widest">WPM</p></div>' +
-                '<div class="panel-surface rounded-lg p-3 w-full"' + (place === 1 ? ' style="border:1px solid rgba(var(--theme-primary-rgb), 0.08);"' : '') + '>' +
-                '<div class="grid grid-cols-2 gap-2 text-center">' +
-                '<div><span class="text-[9px] font-bold text-slate-500 uppercase block">Acc</span><span class="text-sm font-black text-white">' + player.acc + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
-                '<div class="border-l border-white/5"><span class="text-[9px] font-bold text-slate-500 uppercase block">Con</span><span class="text-sm font-black text-white">' + player.con + '<span class="text-[10px] text-slate-500">%</span></span></div>' +
-                '</div></div>' +
-                '<div class="flex items-center gap-1.5 ' + theme.badge + ' border rounded-full px-3 py-1">' +
-                (theme.trophy ? '<span class="material-symbols-outlined text-amber-400 text-[14px]">emoji_events</span>' : '') +
-                '<span class="text-[10px] font-black ' + theme.badgeText + ' uppercase tracking-widest"' +
-                (place === 1 ? ' style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));"' : '') + '>' + theme.label + '</span>' +
-                '</div></div>';
+            return '<div class="room-podium-player' + (place === 1 ? ' is-first' : '') + ' anim-card" style="animation-delay:' + delay + ';">'
+                + '<div class="flex items-center gap-1.5 mb-2 sm:mb-3 min-h-[1.25rem]">'
+                + '<span class="' + placeClass + '">' + placeLabel + '</span>'
+                + youHtml
+                + '</div>'
+                + '<div class="dual-stats-avatar-wrap relative">'
+                + glowHtml
+                + '<div class="relative z-10 flex items-center justify-center">' + avatarHtml + '</div>'
+                + '</div>'
+                + '<span class="dual-stats-name text-white font-bold tracking-wide text-center truncate">'
+                + escapeHtml(player.name) + '</span>'
+                + '<div class="dual-stats-metrics grid grid-cols-3 items-end">'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Acc</span>'
+                + '<span class="dual-metric-side font-black text-white leading-none">'
+                + '<span>' + player.acc + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">WPM</span>'
+                + '<span class="' + wpmClass + '" style="' + wpmShadow + '">' + player.wpm + '</span></div>'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Cons</span>'
+                + '<span class="dual-metric-side font-black text-white leading-none">'
+                + '<span>' + player.con + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
+                + '</div></div>';
+        }
+
+        function buildSelfSpotlightCard(player, rank) {
+            if (!player) return '';
+            var avatarHtml = playerAvatarHtml(player, 'xl', 'shadow-[0_0_16px_rgba(var(--theme-primary-rgb),0.3)]');
+            return '<div class="room-self-card room-podium-player anim-card" style="animation-delay:280ms;">'
+                + '<div class="flex items-center gap-1.5 mb-2 sm:mb-3 min-h-[1.25rem]">'
+                + '<span class="text-[11px] font-black text-primary uppercase tracking-widest">#' + rank + '</span>'
+                + ' <span class="text-[10px] font-semibold text-slate-500">(you)</span>'
+                + '</div>'
+                + '<div class="dual-stats-avatar-wrap relative">'
+                + '<div class="absolute -inset-5 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);"></div>'
+                + '<div class="relative z-10 flex items-center justify-center">' + avatarHtml + '</div>'
+                + '</div>'
+                + '<span class="dual-stats-name text-white font-bold tracking-wide text-center truncate">'
+                + escapeHtml(player.name) + '</span>'
+                + '<div class="dual-stats-metrics grid grid-cols-3 items-end">'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Acc</span>'
+                + '<span class="dual-metric-side font-black text-white leading-none">'
+                + '<span>' + player.acc + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">WPM</span>'
+                + '<span class="dual-metric-wpm font-black text-primary leading-none tracking-tighter" '
+                + 'style="text-shadow: 0 0 20px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">'
+                + player.wpm + '</span></div>'
+                + '<div class="text-center min-w-0">'
+                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Cons</span>'
+                + '<span class="dual-metric-side font-black text-white leading-none">'
+                + '<span>' + player.con + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
+                + '</div></div>';
         }
 
         function buildStatsListRow(player, rank) {
-            var avatar = player.isBot
-                ? '<div class="mr-3">' + botAvatarHtml('w-8 h-8', 16) + '</div>'
-                : '<div class="mr-3">' + playerAvatarHtml(player, 'sm') + '</div>';
-            if (player.isMe) {
-                return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center relative overflow-hidden anim-card" style="border: 1px solid rgba(var(--theme-primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), calc(0.08 * var(--glow-intensity, 1)));">' +
-                    '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' +
-                    '<span class="text-primary font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
-                    avatar +
-                    '<span class="text-white font-bold text-sm flex-1">' + escapeHtml(player.name) +
-                    ' <span class="text-[10px] text-primary font-bold ml-1 uppercase tracking-widest">(You)</span></span>' +
-                    '<span class="text-primary font-mono font-black text-lg" style="text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.4 * var(--glow-intensity, 1)));">' +
-                    player.wpm + ' <span class="text-xs text-slate-500 font-bold">WPM</span></span></div>';
-            }
-            return '<div class="panel-surface rounded-xl px-5 py-3 flex items-center hover:bg-white/5 transition-colors anim-card">' +
-                '<span class="text-slate-500 font-black text-sm w-8 shrink-0">#' + rank + '</span>' +
-                avatar +
-                '<span class="text-slate-200 font-bold text-sm flex-1">' + escapeHtml(player.name) +
-                (player.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '') +
-                '</span>' +
-                '<span class="text-slate-300 font-mono font-bold text-base">' + player.wpm +
-                ' <span class="text-xs text-slate-500">WPM</span></span></div>';
+            var avatar = playerAvatarHtml(player, 'xs', '');
+            var meClass = player.isMe ? ' is-me' : '';
+            var nameExtra = player.isBot
+                ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>'
+                : (player.isMe ? ' <span class="text-[9px] text-primary font-bold uppercase tracking-wider">(you)</span>' : '');
+            return '<div class="room-rank-pill anim-card' + meClass + '" style="animation-delay:' + Math.min(500, 200 + rank * 40) + 'ms;">'
+                + '<span class="pill-rank">#' + rank + '</span>'
+                + '<span class="shrink-0 flex items-center">' + avatar + '</span>'
+                + '<span class="pill-name">' + escapeHtml(player.name) + nameExtra + '</span>'
+                + '<span class="pill-wpm">' + player.wpm + ' <span class="text-[10px] font-bold text-slate-500">WPM</span></span>'
+                + '</div>';
         }
 
         function mapResultRows(results) {
@@ -2232,8 +2243,10 @@
             // Clear stale results so they don't flash when the next match finishes.
             var oldPodium = document.getElementById('stats-podium');
             var oldList = document.getElementById('stats-rankings-list');
+            var oldSpotlight = document.getElementById('stats-self-spotlight');
             if (oldPodium) oldPodium.innerHTML = '';
             if (oldList) oldList.innerHTML = '';
+            if (oldSpotlight) oldSpotlight.innerHTML = '';
             testView.classList.add('hidden');
             testView.style.display = 'none';
             lobbyView.classList.remove('hidden', 'opacity-0');
@@ -2276,30 +2289,42 @@
             var players = mapResultRows(payload[2] || []);
             function paintRoomResults() {
                 var top3 = players.slice(0, 3);
-                var podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+                var first = top3[0] || null;
+                var second = top3[1] || null;
+                var third = top3[2] || null;
                 var podium = document.getElementById('stats-podium');
+                var spotlight = document.getElementById('stats-self-spotlight');
                 var list = document.getElementById('stats-rankings-list');
                 if (podium) {
-                    var places = [2, 1, 3];
-                    podium.innerHTML = podiumOrder.map(function (player, index) {
-                        return buildPodiumCard(player, places[index]);
+                    // Visual order: 2nd | 1st | 3rd
+                    var slots = [
+                        { player: second, place: 2 },
+                        { player: first, place: 1 },
+                        { player: third, place: 3 },
+                    ];
+                    podium.innerHTML = slots.map(function (slot) {
+                        if (!slot.player) {
+                            return '<div class="room-podium-slot is-empty" aria-hidden="true"></div>';
+                        }
+                        return '<div class="room-podium-slot">'
+                            + buildPodiumCard(slot.player, slot.place)
+                            + '</div>';
                     }).join('');
                 }
+                var me = players.find(function (player) { return player.isMe; });
+                var myRank = me ? players.findIndex(function (player) { return player.isMe; }) + 1 : 0;
+                var myOutsideTop4 = !!(me && myRank > 4);
+                if (spotlight) {
+                    spotlight.innerHTML = myOutsideTop4
+                        ? buildSelfSpotlightCard(me, myRank)
+                        : '';
+                }
                 if (list) {
-                    var me = players.find(function (player) { return player.isMe; });
-                    var myInTop3 = top3.some(function (player) { return player.isMe; });
-                    var rest = players.slice(3).filter(function (player) { return !player.isMe || myInTop3; });
-                    var html = '';
-                    if (!myInTop3 && me) {
-                        var myRank = players.findIndex(function (player) { return player.isMe; }) + 1;
-                        html += buildStatsListRow(me, myRank);
-                        if (rest.length) html += '<div class="h-px bg-white/5 my-1"></div>';
-                    }
-                    html += rest.map(function (player) {
+                    var rest = players.slice(3);
+                    list.innerHTML = rest.map(function (player) {
                         var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
                         return buildStatsListRow(player, rank);
                     }).join('');
-                    list.innerHTML = html;
                 }
             }
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
