@@ -2630,12 +2630,20 @@
             var container = document.getElementById('dual-graph-container');
             var tooltip = document.getElementById('dual-graph-tooltip');
             var legend = document.getElementById('dual-graph-legend');
-            if (!container) return;
+            if (!container) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'D',location:'dual-race.js:renderDualBasicGraph',message:'no container',data:{isUpdate:!!isUpdate},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+                return;
+            }
             var series = graphSeriesBySide[graphSelectedSide] || graphSeriesBySide.w;
             var old = container.querySelector('svg.dynamic-graph');
             if (old) old.remove();
             if (tooltip) tooltip.style.display = 'none';
             if (!series || !series.wpmHistory || !series.wpmHistory.length) {
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'D',location:'dual-race.js:renderDualBasicGraph',message:'empty series early return',data:{side:graphSelectedSide,hasSeries:!!series,keys:graphSeriesBySide?Object.keys(graphSeriesBySide):[]},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 if (legend) legend.style.opacity = '0';
                 return;
             }
@@ -2771,8 +2779,12 @@
             var actualWLen = wpmLineEl && typeof wpmLineEl.getTotalLength === 'function' ? wpmLineEl.getTotalLength() : 0;
             var actualRLen = rawLineEl && typeof rawLineEl.getTotalLength === 'function' ? rawLineEl.getTotalLength() : 0;
             graphAnimationPlayed = true;
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'E',location:'dual-race.js:renderDualBasicGraph:appended',message:'svg appended',data:{W:W,H:H,gW:gW,gH:gH,clientW:container.clientWidth,clientH:container.clientHeight,wDataLen:wData.length,pathLen:actualWLen,svgChildren:svg.childNodes.length,cardDisplay:statsView&&statsView.style.display,cardHidden:statsView&&statsView.classList.contains('hidden')},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
 
             function getYForX(pathElem, targetX, totalLen) {
+                if (!pathElem || !totalLen) return PAD.top + gH / 2;
                 var low = 0;
                 var high = totalLen;
                 for (var iter = 0; iter < 15; iter += 1) {
@@ -2844,6 +2856,9 @@
         function updateDualGraphPillLabels(winnerData, loserData) {
             var winnerBtn = document.getElementById('dual-graph-btn-winner');
             var secondBtn = document.getElementById('dual-graph-btn-second');
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'A-B-C',location:'dual-race.js:updateDualGraphPillLabels',message:'pill label update',data:{hasWinnerBtn:!!winnerBtn,hasSecondBtn:!!secondBtn,winnerName:winnerData&&winnerData.name,winnerUsername:winnerData&&winnerData.username,loserName:loserData&&loserData.name,loserUsername:loserData&&loserData.username,winnerUserId:winnerData&&winnerData.userId,selfUserId:selfUserId,statsHidden: !!(statsView&&statsView.classList.contains('hidden'))},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             if (winnerBtn) {
                 winnerBtn.textContent = pillLabelForPlayer(winnerData);
                 winnerBtn.classList.add('active');
@@ -2852,6 +2867,9 @@
                 secondBtn.textContent = pillLabelForPlayer(loserData);
                 secondBtn.classList.remove('active');
             }
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'B-C',location:'dual-race.js:updateDualGraphPillLabels:after',message:'pill text after set',data:{winnerText:winnerBtn&&winnerBtn.textContent,secondText:secondBtn&&secondBtn.textContent,computedWinner:pillLabelForPlayer(winnerData),computedLoser:pillLabelForPlayer(loserData),btnInDoc:!!(winnerBtn&&document.contains(winnerBtn))},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             graphSelectedSide = 'w';
             bindDualGraphPill();
             requestAnimationFrame(function () {
@@ -2860,6 +2878,9 @@
         }
 
         function setupDualResultsGraph(winnerData, loserData, meWon, endTime) {
+            // #region agent log
+            fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'A',location:'dual-race.js:setupDualResultsGraph:entry',message:'setup graph entry',data:{meWon:!!meWon,endTime:endTime,startTime:startTime,localFinishTime:localFinishTime,wpmHistLen:(wpmHistory&&wpmHistory.length)||0,rawHistLen:(rawHistory&&rawHistory.length)||0,oppWpmLen:(oppWpmHistory&&oppWpmHistory.length)||0,winnerWpm:winnerData&&winnerData.wpm,loserWpm:loserData&&loserData.wpm},timestamp:Date.now()})}).catch(function(){});
+            // #endregion
             updateDualGraphPillLabels(winnerData, loserData);
             try {
                 var selfSeries = finalizeSelfGraphHistory(
@@ -2888,6 +2909,9 @@
                     w: meWon ? selfSeries : oppSeries,
                     l: meWon ? oppSeries : selfSeries,
                 };
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'D',location:'dual-race.js:setupDualResultsGraph:series',message:'series built',data:{wLen:graphSeriesBySide.w&&graphSeriesBySide.w.wpmHistory&&graphSeriesBySide.w.wpmHistory.length,lLen:graphSeriesBySide.l&&graphSeriesBySide.l.wpmHistory&&graphSeriesBySide.l.wpmHistory.length,wSample:graphSeriesBySide.w&&graphSeriesBySide.w.wpmHistory&&graphSeriesBySide.w.wpmHistory.slice(0,5),rSample:graphSeriesBySide.w&&graphSeriesBySide.w.rawHistory&&graphSeriesBySide.w.rawHistory.slice(0,5)},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
             } catch (err) {
                 var fallbackWpm = Math.max(0, Math.round(Number(winnerData && winnerData.wpm) || 0));
                 var fallbackRaw = Math.max(0, Math.round(Number(winnerData && winnerData.raw) || fallbackWpm));
@@ -2897,6 +2921,9 @@
                     w: { wpmHistory: [fallbackWpm], rawHistory: [fallbackRaw] },
                     l: { wpmHistory: [fallbackLosWpm], rawHistory: [fallbackLosRaw] },
                 };
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'D',location:'dual-race.js:setupDualResultsGraph:catch',message:'series build threw',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 if (typeof console !== 'undefined' && console.warn) {
                     console.warn('[dual] graph series failed', err);
                 }
@@ -2908,6 +2935,9 @@
                     updateDualGraphPillIndicator(document.getElementById('dual-graph-btn-winner'));
                     renderDualBasicGraph(true);
                 } catch (err) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'E',location:'dual-race.js:paintGraph:catch',message:'paint threw',data:{err:String(err&&err.message||err)},timestamp:Date.now()})}).catch(function(){});
+                    // #endregion
                     if (typeof console !== 'undefined' && console.warn) {
                         console.warn('[dual] graph render failed', err);
                     }
@@ -3063,6 +3093,9 @@
                 var loserData = meWon ? otherData : meData;
                 fillCard('w', winnerData);
                 fillCard('l', loserData);
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'pre-fix',hypothesisId:'A-C',location:'dual-race.js:paintResults',message:'before pill/graph setup',data:{meWon:!!meWon,winnerName:winnerData&&winnerData.name,loserName:loserData&&loserData.name,meKeys:me?Object.keys(me):[],otherKeys:other?Object.keys(other):[],meName:me&&me.name,meUsername:me&&me.username},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
                 updateDualGraphPillLabels(winnerData, loserData);
                 var endTime = localFinishTime || Date.now();
                 setupDualResultsGraph(winnerData, loserData, meWon, endTime);
