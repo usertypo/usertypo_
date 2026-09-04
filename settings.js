@@ -2816,6 +2816,8 @@ function applyThemeSettings(settings) {
         /* ── Logo layers (theme-aware) ── */
         .header-typ-layer  { background-color: ${logoTypColor} !important; }
         .header-user-layer { background-color: ${logoUserColor} !important; }
+        .header-dev-layer  { background-color: ${logoUserColor} !important; }
+        .header-beta-layer { background-color: ${logoUserColor} !important; }
         .header-typ-wrapper {
             filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)) !important;
         }
@@ -2826,6 +2828,14 @@ function applyThemeSettings(settings) {
             100% { filter: drop-shadow(0 0 6px ${logoTypColor}) drop-shadow(0 0 15px rgba(${logoTypRGB}, 0.55)); }
         }
         @keyframes header-fade-user {
+            0%   { filter: drop-shadow(0 0 0px rgba(${logoUserRGB}, 0)); }
+            100% { filter: drop-shadow(0 0 6px ${logoUserColor}) drop-shadow(0 0 15px rgba(${logoUserRGB}, 0.55)); }
+        }
+        @keyframes header-fade-dev {
+            0%   { filter: drop-shadow(0 0 0px rgba(${logoUserRGB}, 0)); }
+            100% { filter: drop-shadow(0 0 6px ${logoUserColor}) drop-shadow(0 0 15px rgba(${logoUserRGB}, 0.55)); }
+        }
+        @keyframes header-fade-beta {
             0%   { filter: drop-shadow(0 0 0px rgba(${logoUserRGB}, 0)); }
             100% { filter: drop-shadow(0 0 6px ${logoUserColor}) drop-shadow(0 0 15px rgba(${logoUserRGB}, 0.55)); }
         }
