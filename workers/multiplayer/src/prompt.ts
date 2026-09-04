@@ -1,30 +1,19 @@
 import type { RaceConfig } from './config';
+import englishFallback from './english-fallback.json';
 
-/** Used when the language file is slow/unavailable so room create stays snappy. */
-const FALLBACK_WORDS = [
-  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I',
-  'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
-  'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
-  'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
-  'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
-  'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
-  'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
-  'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
-  'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
-  'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
-  'quick', 'brown', 'fox', 'jumps', 'bright', 'keys', 'while', 'friends', 'race',
-  'across', 'every', 'line', 'steady', 'focus', 'typing', 'speed', 'accuracy',
-  'practice', 'makes', 'progress', 'possible', 'words', 'flow', 'smooth', 'hands',
-];
+/** Matches lang/english.json — only used if the site wordlist fetch fails. */
+const FALLBACK_WORDS: string[] = Array.isArray(englishFallback)
+  ? englishFallback.filter((w): w is string => typeof w === 'string' && w.length > 0)
+  : [];
 
 const cache = new Map<string, string[]>();
 const inflight = new Map<string, Promise<string[]>>();
 
 function normalizeLanguageFile(language: string): string {
-  const safe = String(language || 'english')
+  // Keep filenames as on disk (english, english_10k, …). Do not rewrite _Nk → _NT.
+  return String(language || 'english')
     .toLowerCase()
     .replace(/[^a-z0-9_-]/g, '') || 'english';
-  return safe.replace(/_(\d+)k$/, '_$1T');
 }
 
 function decorateWord(word: string, index: number, config: RaceConfig): string {
@@ -69,19 +58,15 @@ async function loadWordList(siteOrigin: string, language: string): Promise<strin
   if (existing) return existing;
 
   const load = (async () => {
-    // Prefer a fast response for room create; warm the full list in the background if needed.
-    let words = await fetchWordList(siteOrigin, file, 280);
-    if (!words) {
-      words = FALLBACK_WORDS;
-      // Background warm (best-effort) so later rooms get the real list.
-      void fetchWordList(siteOrigin, file, 8_000).then((full) => {
-        if (full && full.length >= 10) {
-          cache.set(file, full);
-        }
-      });
-    } else {
-      cache.set(file, words);
+    // Wait for the real list — a short timeout previously fell back to a divergent word set.
+    let words = await fetchWordList(siteOrigin, file, 8_000);
+    if (!words && file !== 'english') {
+      words = await fetchWordList(siteOrigin, 'english', 8_000);
     }
+    if (!words || words.length < 10) {
+      words = FALLBACK_WORDS.length >= 10 ? FALLBACK_WORDS.slice() : ['the', 'and', 'that', 'what', 'this', 'for', 'have', 'your', 'year', 'with'];
+    }
+    cache.set(file, words);
     if (cache.size > 12) cache.delete(cache.keys().next().value!);
     return words;
   })();

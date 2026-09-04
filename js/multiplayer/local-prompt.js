@@ -4,10 +4,30 @@
 (function () {
     'use strict';
 
+    /** Matches lang/english.json — only used if fetch/loadLanguage fails. */
     var FALLBACK_WORDS = [
-        'the', 'quick', 'brown', 'fox', 'jumps', 'over', 'bright', 'keys', 'while',
-        'friends', 'race', 'across', 'every', 'line', 'with', 'steady', 'focus',
-        'typing', 'speed', 'accuracy', 'practice', 'makes', 'progress', 'possible',
+        'you', 'the', 'and', 'that', 'what', 'this', 'for', 'have', 'your', 'state',
+        'year', 'use', 'may', 'such', 'most', 'also', 'many', 'through', 'own', 'each',
+        'seem', 'high', 'world', 'nation', 'hand', 'write', 'become', 'show', 'house', 'both',
+        'between', 'develop', 'under', 'move', 'general', 'school', 'same', 'another', 'begin', 'while',
+        'number', 'part', 'turn', 'real', 'might', 'point', 'form', 'child', 'few', 'small',
+        'since', 'against', 'ask', 'late', 'interest', 'large', 'person', 'end', 'was', 'not',
+        'are', 'dont', 'know', 'can', 'with', 'but', 'all', 'just', 'there', 'here',
+        'they', 'like', 'get', 'she', 'right', 'out', 'about', 'him', 'now', 'one',
+        'come', 'well', 'her', 'how', 'yeah', 'will', 'got', 'want', 'think', 'see',
+        'did', 'good', 'who', 'why', 'from', 'let', 'his', 'yes', 'when', 'going',
+        'time', 'okay', 'back', 'look', 'would', 'them', 'where', 'were', 'take', 'then',
+        'had', 'been', 'our', 'gonna', 'tell', 'really', 'man', 'some', 'say', 'hey',
+        'could', 'need', 'something', 'has', 'too', 'more', 'way', 'down', 'make', 'very',
+        'never', 'only', 'people', 'over', 'because', 'little', 'please', 'love', 'should', 'mean',
+        'said', 'sorry', 'give', 'off', 'thank', 'any', 'two', 'even', 'much', 'doing',
+        'sure', 'thing', 'these', 'help', 'first', 'into', 'anything', 'still', 'find', 'life',
+        'nothing', 'day', 'god', 'work', 'their', 'again', 'maybe', 'must', 'before', 'other',
+        'wait', 'stop', 'call', 'after', 'wont', 'talk', 'away', 'than', 'thought', 'home',
+        'night', 'put', 'great', 'those', 'last', 'better', 'everything', 'told', 'new', 'things',
+        'always', 'keep', 'long', 'years', 'leave', 'does', 'money', 'around', 'doesnt', 'name',
+        'place', 'ever', 'feel', 'guys', 'father', 'guy', 'made', 'old', 'which', 'big',
+        'lot', 'done', 'hello', 'nice', 'believe', 'girl', 'someone', 'fine', 'thanks', 'wanted',
     ];
     var cache = Object.create(null);
 
@@ -22,10 +42,10 @@
     }
 
     function normalizeLanguageFile(language) {
-        var safe = String(language || 'english')
+        // Keep filenames as on disk (english, english_10k, …). Do not rewrite _Nk → _NT.
+        return String(language || 'english')
             .toLowerCase()
             .replace(/[^a-z0-9_-]/g, '') || 'english';
-        return safe.replace(/_(\d+)k$/, '_$1T');
     }
 
     async function loadWordList(language) {
@@ -42,7 +62,7 @@
             } catch (_) { /* fall through */ }
         }
 
-        var words = FALLBACK_WORDS;
+        var words = null;
         try {
             var resp = await fetch('lang/' + file + '.json?v=2');
             if (resp.ok) {
@@ -56,10 +76,26 @@
                         .slice(0, 100000);
                 }
             }
-        } catch (_) {
-            // Keep fallback list when offline or file missing.
+        } catch (_) { /* try english below */ }
+
+        if ((!words || words.length < 10) && file !== 'english') {
+            try {
+                var englishResp = await fetch('lang/english.json?v=2');
+                if (englishResp.ok) {
+                    var englishParsed = await englishResp.json();
+                    var englishList = Array.isArray(englishParsed) ? englishParsed : englishParsed && englishParsed.words;
+                    if (Array.isArray(englishList) && englishList.length >= 10) {
+                        words = englishList
+                            .filter(function (word) {
+                                return typeof word === 'string' && word.length > 0 && word.length <= 40;
+                            })
+                            .slice(0, 100000);
+                    }
+                }
+            } catch (_) { /* keep fallback */ }
         }
 
+        if (!words || words.length < 10) words = FALLBACK_WORDS.slice();
         cache[file] = words;
         return words;
     }
