@@ -43,8 +43,20 @@
         var liveRawSecondKeystrokes = 0;
         var lastLiveRawSecond = 0;
         var rawHistory = [];
+        var wpmHistory = [];
         var lastRawHistorySecond = 0;
         var lastSecondKeystrokes = 0;
+        var oppWpmHistory = [];
+        var oppRawHistory = [];
+        var oppLastHistorySecond = 0;
+        var oppLatestOffset = 0;
+        var oppOffsetAtSecondStart = 0;
+        var graphSeriesBySide = { w: null, l: null };
+        var graphSelectedSide = 'w';
+        var graphOpponentSide = 'l';
+        var graphAnimationPlayed = false;
+        var graphPillBound = false;
+        var graphResizeBound = false;
         var localFinished = false;
         var latestResults = null;
         var lineHeight = 0;
@@ -690,6 +702,7 @@
             opponentTargetWpm = Math.max(0, Number(wpm) || 0);
             opponentTargetOffset = wordOffset(opponentTargetWordIndex) + opponentTargetCharIndex;
             opponentHasReport = true;
+            noteOpponentCaret(opponentTargetWordIndex, opponentTargetCharIndex);
         }
 
         function snapOpponentDisplayPosition() {
@@ -856,14 +869,126 @@
             return Math.max(0, Math.min(100, Math.round(kogasa)));
         }
 
-        function sampleRawHistorySecond() {
-            if (!startTime || state !== 'racing') return;
-            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        function sampleRawHistorySecond(force) {
+            if (!startTime) return;
+            if (!force && state !== 'racing' && state !== 'waiting-result') return;
+            var at = (force && localFinishTime) ? localFinishTime : Date.now();
+            var elapsedSec = Math.floor((at - startTime) / 1000);
             if (elapsedSec <= lastRawHistorySecond) return;
             lastRawHistorySecond = elapsedSec;
             var ksThisSec = totalKeystrokes - lastSecondKeystrokes;
             lastSecondKeystrokes = totalKeystrokes;
             rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
+            var elapsedMin = Math.max((at - startTime) / 60000, 1 / 60);
+            var avgWpm = Math.max(0, Math.round((currentCorrectChars() / 5) / elapsedMin));
+            wpmHistory.push(avgWpm);
+        }
+
+        function caretCharOffset(wordIndex, charIndex) {
+            var offset = 0;
+            var wi = Math.max(0, Math.floor(Number(wordIndex) || 0));
+            var ci = Math.max(0, Math.floor(Number(charIndex) || 0));
+            for (var i = 0; i < wi && i < words.length; i += 1) {
+                offset += (words[i] || '').length + 1;
+            }
+            if (wi < words.length) {
+                var wlen = (words[wi] || '').length;
+                offset += Math.min(ci, wlen + 12);
+            }
+            return Math.max(0, offset);
+        }
+
+        function flushOpponentHistorySecond() {
+            var delta = Math.max(0, oppLatestOffset - oppOffsetAtSecondStart);
+            oppRawHistory.push(Math.max(0, Math.round((delta / 5) * 60)));
+            var elapsedMin = Math.max(oppLastHistorySecond / 60, 1 / 60);
+            oppWpmHistory.push(Math.max(0, Math.round((oppLatestOffset / 5) / elapsedMin)));
+            oppOffsetAtSecondStart = oppLatestOffset;
+        }
+
+        function noteOpponentCaret(wordIndex, charIndex) {
+            if (!startTime || (state !== 'racing' && state !== 'waiting-result')) return;
+            var now = Date.now();
+            if (now < startTime) return;
+            oppLatestOffset = caretCharOffset(wordIndex, charIndex);
+            var elapsedSec = Math.floor((now - startTime) / 1000);
+            while (oppLastHistorySecond < elapsedSec) {
+                oppLastHistorySecond += 1;
+                flushOpponentHistorySecond();
+            }
+        }
+
+        function resetGraphHistories() {
+            wpmHistory = [];
+            rawHistory = [];
+            lastRawHistorySecond = 0;
+            lastSecondKeystrokes = 0;
+            oppWpmHistory = [];
+            oppRawHistory = [];
+            oppLastHistorySecond = 0;
+            oppLatestOffset = 0;
+            oppOffsetAtSecondStart = 0;
+            graphSeriesBySide = { w: null, l: null };
+            graphSelectedSide = 'w';
+            graphOpponentSide = 'l';
+            graphAnimationPlayed = false;
+        }
+
+        function finalizeSeries(wBase, rBase, endTime, finalWpm, finalRaw) {
+            var avg = Math.max(0, Math.round(Number(finalWpm) || 0));
+            var raw = Math.max(0, Math.round(Number(finalRaw) || 0));
+            var wOut = (wBase || []).slice();
+            var rOut = (rBase || []).slice();
+            if (!startTime || endTime == null) {
+                if (!wOut.length) {
+                    wOut.push(avg);
+                    rOut.push(raw);
+                }
+                return { wpmHistory: wOut, rawHistory: rOut };
+            }
+            var buckets = Math.max(1, Math.ceil((endTime - startTime) / 1000 - 1e-9));
+            while (wOut.length < buckets) {
+                wOut.push(avg);
+                rOut.push(rOut.length ? rOut[rOut.length - 1] : raw);
+            }
+            while (rOut.length < wOut.length) {
+                rOut.push(rOut.length ? rOut[rOut.length - 1] : raw);
+            }
+            while (rOut.length > wOut.length) rOut.pop();
+            if (wOut.length) {
+                wOut[wOut.length - 1] = avg;
+                if (rOut.length === 1) rOut[0] = raw;
+            }
+            return { wpmHistory: wOut, rawHistory: rOut };
+        }
+
+        function finalizeSelfGraphHistory(endTime, finalWpm, finalRaw) {
+            sampleRawHistorySecond(true);
+            var series = finalizeSeries(wpmHistory, rawHistory, endTime, finalWpm, finalRaw);
+            if (!series.wpmHistory.length) {
+                series.wpmHistory = [Math.max(0, Math.round(Number(finalWpm) || 0))];
+                series.rawHistory = [Math.max(0, Math.round(Number(finalRaw) || finalWpm || 0))];
+            }
+            return series;
+        }
+
+        function finalizeOpponentGraphHistory(endTime, finalWpm, finalRaw) {
+            if (startTime) {
+                oppLatestOffset = caretCharOffset(opponentTargetWordIndex, opponentTargetCharIndex);
+                var buckets = Math.max(1, endTime != null
+                    ? Math.ceil((endTime - startTime) / 1000 - 1e-9)
+                    : 1);
+                while (oppLastHistorySecond < buckets) {
+                    oppLastHistorySecond += 1;
+                    flushOpponentHistorySecond();
+                }
+            }
+            var series = finalizeSeries(oppWpmHistory, oppRawHistory, endTime, finalWpm, finalRaw);
+            if (!series.wpmHistory.length) {
+                series.wpmHistory = [Math.max(0, Math.round(Number(finalWpm) || 0))];
+                series.rawHistory = [Math.max(0, Math.round(Number(finalRaw) || finalWpm || 0))];
+            }
+            return series;
         }
 
         function computeFinalStats(finishTime) {
@@ -1687,9 +1812,7 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
-            rawHistory = [];
-            lastRawHistorySecond = 0;
-            lastSecondKeystrokes = 0;
+            resetGraphHistories();
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -2120,9 +2243,7 @@
             extraChars = 0;
             liveRawSecondKeystrokes = 0;
             lastLiveRawSecond = 0;
-            rawHistory = [];
-            lastRawHistorySecond = 0;
-            lastSecondKeystrokes = 0;
+            resetGraphHistories();
             keystrokeTimes = [];
             correctKeystrokeTimes = [];
             unresolvedError = null;
@@ -2333,14 +2454,15 @@
                 if (element) element.textContent = value;
             }
             var nameEl = document.getElementById(prefix + '-name');
-            if (nameEl) {
-                nameEl.textContent = data.name;
-                if (data.userId && data.userId === selfUserId) {
-                    var youBadge = document.createElement('span');
-                    youBadge.textContent = '(you)';
-                    youBadge.className = 'text-xs font-semibold text-slate-500 ml-1.5';
-                    nameEl.appendChild(youBadge);
-                }
+            if (nameEl) nameEl.textContent = data.name || '—';
+            var youEl = document.getElementById(prefix + '-you');
+            if (youEl) {
+                var isYou = !!(data.userId && data.userId === selfUserId);
+                youEl.classList.toggle('hidden', !isYou);
+            }
+            var placeEl = document.getElementById(prefix + '-place');
+            if (placeEl) {
+                placeEl.textContent = prefix === 'w' ? '1st' : '2nd';
             }
             var avatar = document.getElementById(prefix + '-avatar');
             if (avatar) {
@@ -2353,10 +2475,10 @@
                         isBot: !!data.isBot,
                         userId: data.userId || data.user_id || '',
                     }, {
-                        size: 'md',
+                        size: 'xl',
                         id: prefix + '-avatar',
                         className: prefix === 'w'
-                            ? 'shadow-[0_0_12px_rgba(0,208,255,0.25)]'
+                            ? 'shadow-[0_0_16px_rgba(0,208,255,0.3)]'
                             : '',
                     });
                     if (avatar.classList && avatar.classList.contains('player-level-avatar')) {
@@ -2377,14 +2499,437 @@
                 }
             }
             set(prefix + '-wpm', data.wpm);
-            set(prefix + '-time', data.time);
             set(prefix + '-acc', data.accuracy);
             set(prefix + '-cons', data.consistency);
-            set(prefix + '-raw', data.raw);
-            set(prefix + '-err', data.errors);
-            set(prefix + '-correct', data.correct);
-            set(prefix + '-total', data.total);
-            set(prefix + '-extra', data.extra);
+        }
+
+        function pillLabelForPlayer(data) {
+            var name = String((data && data.name) || 'Player');
+            if (data && data.userId && String(data.userId) === String(selfUserId)) {
+                return name + ' (you)';
+            }
+            return name;
+        }
+
+        function updateDualGraphApproxNote() {
+            var note = document.getElementById('dual-graph-approx-note');
+            if (!note) return;
+            var showApprox = graphSelectedSide === graphOpponentSide;
+            note.style.opacity = showApprox ? '1' : '0';
+            note.setAttribute('aria-hidden', showApprox ? 'false' : 'true');
+        }
+
+        function updateDualGraphPillIndicator(activeBtn) {
+            var indicator = document.getElementById('dual-graph-pill-indicator');
+            var pill = document.getElementById('dual-graph-player-pill');
+            if (!indicator || !pill || !activeBtn) return;
+            var pillRect = pill.getBoundingClientRect();
+            var btnRect = activeBtn.getBoundingClientRect();
+            indicator.style.left = (btnRect.left - pillRect.left) + 'px';
+            indicator.style.width = btnRect.width + 'px';
+        }
+
+        function bindDualGraphPill() {
+            if (graphPillBound) return;
+            graphPillBound = true;
+            var winnerBtn = document.getElementById('dual-graph-btn-winner');
+            var secondBtn = document.getElementById('dual-graph-btn-second');
+            function selectSide(side) {
+                graphSelectedSide = side === 'l' ? 'l' : 'w';
+                if (winnerBtn) winnerBtn.classList.toggle('active', graphSelectedSide === 'w');
+                if (secondBtn) secondBtn.classList.toggle('active', graphSelectedSide === 'l');
+                updateDualGraphPillIndicator(graphSelectedSide === 'w' ? winnerBtn : secondBtn);
+                updateDualGraphApproxNote();
+                renderDualBasicGraph(true);
+            }
+            if (winnerBtn) {
+                winnerBtn.addEventListener('click', function () { selectSide('w'); });
+            }
+            if (secondBtn) {
+                secondBtn.addEventListener('click', function () { selectSide('l'); });
+            }
+            if (!graphResizeBound) {
+                graphResizeBound = true;
+                var resizeTimer = null;
+                function onGraphLayoutChange() {
+                    if (!statsView || statsView.classList.contains('hidden')) return;
+                    if (resizeTimer) clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(function () {
+                        var active = document.querySelector('#dual-graph-player-pill button.active');
+                        updateDualGraphPillIndicator(active);
+                        renderDualBasicGraph(true);
+                    }, 80);
+                }
+                window.addEventListener('resize', onGraphLayoutChange, { signal: signal });
+                var graphCard = document.getElementById('dual-stats-graph-card');
+                if (graphCard && typeof ResizeObserver === 'function') {
+                    var ro = new ResizeObserver(onGraphLayoutChange);
+                    ro.observe(graphCard);
+                    signal.addEventListener('abort', function () {
+                        try { ro.disconnect(); } catch (_) { /* ignore */ }
+                    });
+                }
+            }
+        }
+
+        function dualFormatGraphTime(seconds) {
+            if (Math.abs(seconds - Math.round(seconds)) < 0.0005) return Math.round(seconds) + 's';
+            return String(seconds.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')) + 's';
+        }
+
+        function dualBuildGraphTimeLabels(maxX, xOfTime, height) {
+            var values = [0];
+            var step = Math.max(1, Math.floor(maxX / 6));
+            for (var second = step; second < maxX; second += step) values.push(second);
+            if (maxX > 0) {
+                if (values.length > 1 && maxX - values[values.length - 1] < step * 0.6) values.pop();
+                values.push(maxX);
+            }
+            return values.map(function (second, index) {
+                var anchor = index === 0 ? 'start' : (index === values.length - 1 ? 'end' : 'middle');
+                return '<text x="' + xOfTime(second).toFixed(1) + '" y="' + (height - 8).toFixed(1)
+                    + '" fill="#64748b" font-size="11" text-anchor="' + anchor
+                    + '" font-family="monospace">' + dualFormatGraphTime(second) + '</text>';
+            }).join('');
+        }
+
+        function dualAnimateGraphLineReveal(path, clipRect, graphWidth, padLeft, options) {
+            if (!path) return null;
+            options = options || {};
+            var duration = options.duration != null ? options.duration : 1200;
+            var delay = options.delay != null ? options.delay : 0;
+            var length = path.getTotalLength();
+            path.style.strokeDasharray = String(length);
+            path.style.strokeDashoffset = String(length);
+            if (clipRect) clipRect.setAttribute('width', '0');
+            var animation = path.animate(
+                [{ strokeDashoffset: String(length) }, { strokeDashoffset: '0' }],
+                {
+                    duration: duration,
+                    delay: delay,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    fill: 'both',
+                }
+            );
+            function syncGradient() {
+                if (!path.isConnected) return;
+                var timing = animation.effect.getComputedTiming();
+                var progress = Number.isFinite(timing.progress) ? timing.progress : 0;
+                if (clipRect) {
+                    var point = path.getPointAtLength(Math.max(0, Math.min(length, progress * length)));
+                    clipRect.setAttribute('width', String(Math.max(0, point.x - padLeft)));
+                }
+                if (animation.playState === 'finished') {
+                    path.style.strokeDasharray = 'none';
+                    path.style.strokeDashoffset = '0';
+                    if (clipRect) clipRect.setAttribute('width', String(graphWidth));
+                    return;
+                }
+                requestAnimationFrame(syncGradient);
+            }
+            requestAnimationFrame(syncGradient);
+            return animation;
+        }
+
+        function renderDualBasicGraph(isUpdate) {
+            var container = document.getElementById('dual-graph-container');
+            var tooltip = document.getElementById('dual-graph-tooltip');
+            var legend = document.getElementById('dual-graph-legend');
+            if (!container) {
+                return;
+            }
+            var series = graphSeriesBySide[graphSelectedSide] || graphSeriesBySide.w;
+            var old = container.querySelector('svg.dynamic-graph');
+            if (old) old.remove();
+            if (tooltip) tooltip.style.display = 'none';
+            if (!series || !series.wpmHistory || !series.wpmHistory.length) {
+                if (legend) legend.style.opacity = '0';
+                return;
+            }
+            var wBase = series.wpmHistory.slice();
+            var rBase = (series.rawHistory && series.rawHistory.length)
+                ? series.rawHistory.slice()
+                : wBase.slice();
+            while (rBase.length < wBase.length) rBase.push(rBase[rBase.length - 1] || 0);
+            if (rBase.length > wBase.length) rBase.length = wBase.length;
+
+            var testDurationSec = startTime && localFinishTime
+                ? (localFinishTime - startTime) / 1000
+                : wBase.length;
+            var maxX = Math.max(wBase.length, testDurationSec, 0.001);
+            var times = [0];
+            for (var i = 0; i < wBase.length; i += 1) times.push(i + 1);
+            var startFromZero = false;
+            try {
+                startFromZero = !!(window.usertypo_settings || {}).resultsAndGraphs
+                    && !!(window.usertypo_settings || {}).resultsAndGraphs.startGraphFromZero;
+            } catch (_) { startFromZero = false; }
+            var wData = [startFromZero ? 0 : wBase[0]].concat(wBase);
+            var rData = [startFromZero ? 0 : rBase[0]].concat(rBase);
+            if (wData.length < 2) {
+                wData.push(wData[0] || 0);
+                rData.push(rData[0] || 0);
+                times.push(Math.max(maxX, 1));
+            }
+            if (maxX > wBase.length) {
+                times.push(maxX);
+                wData.push(wBase[wBase.length - 1]);
+                rData.push(rBase[rBase.length - 1]);
+            }
+            var n = wData.length;
+
+            var W = Math.max(280, container.clientWidth || 0);
+            var H = Math.max(160, container.clientHeight || 0);
+            if (container.clientHeight < 120) {
+                container.style.minHeight = '160px';
+                H = Math.max(160, container.clientHeight || 160);
+            }
+            var PAD = { top: 16, right: 20, bottom: 32, left: 42 };
+            var gW = Math.max(40, W - PAD.left - PAD.right);
+            var gH = Math.max(40, H - PAD.top - PAD.bottom);
+            var rawMax = Math.max.apply(null, wData.concat(rData).concat([10])) * 1.05;
+            var yMax = Math.ceil(rawMax / 30) * 30;
+            var yStep = yMax / 3;
+            var smoothLines = true;
+            try {
+                var rg = (window.usertypo_settings || {}).resultsAndGraphs;
+                if (rg && rg.smoothGraphLines === false) smoothLines = false;
+            } catch (_) { smoothLines = true; }
+            var minVal = 0;
+            var xOfTime = function (second) { return PAD.left + (second / maxX) * gW; };
+            var xOfIndex = function (idx) { return xOfTime(times[idx]); };
+            var yOf = function (v) { return PAD.top + gH - ((v - minVal) / (yMax - minVal)) * gH; };
+
+            function smoothPath(arr) {
+                if (arr.length < 2) return '';
+                var pts = arr.map(function (v, idx) { return { x: xOfIndex(idx), y: yOf(v) }; });
+                var d = 'M ' + pts[0].x.toFixed(2) + ',' + pts[0].y.toFixed(2);
+                if (!smoothLines) {
+                    for (var j = 1; j < pts.length; j += 1) {
+                        d += ' L ' + pts[j].x.toFixed(2) + ',' + pts[j].y.toFixed(2);
+                    }
+                    return d;
+                }
+                for (var k = 0; k < pts.length - 1; k += 1) {
+                    var cp1x = pts[k].x + (pts[k + 1].x - (k > 0 ? pts[k - 1].x : pts[k].x)) / 6;
+                    var cp1y = pts[k].y + (pts[k + 1].y - (k > 0 ? pts[k - 1].y : pts[k].y)) / 6;
+                    var cp2x = pts[k + 1].x - (k + 2 < pts.length ? pts[k + 2].x - pts[k].x : pts[k + 1].x - pts[k].x) / 6;
+                    var cp2y = pts[k + 1].y - (k + 2 < pts.length ? pts[k + 2].y - pts[k].y : pts[k + 1].y - pts[k].y) / 6;
+                    d += ' C ' + cp1x.toFixed(2) + ',' + cp1y.toFixed(2) + ' '
+                        + cp2x.toFixed(2) + ',' + cp2y.toFixed(2) + ' '
+                        + pts[k + 1].x.toFixed(2) + ',' + pts[k + 1].y.toFixed(2);
+                }
+                return d;
+            }
+
+            function smoothFillPath(arr) {
+                var lp = smoothPath(arr);
+                if (!lp) return '';
+                return lp + ' L ' + xOfIndex(arr.length - 1).toFixed(2) + ',' + (PAD.top + gH).toFixed(2)
+                    + ' L ' + xOfIndex(0).toFixed(2) + ',' + (PAD.top + gH).toFixed(2) + ' Z';
+            }
+
+            var gridLinesArr = [];
+            for (var v = 0; v <= yMax; v += yStep) {
+                var yy = yOf(v);
+                gridLinesArr.push(
+                    '<line x1="' + PAD.left + '" y1="' + yy.toFixed(1) + '" x2="' + (PAD.left + gW).toFixed(1)
+                    + '" y2="' + yy.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>'
+                    + '<text x="' + (PAD.left - 8).toFixed(1) + '" y="' + (yy + 4).toFixed(1)
+                    + '" fill="#64748b" font-size="11" text-anchor="end" font-family="monospace">' + v + '</text>'
+                );
+            }
+
+            var gradId = 'dualWpmFillGrad-' + Date.now();
+            var clipId = 'dualFillReveal-' + Date.now();
+            var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'dynamic-graph');
+            svg.setAttribute('width', String(W));
+            svg.setAttribute('height', String(H));
+            svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;cursor:default;';
+            svg.innerHTML = [
+                '<defs>',
+                '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">',
+                '<stop offset="0%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0.22"/>',
+                '<stop offset="100%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0"/>',
+                '</linearGradient>',
+                '</defs>',
+                gridLinesArr.join(''),
+                dualBuildGraphTimeLabels(maxX, xOfTime, H),
+                '<path d="' + smoothFillPath(wData) + '" fill="url(#' + gradId + ')" opacity="0.9"/>',
+                '<path id="dual-raw-line" d="' + smoothPath(rData) + '" fill="none" stroke="#64748b" stroke-width="2.5"',
+                ' stroke-dasharray="6 4" opacity="0.65" stroke-linecap="round"/>',
+                '<path id="dual-wpm-line" d="' + smoothPath(wData) + '" fill="none" stroke="var(--theme-primary, #00d0ff)"',
+                ' stroke-width="3" stroke-linecap="round" stroke-linejoin="round"',
+                ' style="filter: drop-shadow(0 0 4px rgba(var(--theme-primary-rgb), var(--gi-55, 0.55)));"/>',
+                '<line id="dual-graph-scrubber" x1="0" y1="' + PAD.top + '" x2="0" y2="' + (PAD.top + gH)
+                    + '" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 2" style="display:none;"/>',
+                '<circle id="dual-ball-wpm" r="5" fill="var(--theme-primary, #00d0ff)"',
+                ' style="display:none;filter: drop-shadow(0 0 5px rgba(var(--theme-primary-rgb), var(--gi-90, 0.9)));"/>',
+                '<circle id="dual-ball-raw" r="4" fill="#64748b" opacity="0.85" style="display:none;"/>',
+                '<rect id="dual-graph-hit" x="' + PAD.left + '" y="' + PAD.top + '" width="' + gW
+                    + '" height="' + gH + '" fill="transparent"/>',
+            ].join('');
+            container.appendChild(svg);
+
+            var wpmLineEl = svg.querySelector('#dual-wpm-line');
+            var rawLineEl = svg.querySelector('#dual-raw-line');
+            var actualWLen = wpmLineEl && typeof wpmLineEl.getTotalLength === 'function' ? wpmLineEl.getTotalLength() : 0;
+            var actualRLen = rawLineEl && typeof rawLineEl.getTotalLength === 'function' ? rawLineEl.getTotalLength() : 0;
+            graphAnimationPlayed = true;
+
+            function getYForX(pathElem, targetX, totalLen) {
+                if (!pathElem || !totalLen) return PAD.top + gH / 2;
+                var low = 0;
+                var high = totalLen;
+                for (var iter = 0; iter < 15; iter += 1) {
+                    var mid = (low + high) / 2;
+                    var pt = pathElem.getPointAtLength(mid);
+                    if (pt.x > targetX) high = mid;
+                    else low = mid;
+                }
+                return pathElem.getPointAtLength((low + high) / 2).y;
+            }
+
+            var scrubber = svg.querySelector('#dual-graph-scrubber');
+            var hitRect = svg.querySelector('#dual-graph-hit');
+            var ballWpm = svg.querySelector('#dual-ball-wpm');
+            var ballRaw = svg.querySelector('#dual-ball-raw');
+            if (hitRect) {
+                hitRect.addEventListener('mousemove', function (e) {
+                    var rect = svg.getBoundingClientRect();
+                    var relX = Math.max(0, Math.min(gW, e.clientX - rect.left - PAD.left));
+                    var frac = relX / gW;
+                    var cx = PAD.left + relX;
+                    scrubber.setAttribute('x1', cx.toFixed(2));
+                    scrubber.setAttribute('x2', cx.toFixed(2));
+                    scrubber.style.display = 'block';
+                    var wy = getYForX(wpmLineEl, cx, actualWLen);
+                    var ry = getYForX(rawLineEl, cx, actualRLen);
+                    ballWpm.setAttribute('cx', cx.toFixed(2));
+                    ballWpm.setAttribute('cy', wy.toFixed(2));
+                    ballWpm.style.display = 'block';
+                    ballRaw.setAttribute('cx', cx.toFixed(2));
+                    ballRaw.setAttribute('cy', ry.toFixed(2));
+                    ballRaw.style.display = 'block';
+                    var cursorSec = frac * maxX;
+                    var index = 0;
+                    while (index < times.length - 1 && times[index + 1] <= cursorSec) index += 1;
+                    var nextIndex = Math.min(index + 1, n - 1);
+                    var interval = times[nextIndex] - times[index];
+                    var t = interval > 0 ? (cursorSec - times[index]) / interval : 0;
+                    var wv = Math.round(wData[index] * (1 - t) + wData[nextIndex] * t);
+                    var rv = Math.round(rData[index] * (1 - t) + rData[nextIndex] * t);
+                    if (tooltip) {
+                        tooltip.innerHTML =
+                            '<div style="color:#94a3b8;margin-bottom:1px;">' + dualFormatGraphTime(cursorSec) + '</div>'
+                            + '<div style="color:var(--theme-primary, #00d0ff);">' + wv
+                            + ' <span style="font-weight:400;font-size:0.48rem;">wpm</span></div>'
+                            + '<div style="color:#64748b;">' + rv
+                            + ' <span style="font-weight:400;font-size:0.48rem;">raw</span></div>';
+                        var tipW = 80;
+                        var tx = cx + 15;
+                        if (tx + tipW > W) tx = cx - tipW - 15;
+                        tooltip.style.left = tx + 'px';
+                        tooltip.style.top = wy + 'px';
+                        tooltip.style.transform = wy > H / 2 ? 'translateY(-100%)' : 'translateY(0)';
+                        tooltip.style.display = 'block';
+                    }
+                });
+                hitRect.addEventListener('mouseleave', function () {
+                    scrubber.style.display = 'none';
+                    ballWpm.style.display = 'none';
+                    ballRaw.style.display = 'none';
+                    if (tooltip) tooltip.style.display = 'none';
+                });
+            }
+            if (legend) {
+                legend.style.opacity = '1';
+            }
+            updateDualGraphApproxNote();
+        }
+
+        function updateDualGraphPillLabels(winnerData, loserData) {
+            var winnerBtn = document.getElementById('dual-graph-btn-winner');
+            var secondBtn = document.getElementById('dual-graph-btn-second');
+            if (winnerBtn) {
+                winnerBtn.textContent = pillLabelForPlayer(winnerData);
+                winnerBtn.classList.add('active');
+            }
+            if (secondBtn) {
+                secondBtn.textContent = pillLabelForPlayer(loserData);
+                secondBtn.classList.remove('active');
+            }
+            graphSelectedSide = 'w';
+            bindDualGraphPill();
+            requestAnimationFrame(function () {
+                updateDualGraphPillIndicator(winnerBtn);
+            });
+        }
+
+        function setupDualResultsGraph(winnerData, loserData, meWon, endTime) {
+            updateDualGraphPillLabels(winnerData, loserData);
+            try {
+                var selfSeries = finalizeSelfGraphHistory(
+                    endTime,
+                    meWon ? winnerData.wpm : loserData.wpm,
+                    meWon ? winnerData.raw : loserData.raw
+                );
+                var oppSeries = finalizeOpponentGraphHistory(
+                    endTime,
+                    meWon ? loserData.wpm : winnerData.wpm,
+                    meWon ? loserData.raw : winnerData.raw
+                );
+                if (!selfSeries.wpmHistory.length) {
+                    selfSeries = {
+                        wpmHistory: [Math.max(0, Math.round(Number(meWon ? winnerData.wpm : loserData.wpm) || 0))],
+                        rawHistory: [Math.max(0, Math.round(Number(meWon ? winnerData.raw : loserData.raw) || 0))],
+                    };
+                }
+                if (!oppSeries.wpmHistory.length) {
+                    oppSeries = {
+                        wpmHistory: [Math.max(0, Math.round(Number(meWon ? loserData.wpm : winnerData.wpm) || 0))],
+                        rawHistory: [Math.max(0, Math.round(Number(meWon ? loserData.raw : winnerData.raw) || 0))],
+                    };
+                }
+                graphSeriesBySide = {
+                    w: meWon ? selfSeries : oppSeries,
+                    l: meWon ? oppSeries : selfSeries,
+                };
+                graphOpponentSide = meWon ? 'l' : 'w';
+            } catch (err) {
+                var fallbackWpm = Math.max(0, Math.round(Number(winnerData && winnerData.wpm) || 0));
+                var fallbackRaw = Math.max(0, Math.round(Number(winnerData && winnerData.raw) || fallbackWpm));
+                var fallbackLosWpm = Math.max(0, Math.round(Number(loserData && loserData.wpm) || 0));
+                var fallbackLosRaw = Math.max(0, Math.round(Number(loserData && loserData.raw) || fallbackLosWpm));
+                graphSeriesBySide = {
+                    w: { wpmHistory: [fallbackWpm], rawHistory: [fallbackRaw] },
+                    l: { wpmHistory: [fallbackLosWpm], rawHistory: [fallbackLosRaw] },
+                };
+                graphOpponentSide = meWon ? 'l' : 'w';
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[dual] graph series failed', err);
+                }
+            }
+            graphSelectedSide = 'w';
+            graphAnimationPlayed = true;
+            updateDualGraphApproxNote();
+            function paintGraph() {
+                try {
+                    updateDualGraphPillIndicator(document.getElementById('dual-graph-btn-winner'));
+                    renderDualBasicGraph(true);
+                } catch (err) {
+                    if (typeof console !== 'undefined' && console.warn) {
+                        console.warn('[dual] graph render failed', err);
+                    }
+                }
+            }
+            requestAnimationFrame(function () {
+                requestAnimationFrame(paintGraph);
+            });
+            setTimeout(paintGraph, 50);
+            setTimeout(paintGraph, 250);
         }
 
         function findResultRow(rows, userId, index) {
@@ -2448,6 +2993,9 @@
                 statsView.style.display = 'flex';
                 setDualFooterMode('stats-full');
                 setDualHeaderInteractive(true);
+                if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                    window.usertypo_unlockStatsScroll();
+                }
                 return;
             }
             var firstPaint = !alreadyFinished;
@@ -2526,15 +3074,22 @@
                 otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
                 meData.userId = me.userId;
                 var meWon = meRow.length && rows.length && rows[0][0] === meRow[0];
-                fillCard('w', meWon ? meData : otherData);
-                fillCard('l', meWon ? otherData : meData);
+                var winnerData = meWon ? meData : otherData;
+                var loserData = meWon ? otherData : meData;
+                fillCard('w', winnerData);
+                fillCard('l', loserData);
+                updateDualGraphPillLabels(winnerData, loserData);
+                var endTime = localFinishTime || Date.now();
+                setupDualResultsGraph(winnerData, loserData, meWon, endTime);
             };
-            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
-                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
-            } else {
-                paintResults();
+            if (!firstPaint) {
+                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                    window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
+                } else {
+                    paintResults();
+                }
+                return;
             }
-            if (!firstPaint) return;
             var label = document.getElementById('stats-race-label');
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3]) opponentLeft = true;
@@ -2564,7 +3119,46 @@
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
             }
+            // Force document scroll for dual stats (typing layout must not clamp the page).
+            (function unlockDualStatsPageScroll() {
+                var body = document.getElementById('app-body');
+                var content = document.getElementById('spa-content');
+                var pageRoot = document.getElementById('spa-page-root');
+                var appViews = document.getElementById('app-views');
+                if (body) {
+                    body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
+                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
+                    body.style.height = '';
+                    body.style.overflow = '';
+                }
+                if (content) {
+                    content.classList.remove('min-h-0', 'overflow-hidden');
+                    content.style.overflow = '';
+                }
+                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
+                if (appViews) {
+                    appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                    appViews.style.height = '';
+                    appViews.style.minHeight = '';
+                }
+                if (statsView) {
+                    statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
+                    statsView.style.overflow = 'visible';
+                    statsView.style.height = 'auto';
+                }
+            })();
             window.scrollTo(0, 0);
+            // Retrigger enter animations (they may have completed while stats-view was hidden).
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                void card.offsetWidth;
+                card.style.animation = '';
+            });
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
+            } else {
+                paintResults();
+            }
         }
 
         async function leaveDual() {
