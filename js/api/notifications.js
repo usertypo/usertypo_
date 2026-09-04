@@ -80,6 +80,22 @@
         }
     }
 
+    async function clearAllMine() {
+        if (!useNotificationsWorker()) return { skipped: true, reason: 'not_configured' };
+        try {
+            await workerFetch('/notifications/clear', { method: 'POST', body: '{}' });
+        } catch (err) {
+            console.warn('[usertypo notifications] clear-all failed', err);
+        }
+        cached = [];
+        unreadCount = 0;
+        knownIds = {};
+        dismissedIds = {};
+        updateBadges();
+        renderNotificationsPanel();
+        return { ok: true };
+    }
+
     function escapeHtml(str) {
         return String(str == null ? '' : str)
             .replace(/&/g, '&amp;')
@@ -771,5 +787,6 @@
         showPending: showPending,
         resolvePending: resolvePending,
         emitFriendNotification: emitFriendNotification,
+        clearAllMine: clearAllMine,
     };
 })();
