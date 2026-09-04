@@ -3307,15 +3307,19 @@
                 }, { signal: signal });
             }
             document.addEventListener('keydown', function (event) {
-                if (state !== 'finished') return;
                 var tag = (event.target && event.target.tagName || '').toLowerCase();
                 var inEditable = tag === 'input' || tag === 'textarea' || !!(event.target && event.target.isContentEditable);
-                if (inEditable) return;
+                var statsOpen = !!statsShellRevealed
+                    || !!(statsView && !statsView.classList.contains('hidden') && statsView.style.display !== 'none');
 
-                if (event.key === ' ' || event.key === 'Spacebar') {
+                // Space scrolls the page when stats are open (incl. provisional waiting-result).
+                if ((event.key === ' ' || event.key === 'Spacebar') && !inEditable && statsOpen) {
                     event.preventDefault();
                     return;
                 }
+
+                if (state !== 'finished') return;
+                if (inEditable) return;
 
                 var leaveBtn = document.getElementById('leave-dual-btn');
                 if (event.key === 'Tab') {
