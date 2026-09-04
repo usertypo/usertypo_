@@ -1,0 +1,36 @@
+# usertypo_ Notifications Worker — friend inbox on D1.
+# Deploy dev:  npm run worker:notifications:deploy:dev
+
+name = "usertypo-notifications-dev"
+main = "src/index.ts"
+compatibility_date = "2026-07-27"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "usertypo-notifications-dev"
+database_id = "d00364f9-9a87-4354-84ce-4d183974b53a"
+
+[vars]
+ENVIRONMENT = "dev"
+PUBLIC_SITE_URL = "https://dev.usertypo.com"
+ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev"
+
+[env.production]
+name = "usertypo-notifications"
+vars = { ENVIRONMENT = "production", PUBLIC_SITE_URL = "https://usertypo.com", ALLOWED_ORIGINS = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "clerk.usertypo.com", SUPABASE_URL = "https://skebosepedaxnvcaizka.supabase.co", SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZWJvc2VwZWRheG52Y2FpemthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMjc5MDEsImV4cCI6MjA5OTYwMzkwMX0.OhFRFJQfzlL3DJJXtv-lKWZYDWnrkJ5cQhu3dwduDFI" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "usertypo-notifications"
+database_id = "00000000-0000-0000-0000-000000000001"
+
+[env.dev]
+name = "usertypo-notifications-dev"
+vars = { ENVIRONMENT = "dev", PUBLIC_SITE_URL = "https://dev.usertypo.com", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev", SUPABASE_URL = "https://dzpbkyqsshdruwhffwhw.supabase.co", SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM" }
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "usertypo-notifications-dev"
+database_id = "d00364f9-9a87-4354-84ce-4d183974b53a"

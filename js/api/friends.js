@@ -79,6 +79,17 @@
         return result.data || [];
     }
 
+    async function emitNotification(payload) {
+        if (!window.usertypoNotifications || typeof window.usertypoNotifications.emitFriendNotification !== 'function') {
+            return;
+        }
+        try {
+            await window.usertypoNotifications.emitFriendNotification(payload);
+        } catch (err) {
+            console.warn('[usertypo friends] notification emit failed', err);
+        }
+    }
+
     async function sendRequest(toUserId) {
         await requireAuth();
         var client = await getClient();
@@ -87,7 +98,11 @@
         });
         if (result.error) throw result.error;
         emitFriendsChanged();
-        return { requestId: result.data };
+        var requestId = result.data;
+        if (requestId) {
+            await emitNotification({ type: 'friend_request', request_id: requestId });
+        }
+        return { requestId: requestId };
     }
 
     async function acceptRequest(requestId) {
@@ -98,6 +113,9 @@
         });
         if (result.error) throw result.error;
         emitFriendsChanged();
+        if (requestId) {
+            await emitNotification({ type: 'friend_accepted', request_id: requestId });
+        }
         return { ok: true };
     }
 

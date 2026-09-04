@@ -49,6 +49,10 @@ window.USERTYPO_CONFIG = {
     siteStats: {
         url: '',
     },
+    // Friend notifications inbox Worker + D1. Staging only until prod cutover.
+    notifications: {
+        url: '',
+    },
     features: {
         leaderboards: true,
     },
@@ -100,6 +104,9 @@ window.USERTYPO_CONFIG = {
         };
         cfg.siteStats = {
             url: 'https://usertypo-site-stats-dev.usertypo2026.workers.dev',
+        };
+        cfg.notifications = {
+            url: 'https://usertypo-notifications-dev.usertypo2026.workers.dev',
         };
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;

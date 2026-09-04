@@ -23,6 +23,63 @@
     var TOAST_MS = 5000;
     var RETENTION_MS = 24 * 60 * 60 * 1000;
 
+    function notificationsWorkerUrl() {
+        var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.notifications) || {};
+        return String(cfg.url || '').replace(/\/+$/, '');
+    }
+
+    function useNotificationsWorker() {
+        return !!notificationsWorkerUrl();
+    }
+
+    async function getClerkBearer() {
+        if (!window.usertypoDb || typeof window.usertypoDb.getClerkToken !== 'function') {
+            throw new Error('auth_or_db_missing');
+        }
+        var token = await window.usertypoDb.getClerkToken();
+        if (!token) throw new Error('missing_token');
+        return token;
+    }
+
+    async function workerFetch(path, options) {
+        var base = notificationsWorkerUrl();
+        if (!base) throw new Error('notifications_worker_not_configured');
+        var opts = options || {};
+        var headers = Object.assign({ Accept: 'application/json' }, opts.headers || {});
+        var token = await getClerkBearer();
+        headers.Authorization = 'Bearer ' + token;
+        if (opts.body != null && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+        var res = await fetch(base + path, {
+            method: opts.method || 'GET',
+            headers: headers,
+            body: opts.body != null ? opts.body : undefined,
+        });
+        var data = null;
+        try { data = await res.json(); } catch (_) { data = null; }
+        if (!res.ok) {
+            var err = new Error((data && data.error) || ('notifications_worker_' + res.status));
+            err.status = res.status;
+            err.data = data;
+            throw err;
+        }
+        return data;
+    }
+
+    async function emitFriendNotification(payload) {
+        if (!useNotificationsWorker()) return { skipped: true, reason: 'not_configured' };
+        try {
+            return await workerFetch('/notifications/emit', {
+                method: 'POST',
+                body: JSON.stringify(payload || {}),
+            });
+        } catch (err) {
+            console.warn('[usertypo notifications] emit failed', err);
+            return { skipped: true, reason: 'emit_failed', error: err };
+        }
+    }
+
     function escapeHtml(str) {
         return String(str == null ? '' : str)
             .replace(/&/g, '&amp;')
@@ -112,9 +169,15 @@
 
         if (notification._ephemeral) return;
         try {
-            var client = await window.usertypoDb.getClient();
-            var result = await client.from('notifications').delete().eq('id', notification.id);
-            if (result.error) throw result.error;
+            if (useNotificationsWorker()) {
+                await workerFetch('/notifications/' + encodeURIComponent(notification.id), {
+                    method: 'DELETE',
+                });
+            } else {
+                var client = await window.usertypoDb.getClient();
+                var result = await client.from('notifications').delete().eq('id', notification.id);
+                if (result.error) throw result.error;
+            }
         } catch (error) {
             console.warn('[usertypo notifications] delete failed', error);
         }
@@ -434,6 +497,19 @@
     }
 
     async function fetchNotifications() {
+        if (useNotificationsWorker()) {
+            if (Date.now() - lastExpiryPurgeAt > 60 * 60 * 1000) {
+                lastExpiryPurgeAt = Date.now();
+                try {
+                    await workerFetch('/notifications/purge', { method: 'POST', body: '{}' });
+                } catch (err) {
+                    console.warn('[usertypo notifications] expiry cleanup failed', err);
+                }
+            }
+            var rows = await workerFetch('/notifications?limit=50');
+            return Array.isArray(rows) ? rows : [];
+        }
+
         var client = await window.usertypoDb.getClient();
         if (Date.now() - lastExpiryPurgeAt > 60 * 60 * 1000) {
             lastExpiryPurgeAt = Date.now();
@@ -512,9 +588,13 @@
 
     async function markAllRead() {
         await requireAuth();
-        var client = await window.usertypoDb.getClient();
-        var result = await client.rpc('mark_notifications_read');
-        if (result.error) throw result.error;
+        if (useNotificationsWorker()) {
+            await workerFetch('/notifications/read', { method: 'POST', body: '{}' });
+        } else {
+            var client = await window.usertypoDb.getClient();
+            var result = await client.rpc('mark_notifications_read');
+            if (result.error) throw result.error;
+        }
 
         var nowIso = new Date().toISOString();
         cached = cached.map(function (n) {
@@ -528,6 +608,7 @@
     }
 
     async function subscribeRealtime(userId) {
+        if (useNotificationsWorker()) return;
         if (!userId || channel) return;
         try {
             var client = await window.usertypoDb.getClient();
@@ -689,5 +770,6 @@
         addEphemeral: addEphemeral,
         showPending: showPending,
         resolvePending: resolvePending,
+        emitFriendNotification: emitFriendNotification,
     };
 })();

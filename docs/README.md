@@ -4,3 +4,4 @@
 - [Leaderboards worker](./workers/leaderboards.md)
 - [Multiplayer worker](./workers/multiplayer.md)
 - [Site stats worker](../workers/site-stats/README.md)
+- [Notifications worker](../workers/notifications/README.md)
