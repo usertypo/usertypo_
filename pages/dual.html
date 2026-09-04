@@ -202,26 +202,28 @@
         #dual-stats-graph-card {
             width: 100%;
             min-width: 0;
-            height: clamp(14rem, 38vh, 20rem);
-            min-height: 13rem;
+            height: clamp(18rem, 46vh, 24rem);
+            min-height: 16rem;
             display: flex;
             flex-direction: column;
-            margin-top: clamp(0.5rem, 1.5vh, 1rem);
+            margin-top: clamp(1.75rem, 5vh, 3rem);
         }
         @media (max-height: 720px) {
             #dual-stats-graph-card {
-                height: clamp(12rem, 36vh, 16rem);
+                height: clamp(15rem, 42vh, 20rem);
+                margin-top: clamp(1.25rem, 4vh, 2rem);
             }
         }
         @media (max-height: 560px) and (orientation: landscape) {
             #dual-stats-graph-card {
-                height: clamp(10rem, 48vh, 14rem);
+                height: clamp(12rem, 52vh, 16rem);
+                margin-top: clamp(1rem, 3vh, 1.5rem);
             }
         }
         #dual-graph-container {
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
-            min-height: 8.5rem;
+            min-height: 12rem;
             min-width: 0;
             flex: 1 1 auto;
             position: relative;
@@ -240,8 +242,9 @@
             backdrop-filter: blur(4px);
         }
         .dual-graph-tab-pill {
-            display: flex;
-            max-width: min(100%, 28rem);
+            display: inline-flex;
+            width: auto;
+            max-width: 100%;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -255,21 +258,20 @@
         .dual-graph-tab-pill button {
             position: relative;
             z-index: 2;
-            flex: 1 1 0;
+            flex: 0 1 auto;
             min-width: 0;
-            padding: 0.3rem clamp(0.55rem, 2.5vw, 1.1rem);
+            padding: 0.35rem clamp(0.75rem, 2.5vw, 1.25rem);
             border-radius: 9999px;
             border: none;
             background: transparent;
             color: #64748b;
             font-family: 'Inter', sans-serif;
-            font-size: clamp(0.6rem, 2vw, 0.7rem);
+            font-size: clamp(0.62rem, 2vw, 0.75rem);
             font-weight: 600;
             letter-spacing: .04em;
             cursor: pointer;
             transition: color .3s ease;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: visible;
             white-space: nowrap;
         }
         .dual-graph-tab-pill button.active {
@@ -446,9 +448,9 @@
             <main
                 class="w-full mx-auto flex flex-col items-stretch relative z-10">
 
-                <div class="flex flex-col justify-start gap-5 sm:gap-7 min-w-0 w-full">
+                <div class="flex flex-col justify-start gap-6 sm:gap-8 min-w-0 w-full">
 
-                <div id="stats-capture-area" class="flex flex-col justify-start gap-5 sm:gap-7 min-w-0 w-full shrink-0">
+                <div id="stats-capture-area" class="flex flex-col justify-start gap-6 sm:gap-8 min-w-0 w-full shrink-0">
 
                     <div class="flex justify-center opacity-0 stats-animate-card [animation-delay:100ms]">
                         <div class="glass-panel rounded-full px-4 py-1 flex items-center gap-2">

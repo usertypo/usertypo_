@@ -2501,14 +2501,8 @@
             set(prefix + '-cons', data.consistency);
         }
 
-        function truncatePillLabel(name) {
-            var text = String(name || 'Player');
-            if (text.length <= 12) return text;
-            return text.slice(0, 11) + '…';
-        }
-
         function pillLabelForPlayer(data) {
-            var name = truncatePillLabel(data && data.name ? data.name : 'Player');
+            var name = String((data && data.name) || 'Player');
             if (data && data.userId && String(data.userId) === String(selfUserId)) {
                 return name + ' (you)';
             }
