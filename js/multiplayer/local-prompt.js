@@ -125,7 +125,8 @@
     }
 
     async function createPrompt(config) {
-        var source = await loadWordList(config && config.lang);
+        // Multiplayer (including local bot duals) always uses English.
+        var source = await loadWordList('english');
         var targetWordCount = config.mode === 'words'
             ? config.amount
             : Math.max(120, config.amount * 6);

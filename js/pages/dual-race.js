@@ -162,12 +162,23 @@
             config = nextConfig;
         }
 
+        function racePromptLanguage() {
+            return (config && config.lang) || 'english';
+        }
+
+        function applyRaceTextDirection() {
+            if (typeof window.applyTypingTextDirection === 'function') {
+                window.applyTypingTextDirection(racePromptLanguage());
+            }
+        }
+
         function applyDualTestSettings() {
             if (window.usertypo_settingsApi) {
                 try {
                     window.usertypo_settingsApi.applyAllSettings(window.usertypo_settingsApi.loadSettings());
                 } catch (_) { /* retain current settings */ }
             }
+            applyRaceTextDirection();
             bindDualKeymapRenderArgs();
         }
 
@@ -640,9 +651,7 @@
         }
 
         function renderPrompt() {
-            if (typeof window.applyTypingTextDirection === 'function') {
-                window.applyTypingTextDirection();
-            }
+            applyRaceTextDirection();
             textContainer.querySelectorAll('.word').forEach(function (element) { element.remove(); });
             wordOffsets = [];
             var runningOffset = 0;
@@ -1546,6 +1555,7 @@
             rematchVotes = 0;
             selfRematchVoted = false;
             updateRematchButton();
+            countdownEndsAtTarget = Date.now() + 5000;
             prepareWaitingTestView();
             ensureCountdownSequence();
         }
@@ -1617,6 +1627,7 @@
                 var prompt = await window.usertypoLocalPrompt.createPrompt(raceConfig);
                 pendingRacePayload = buildLocalRacePayload(prompt.words);
                 paintDualOpponentAvatar(players[1]);
+                countdownEndsAtTarget = Date.now() + 5000;
                 prepareWaitingTestView();
                 ensureCountdownSequence();
             } catch (error) {
@@ -2061,6 +2072,9 @@
             currentWordIndex = 0;
             var tapeMode = getTapeMode();
             var isTape = tapeMode === 'word' || tapeMode === 'letter';
+            var isRtl = typeof window.isTypingRTL === 'function'
+                ? !!window.isTypingRTL()
+                : (document.body && document.body.dataset.textDirection === 'rtl');
 
             if (isTape) {
                 if (!countdownTapeLocked) {
@@ -2075,7 +2089,8 @@
                     currentCharIndex = digitVisible ? 1 : 0;
                     var digitEl = document.getElementById('char-0-0');
                     var digitWidth = (digitVisible && digitEl) ? digitEl.getBoundingClientRect().width : 0;
-                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX - digitWidth) + 'px)';
+                    var shift = isRtl ? digitWidth : -digitWidth;
+                    textContainer.style.transform = 'translateX(' + (countdownTapeBaseX + shift) + 'px)';
                     positionCaretAt(caret, 0, currentCharIndex);
                 }
             } else {
@@ -2248,21 +2263,34 @@
             return true;
         }
 
-        // Fixed local 3→2→1 tape animation (type → hold → backspace → gap).
-        // Race unlock still uses shared startsAt via startRace / beginRaceIfAlreadyLive.
+        // Classic type → hold → backspace → gap animation, synced to countdownEndsAt:
+        // late joins skip digits that are already past instead of restarting from 3.
         async function runCountdownIntroSequence() {
             var token = ++countdownAnimToken;
             introBusy = true;
             await waitForLayout();
             if (token !== countdownAnimToken) return;
             syncCountdownLayout(false);
-            if (caret) caret.classList.add('animate-breath');
-            await delay(650);
-            if (token !== countdownAnimToken) return;
-            if (beginRaceIfAlreadyLive()) return;
+
+            var endsAt = countdownEndsAtTarget > 0
+                ? countdownEndsAtTarget
+                : (Date.now() + 5000);
+            if (!countdownEndsAtTarget) countdownEndsAtTarget = endsAt;
+            var remainingMs = endsAt - Date.now();
 
             var digits = ['3', '2', '1'];
-            for (var i = 0; i < digits.length; i += 1) {
+            var startIndex = 0;
+            if (remainingMs <= 1200) startIndex = 2;
+            else if (remainingMs <= 2500) startIndex = 1;
+
+            if (startIndex === 0) {
+                if (caret) caret.classList.add('animate-breath');
+                await delay(650);
+                if (token !== countdownAnimToken) return;
+                if (beginRaceIfAlreadyLive()) return;
+            }
+
+            for (var i = startIndex; i < digits.length; i += 1) {
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
                 if (caret) caret.classList.remove('animate-breath');
@@ -2275,8 +2303,10 @@
                 await backspaceCountdownDigit(token);
                 if (token !== countdownAnimToken) return;
                 if (beginRaceIfAlreadyLive()) return;
-                if (caret) caret.classList.add('animate-breath');
-                await delay(280);
+                if (i < digits.length - 1) {
+                    if (caret) caret.classList.add('animate-breath');
+                    await delay(280);
+                }
             }
             if (token !== countdownAnimToken) return;
             introBusy = false;
@@ -3347,9 +3377,12 @@
                 var payload = event.detail;
                 if (!Array.isArray(payload) || payload[0] !== roomId) return;
                 if (state === 'racing' || state === 'finished') return;
-                if (!config) return;
-                if (payload[2]) countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
-                // Local 3→2→1 tape animation paced to countdownEndsAt.
+                if (payload[2]) {
+                    countdownEndsAtTarget = Number(payload[2]) || countdownEndsAtTarget;
+                } else if (payload[1] != null && Number(payload[1]) > 0) {
+                    countdownEndsAtTarget = Date.now() + (Number(payload[1]) * 1000);
+                }
+                // Digits paced to countdownEndsAt (including mid-countdown joins).
                 if (Number(payload[1]) === 0) return;
                 ensureCountdownSequence();
             });
@@ -3528,6 +3561,8 @@
                 }
                 if (response.countdownEndsAt) {
                     countdownEndsAtTarget = Number(response.countdownEndsAt) || 0;
+                } else if (response.countdown != null && Number(response.countdown) > 0) {
+                    countdownEndsAtTarget = Date.now() + (Number(response.countdown) * 1000);
                 }
                 if (response.state === 'racing' && response.race) {
                     countdownSequenceStarted = true;

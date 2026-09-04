@@ -45,14 +45,14 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=63'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=65'));
         }
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
             if (dualParams.get('local') === 'bot') {
-                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=2'));
+                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=3'));
             }
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=100'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=102'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));

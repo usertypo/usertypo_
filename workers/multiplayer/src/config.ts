@@ -50,15 +50,11 @@ export function normalizeConfig(input: unknown): RaceConfig {
       Math.abs(value - parsed) < Math.abs(best - parsed) ? value : best
     ), allowedAmounts[0]);
   }
-  const language = String(raw.lang || raw.language || 'english')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '')
-    .slice(0, 64) || 'english';
-
+  // Multiplayer races are English-only regardless of the host's solo language setting.
   return Object.freeze({
     mode: 'time',
     amount,
-    lang: language,
+    lang: 'english',
     punct: raw.punct === true || raw.punct === 1 || raw.punct === '1',
     nums: raw.nums === true || raw.nums === 1 || raw.nums === '1',
   });
