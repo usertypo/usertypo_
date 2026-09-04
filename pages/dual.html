@@ -135,18 +135,18 @@
             padding-right: clamp(0.25rem, 1.5vw, 1.5rem);
         }
         #dual-stats-compare .dual-stats-avatar-wrap {
-            margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
-            transform: scale(1);
+            margin-bottom: clamp(0.75rem, 2vh, 1.25rem);
+            transform: scale(1.65);
             transform-origin: center;
         }
         @media (min-width: 640px) {
             #dual-stats-compare .dual-stats-avatar-wrap {
-                transform: scale(1.15);
+                transform: scale(1.85);
             }
         }
         @media (min-width: 1024px) {
             #dual-stats-compare .dual-stats-avatar-wrap {
-                transform: scale(1.25);
+                transform: scale(2.05);
             }
         }
         #dual-stats-compare .dual-stats-name {
@@ -171,21 +171,19 @@
         #dual-stats-graph-card {
             width: 100%;
             min-width: 0;
-            height: clamp(11rem, 32vh, 16rem);
-            min-height: 10rem;
+            height: clamp(12rem, 34vh, 17rem);
+            min-height: 11rem;
+            display: flex;
+            flex-direction: column;
         }
         @media (max-height: 720px) {
             #dual-stats-graph-card {
-                height: clamp(9.5rem, 28vh, 13rem);
-            }
-            #dual-stats-compare .dual-stats-avatar-wrap {
-                transform: scale(1);
-                margin-bottom: 0.5rem;
+                height: clamp(10rem, 30vh, 14rem);
             }
         }
         @media (max-height: 560px) and (orientation: landscape) {
             #dual-stats-graph-card {
-                height: clamp(8rem, 42vh, 12rem);
+                height: clamp(8.5rem, 44vh, 12.5rem);
             }
             #stats-view > main {
                 justify-content: flex-start;
@@ -194,8 +192,10 @@
         #dual-graph-container {
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
-            min-height: 0;
+            min-height: 8.5rem;
             min-width: 0;
+            flex: 1 1 auto;
+            position: relative;
         }
         #dual-graph-container::-webkit-scrollbar {
             display: none !important;
@@ -212,7 +212,7 @@
         }
         .dual-graph-tab-pill {
             display: flex;
-            max-width: min(100%, 22rem);
+            max-width: min(100%, 28rem);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             border: 1px solid rgba(255, 255, 255, 0.05);

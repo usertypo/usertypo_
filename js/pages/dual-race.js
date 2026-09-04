@@ -868,15 +868,17 @@
             return Math.max(0, Math.min(100, Math.round(kogasa)));
         }
 
-        function sampleRawHistorySecond() {
-            if (!startTime || (state !== 'racing' && state !== 'waiting-result')) return;
-            var elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        function sampleRawHistorySecond(force) {
+            if (!startTime) return;
+            if (!force && state !== 'racing' && state !== 'waiting-result') return;
+            var at = (force && localFinishTime) ? localFinishTime : Date.now();
+            var elapsedSec = Math.floor((at - startTime) / 1000);
             if (elapsedSec <= lastRawHistorySecond) return;
             lastRawHistorySecond = elapsedSec;
             var ksThisSec = totalKeystrokes - lastSecondKeystrokes;
             lastSecondKeystrokes = totalKeystrokes;
             rawHistory.push(Math.max(0, Math.round((ksThisSec / 5) * 60)));
-            var elapsedMin = Math.max((Date.now() - startTime) / 60000, 1 / 60);
+            var elapsedMin = Math.max((at - startTime) / 60000, 1 / 60);
             var avgWpm = Math.max(0, Math.round((currentCorrectChars() / 5) / elapsedMin));
             wpmHistory.push(avgWpm);
         }
@@ -959,8 +961,13 @@
         }
 
         function finalizeSelfGraphHistory(endTime, finalWpm, finalRaw) {
-            sampleRawHistorySecond();
-            return finalizeSeries(wpmHistory, rawHistory, endTime, finalWpm, finalRaw);
+            sampleRawHistorySecond(true);
+            var series = finalizeSeries(wpmHistory, rawHistory, endTime, finalWpm, finalRaw);
+            if (!series.wpmHistory.length) {
+                series.wpmHistory = [Math.max(0, Math.round(Number(finalWpm) || 0))];
+                series.rawHistory = [Math.max(0, Math.round(Number(finalRaw) || finalWpm || 0))];
+            }
+            return series;
         }
 
         function finalizeOpponentGraphHistory(endTime, finalWpm, finalRaw) {
@@ -972,7 +979,12 @@
                     flushOpponentHistorySecond();
                 }
             }
-            return finalizeSeries(oppWpmHistory, oppRawHistory, endTime, finalWpm, finalRaw);
+            var series = finalizeSeries(oppWpmHistory, oppRawHistory, endTime, finalWpm, finalRaw);
+            if (!series.wpmHistory.length) {
+                series.wpmHistory = [Math.max(0, Math.round(Number(finalWpm) || 0))];
+                series.rawHistory = [Math.max(0, Math.round(Number(finalRaw) || finalWpm || 0))];
+            }
+            return series;
         }
 
         function computeFinalStats(finishTime) {
@@ -2459,10 +2471,10 @@
                         isBot: !!data.isBot,
                         userId: data.userId || data.user_id || '',
                     }, {
-                        size: 'md',
+                        size: 'xl',
                         id: prefix + '-avatar',
                         className: prefix === 'w'
-                            ? 'shadow-[0_0_12px_rgba(0,208,255,0.25)]'
+                            ? 'shadow-[0_0_16px_rgba(0,208,255,0.3)]'
                             : '',
                     });
                     if (avatar.classList && avatar.classList.contains('player-level-avatar')) {
@@ -2489,8 +2501,16 @@
 
         function truncatePillLabel(name) {
             var text = String(name || 'Player');
-            if (text.length <= 14) return text;
-            return text.slice(0, 13) + '…';
+            if (text.length <= 12) return text;
+            return text.slice(0, 11) + '…';
+        }
+
+        function pillLabelForPlayer(data) {
+            var name = truncatePillLabel(data && data.name ? data.name : 'Player');
+            if (data && data.userId && String(data.userId) === String(selfUserId)) {
+                return name + ' (you)';
+            }
+            return name;
         }
 
         function updateDualGraphPillIndicator(activeBtn) {
@@ -2640,8 +2660,8 @@
             }
             var n = wData.length;
 
-            var W = container.clientWidth || 600;
-            var H = container.clientHeight || 180;
+            var W = Math.max(280, container.clientWidth || 0);
+            var H = Math.max(140, container.clientHeight || 0);
             var PAD = { top: 16, right: 20, bottom: 32, left: 42 };
             var gW = W - PAD.left - PAD.right;
             var gH = H - PAD.top - PAD.bottom;
@@ -2836,18 +2856,22 @@
             var winnerBtn = document.getElementById('dual-graph-btn-winner');
             var secondBtn = document.getElementById('dual-graph-btn-second');
             if (winnerBtn) {
-                winnerBtn.textContent = truncatePillLabel(winnerData.name);
+                winnerBtn.textContent = pillLabelForPlayer(winnerData);
                 winnerBtn.classList.add('active');
             }
             if (secondBtn) {
-                secondBtn.textContent = truncatePillLabel(loserData.name);
+                secondBtn.textContent = pillLabelForPlayer(loserData);
                 secondBtn.classList.remove('active');
             }
             bindDualGraphPill();
-            requestAnimationFrame(function () {
+            function paintGraph() {
                 updateDualGraphPillIndicator(winnerBtn);
                 renderDualBasicGraph(false);
+            }
+            requestAnimationFrame(function () {
+                requestAnimationFrame(paintGraph);
             });
+            setTimeout(paintGraph, 120);
         }
 
         function findResultRow(rows, userId, index) {
@@ -2996,12 +3020,14 @@
                 var endTime = localFinishTime || Date.now();
                 setupDualResultsGraph(winnerData, loserData, meWon, endTime);
             };
-            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
-                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
-            } else {
-                paintResults();
+            if (!firstPaint) {
+                if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                    window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
+                } else {
+                    paintResults();
+                }
+                return;
             }
-            if (!firstPaint) return;
             var label = document.getElementById('stats-race-label');
             if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3]) opponentLeft = true;
@@ -3032,6 +3058,17 @@
                 window.usertypo_unlockStatsScroll();
             }
             window.scrollTo(0, 0);
+            // Retrigger enter animations (they may have completed while stats-view was hidden).
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                void card.offsetWidth;
+                card.style.animation = '';
+            });
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
+            } else {
+                paintResults();
+            }
         }
 
         async function leaveDual() {
