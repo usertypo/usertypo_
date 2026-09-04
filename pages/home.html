@@ -3689,7 +3689,8 @@ window.setTimeout = function(handler, timeout) {
                 }
             }
 
-            // Persist completed test for signed-in users, then refresh global rank
+            // Persist completed test for signed-in users, then refresh global rank.
+            // Guests: send basic aggregates to Cloudflare for the About page.
             if (window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
                 var diagnosticsSummary = null;
                 if (
@@ -3702,6 +3703,32 @@ window.setTimeout = function(handler, timeout) {
                         wordTimestamps: wordTimestamps,
                         generatedWords: generatedWords,
                     });
+                }
+
+                var guestForStats = false;
+                try {
+                    var authSnap = window.usertypoAuth && window.usertypoAuth.getState
+                        ? window.usertypoAuth.getState()
+                        : null;
+                    guestForStats = !(authSnap && authSnap.isSignedIn && authSnap.user);
+                } catch (_) {
+                    guestForStats = true;
+                }
+                if (
+                    guestForStats &&
+                    !failedReason &&
+                    window.usertypoSiteStats &&
+                    typeof window.usertypoSiteStats.ingestGuestTest === 'function'
+                ) {
+                    var guestWords = Math.max(0, Math.floor(Number(validChars) / 5));
+                    window.usertypoSiteStats.ingestGuestTest({
+                        duration_seconds: elapsedSeconds,
+                        words: guestWords,
+                        wpm: exactWpm,
+                        mode: testMode,
+                        amount: testAmount,
+                        failed: false,
+                    }).catch(function () { /* ignore */ });
                 }
 
                 window.usertypoSessions.saveSession({

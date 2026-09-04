@@ -45,6 +45,10 @@ window.USERTYPO_CONFIG = {
     leaderboards: {
         url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
     },
+    // Site stats Worker (guest aggregates + About page merge). Staging only until prod cutover.
+    siteStats: {
+        url: '',
+    },
     features: {
         leaderboards: true,
     },
@@ -93,6 +97,9 @@ window.USERTYPO_CONFIG = {
         };
         cfg.leaderboards = {
             url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
+        };
+        cfg.siteStats = {
+            url: 'https://usertypo-site-stats-dev.usertypo2026.workers.dev',
         };
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;
