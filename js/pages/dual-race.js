@@ -3011,6 +3011,9 @@
                 statsView.style.display = 'flex';
                 setDualFooterMode('stats-full');
                 setDualHeaderInteractive(true);
+                if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                    window.usertypo_unlockStatsScroll();
+                }
                 return;
             }
             var firstPaint = !alreadyFinished;
@@ -3137,6 +3140,37 @@
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
             }
+            // Force document scroll for dual stats (typing layout must not clamp the page).
+            (function unlockDualStatsPageScroll() {
+                var body = document.getElementById('app-body');
+                var content = document.getElementById('spa-content');
+                var pageRoot = document.getElementById('spa-page-root');
+                var appViews = document.getElementById('app-views');
+                if (body) {
+                    body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
+                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
+                    body.style.height = '';
+                    body.style.overflow = '';
+                }
+                if (content) {
+                    content.classList.remove('min-h-0', 'overflow-hidden');
+                    content.style.overflow = '';
+                }
+                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
+                if (appViews) {
+                    appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                    appViews.style.height = '';
+                    appViews.style.minHeight = '';
+                }
+                if (statsView) {
+                    statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
+                    statsView.style.overflow = 'visible';
+                    statsView.style.height = 'auto';
+                }
+                // #region agent log
+                fetch('http://127.0.0.1:7504/ingest/493b0702-3b97-4a37-8def-7b94a2958f6d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f88718'},body:JSON.stringify({sessionId:'f88718',runId:'post-fix',hypothesisId:'SCROLL',location:'dual-race.js:showResults:unlock',message:'stats scroll unlock',data:{bodyClass:body&&body.className,bodyOverflow:body&&getComputedStyle(body).overflowY,contentOverflow:content&&getComputedStyle(content).overflowY,appViewsH:appViews&&appViews.className,statsH:statsView&&statsView.scrollHeight,statsClient:statsView&&statsView.clientHeight,docScroll:document.documentElement.scrollHeight,viewH:window.innerHeight},timestamp:Date.now()})}).catch(function(){});
+                // #endregion
+            })();
             window.scrollTo(0, 0);
             // Retrigger enter animations (they may have completed while stats-view was hidden).
             statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
