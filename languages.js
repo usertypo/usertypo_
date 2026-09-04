@@ -333,7 +333,11 @@ window.getWordTapeCenterX = getWordTapeCenterX;
 window.getElementTranslateX = getElementTranslateX;
 window.compensateLetterTapeWidthDelta = compensateLetterTapeWidthDelta;
 window.isTypingRTL = function () {
-    return document.body?.dataset?.textDirection === 'rtl' || isLanguageRTL(currentLanguageFile);
+    // Prefer the active typing-surface direction (race/solo can override saved language).
+    if (document.body && document.body.dataset && document.body.dataset.textDirection) {
+        return document.body.dataset.textDirection === 'rtl';
+    }
+    return isLanguageRTL(currentLanguageFile);
 };
 
 // Cache loaded languages to avoid re-fetching
