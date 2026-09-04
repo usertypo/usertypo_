@@ -151,7 +151,10 @@ function hubStub(env: Env) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
-      return json(env, 204, null, request);
+      // Match leaderboards: never return 204 with a body (Workers runtime 500s).
+      const headers: Record<string, string> = {};
+      applyCors(env, request, headers);
+      return new Response('ok', { headers });
     }
 
     const url = new URL(request.url);
