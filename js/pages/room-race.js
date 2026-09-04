@@ -653,6 +653,32 @@
             }
         }
 
+        function dismissLobbyOverlays() {
+            stopTooltipTracking();
+            closeHostModal();
+            closeStartConfirmModal();
+            setInvitePanelOpen(false);
+            var editModal = document.getElementById('edit-config-modal');
+            if (editModal) {
+                editModal.classList.add('pointer-events-none', 'opacity-0');
+                editModal.classList.remove('opacity-100');
+                var editContent = document.getElementById('edit-config-content');
+                if (editContent) editContent.style.transform = 'scale(0.95)';
+            }
+            try {
+                if (window.usertypoPlayerProfileCard
+                    && typeof window.usertypoPlayerProfileCard.close === 'function') {
+                    window.usertypoPlayerProfileCard.close();
+                }
+            } catch (_) { /* ignore */ }
+            try {
+                if (window.usertypoSystemConfirm
+                    && typeof window.usertypoSystemConfirm.close === 'function') {
+                    window.usertypoSystemConfirm.close();
+                }
+            } catch (_) { /* ignore */ }
+        }
+
         async function startMatch(force) {
             var ready = window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState
                 ? window.usertypoMultiplayer.getReadyState()
@@ -1479,6 +1505,7 @@
         }
 
         function switchToTest() {
+            dismissLobbyOverlays();
             hideStatsView();
             lobbyView.classList.add('hidden');
             lobbyView.style.display = 'none';

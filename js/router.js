@@ -45,7 +45,7 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=62'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=63'));
         }
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
