@@ -182,6 +182,15 @@ async function purgeOld(env: Env, userId: string) {
   return { ok: true, deleted: result.meta.changes || 0 };
 }
 
+async function clearAllForUser(env: Env, userId: string) {
+  const result = await env.DB.prepare(
+    `DELETE FROM notifications WHERE user_id = ?`,
+  )
+    .bind(userId)
+    .run();
+  return { ok: true, deleted: result.meta.changes || 0 };
+}
+
 async function emitFriendNotification(
   env: Env,
   actorId: string,
@@ -330,6 +339,11 @@ export default {
 
       if (url.pathname === '/notifications/purge' && request.method === 'POST') {
         const result = await purgeOld(env, userId);
+        return json(env, 200, result, request);
+      }
+
+      if (url.pathname === '/notifications/clear' && request.method === 'POST') {
+        const result = await clearAllForUser(env, userId);
         return json(env, 200, result, request);
       }
 

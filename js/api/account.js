@@ -65,6 +65,11 @@
             }
         } catch (e) { /* ignore */ }
         try {
+            if (window.usertypoNotifications && typeof window.usertypoNotifications.clearAllMine === 'function') {
+                await window.usertypoNotifications.clearAllMine();
+            }
+        } catch (e) { /* ignore */ }
+        try {
             window.dispatchEvent(new CustomEvent('usertypo:friends-changed'));
             window.dispatchEvent(new CustomEvent('usertypo:account-data-cleared'));
         } catch (e) { /* ignore */ }

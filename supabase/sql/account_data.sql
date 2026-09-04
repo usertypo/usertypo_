@@ -43,8 +43,7 @@ begin
   where ub.blocker_id = v_me
      or ub.blocked_id = v_me;
 
-  delete from public.notifications n
-  where n.user_id = v_me;
+  -- Friend inbox lives on Cloudflare D1 (cleared client-side via notifications Worker).
 
   delete from public.user_progression up
   where up.user_id = v_me;
@@ -106,8 +105,7 @@ begin
   where ub.blocker_id = v_me
      or ub.blocked_id = v_me;
 
-  delete from public.notifications n
-  where n.user_id = v_me;
+  -- Friend inbox lives on Cloudflare D1 (cleared client-side via notifications Worker).
 
   delete from public.user_progression up
   where up.user_id = v_me;
