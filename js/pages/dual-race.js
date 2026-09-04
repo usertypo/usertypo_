@@ -441,6 +441,104 @@
             }, 220);
         }
 
+        function revealDualStatsView() {
+            hideMessage();
+            if (!statsView || !testView) return;
+            testView.classList.add('hidden');
+            testView.style.display = 'none';
+            statsView.classList.remove('hidden', 'opacity-0');
+            statsView.classList.add('flex');
+            statsView.style.display = 'flex';
+            setDualFooterMode('stats-full');
+            setDualHeaderInteractive(true);
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            var body = document.getElementById('app-body');
+            var content = document.getElementById('spa-content');
+            var pageRoot = document.getElementById('spa-page-root');
+            var appViews = document.getElementById('app-views');
+            if (body) {
+                body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
+                body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
+                body.style.height = '';
+                body.style.overflow = '';
+            }
+            if (content) {
+                content.classList.remove('min-h-0', 'overflow-hidden');
+                content.style.overflow = '';
+            }
+            if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
+            if (appViews) {
+                appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
+                appViews.style.height = '';
+                appViews.style.minHeight = '';
+            }
+            statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
+            statsView.style.overflow = 'visible';
+            statsView.style.height = 'auto';
+        }
+
+        /** Skip the Finished overlay — open stats immediately with local/live numbers. */
+        function paintAwaitingResultsStats() {
+            revealDualStatsView();
+            if (state === 'finished') return;
+            var me = players.find(function (player) { return player.userId === selfUserId; })
+                || { name: getLocalUserName(), avatarUrl: '', userId: selfUserId };
+            var other = players.find(function (player) { return player.userId !== selfUserId; })
+                || { name: (bot && bot.name) || 'Opponent', avatarUrl: '', userId: 'bot' };
+            var localMe = computeFinalStats(localFinishTime || Date.now());
+            var meData = Object.assign({}, localMe, {
+                name: me.name,
+                avatarUrl: me.avatarUrl,
+                level: me.level,
+                percentToNext: me.percentToNext,
+                userId: me.userId,
+            });
+            var liveOppWpm = Math.max(0, Math.round(Number(opponentTargetWpm || opponentDisplayWpm) || 0));
+            var otherData = {
+                name: other.name || 'Opponent',
+                avatarUrl: other.avatarUrl,
+                level: other.level,
+                percentToNext: other.percentToNext,
+                userId: other.userId,
+                isBot: !!(bot && other.userId === 'bot') || !!(other.isBot),
+                wpm: liveOppWpm,
+                raw: liveOppWpm,
+                accuracy: 100,
+                consistency: 100,
+                correct: 0,
+                total: 0,
+                errors: 0,
+                extra: 0,
+                time: config && config.mode === 'time' ? config.amount : 0,
+            };
+            if (isLocalBotMatch() && bot) {
+                var botStats = computeLocalBotFinalStats();
+                otherData = Object.assign({}, botStats, {
+                    name: other.name || bot.name || 'TypeBot',
+                    avatarUrl: other.avatarUrl,
+                    level: other.level,
+                    percentToNext: other.percentToNext,
+                    userId: other.userId || 'bot',
+                    isBot: true,
+                });
+            }
+            var meWon = meData.wpm > otherData.wpm
+                || (meData.wpm === otherData.wpm && meData.accuracy >= otherData.accuracy);
+            var winnerData = meWon ? meData : otherData;
+            var loserData = meWon ? otherData : meData;
+            fillCard('w', winnerData);
+            fillCard('l', loserData);
+            updateDualGraphPillLabels(winnerData, loserData);
+            setupDualResultsGraph(winnerData, loserData, meWon, localFinishTime || Date.now());
+            initStatsHeader();
+            if (typeof window.usertypo_unlockStatsScroll === 'function') {
+                window.usertypo_unlockStatsScroll();
+            }
+            window.scrollTo(0, 0);
+        }
+
         function escapeHtml(value) {
             return String(value == null ? '' : value)
                 .replace(/&/g, '&amp;')
@@ -1171,14 +1269,7 @@
                         return;
                     }
                     sendThreeWordPacket(true);
-                    if (!isBotMatch()) {
-                        showMessage(
-                            'Finished',
-                            opponentLeft
-                                ? 'Opponent left. Calculating race results.'
-                                : 'Calculating race results.'
-                        );
-                    }
+                    paintAwaitingResultsStats();
                 }
             } else {
                 progressDisplay.innerHTML = completedCorrectWords + '<span class="text-slate-500">/</span>' + config.amount;
@@ -1618,23 +1709,11 @@
                 state = 'waiting-result';
                 stopCursorSync();
                 if (isLocalBotMatch()) {
-                    showMessage(
-                        'Finished',
-                        bot && bot.finished
-                            ? 'Calculating race results.'
-                            : 'Waiting for TypeBot to finish.'
-                    );
+                    paintAwaitingResultsStats();
                     maybeFinishLocalBotRace();
                     return;
                 }
-                showMessage(
-                    'Finished',
-                    opponentLeft
-                        ? 'Opponent left. Calculating race results.'
-                        : (isBotMatch()
-                            ? 'Calculating race results.'
-                            : 'Waiting for your opponent to complete the test.')
-                );
+                paintAwaitingResultsStats();
                 return;
             }
             updateCaret();
@@ -2295,7 +2374,7 @@
                     return;
                 }
                 sendThreeWordPacket(true);
-                showMessage('Finished', 'Calculating race results.');
+                paintAwaitingResultsStats();
                 return;
             }
 
@@ -3307,7 +3386,7 @@
                     );
                 }
                 if (state === 'waiting-result') {
-                    showMessage('Finished', 'Opponent left. Calculating race results.');
+                    paintAwaitingResultsStats();
                 }
             });
             listen('race-finished', function (event) {
