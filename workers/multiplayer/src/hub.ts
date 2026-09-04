@@ -1666,6 +1666,15 @@ export class MultiplayerHub implements DurableObject {
           this.userToRoom.delete(listing.ownerUserId);
         }
         this.removeListing(listing.id);
+        const joiner = this.profiles.get(userId) || { name: 'Opponent' };
+        const acceptedPayload = {
+          listingId,
+          fromUserId: userId,
+          fromName: joiner.name || 'Opponent',
+          config: listing.config,
+        };
+        this.emitToUser(listing.ownerUserId, 'duel:accepted', acceptedPayload);
+        this.emitToUser(userId, 'duel:accepted', acceptedPayload);
         const room = await this.createRoom('public', listing.config, [listing.ownerUserId, userId]);
         this.notifyMatchReady(room, 'listing');
         safeAck(ws, reqId, { ok: true, roomId: room.id });
@@ -1974,6 +1983,16 @@ export class MultiplayerHub implements DurableObject {
           await this.persist();
           return;
         }
+        // Notify both players immediately — createRoom (prompt + race DO) can take seconds.
+        const accepter = this.profiles.get(userId) || { name: 'Opponent' };
+        const acceptedPayload = {
+          inviteId,
+          fromUserId: userId,
+          fromName: accepter.name || 'Opponent',
+          config: invite.config,
+        };
+        this.emitToUser(invite.fromUserId, 'duel:accepted', acceptedPayload);
+        this.emitToUser(invite.toUserId, 'duel:accepted', acceptedPayload);
         const room = await this.createRoom('friend', invite.config, [invite.fromUserId, invite.toUserId]);
         this.notifyMatchReady(room, 'friend-accepted');
         safeAck(ws, reqId, { ok: true, accepted: true, roomId: room.id });

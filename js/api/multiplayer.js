@@ -76,6 +76,7 @@
             timeout: 'Multiplayer server did not respond.',
             offline: 'Could not reach the multiplayer server.',
             race_connect_failed: 'Could not connect to the race server.',
+            connect_race_socket: 'Lost connection to the race. Reconnecting — try again.',
             missing_room: 'Room not found. Check the Room ID and try again.',
         };
         return messages[code] || String(code || 'Multiplayer request failed.');
@@ -226,7 +227,15 @@
                 _actions: [
                     {
                         label: 'Accept',
-                        run: function () { return respondToChallenge(invite.inviteId, true); },
+                        run: function () {
+                            notify({
+                                id: 'duel-accepted:' + invite.inviteId,
+                                type: 'duel_notice',
+                                title: 'Dual accepted',
+                                body: 'Preparing your match…',
+                            });
+                            return respondToChallenge(invite.inviteId, true);
+                        },
                     },
                     {
                         label: 'Reject',
@@ -235,6 +244,16 @@
                 ],
             });
             dispatch('incoming', invite);
+        });
+        activeSocket.on('duel:accepted', function (payload) {
+            var id = (payload && (payload.inviteId || payload.listingId)) || String(Date.now());
+            notify({
+                id: 'duel-accepted:' + id,
+                type: 'duel_notice',
+                title: 'Dual accepted',
+                body: 'Preparing your match…',
+            });
+            dispatch('accepted', payload);
         });
         activeSocket.on('duel:ready', function (match) {
             pendingMatches[match.roomId] = match;
@@ -482,7 +501,12 @@
     }
 
     function healConnection() {
-        ensureConnected().catch(function (error) {
+        ensureConnected().then(function (activeSocket) {
+            if (!activeRoomId || !activeSocket || typeof activeSocket.ensureRaceConnected !== 'function') {
+                return null;
+            }
+            return activeSocket.ensureRaceConnected(activeRoomId);
+        }).catch(function (error) {
             console.warn('[multiplayer] reconnect failed:', error && error.message);
         });
     }
@@ -540,7 +564,29 @@
     }
 
     function requestRematch(roomId) {
-        return emitAck('race:rematch', String(roomId || ''));
+        var target = String(roomId || activeRoomId || '');
+        function sendRematch(forceReopen) {
+            return ensureConnected().then(function (activeSocket) {
+                if (!activeSocket) throw new Error('Could not connect to the multiplayer server.');
+                var prep = Promise.resolve();
+                if (forceReopen && typeof activeSocket.closeRace === 'function') {
+                    try { activeSocket.closeRace(); } catch (_) { /* ignore */ }
+                }
+                if (typeof activeSocket.ensureRaceConnected === 'function' && target) {
+                    prep = activeSocket.ensureRaceConnected(target);
+                }
+                return prep.then(function () {
+                    return emitAck('race:rematch', target);
+                });
+            });
+        }
+        return sendRematch(false).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/connect_race_socket|race_connect_failed|Could not connect|offline|timeout/i.test(message)) {
+                throw error;
+            }
+            return sendRematch(true);
+        });
     }
 
     function loadListings() {
