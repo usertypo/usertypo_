@@ -152,6 +152,8 @@
         activeSocket.on('disconnect', function (reason) {
             readyState = null;
             dispatch('disconnected', { reason: reason });
+            // Heal in the background so create/join/ready do not wait for a full page reload.
+            nativeSetTimeout(healConnection, 250);
         });
         activeSocket.on('connect_error', function (error) {
             dispatch('error', { code: 'connection_failed', message: error && error.message });
@@ -375,7 +377,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=9';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=10';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -417,7 +419,12 @@
     }
 
     async function ensureConnected() {
-        if (socket && socket.connected && readyState) {
+        var lobbyOk = !!(socket && readyState && (
+            typeof socket.isLobbyReady === 'function'
+                ? socket.isLobbyReady()
+                : (socket.connected && socket.active)
+        ));
+        if (lobbyOk) {
             var authState = window.usertypoAuth.getState();
             if (authState && authState.isSignedIn && authState.user && authState.user.id) {
                 var expectedId = String(authState.user.id);
@@ -441,7 +448,8 @@
                 socket = window.usertypoMultiplayerCf.createSocket({ auth: authPayloadCallback });
                 bindSocketEvents(socket);
             }
-            if (!socket.active) await socket.connect();
+            // Always reopen when lobby is dead — do not trust socket.active alone.
+            await socket.connect();
             if (!readyState) {
                 await new Promise(function (resolve, reject) {
                     var timeout = nativeSetTimeout(function () {
@@ -471,6 +479,12 @@
         } finally {
             connectPromise = null;
         }
+    }
+
+    function healConnection() {
+        ensureConnected().catch(function (error) {
+            console.warn('[multiplayer] reconnect failed:', error && error.message);
+        });
     }
 
     function describeConfig(config) {
@@ -742,6 +756,15 @@
             return ensureConnected();
         }).catch(function () { /* auth unavailable */ });
     }
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        healConnection();
+    });
+
+    window.addEventListener('online', function () {
+        healConnection();
+    });
 
     window.usertypoMultiplayer = {
         connect: ensureConnected,

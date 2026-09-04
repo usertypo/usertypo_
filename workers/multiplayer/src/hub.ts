@@ -166,6 +166,12 @@ export class MultiplayerHub implements DurableObject {
 
   constructor(private ctx: DurableObjectState, env: Env) {
     this.env = env;
+    // Keep hibernating sockets alive without waking the DO on every ping.
+    try {
+      this.ctx.setWebSocketAutoResponse(
+        new WebSocketRequestResponsePair('ping', 'pong'),
+      );
+    } catch { /* older runtimes */ }
   }
 
   private lobbyStub() {
