@@ -50,7 +50,7 @@
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
             if (dualParams.get('local') === 'bot') {
-                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=2'));
+                jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=3'));
             }
             jobs.push(loadScriptOnce('js/pages/dual-race.js?v=102'));
         }
