@@ -1,0 +1,22 @@
+{
+  "name": "usertypo-notifications-worker",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
+    "deploy:prod": "wrangler deploy --env production",
+    "d1:migrate:dev": "wrangler d1 execute usertypo-notifications-dev --env dev --remote --file=./schema.sql",
+    "d1:migrate:prod": "wrangler d1 execute usertypo-notifications --env production --remote --file=./schema.sql"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.11.7",
+    "jose": "^5.10.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260831.1",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.128.0"
+  }
+}

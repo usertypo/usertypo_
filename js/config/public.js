@@ -45,6 +45,14 @@ window.USERTYPO_CONFIG = {
     leaderboards: {
         url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
     },
+    // Site stats Worker (guest aggregates + About page merge).
+    siteStats: {
+        url: 'https://usertypo-site-stats.usertypo2026.workers.dev',
+    },
+    // Friend notifications inbox Worker + D1.
+    notifications: {
+        url: 'https://usertypo-notifications.usertypo2026.workers.dev',
+    },
     features: {
         leaderboards: true,
     },
@@ -93,6 +101,12 @@ window.USERTYPO_CONFIG = {
         };
         cfg.leaderboards = {
             url: 'https://usertypo-leaderboards-dev.usertypo2026.workers.dev',
+        };
+        cfg.siteStats = {
+            url: 'https://usertypo-site-stats-dev.usertypo2026.workers.dev',
+        };
+        cfg.notifications = {
+            url: 'https://usertypo-notifications-dev.usertypo2026.workers.dev',
         };
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;

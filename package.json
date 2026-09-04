@@ -20,9 +20,15 @@
     "worker:leaderboards:dev": "npm run dev --prefix workers/leaderboards",
     "worker:leaderboards:deploy:dev": "npm run deploy:dev --prefix workers/leaderboards",
     "worker:leaderboards:deploy:prod": "npm run deploy:prod --prefix workers/leaderboards",
+    "worker:site-stats:dev": "npm run dev --prefix workers/site-stats",
+    "worker:site-stats:deploy:dev": "npm run deploy:dev --prefix workers/site-stats",
+    "worker:site-stats:deploy:prod": "npm run deploy:prod --prefix workers/site-stats",
     "worker:multiplayer:dev": "npm run dev --prefix workers/multiplayer",
     "worker:multiplayer:deploy:dev": "npm run deploy:dev --prefix workers/multiplayer",
-    "worker:multiplayer:deploy:prod": "npm run deploy:prod --prefix workers/multiplayer"
+    "worker:multiplayer:deploy:prod": "npm run deploy:prod --prefix workers/multiplayer",
+    "worker:notifications:dev": "npm run dev --prefix workers/notifications",
+    "worker:notifications:deploy:dev": "npm run deploy:dev --prefix workers/notifications",
+    "worker:notifications:deploy:prod": "npm run deploy:prod --prefix workers/notifications"
   },
   "engines": {
     "node": ">=20.0.0"
