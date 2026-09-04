@@ -2286,19 +2286,11 @@
                     }).join('');
                 }
                 if (list) {
-                    var me = players.find(function (player) { return player.isMe; });
-                    var myRank = me ? players.findIndex(function (player) { return player.isMe; }) + 1 : 0;
                     var rest = players.slice(3);
-                    var html = '';
-                    // Pin your pill on top when outside top 4, and still keep it in real order below.
-                    if (me && myRank > 4) {
-                        html += buildStatsListRow(me, myRank);
-                    }
-                    html += rest.map(function (player) {
+                    list.innerHTML = rest.map(function (player) {
                         var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
                         return buildStatsListRow(player, rank);
                     }).join('');
-                    list.innerHTML = html;
                 }
             }
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
