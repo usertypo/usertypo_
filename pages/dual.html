@@ -135,18 +135,46 @@
             padding-right: clamp(0.25rem, 1.5vw, 1.5rem);
         }
         #dual-stats-compare .dual-stats-avatar-wrap {
-            margin-bottom: clamp(0.75rem, 2vh, 1.25rem);
-            transform: scale(1.65);
-            transform-origin: center;
+            margin-bottom: clamp(0.85rem, 2vh, 1.35rem);
+            /* Grow avatar via --pla-size, not transform:scale (scale breaks level badge). */
+            transform: none;
+        }
+        #dual-stats-compare .player-level-avatar {
+            --pla-size: 5.25rem;
+            --pla-photo: 74%;
+            --pla-stroke: 2.1;
+            --pla-badge-min: 1.2rem;
+            --pla-badge-h: 1.2rem;
+            --pla-badge-px: 0.3rem;
+            --pla-badge-font: 0.5rem;
+            --pla-initial-font: 1.15rem;
+            --pla-bot-font: 1.65rem;
+        }
+        #dual-stats-compare .player-level-avatar__level {
+            bottom: -0.2rem;
+            font-size: 0.5rem;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            line-height: 1.15rem;
+            padding: 0 0.28rem;
         }
         @media (min-width: 640px) {
-            #dual-stats-compare .dual-stats-avatar-wrap {
-                transform: scale(1.85);
+            #dual-stats-compare .player-level-avatar {
+                --pla-size: 6rem;
+                --pla-badge-min: 1.25rem;
+                --pla-badge-h: 1.25rem;
+                --pla-badge-font: 0.533rem;
+            }
+            #dual-stats-compare .player-level-avatar__level {
+                min-width: 1.25rem;
+                height: 1.25rem;
+                line-height: 1.25rem;
+                font-size: 0.533rem;
             }
         }
         @media (min-width: 1024px) {
-            #dual-stats-compare .dual-stats-avatar-wrap {
-                transform: scale(2.05);
+            #dual-stats-compare .player-level-avatar {
+                --pla-size: 6.75rem;
             }
         }
         #dual-stats-compare .dual-stats-name {
@@ -514,8 +542,8 @@
                         <div class="flex justify-center items-center px-1">
                             <div class="dual-graph-tab-pill" id="dual-graph-player-pill">
                                 <div class="dual-graph-pill-indicator" id="dual-graph-pill-indicator"></div>
-                                <button type="button" id="dual-graph-btn-winner" class="active" data-graph-side="w">Winner</button>
-                                <button type="button" id="dual-graph-btn-second" data-graph-side="l">2nd</button>
+                                <button type="button" id="dual-graph-btn-winner" class="active" data-graph-side="w">Player</button>
+                                <button type="button" id="dual-graph-btn-second" data-graph-side="l">Player</button>
                             </div>
                         </div>
                         <div class="flex-1 relative w-full min-h-0 min-w-0 flex flex-col">

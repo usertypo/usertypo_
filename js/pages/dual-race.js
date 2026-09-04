@@ -971,9 +971,11 @@
         }
 
         function finalizeOpponentGraphHistory(endTime, finalWpm, finalRaw) {
-            noteOpponentCaret(opponentTargetWordIndex, opponentTargetCharIndex);
-            if (startTime && endTime != null) {
-                var buckets = Math.max(1, Math.ceil((endTime - startTime) / 1000 - 1e-9));
+            if (startTime) {
+                oppLatestOffset = caretCharOffset(opponentTargetWordIndex, opponentTargetCharIndex);
+                var buckets = Math.max(1, endTime != null
+                    ? Math.ceil((endTime - startTime) / 1000 - 1e-9)
+                    : 1);
                 while (oppLastHistorySecond < buckets) {
                     oppLastHistorySecond += 1;
                     flushOpponentHistorySecond();
@@ -2650,9 +2652,18 @@
             var maxX = Math.max(wBase.length, testDurationSec, 0.001);
             var times = [0];
             for (var i = 0; i < wBase.length; i += 1) times.push(i + 1);
-            var startFromZero = !!(window.usertypo_settings || {}).resultsAndGraphs?.startGraphFromZero;
+            var startFromZero = false;
+            try {
+                startFromZero = !!(window.usertypo_settings || {}).resultsAndGraphs
+                    && !!(window.usertypo_settings || {}).resultsAndGraphs.startGraphFromZero;
+            } catch (_) { startFromZero = false; }
             var wData = [startFromZero ? 0 : wBase[0]].concat(wBase);
             var rData = [startFromZero ? 0 : rBase[0]].concat(rBase);
+            if (wData.length < 2) {
+                wData.push(wData[0] || 0);
+                rData.push(rData[0] || 0);
+                times.push(Math.max(maxX, 1));
+            }
             if (maxX > wBase.length) {
                 times.push(maxX);
                 wData.push(wBase[wBase.length - 1]);
@@ -2661,14 +2672,22 @@
             var n = wData.length;
 
             var W = Math.max(280, container.clientWidth || 0);
-            var H = Math.max(140, container.clientHeight || 0);
+            var H = Math.max(160, container.clientHeight || 0);
+            if (container.clientHeight < 120) {
+                container.style.minHeight = '160px';
+                H = Math.max(160, container.clientHeight || 160);
+            }
             var PAD = { top: 16, right: 20, bottom: 32, left: 42 };
-            var gW = W - PAD.left - PAD.right;
-            var gH = H - PAD.top - PAD.bottom;
+            var gW = Math.max(40, W - PAD.left - PAD.right);
+            var gH = Math.max(40, H - PAD.top - PAD.bottom);
             var rawMax = Math.max.apply(null, wData.concat(rData).concat([10])) * 1.05;
             var yMax = Math.ceil(rawMax / 30) * 30;
             var yStep = yMax / 3;
-            var smoothLines = (window.usertypo_settings || {}).resultsAndGraphs?.smoothGraphLines !== false;
+            var smoothLines = true;
+            try {
+                var rg = (window.usertypo_settings || {}).resultsAndGraphs;
+                if (rg && rg.smoothGraphLines === false) smoothLines = false;
+            } catch (_) { smoothLines = true; }
             var minVal = 0;
             var xOfTime = function (second) { return PAD.left + (second / maxX) * gW; };
             var xOfIndex = function (idx) { return xOfTime(times[idx]); };
@@ -2714,29 +2733,24 @@
                 );
             }
 
-            var gradId = 'dualWpmFillGrad';
-            var clipId = 'dualFillReveal';
-            var playAnim = !isUpdate && !graphAnimationPlayed;
+            var gradId = 'dualWpmFillGrad-' + Date.now();
+            var clipId = 'dualFillReveal-' + Date.now();
             var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('class', 'dynamic-graph');
             svg.setAttribute('width', String(W));
             svg.setAttribute('height', String(H));
             svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-            svg.style.cssText = 'position:absolute;inset:0;overflow:visible;cursor:default;';
+            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;cursor:default;';
             svg.innerHTML = [
                 '<defs>',
                 '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">',
                 '<stop offset="0%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0.22"/>',
                 '<stop offset="100%" stop-color="var(--theme-primary, #00d0ff)" stop-opacity="0"/>',
                 '</linearGradient>',
-                '<clipPath id="' + clipId + '">',
-                '<rect id="dualFillRevealRect" x="' + PAD.left + '" y="' + PAD.top + '" width="'
-                    + (playAnim ? 0 : gW) + '" height="' + (gH + 2) + '"/>',
-                '</clipPath>',
                 '</defs>',
                 gridLinesArr.join(''),
                 dualBuildGraphTimeLabels(maxX, xOfTime, H),
-                '<path d="' + smoothFillPath(wData) + '" fill="url(#' + gradId + ')" clip-path="url(#' + clipId + ')"/>',
+                '<path d="' + smoothFillPath(wData) + '" fill="url(#' + gradId + ')" opacity="0.9"/>',
                 '<path id="dual-raw-line" d="' + smoothPath(rData) + '" fill="none" stroke="#64748b" stroke-width="2.5"',
                 ' stroke-dasharray="6 4" opacity="0.65" stroke-linecap="round"/>',
                 '<path id="dual-wpm-line" d="' + smoothPath(wData) + '" fill="none" stroke="var(--theme-primary, #00d0ff)"',
@@ -2752,28 +2766,11 @@
             ].join('');
             container.appendChild(svg);
 
-            var fillRevealRect = svg.querySelector('#dualFillRevealRect');
             var wpmLineEl = svg.querySelector('#dual-wpm-line');
             var rawLineEl = svg.querySelector('#dual-raw-line');
-            var actualWLen = wpmLineEl ? wpmLineEl.getTotalLength() : 0;
-            var actualRLen = rawLineEl ? rawLineEl.getTotalLength() : 0;
-            if (playAnim) {
-                dualAnimateGraphLineReveal(wpmLineEl, fillRevealRect, gW, PAD.left, {
-                    duration: 1200,
-                    delay: 300,
-                });
-                if (rawLineEl) {
-                    rawLineEl.animate(
-                        [{ opacity: 0 }, { opacity: 0.65 }],
-                        { duration: 800, delay: 450, easing: 'ease', fill: 'both' }
-                    );
-                }
-                graphAnimationPlayed = true;
-            } else if (wpmLineEl) {
-                wpmLineEl.style.strokeDasharray = 'none';
-                wpmLineEl.style.strokeDashoffset = '0';
-                if (rawLineEl) rawLineEl.style.opacity = '0.65';
-            }
+            var actualWLen = wpmLineEl && typeof wpmLineEl.getTotalLength === 'function' ? wpmLineEl.getTotalLength() : 0;
+            var actualRLen = rawLineEl && typeof rawLineEl.getTotalLength === 'function' ? rawLineEl.getTotalLength() : 0;
+            graphAnimationPlayed = true;
 
             function getYForX(pathElem, targetX, totalLen) {
                 var low = 0;
@@ -2844,15 +2841,7 @@
             }
         }
 
-        function setupDualResultsGraph(winnerData, loserData, meWon, endTime) {
-            var selfSeries = finalizeSelfGraphHistory(endTime, meWon ? winnerData.wpm : loserData.wpm, meWon ? winnerData.raw : loserData.raw);
-            var oppSeries = finalizeOpponentGraphHistory(endTime, meWon ? loserData.wpm : winnerData.wpm, meWon ? loserData.raw : winnerData.raw);
-            graphSeriesBySide = {
-                w: meWon ? selfSeries : oppSeries,
-                l: meWon ? oppSeries : selfSeries,
-            };
-            graphSelectedSide = 'w';
-            graphAnimationPlayed = false;
+        function updateDualGraphPillLabels(winnerData, loserData) {
             var winnerBtn = document.getElementById('dual-graph-btn-winner');
             var secondBtn = document.getElementById('dual-graph-btn-second');
             if (winnerBtn) {
@@ -2863,15 +2852,72 @@
                 secondBtn.textContent = pillLabelForPlayer(loserData);
                 secondBtn.classList.remove('active');
             }
+            graphSelectedSide = 'w';
             bindDualGraphPill();
-            function paintGraph() {
+            requestAnimationFrame(function () {
                 updateDualGraphPillIndicator(winnerBtn);
-                renderDualBasicGraph(false);
+            });
+        }
+
+        function setupDualResultsGraph(winnerData, loserData, meWon, endTime) {
+            updateDualGraphPillLabels(winnerData, loserData);
+            try {
+                var selfSeries = finalizeSelfGraphHistory(
+                    endTime,
+                    meWon ? winnerData.wpm : loserData.wpm,
+                    meWon ? winnerData.raw : loserData.raw
+                );
+                var oppSeries = finalizeOpponentGraphHistory(
+                    endTime,
+                    meWon ? loserData.wpm : winnerData.wpm,
+                    meWon ? loserData.raw : winnerData.raw
+                );
+                if (!selfSeries.wpmHistory.length) {
+                    selfSeries = {
+                        wpmHistory: [Math.max(0, Math.round(Number(meWon ? winnerData.wpm : loserData.wpm) || 0))],
+                        rawHistory: [Math.max(0, Math.round(Number(meWon ? winnerData.raw : loserData.raw) || 0))],
+                    };
+                }
+                if (!oppSeries.wpmHistory.length) {
+                    oppSeries = {
+                        wpmHistory: [Math.max(0, Math.round(Number(meWon ? loserData.wpm : winnerData.wpm) || 0))],
+                        rawHistory: [Math.max(0, Math.round(Number(meWon ? loserData.raw : winnerData.raw) || 0))],
+                    };
+                }
+                graphSeriesBySide = {
+                    w: meWon ? selfSeries : oppSeries,
+                    l: meWon ? oppSeries : selfSeries,
+                };
+            } catch (err) {
+                var fallbackWpm = Math.max(0, Math.round(Number(winnerData && winnerData.wpm) || 0));
+                var fallbackRaw = Math.max(0, Math.round(Number(winnerData && winnerData.raw) || fallbackWpm));
+                var fallbackLosWpm = Math.max(0, Math.round(Number(loserData && loserData.wpm) || 0));
+                var fallbackLosRaw = Math.max(0, Math.round(Number(loserData && loserData.raw) || fallbackLosWpm));
+                graphSeriesBySide = {
+                    w: { wpmHistory: [fallbackWpm], rawHistory: [fallbackRaw] },
+                    l: { wpmHistory: [fallbackLosWpm], rawHistory: [fallbackLosRaw] },
+                };
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[dual] graph series failed', err);
+                }
+            }
+            graphSelectedSide = 'w';
+            graphAnimationPlayed = true;
+            function paintGraph() {
+                try {
+                    updateDualGraphPillIndicator(document.getElementById('dual-graph-btn-winner'));
+                    renderDualBasicGraph(true);
+                } catch (err) {
+                    if (typeof console !== 'undefined' && console.warn) {
+                        console.warn('[dual] graph render failed', err);
+                    }
+                }
             }
             requestAnimationFrame(function () {
                 requestAnimationFrame(paintGraph);
             });
-            setTimeout(paintGraph, 120);
+            setTimeout(paintGraph, 50);
+            setTimeout(paintGraph, 250);
         }
 
         function findResultRow(rows, userId, index) {
@@ -3017,6 +3063,7 @@
                 var loserData = meWon ? otherData : meData;
                 fillCard('w', winnerData);
                 fillCard('l', loserData);
+                updateDualGraphPillLabels(winnerData, loserData);
                 var endTime = localFinishTime || Date.now();
                 setupDualResultsGraph(winnerData, loserData, meWon, endTime);
             };
