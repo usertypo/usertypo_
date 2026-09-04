@@ -1,6 +1,6 @@
--- Staging only: stop writing friend inbox rows to Supabase Postgres.
--- Creates still run from send/accept RPCs, but create_notification becomes a no-op.
--- The Cloudflare notifications Worker + D1 owns the inbox on staging.
+# Staging + production: stop writing friend inbox rows to Supabase Postgres.
+# Creates still run from send/accept RPCs, but create_notification becomes a no-op.
+# The Cloudflare notifications Worker + D1 owns the inbox.
 
 create or replace function public.create_notification(
   p_user_id text,

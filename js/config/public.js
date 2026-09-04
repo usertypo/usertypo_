@@ -45,13 +45,13 @@ window.USERTYPO_CONFIG = {
     leaderboards: {
         url: 'https://usertypo-leaderboards.usertypo2026.workers.dev',
     },
-    // Site stats Worker (guest aggregates + About page merge). Staging only until prod cutover.
+    // Site stats Worker (guest aggregates + About page merge).
     siteStats: {
-        url: '',
+        url: 'https://usertypo-site-stats.usertypo2026.workers.dev',
     },
-    // Friend notifications inbox Worker + D1. Staging only until prod cutover.
+    // Friend notifications inbox Worker + D1.
     notifications: {
-        url: '',
+        url: 'https://usertypo-notifications.usertypo2026.workers.dev',
     },
     features: {
         leaderboards: true,

@@ -24,7 +24,7 @@ vars = { ENVIRONMENT = "production", PUBLIC_SITE_URL = "https://usertypo.com", A
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "usertypo-notifications"
-database_id = "00000000-0000-0000-0000-000000000001"
+database_id = "9edb5ade-4d19-4f59-94ff-0b4773343dec"
 
 [env.dev]
 name = "usertypo-notifications-dev"
