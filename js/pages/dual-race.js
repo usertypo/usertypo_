@@ -58,6 +58,7 @@
         var graphPillBound = false;
         var graphResizeBound = false;
         var localFinished = false;
+        var statsShellRevealed = false;
         var latestResults = null;
         var lineHeight = 0;
         var CURSOR_SYNC_INTERVAL_MS = 150;
@@ -444,6 +445,7 @@
         function revealDualStatsView() {
             hideMessage();
             if (!statsView || !testView) return;
+            statsShellRevealed = true;
             testView.classList.add('hidden');
             testView.style.display = 'none';
             statsView.classList.remove('hidden', 'opacity-0');
@@ -479,9 +481,38 @@
             statsView.style.height = 'auto';
         }
 
+        function playDualStatsEnterAnimation() {
+            if (!statsView) return;
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                void card.offsetWidth;
+                card.style.animation = '';
+                card.style.opacity = '';
+                card.style.transform = '';
+            });
+        }
+
+        function freezeDualStatsEnterAnimation() {
+            if (!statsView) return;
+            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                card.style.animation = 'none';
+                card.style.opacity = '1';
+                card.style.transform = 'none';
+            });
+        }
+
         /** Skip the Finished overlay — open stats immediately with local/live numbers. */
         function paintAwaitingResultsStats() {
+            var firstReveal = !statsShellRevealed
+                || !statsView
+                || statsView.classList.contains('hidden');
             revealDualStatsView();
+            if (firstReveal) {
+                window.scrollTo(0, 0);
+                playDualStatsEnterAnimation();
+            } else {
+                freezeDualStatsEnterAnimation();
+            }
             if (state === 'finished') return;
             var me = players.find(function (player) { return player.userId === selfUserId; })
                 || { name: getLocalUserName(), avatarUrl: '', userId: selfUserId };
@@ -1898,6 +1929,7 @@
             errorHistory = [];
             opponentLeft = false;
             localFinished = false;
+            statsShellRevealed = false;
             latestResults = null;
             opponentOffset = 0;
             opponentTargetOffset = 0;
@@ -1954,9 +1986,15 @@
                 statsView.classList.add('hidden', 'opacity-0');
                 statsView.classList.remove('flex');
                 statsView.style.display = 'none';
+                statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
+                    card.style.animation = '';
+                    card.style.opacity = '';
+                    card.style.transform = '';
+                });
                 var notice = statsView.querySelector('[data-dual-opponent-left-notice]');
                 if (notice) notice.remove();
             }
+            statsShellRevealed = false;
             if (testView) {
                 testView.classList.remove('hidden');
                 testView.style.display = '';
@@ -3186,53 +3224,18 @@
             rematchNeeded = bot ? 1 : 2;
             selfRematchVoted = false;
             updateRematchButton();
-            testView.classList.add('hidden');
-            testView.style.display = 'none';
-            statsView.classList.remove('hidden', 'opacity-0');
-            statsView.classList.add('flex');
-            statsView.style.display = 'flex';
+            var statsAlreadyOpen = !!statsShellRevealed
+                && !!statsView
+                && !statsView.classList.contains('hidden');
+            revealDualStatsView();
             stopZenMode();
-            setDualFooterMode('stats-full');
-            setDualHeaderInteractive(true);
             initStatsHeader();
-            if (typeof window.usertypo_unlockStatsScroll === 'function') {
-                window.usertypo_unlockStatsScroll();
+            if (!statsAlreadyOpen) {
+                window.scrollTo(0, 0);
+                playDualStatsEnterAnimation();
+            } else {
+                freezeDualStatsEnterAnimation();
             }
-            // Force document scroll for dual stats (typing layout must not clamp the page).
-            (function unlockDualStatsPageScroll() {
-                var body = document.getElementById('app-body');
-                var content = document.getElementById('spa-content');
-                var pageRoot = document.getElementById('spa-page-root');
-                var appViews = document.getElementById('app-views');
-                if (body) {
-                    body.classList.remove('h-screen', 'overflow-hidden', 'keymap-scrollable');
-                    body.classList.add('min-h-screen', 'overflow-y-auto', 'overflow-x-hidden');
-                    body.style.height = '';
-                    body.style.overflow = '';
-                }
-                if (content) {
-                    content.classList.remove('min-h-0', 'overflow-hidden');
-                    content.style.overflow = '';
-                }
-                if (pageRoot) pageRoot.classList.remove('min-h-0', 'overflow-hidden');
-                if (appViews) {
-                    appViews.classList.remove('h-full', 'min-h-0', 'overflow-hidden');
-                    appViews.style.height = '';
-                    appViews.style.minHeight = '';
-                }
-                if (statsView) {
-                    statsView.classList.remove('min-h-0', 'overflow-hidden', 'h-full');
-                    statsView.style.overflow = 'visible';
-                    statsView.style.height = 'auto';
-                }
-            })();
-            window.scrollTo(0, 0);
-            // Retrigger enter animations (they may have completed while stats-view was hidden).
-            statsView.querySelectorAll('.stats-animate-card').forEach(function (card) {
-                card.style.animation = 'none';
-                void card.offsetWidth;
-                card.style.animation = '';
-            });
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
                 window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
             } else {
