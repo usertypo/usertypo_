@@ -2113,48 +2113,25 @@
                 + '</div></div>';
         }
 
-        function buildSelfSpotlightCard(player, rank) {
-            if (!player) return '';
-            var avatarHtml = playerAvatarHtml(player, 'xl', 'shadow-[0_0_16px_rgba(var(--theme-primary-rgb),0.3)]');
-            return '<div class="room-self-card room-podium-player anim-card" style="animation-delay:280ms;">'
-                + '<div class="flex items-center gap-1.5 mb-2 sm:mb-3 min-h-[1.25rem]">'
-                + '<span class="text-[11px] font-black text-primary uppercase tracking-widest">#' + rank + '</span>'
-                + ' <span class="text-[10px] font-semibold text-slate-500">(you)</span>'
-                + '</div>'
-                + '<div class="dual-stats-avatar-wrap relative">'
-                + '<div class="absolute -inset-5 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);"></div>'
-                + '<div class="relative z-10 flex items-center justify-center">' + avatarHtml + '</div>'
-                + '</div>'
-                + '<span class="dual-stats-name text-white font-bold tracking-wide text-center truncate">'
-                + escapeHtml(player.name) + '</span>'
-                + '<div class="dual-stats-metrics grid grid-cols-3 items-end">'
-                + '<div class="text-center min-w-0">'
-                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Acc</span>'
-                + '<span class="dual-metric-side font-black text-white leading-none">'
-                + '<span>' + player.acc + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
-                + '<div class="text-center min-w-0">'
-                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">WPM</span>'
-                + '<span class="dual-metric-wpm font-black text-primary leading-none tracking-tighter" '
-                + 'style="text-shadow: 0 0 20px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));">'
-                + player.wpm + '</span></div>'
-                + '<div class="text-center min-w-0">'
-                + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Cons</span>'
-                + '<span class="dual-metric-side font-black text-white leading-none">'
-                + '<span>' + player.con + '</span><span class="text-[10px] text-slate-500 font-bold">%</span></span></div>'
-                + '</div></div>';
-        }
-
         function buildStatsListRow(player, rank) {
-            var avatar = playerAvatarHtml(player, 'xs', '');
+            var avatar = playerAvatarHtml(player, 'sm', '');
             var meClass = player.isMe ? ' is-me' : '';
             var nameExtra = player.isBot
                 ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>'
                 : (player.isMe ? ' <span class="text-[9px] text-primary font-bold uppercase tracking-wider">(you)</span>' : '');
+            var statsHtml = player.isMe
+                ? '<span class="pill-stats">'
+                    + '<span class="pill-stat-side">' + player.acc + '<span class="text-[9px] text-slate-500">% ACC</span></span>'
+                    + '<span class="pill-wpm">' + player.wpm + ' <span class="text-[10px] font-bold text-slate-500">WPM</span></span>'
+                    + '<span class="pill-stat-side">' + player.con + '<span class="text-[9px] text-slate-500">% CONS</span></span>'
+                    + '</span>'
+                : '<span class="pill-stats"><span class="pill-wpm">' + player.wpm
+                    + ' <span class="text-[10px] font-bold text-slate-500">WPM</span></span></span>';
             return '<div class="room-rank-pill anim-card' + meClass + '" style="animation-delay:' + Math.min(500, 200 + rank * 40) + 'ms;">'
                 + '<span class="pill-rank">#' + rank + '</span>'
                 + '<span class="shrink-0 flex items-center">' + avatar + '</span>'
                 + '<span class="pill-name">' + escapeHtml(player.name) + nameExtra + '</span>'
-                + '<span class="pill-wpm">' + player.wpm + ' <span class="text-[10px] font-bold text-slate-500">WPM</span></span>'
+                + statsHtml
                 + '</div>';
         }
 
@@ -2243,10 +2220,8 @@
             // Clear stale results so they don't flash when the next match finishes.
             var oldPodium = document.getElementById('stats-podium');
             var oldList = document.getElementById('stats-rankings-list');
-            var oldSpotlight = document.getElementById('stats-self-spotlight');
             if (oldPodium) oldPodium.innerHTML = '';
             if (oldList) oldList.innerHTML = '';
-            if (oldSpotlight) oldSpotlight.innerHTML = '';
             testView.classList.add('hidden');
             testView.style.display = 'none';
             lobbyView.classList.remove('hidden', 'opacity-0');
@@ -2293,7 +2268,6 @@
                 var second = top3[1] || null;
                 var third = top3[2] || null;
                 var podium = document.getElementById('stats-podium');
-                var spotlight = document.getElementById('stats-self-spotlight');
                 var list = document.getElementById('stats-rankings-list');
                 if (podium) {
                     // Visual order: 2nd | 1st | 3rd
@@ -2311,20 +2285,20 @@
                             + '</div>';
                     }).join('');
                 }
-                var me = players.find(function (player) { return player.isMe; });
-                var myRank = me ? players.findIndex(function (player) { return player.isMe; }) + 1 : 0;
-                var myOutsideTop4 = !!(me && myRank > 4);
-                if (spotlight) {
-                    spotlight.innerHTML = myOutsideTop4
-                        ? buildSelfSpotlightCard(me, myRank)
-                        : '';
-                }
                 if (list) {
+                    var me = players.find(function (player) { return player.isMe; });
+                    var myRank = me ? players.findIndex(function (player) { return player.isMe; }) + 1 : 0;
                     var rest = players.slice(3);
-                    list.innerHTML = rest.map(function (player) {
+                    var html = '';
+                    // Pin your pill on top when outside top 4, and still keep it in real order below.
+                    if (me && myRank > 4) {
+                        html += buildStatsListRow(me, myRank);
+                    }
+                    html += rest.map(function (player) {
                         var rank = players.findIndex(function (item) { return item.index === player.index; }) + 1;
                         return buildStatsListRow(player, rank);
                     }).join('');
+                    list.innerHTML = html;
                 }
             }
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {

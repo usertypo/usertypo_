@@ -426,7 +426,19 @@
             align-items: center;
         }
         #stats-podium .room-podium-player.is-first {
-            transform: translateY(clamp(-0.75rem, -1.5vh, -0.35rem));
+            transform: translateY(clamp(-1.1rem, -2.2vh, -0.5rem));
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-name {
+            font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-label {
+            font-size: clamp(0.55rem, 1.8vw, 0.65rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-side {
+            font-size: clamp(1rem, 3.2vw, 1.35rem);
+        }
+        #stats-podium .room-podium-player.is-first .dual-stats-metrics .dual-metric-wpm {
+            font-size: clamp(1.85rem, 7vw, 2.75rem);
         }
         #stats-podium .dual-stats-avatar-wrap {
             margin-bottom: clamp(0.85rem, 2vh, 1.35rem);
@@ -451,6 +463,14 @@
             line-height: 1.15rem;
             padding: 0 0.28rem;
         }
+        #stats-podium .room-podium-player.is-first .player-level-avatar {
+            --pla-size: 6.75rem;
+            --pla-badge-min: 1.35rem;
+            --pla-badge-h: 1.35rem;
+            --pla-badge-font: 0.55rem;
+            --pla-initial-font: 1.35rem;
+            --pla-bot-font: 2rem;
+        }
         @media (min-width: 640px) {
             #stats-podium .player-level-avatar {
                 --pla-size: 5.75rem;
@@ -465,7 +485,18 @@
                 font-size: 0.533rem;
             }
             #stats-podium .room-podium-player.is-first .player-level-avatar {
-                --pla-size: 6.5rem;
+                --pla-size: 8rem;
+                --pla-badge-min: 1.45rem;
+                --pla-badge-h: 1.45rem;
+                --pla-badge-font: 0.6rem;
+                --pla-initial-font: 1.55rem;
+                --pla-bot-font: 2.25rem;
+            }
+            #stats-podium .room-podium-player.is-first .player-level-avatar__level {
+                min-width: 1.45rem;
+                height: 1.45rem;
+                line-height: 1.45rem;
+                font-size: 0.6rem;
             }
         }
         #stats-podium .dual-stats-name {
@@ -487,39 +518,29 @@
         #stats-podium .dual-stats-metrics .dual-metric-wpm {
             font-size: clamp(1.4rem, 5.5vw, 2.1rem);
         }
-        #stats-self-spotlight:empty {
-            display: none;
-        }
-        #stats-self-spotlight {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin: clamp(0.5rem, 2vh, 1rem) 0;
-        }
-        #stats-self-spotlight .room-self-card {
-            width: 100%;
-            max-width: 16rem;
-        }
         #stats-rankings-list.room-stats-pills {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.5rem 0.65rem;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 0.65rem;
             width: 100%;
-            max-width: 40rem;
-            margin: 0 auto;
+            max-width: 28rem;
+            margin: clamp(0.75rem, 2vh, 1.25rem) auto 0;
         }
         #stats-rankings-list .room-rank-pill {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.35rem 0.75rem 0.35rem 0.45rem;
+            gap: 0.65rem;
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 0.7rem;
             border-radius: 9999px;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             border: 1px solid rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            max-width: 100%;
+            box-sizing: border-box;
         }
         #stats-rankings-list .room-rank-pill.is-me {
             border-color: rgba(var(--theme-primary-rgb), 0.45);
@@ -527,21 +548,23 @@
             background: rgba(var(--theme-primary-rgb), 0.08);
         }
         #stats-rankings-list .room-rank-pill .pill-rank {
-            font-size: 0.65rem;
+            font-size: 0.8rem;
             font-weight: 800;
             color: #64748b;
             font-variant-numeric: tabular-nums;
-            min-width: 1.35rem;
+            min-width: 1.75rem;
             text-align: center;
+            flex-shrink: 0;
         }
         #stats-rankings-list .room-rank-pill.is-me .pill-rank {
             color: var(--theme-primary);
         }
         #stats-rankings-list .room-rank-pill .pill-name {
-            font-size: 0.75rem;
+            font-size: 0.9rem;
             font-weight: 700;
             color: #e2e8f0;
-            max-width: 8.5rem;
+            flex: 1 1 auto;
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -549,9 +572,16 @@
         #stats-rankings-list .room-rank-pill.is-me .pill-name {
             color: #fff;
         }
+        #stats-rankings-list .room-rank-pill .pill-stats {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.65rem;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
         #stats-rankings-list .room-rank-pill .pill-wpm {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            font-size: 0.95rem;
             font-weight: 800;
             color: #cbd5e1;
             white-space: nowrap;
@@ -559,6 +589,16 @@
         #stats-rankings-list .room-rank-pill.is-me .pill-wpm {
             color: var(--theme-primary);
             text-shadow: 0 0 8px rgba(var(--theme-primary-rgb), calc(0.35 * var(--glow-intensity, 1)));
+        }
+        #stats-rankings-list .room-rank-pill .pill-stat-side {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        #stats-rankings-list .room-rank-pill.is-me .pill-stat-side {
+            color: #cbd5e1;
         }
 
         /* View transitions */
@@ -929,10 +969,7 @@
                 <!-- TOP 3: 2nd | 1st | 3rd (duel-style cards) -->
                 <section id="stats-podium" class="room-stats-podium" aria-label="Top three"></section>
 
-                <!-- Your card when outside top 4 -->
-                <section id="stats-self-spotlight" aria-label="Your result"></section>
-
-                <!-- 4th+ as compact WPM pills -->
+                <!-- 4th+ as stacked WPM pills (your pill also pinned on top if outside top 4) -->
                 <section id="stats-rankings-list" class="room-stats-pills" aria-label="Other rankings"></section>
 
                 <div id="stats-action-buttons" class="flex items-center justify-center gap-5 pt-6 pb-2 flex-wrap">
