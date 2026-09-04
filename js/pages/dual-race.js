@@ -3468,6 +3468,9 @@
                     bindDualKeymapRenderArgs();
                 }
                 leaveStatsForRematch();
+                if (window.usertypoMultiplayer && typeof window.usertypoMultiplayer.ensureRaceConnected === 'function') {
+                    window.usertypoMultiplayer.ensureRaceConnected(roomId).catch(function () { /* countdown/start will retry */ });
+                }
             });
             listen('match-resumed', function (event) {
                 var response = event && event.detail || {};

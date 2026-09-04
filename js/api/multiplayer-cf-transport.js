@@ -31,6 +31,8 @@
 
     function isRaceEvent(event) {
         var e = String(event || '');
+        // Rematch is proxied by the lobby so idle clients don't need a live race socket.
+        if (e === 'race:rematch') return false;
         if (e.indexOf('match:') === 0 || e.indexOf('race:') === 0) return true;
         return e === 'room:ready'
             || e === 'room:update-config'

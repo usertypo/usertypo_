@@ -865,7 +865,6 @@ window.__spaPageInit = function() {
                     joinButton.textContent = 'Join';
                     joinButton.addEventListener('click', async () => {
                         joinButton.disabled = true;
-                        window.usertypoNotifications?.showToast('Dual accepted — preparing match…', 'check_circle');
                         try {
                             await window.usertypoMultiplayer.joinListing(row[0]);
                             closeFindMatchModal();

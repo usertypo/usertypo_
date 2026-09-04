@@ -16,6 +16,19 @@
     var activeRoomIsBot = false;
     var pendingLeaveRoomId = null;
     var lastAuthIdentity = null;
+    var pendingDuelFlowId = '';
+
+    function duelFlowNotify(partial) {
+        var row = Object.assign({
+            type: 'duel_notice',
+            title: 'Dual accepted',
+            body: '',
+            data: {},
+        }, partial || {});
+        if (!row.id) row.id = pendingDuelFlowId || ('duel-flow:' + Date.now());
+        pendingDuelFlowId = row.id;
+        return notify(row);
+    }
 
     function dispatch(name, detail) {
         try {
@@ -76,6 +89,7 @@
             timeout: 'Multiplayer server did not respond.',
             offline: 'Could not reach the multiplayer server.',
             race_connect_failed: 'Could not connect to the race server.',
+            rematch_unavailable: 'Rematch is no longer available for this match.',
             connect_race_socket: 'Lost connection to the race. Reconnecting — try again.',
             missing_room: 'Room not found. Check the Room ID and try again.',
         };
@@ -83,6 +97,7 @@
     }
 
     function isRaceBoundEvent(event) {
+        if (String(event || '') === 'race:rematch') return false;
         if (window.usertypoMultiplayerCf && typeof window.usertypoMultiplayerCf.isRaceEvent === 'function') {
             return window.usertypoMultiplayerCf.isRaceEvent(event);
         }
@@ -228,11 +243,10 @@
                     {
                         label: 'Accept',
                         run: function () {
-                            notify({
-                                id: 'duel-accepted:' + invite.inviteId,
+                            duelFlowNotify({
+                                id: 'duel-flow:' + invite.inviteId,
                                 type: 'duel_notice',
-                                title: 'Dual accepted',
-                                body: 'Preparing your match…',
+                                title: 'Dual accepted — preparing match…',
                             });
                             return respondToChallenge(invite.inviteId, true);
                         },
@@ -246,12 +260,11 @@
             dispatch('incoming', invite);
         });
         activeSocket.on('duel:accepted', function (payload) {
-            var id = (payload && (payload.inviteId || payload.listingId)) || String(Date.now());
-            notify({
-                id: 'duel-accepted:' + id,
+            var key = (payload && (payload.inviteId || payload.listingId)) || String(Date.now());
+            duelFlowNotify({
+                id: 'duel-flow:' + key,
                 type: 'duel_notice',
-                title: 'Dual accepted',
-                body: 'Preparing your match…',
+                title: 'Dual accepted — preparing match…',
             });
             dispatch('accepted', payload);
         });
@@ -264,11 +277,12 @@
                 && window.DualMatch.consumeAutoJoinBotMatch();
             dispatch('match-ready', match);
             if (autoJoinBot) {
+                pendingDuelFlowId = '';
                 navigateToMatch(match.roomId);
                 return;
             }
-            notify({
-                id: 'duel-ready:' + match.roomId,
+            duelFlowNotify({
+                id: pendingDuelFlowId || ('duel-flow:' + match.roomId),
                 type: 'duel_ready',
                 title: isBot ? 'No player found — bot match ready' : 'Dual accepted — match ready',
                 body: (isBot ? 'You will race against TypeBot. ' : '') + 'Click Join when you are ready.',
@@ -276,7 +290,10 @@
                 _actions: [{
                     label: 'Join',
                     resolve: false,
-                    run: function () { navigateToMatch(match.roomId); },
+                    run: function () {
+                        pendingDuelFlowId = '';
+                        navigateToMatch(match.roomId);
+                    },
                 }],
             });
         });
@@ -396,7 +413,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=10';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=11';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -565,27 +582,16 @@
 
     function requestRematch(roomId) {
         var target = String(roomId || activeRoomId || '');
-        function sendRematch(forceReopen) {
-            return ensureConnected().then(function (activeSocket) {
-                if (!activeSocket) throw new Error('Could not connect to the multiplayer server.');
-                var prep = Promise.resolve();
-                if (forceReopen && typeof activeSocket.closeRace === 'function') {
-                    try { activeSocket.closeRace(); } catch (_) { /* ignore */ }
-                }
-                if (typeof activeSocket.ensureRaceConnected === 'function' && target) {
-                    prep = activeSocket.ensureRaceConnected(target);
-                }
-                return prep.then(function () {
-                    return emitAck('race:rematch', target);
-                });
-            });
-        }
-        return sendRematch(false).catch(function (error) {
+        return ensureConnected().then(function () {
+            return emitAck('race:rematch', target);
+        }).catch(function (error) {
             var message = String(error && error.message || '');
-            if (!/connect_race_socket|race_connect_failed|Could not connect|offline|timeout/i.test(message)) {
+            if (!/connect_race_socket|race_connect_failed|Could not connect|offline|timeout|Lost connection/i.test(message)) {
                 throw error;
             }
-            return sendRematch(true);
+            return ensureConnected().then(function () {
+                return emitAck('race:rematch', target);
+            });
         });
     }
 
