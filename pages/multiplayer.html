@@ -29,6 +29,13 @@
             color: var(--theme-text, #cbd5e1);
         }
 
+        .mp-btn-spinner {
+            animation: mp-btn-spin 0.8s linear infinite;
+        }
+        @keyframes mp-btn-spin {
+            to { transform: rotate(360deg); }
+        }
+
         .panel-surface {
             background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
@@ -238,10 +245,11 @@
 
                     <!-- Submit Action -->
                     <button id="submit-create-room-btn"
-                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
-                        <span>Create Match Room</span>
+                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center gap-2">
+                        <span class="mp-create-btn-label">Create Match Room</span>
                         <span
-                            class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                            class="mp-create-btn-hint text-xs opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                        <span class="mp-create-btn-spinner material-symbols-outlined text-[1.25rem] mp-btn-spinner hidden" aria-hidden="true">progress_activity</span>
                     </button>
                 </div>
             </div>
@@ -378,10 +386,11 @@
                     </div>
 
                     <button id="submit-find-match-btn"
-                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
-                        <span>Find Match</span>
+                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center gap-2">
+                        <span class="mp-create-btn-label">Find Match</span>
                         <span
-                            class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                            class="mp-create-btn-hint text-xs opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                        <span class="mp-create-btn-spinner material-symbols-outlined text-[1.25rem] mp-btn-spinner hidden" aria-hidden="true">progress_activity</span>
                     </button>
                 </div>
             </div>
@@ -465,6 +474,18 @@ window.__spaPageInit = function() {
 
             // Reset any stale inert left from a prior visit or aborted modal close.
             setPageBackgroundInert(false);
+
+            function setCreateButtonLoading(button, loading) {
+                if (!button) return;
+                const label = button.querySelector('.mp-create-btn-label');
+                const hint = button.querySelector('.mp-create-btn-hint');
+                const spinner = button.querySelector('.mp-create-btn-spinner');
+                button.disabled = !!loading;
+                button.setAttribute('aria-busy', loading ? 'true' : 'false');
+                if (label) label.classList.toggle('hidden', !!loading);
+                if (hint) hint.classList.toggle('hidden', !!loading);
+                if (spinner) spinner.classList.toggle('hidden', !loading);
+            }
 
             const mpAvailabilityBanner = document.getElementById('mp-availability-banner');
             const mpOpenDualBtn = document.getElementById('mp-open-dual-btn');
@@ -756,6 +777,7 @@ window.__spaPageInit = function() {
                         : 'Private Room';
 
                     submitCreateRoomBtn.disabled = true;
+                    setCreateButtonLoading(submitCreateRoomBtn, true);
                     try {
                         const result = await window.usertypoMultiplayer.createRoom({
                             name: roomName,
@@ -776,7 +798,7 @@ window.__spaPageInit = function() {
                         }).toString());
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not create room', 'error');
-                        submitCreateRoomBtn.disabled = false;
+                        setCreateButtonLoading(submitCreateRoomBtn, false);
                     }
                 });
             }
@@ -1053,14 +1075,14 @@ window.__spaPageInit = function() {
             if (submitFindMatchBtn) {
                 submitFindMatchBtn.addEventListener('click', async () => {
                     const config = collectFmConfig();
-                    submitFindMatchBtn.disabled = true;
+                    setCreateButtonLoading(submitFindMatchBtn, true);
                     try {
                         await startFindMatchFlow(config);
                         closeFindMatchModal();
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not create dual', 'error');
                     } finally {
-                        submitFindMatchBtn.disabled = false;
+                        setCreateButtonLoading(submitFindMatchBtn, false);
                     }
                 });
             }
