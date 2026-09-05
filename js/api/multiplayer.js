@@ -27,7 +27,7 @@
     var AVAILABILITY_POLL_MS = 30000;
     var AVAILABILITY_MESSAGES = {
         offline: 'You appear to be offline. Check your internet connection and try again.',
-        maintenance: 'Multiplayer is currently undergoing maintenance. Please check back in a few hours.',
+        maintenance: 'Multiplayer is currently unavailable. Try reloading the page, or try again later.',
     };
 
     function setAvailabilityStatus(status) {
