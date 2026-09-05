@@ -996,14 +996,10 @@
         .header-dev-wrapper { display: none; z-index: 2; animation: header-fade-dev 1s ease-out 0s forwards; }
         html[data-staging="1"] .header-dev-wrapper { display: block; }
         .header-dev-layer { background-color: var(--theme-text, #cccccc); -webkit-mask-image: url('logo-assets/dev.png?v=2'); mask-image: url('logo-assets/dev.png?v=2'); }
-        .header-beta-wrapper { display: none; z-index: 2; animation: header-fade-beta 1s ease-out 0s forwards; }
-        html:not([data-staging="1"]) .header-beta-wrapper { display: block; }
-        .header-beta-layer { background-color: var(--theme-text, #cccccc); -webkit-mask-image: url('logo-assets/beta.png?v=1'); mask-image: url('logo-assets/beta.png?v=1'); }
         .header-static-layer { z-index: 3; object-fit: contain; pointer-events: none; animation: header-fade-o 1s ease-out 0s forwards; }
         .header-typ-wrapper { z-index: 1; animation: header-fade-typ 1s ease-out 0s forwards; }
         .header-user-wrapper { z-index: 2; animation: header-fade-user 1s ease-out 0s forwards; }
         @keyframes header-fade-dev { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
-        @keyframes header-fade-beta { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-typ { 0% { filter: drop-shadow(0 0 0px rgba(var(--theme-primary-rgb, 255, 255, 255), 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-primary, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-user { 0% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); } 100% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-text, #ffffff) calc(var(--glow-intensity, 1) * 100%), transparent)) drop-shadow(0 0 15px rgba(255, 255, 255, calc(0.55 * var(--glow-intensity, 1)))); } }
         @keyframes header-fade-o { 0% { filter: drop-shadow(0 0 0px rgba(255, 51, 68, 0)); } 100% { filter: drop-shadow(0 0 6px rgba(255, 51, 68, calc(1 * var(--glow-intensity, 1)))) drop-shadow(0 0 15px rgba(255, 51, 68, calc(0.55 * var(--glow-intensity, 1)))); } }
@@ -1184,9 +1180,6 @@
                     </div>
                     <div class="header-logo-layer header-dev-wrapper">
                         <div class="header-logo-layer header-dynamic-layer header-dev-layer"></div>
-                    </div>
-                    <div class="header-logo-layer header-beta-wrapper">
-                        <div class="header-logo-layer header-dynamic-layer header-beta-layer"></div>
                     </div>
                     <img src="logo-assets/o.png" class="header-logo-layer header-static-layer" alt="usertypo_" width="512" height="512" decoding="async" fetchpriority="high">
                 </div>
@@ -1598,7 +1591,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=9"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=84"></script>
+    <script src="settings.js?v=85"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=11"></script>
     <!-- Auth + data API (before router) -->
