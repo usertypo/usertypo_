@@ -18,6 +18,141 @@
     var lastAuthIdentity = null;
     var pendingDuelFlowId = '';
 
+    var availabilityStatus = 'unknown';
+    var availabilityEvalTimer = null;
+    var availabilityPollId = null;
+    var unavailableSince = 0;
+    var AVAILABILITY_DEBOUNCE_MS = 10000;
+    var AVAILABILITY_OFFLINE_DEBOUNCE_MS = 2000;
+    var AVAILABILITY_POLL_MS = 30000;
+    var AVAILABILITY_MESSAGES = {
+        offline: 'You appear to be offline. Check your internet connection and try again.',
+        maintenance: 'Multiplayer is currently undergoing maintenance. Please check back in a few hours.',
+    };
+
+    function setAvailabilityStatus(status) {
+        if (status !== 'up' && status !== 'offline' && status !== 'maintenance' && status !== 'unknown') return;
+        if (availabilityStatus === status) return;
+        availabilityStatus = status;
+        dispatch('availability', {
+            status: status,
+            message: status === 'offline'
+                ? AVAILABILITY_MESSAGES.offline
+                : status === 'maintenance'
+                    ? AVAILABILITY_MESSAGES.maintenance
+                    : '',
+        });
+    }
+
+    function getAvailability() {
+        return {
+            status: availabilityStatus,
+            message: availabilityStatus === 'offline'
+                ? AVAILABILITY_MESSAGES.offline
+                : availabilityStatus === 'maintenance'
+                    ? AVAILABILITY_MESSAGES.maintenance
+                    : '',
+        };
+    }
+
+    function scheduleAvailabilityEval(delayMs) {
+        if (availabilityEvalTimer) clearTimeout(availabilityEvalTimer);
+        availabilityEvalTimer = nativeSetTimeout(function () {
+            availabilityEvalTimer = null;
+            evaluateAvailability();
+        }, typeof delayMs === 'number' ? delayMs : 500);
+    }
+
+    function probeSiteReachable() {
+        var origin = window.location.origin || '';
+        if (!origin) return Promise.resolve(true);
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timeoutId = null;
+        if (controller) {
+            timeoutId = nativeSetTimeout(function () {
+                try { controller.abort(); } catch (_) { /* ignore */ }
+            }, 5000);
+        }
+        return fetch(origin + '/', {
+            method: 'HEAD',
+            cache: 'no-store',
+            credentials: 'same-origin',
+            signal: controller ? controller.signal : undefined,
+        }).then(function (res) {
+            if (timeoutId) clearTimeout(timeoutId);
+            return !!(res && (res.ok || res.status === 304));
+        }).catch(function () {
+            if (timeoutId) clearTimeout(timeoutId);
+            return false;
+        });
+    }
+
+    function evaluateAvailability() {
+        var lobbyOk = !!(socket && readyState && (
+            typeof socket.isLobbyReady === 'function'
+                ? socket.isLobbyReady()
+                : (socket.connected && socket.active)
+        ));
+        if (lobbyOk || readyState) {
+            unavailableSince = 0;
+            setAvailabilityStatus('up');
+            return Promise.resolve();
+        }
+        return probeSiteReachable().then(function (siteUp) {
+            if (readyState) {
+                unavailableSince = 0;
+                setAvailabilityStatus('up');
+                return;
+            }
+
+            var now = Date.now();
+            var offlineDebounce = navigator.onLine === false
+                ? AVAILABILITY_OFFLINE_DEBOUNCE_MS
+                : AVAILABILITY_DEBOUNCE_MS;
+
+            if (!siteUp || navigator.onLine === false) {
+                if (!unavailableSince) unavailableSince = now;
+                if (now - unavailableSince >= offlineDebounce) {
+                    setAvailabilityStatus('offline');
+                } else {
+                    scheduleAvailabilityEval(offlineDebounce - (now - unavailableSince) + 100);
+                }
+                return;
+            }
+
+            if (!unavailableSince) unavailableSince = now;
+            if (now - unavailableSince < AVAILABILITY_DEBOUNCE_MS) {
+                scheduleAvailabilityEval(AVAILABILITY_DEBOUNCE_MS - (now - unavailableSince) + 100);
+                return;
+            }
+
+            if (socket && socket.connected && !readyState) {
+                scheduleAvailabilityEval(3000);
+                return;
+            }
+
+            setAvailabilityStatus('maintenance');
+        });
+    }
+
+    function startAvailabilityMonitor() {
+        window.addEventListener('online', function () {
+            unavailableSince = 0;
+            setAvailabilityStatus('unknown');
+            scheduleAvailabilityEval(500);
+        });
+        window.addEventListener('offline', function () {
+            scheduleAvailabilityEval(AVAILABILITY_OFFLINE_DEBOUNCE_MS);
+        });
+        scheduleAvailabilityEval(2000);
+        if (!availabilityPollId) {
+            availabilityPollId = nativeSetInterval(function () {
+                if (availabilityStatus === 'up') return;
+                evaluateAvailability();
+            }, AVAILABILITY_POLL_MS);
+        }
+    }
+
     function duelFlowNotify(partial) {
         var row = Object.assign({
             type: 'duel_notice',
@@ -163,18 +298,25 @@
 
     function bindSocketEvents(activeSocket) {
         activeSocket.on('connect', function () {
+            unavailableSince = 0;
+            if (!readyState) setAvailabilityStatus('unknown');
+            scheduleAvailabilityEval(5000);
             dispatch('connected', { socketId: activeSocket.id });
         });
         activeSocket.on('disconnect', function (reason) {
             readyState = null;
+            scheduleAvailabilityEval(1500);
             dispatch('disconnected', { reason: reason });
             // Heal in the background so create/join/ready do not wait for a full page reload.
             nativeSetTimeout(healConnection, 250);
         });
         activeSocket.on('connect_error', function (error) {
+            scheduleAvailabilityEval(2000);
             dispatch('error', { code: 'connection_failed', message: error && error.message });
         });
         activeSocket.on('multiplayer:ready', function (state) {
+            unavailableSince = 0;
+            setAvailabilityStatus('up');
             readyState = state;
             if (state && state.userId) {
                 lastAuthIdentity = String(state.userId);
@@ -802,21 +944,27 @@
             }
             ensureConnected().catch(function (error) {
                 console.warn('[multiplayer] connect failed:', error && error.message);
+                scheduleAvailabilityEval(1000);
             });
         });
         window.usertypoAuth.ready().then(function () {
             return ensureConnected();
-        }).catch(function () { /* auth unavailable */ });
+        }).catch(function () {
+            scheduleAvailabilityEval(1000);
+        });
     }
 
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState !== 'visible') return;
         healConnection();
+        scheduleAvailabilityEval(800);
     });
 
     window.addEventListener('online', function () {
         healConnection();
     });
+
+    startAvailabilityMonitor();
 
     window.usertypoMultiplayer = {
         connect: ensureConnected,
@@ -859,5 +1007,7 @@
         getPendingMatch: function (roomId) { return pendingMatches[roomId] || null; },
         getSocket: function () { return socket; },
         getReadyState: function () { return readyState; },
+        getAvailability: getAvailability,
+        refreshAvailability: evaluateAvailability,
     };
 })();

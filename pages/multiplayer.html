@@ -47,6 +47,11 @@
                 <p class="text-xs sm:text-sm text-slate-400 mb-2">Challenge opponents in real-time typing races.</p>
             </div>
 
+            <p id="mp-availability-banner"
+                class="hidden text-center text-sm font-medium text-red-400 leading-snug px-4"
+                role="status"
+                aria-live="polite"></p>
+
             <!-- Duel & Room Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 opacity-0 animate-fade-in-up [animation-delay:250ms] mt-4">
                 <!-- Duel Card -->
@@ -460,6 +465,42 @@ window.__spaPageInit = function() {
 
             // Reset any stale inert left from a prior visit or aborted modal close.
             setPageBackgroundInert(false);
+
+            const mpAvailabilityBanner = document.getElementById('mp-availability-banner');
+            const mpOpenDualBtn = document.getElementById('mp-open-dual-btn');
+            const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
+
+            function isMultiplayerUnavailable() {
+                const status = window.usertypoMultiplayer?.getAvailability?.()?.status;
+                return status === 'offline' || status === 'maintenance';
+            }
+
+            function applyMultiplayerAvailability(detail) {
+                const info = detail || window.usertypoMultiplayer?.getAvailability?.() || { status: 'unknown' };
+                const unavailable = info.status === 'offline' || info.status === 'maintenance';
+                if (mpAvailabilityBanner) {
+                    if (unavailable && info.message) {
+                        mpAvailabilityBanner.textContent = info.message;
+                        mpAvailabilityBanner.classList.remove('hidden');
+                    } else {
+                        mpAvailabilityBanner.textContent = '';
+                        mpAvailabilityBanner.classList.add('hidden');
+                    }
+                }
+                [mpOpenDualBtn, mpOpenRoomBtn].forEach((btn) => {
+                    if (!btn) return;
+                    btn.disabled = unavailable;
+                    btn.classList.toggle('opacity-50', unavailable);
+                    btn.classList.toggle('pointer-events-none', unavailable);
+                    btn.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+                });
+            }
+
+            window.addEventListener('usertypo:multiplayer:availability', (event) => {
+                applyMultiplayerAvailability(event.detail);
+            });
+            applyMultiplayerAvailability();
+            window.usertypoMultiplayer?.refreshAvailability?.();
 
             function toggleModalSetting(btn) {
                 const isActive = btn.classList.contains('text-primary');
@@ -915,17 +956,18 @@ window.__spaPageInit = function() {
             }
 
             // Wire up the page-level buttons to open the modals
-            const mpOpenDualBtn = document.getElementById('mp-open-dual-btn');
-            const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
-
             if (mpOpenDualBtn) {
                 mpOpenDualBtn.addEventListener('click', () => {
+                    if (isMultiplayerUnavailable()) return;
                     openFindMatchModal();
                     showFindMatchChoice();
                 });
             }
             if (mpOpenRoomBtn) {
-                mpOpenRoomBtn.addEventListener('click', openRoomsChoiceModal);
+                mpOpenRoomBtn.addEventListener('click', () => {
+                    if (isMultiplayerUnavailable()) return;
+                    openRoomsChoiceModal();
+                });
             }
 
             joinPublicDualBtn?.addEventListener('click', showPublicDualList);
