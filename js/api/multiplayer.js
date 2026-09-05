@@ -88,34 +88,50 @@
     }
 
     function evaluateAvailability() {
-        var lobbyOk = !!(socket && readyState && (
+        // Browser offline is authoritative — do not wait on a stale readyState/socket.
+        if (navigator.onLine === false) {
+            if (!unavailableSince) unavailableSince = Date.now();
+            setAvailabilityStatus('offline');
+            return Promise.resolve();
+        }
+
+        var lobbyAlive = !!(socket && readyState && (
             typeof socket.isLobbyReady === 'function'
                 ? socket.isLobbyReady()
-                : (socket.connected && socket.active)
+                : !!(socket.connected && socket.active)
         ));
-        if (lobbyOk || readyState) {
+        if (lobbyAlive) {
             unavailableSince = 0;
             setAvailabilityStatus('up');
             return Promise.resolve();
         }
+
         return probeSiteReachable().then(function (siteUp) {
-            if (readyState) {
+            if (navigator.onLine === false) {
+                if (!unavailableSince) unavailableSince = Date.now();
+                setAvailabilityStatus('offline');
+                return;
+            }
+
+            var lobbyAliveNow = !!(socket && readyState && (
+                typeof socket.isLobbyReady === 'function'
+                    ? socket.isLobbyReady()
+                    : !!(socket.connected && socket.active)
+            ));
+            if (lobbyAliveNow) {
                 unavailableSince = 0;
                 setAvailabilityStatus('up');
                 return;
             }
 
             var now = Date.now();
-            var offlineDebounce = navigator.onLine === false
-                ? AVAILABILITY_OFFLINE_DEBOUNCE_MS
-                : AVAILABILITY_DEBOUNCE_MS;
 
-            if (!siteUp || navigator.onLine === false) {
+            if (!siteUp) {
                 if (!unavailableSince) unavailableSince = now;
-                if (now - unavailableSince >= offlineDebounce) {
+                if (now - unavailableSince >= AVAILABILITY_OFFLINE_DEBOUNCE_MS) {
                     setAvailabilityStatus('offline');
                 } else {
-                    scheduleAvailabilityEval(offlineDebounce - (now - unavailableSince) + 100);
+                    scheduleAvailabilityEval(AVAILABILITY_OFFLINE_DEBOUNCE_MS - (now - unavailableSince) + 100);
                 }
                 return;
             }
@@ -142,12 +158,25 @@
             scheduleAvailabilityEval(500);
         });
         window.addEventListener('offline', function () {
-            scheduleAvailabilityEval(AVAILABILITY_OFFLINE_DEBOUNCE_MS);
+            unavailableSince = Date.now();
+            setAvailabilityStatus('offline');
         });
-        scheduleAvailabilityEval(2000);
+        scheduleAvailabilityEval(1500);
         if (!availabilityPollId) {
             availabilityPollId = nativeSetInterval(function () {
-                if (availabilityStatus === 'up') return;
+                if (navigator.onLine === false) {
+                    setAvailabilityStatus('offline');
+                    return;
+                }
+                if (availabilityStatus === 'up') {
+                    var lobbyAlive = !!(socket && readyState && (
+                        typeof socket.isLobbyReady === 'function'
+                            ? socket.isLobbyReady()
+                            : !!(socket.connected && socket.active)
+                    ));
+                    if (!lobbyAlive) evaluateAvailability();
+                    return;
+                }
                 evaluateAvailability();
             }, AVAILABILITY_POLL_MS);
         }
@@ -305,7 +334,12 @@
         });
         activeSocket.on('disconnect', function (reason) {
             readyState = null;
-            scheduleAvailabilityEval(1500);
+            if (navigator.onLine === false) {
+                unavailableSince = Date.now();
+                setAvailabilityStatus('offline');
+            } else {
+                scheduleAvailabilityEval(1500);
+            }
             dispatch('disconnected', { reason: reason });
             // Heal in the background so create/join/ready do not wait for a full page reload.
             nativeSetTimeout(healConnection, 250);

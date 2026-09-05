@@ -499,6 +499,16 @@ window.__spaPageInit = function() {
             window.addEventListener('usertypo:multiplayer:availability', (event) => {
                 applyMultiplayerAvailability(event.detail);
             });
+            window.addEventListener('offline', () => {
+                applyMultiplayerAvailability({
+                    status: 'offline',
+                    message: 'You appear to be offline. Check your internet connection and try again.',
+                });
+            });
+            window.addEventListener('online', () => {
+                applyMultiplayerAvailability(window.usertypoMultiplayer?.getAvailability?.());
+                window.usertypoMultiplayer?.refreshAvailability?.();
+            });
             applyMultiplayerAvailability();
             window.usertypoMultiplayer?.refreshAvailability?.();
 
