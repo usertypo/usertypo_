@@ -305,7 +305,7 @@
      * Retries briefly so a concurrent ensureMyProfile insert can finish first.
      */
     async function applyDisplayUsername(raw) {
-        var name = String(raw || pendingDisplayUsername || '').trim();
+        var name = normalizeDisplayName(raw || pendingDisplayUsername || '');
         if (!name || isInternalClerkUsername(name)) return false;
         setPendingDisplayUsername(name);
 
@@ -370,6 +370,16 @@
         return base.slice(0, 32);
     }
 
+    /** Public display name: keep spaces and casing; only trim/clamp length. */
+    function normalizeDisplayName(raw) {
+        var name = String(raw || '')
+            .replace(/[\u0000-\u001F\u007F]/g, '')
+            .trim()
+            .replace(/\s+/g, ' ');
+        if (name.length > 32) name = name.slice(0, 32).trim();
+        return name;
+    }
+
     function emailFromSignUp(signUp) {
         if (!signUp) return '';
         if (signUp.emailAddress) return String(signUp.emailAddress);
@@ -428,7 +438,8 @@
     function emailLocalPartSuggestion(signUp) {
         var email = emailFromSignUp(signUp);
         var local = email ? email.split('@')[0] : '';
-        return local ? sanitizeUsername(local) : '';
+        if (!local) return '';
+        return normalizeDisplayName(local.replace(/[._+-]+/g, ' '));
     }
 
     function isUsernameTakenError(err) {
@@ -597,7 +608,7 @@
         lastNameSnapshot = signUp.lastName || lastNameSnapshot;
 
         if (preferredDisplayUsername) {
-            setPendingDisplayUsername(preferredDisplayUsername);
+            setPendingDisplayUsername(normalizeDisplayName(preferredDisplayUsername));
         }
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
@@ -612,14 +623,16 @@
                 status: signUp.status,
                 missingFields: signUp.missingFields || [],
                 googleDisplayName: googleName,
-                googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                googleUsername: googleName,
                 hasGoogleName: !!googleName,
             };
         }
 
+        // Only a caller-provided choice counts — never invent a name from sanitizeUsername('').
+        // That helper pads empty strings to random 4-digit ids and skipped the chooser UI.
         var displaySeed = preferredDisplayUsername
-            ? sanitizeUsername(preferredDisplayUsername)
-            : sanitizeUsername(getPendingDisplayUsername());
+            ? normalizeDisplayName(preferredDisplayUsername)
+            : '';
         if (displaySeed) setPendingDisplayUsername(displaySeed);
         var attempts = 0;
         var maxAttempts = displaySeed ? 12 : 3;
@@ -644,7 +657,7 @@
                         status: 'needs_username_choice',
                         missingFields: missing,
                         googleDisplayName: googleName,
-                        googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                        googleUsername: googleName,
                         hasGoogleName: !!googleName,
                         suggestedUsername: emailLocalPartSuggestion(signUp)
                             || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
@@ -659,7 +672,7 @@
                         status: 'needs_username_choice',
                         missingFields: missing,
                         googleDisplayName: googleName,
-                        googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                        googleUsername: googleName,
                         hasGoogleName: !!googleName,
                         suggestedUsername: emailLocalPartSuggestion(signUp)
                             || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
@@ -669,7 +682,7 @@
                     status: 'missing_requirements',
                     missingFields: missing,
                     googleDisplayName: googleName,
-                    googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                    googleUsername: googleName,
                     hasGoogleName: !!googleName,
                 };
             }
@@ -708,7 +721,7 @@
                 status: 'needs_username_choice',
                 missingFields: stillMissing,
                 googleDisplayName: googleName,
-                googleUsername: googleName ? sanitizeUsername(googleName) : '',
+                googleUsername: googleName,
                 hasGoogleName: !!googleName,
                 suggestedUsername: emailLocalPartSuggestion(signUp)
                     || emailLocalPartSuggestion({ emailAddress: emailSnapshot }),
@@ -719,7 +732,7 @@
             status: 'missing_requirements',
             missingFields: stillMissing,
             googleDisplayName: googleName,
-            googleUsername: googleName ? sanitizeUsername(googleName) : '',
+            googleUsername: googleName,
             hasGoogleName: !!googleName,
         };
     }
@@ -730,6 +743,9 @@
         if (!clerk || !clerk.client) {
             throw new Error('Clerk is not ready yet.');
         }
+
+        // Don't let a leftover email-signup pending name skip the Google chooser.
+        pendingDisplayUsername = '';
 
         var callbackUrl = window.location.origin + (config.ssoCallbackUrl || '/sso-callback');
         var completeUrl = window.location.origin + (
@@ -844,7 +860,7 @@
                 status: 'needs_username_choice',
                 missingFields: missing,
                 googleDisplayName: finished.googleDisplayName || '',
-                googleUsername: finished.googleUsername || '',
+                googleUsername: finished.googleUsername || finished.googleDisplayName || '',
                 hasGoogleName: !!finished.hasGoogleName,
                 suggestedUsername: finished.suggestedUsername || '',
                 redirectTo: (config.signUpUrl || signInPath) + '?oauth=username',
@@ -856,9 +872,9 @@
 
     async function finishOAuthUsername(username) {
         await readyPromise;
-        var name = sanitizeUsername(username);
+        var name = normalizeDisplayName(username);
         if (name.length < 4) {
-            throw new Error('Username must be at least 4 characters.');
+            throw new Error('Display name must be at least 4 characters.');
         }
         setPendingDisplayUsername(name);
         var finished = await completePendingOAuthSignUp(name);
@@ -1032,6 +1048,7 @@
         finishOAuthUsername: finishOAuthUsername,
         getPendingDisplayUsername: getPendingDisplayUsername,
         isInternalClerkUsername: isInternalClerkUsername,
+        normalizeDisplayName: normalizeDisplayName,
         signOut: signOut,
     };
 })();

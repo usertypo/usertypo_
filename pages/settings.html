@@ -4024,9 +4024,14 @@
                                         ? window.usertypoAuth.getState()
                                         : null;
                                     var user = state && state.user;
-                                    var username = (profile && profile.username)
-                                        || (user && user.username)
-                                        || '—';
+                                    var username = '—';
+                                    if (window.usertypoProfiles && typeof window.usertypoProfiles.publicUsername === 'function' && profile) {
+                                        username = window.usertypoProfiles.publicUsername(profile, '') || '—';
+                                    } else {
+                                        username = (profile && (profile.display_name || profile.username))
+                                            || (user && user.username)
+                                            || '—';
+                                    }
                                     var email = (user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress)
                                         || '—';
                                     var publicId = (profile && profile.public_id)

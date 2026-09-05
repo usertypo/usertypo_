@@ -9,15 +9,16 @@
     var cachedProfile = null;
     var lastFingerprint = null;
 
-    function sanitizePublicUsername(raw) {
-        return String(raw || '')
+    function normalizeDisplayName(raw) {
+        if (window.usertypoAuth && typeof window.usertypoAuth.normalizeDisplayName === 'function') {
+            return window.usertypoAuth.normalizeDisplayName(raw);
+        }
+        var name = String(raw || '')
+            .replace(/[\u0000-\u001F\u007F]/g, '')
             .trim()
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_]/g, '')
-            .replace(/_+/g, '_')
-            .replace(/^_+/g, '')
-            .slice(0, 32);
+            .replace(/\s+/g, ' ');
+        if (name.length > 32) name = name.slice(0, 32).trim();
+        return name;
     }
 
     /** Clerk fills a hidden unique username like u123456789; never use it as the public name. */
@@ -33,26 +34,28 @@
     function pickUsername(user) {
         // Preferred name from in-progress sign-up / OAuth chooser wins over Clerk.
         if (window.usertypoAuth && typeof window.usertypoAuth.getPendingDisplayUsername === 'function') {
-            var pending = sanitizePublicUsername(window.usertypoAuth.getPendingDisplayUsername());
+            var pending = normalizeDisplayName(window.usertypoAuth.getPendingDisplayUsername());
             if (pending && pending.length >= 3 && !isPlaceholderUsername(pending)) {
                 return pending;
             }
         }
         if (!user) return null;
-        // App username only — never Google/OAuth fullName or firstName.
-        // Also skip Clerk's auto-generated placeholder usernames.
+        // App username only — never Google/OAuth fullName via Clerk fields alone,
+        // and never Clerk's auto-generated placeholder usernames.
         if (user.username) {
-            var fromClerk = sanitizePublicUsername(user.username);
+            var fromClerk = normalizeDisplayName(user.username);
             if (fromClerk && !isPlaceholderUsername(fromClerk)) return fromClerk;
         }
         return null;
     }
 
-    /** Public-facing name for any profile-like object. Never returns Google display names. */
+    /** Public-facing name for any profile-like object. Prefer display_name, then username. */
     function publicUsername(source, fallback) {
         if (!source || typeof source !== 'object') return fallback || 'Player';
+        var display = String(source.display_name || '').trim();
+        if (display && !isPlaceholderUsername(display)) return display;
         var name = String(source.username || '').trim();
-        if (name) return name;
+        if (name && !isPlaceholderUsername(name)) return name;
         return fallback || 'Player';
     }
 
@@ -404,7 +407,7 @@
     }
 
     async function setUsername(username) {
-        var name = sanitizePublicUsername(username);
+        var name = normalizeDisplayName(username);
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
         }
