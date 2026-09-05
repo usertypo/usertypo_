@@ -10,7 +10,7 @@ export const LIMITS = Object.freeze({
   listingTtlMs: 30_000,
   joinTtlMs: 60_000,
   reconnectGraceMs: 5_000,
-  finishedRoomTtlMs: 60_000,
+  finishedRoomTtlMs: 5 * 60_000,
   roomInactivityMs: 600_000,
   minReadyToStart: 3,
   minReturnToLobby: 2,

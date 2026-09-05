@@ -2253,6 +2253,8 @@
             if (!pendingRacePayload || state === 'finished' || state === 'racing') {
                 return false;
             }
+            // Countdown join payloads have startsAt=null / startsInMs=0 — do not treat as live.
+            if (!pendingRacePayload.startsAt) return false;
             if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
             var payload = pendingRacePayload;
             pendingRacePayload = null;
@@ -3466,6 +3468,9 @@
                     bindDualKeymapRenderArgs();
                 }
                 leaveStatsForRematch();
+                if (window.usertypoMultiplayer && typeof window.usertypoMultiplayer.ensureRaceConnected === 'function') {
+                    window.usertypoMultiplayer.ensureRaceConnected(roomId).catch(function () { /* countdown/start will retry */ });
+                }
             });
             listen('match-resumed', function (event) {
                 var response = event && event.detail || {};
@@ -3536,7 +3541,11 @@
                 if (response.race && response.race.config) {
                     applyDualRaceConfig(response.race.config);
                 }
-                if (response.race) pendingRacePayload = response.race;
+                // Only seed the live race payload when racing — countdown payloads have
+                // startsInMs:0 and would unlock/render the prompt before the countdown ends.
+                if (response.race && response.state === 'racing') {
+                    pendingRacePayload = response.race;
+                }
                 bindDualKeymapRenderArgs();
                 players = response.room && response.room.players || [];
                 bot = response.room && response.room.bot || null;

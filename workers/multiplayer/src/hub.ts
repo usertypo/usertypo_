@@ -166,6 +166,12 @@ export class MultiplayerHub implements DurableObject {
 
   constructor(private ctx: DurableObjectState, env: Env) {
     this.env = env;
+    // Keep hibernating sockets alive without waking the DO on every ping.
+    try {
+      this.ctx.setWebSocketAutoResponse(
+        new WebSocketRequestResponsePair('ping', 'pong'),
+      );
+    } catch { /* older runtimes */ }
   }
 
   private lobbyStub() {
@@ -536,6 +542,25 @@ export class MultiplayerHub implements DurableObject {
         }
       }
       return Response.json({ ok: true });
+    }
+
+    if (url.pathname === '/internal/rematch' && request.method === 'POST') {
+      await this.ensureLoaded();
+      const body = await request.json() as { userId?: string };
+      const userId = String(body.userId || '');
+      const room = this.boundRoomId
+        ? this.rooms.get(this.boundRoomId)
+        : [...this.rooms.values()][0];
+      if (!room || !userId) {
+        return Response.json({ ok: false, error: 'rematch_unavailable' }, { status: 404 });
+      }
+      try {
+        const result = await this.applyRematchVote(room, userId);
+        return Response.json({ ok: true, ...result });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'rematch_unavailable';
+        return Response.json({ ok: false, error: message }, { status: 400 });
+      }
     }
 
     if (request.headers.get('Upgrade') !== 'websocket') {
@@ -1318,6 +1343,46 @@ export class MultiplayerHub implements DurableObject {
     ]);
   }
 
+  private async applyRematchVote(room: Room, userId: string): Promise<{
+    userIds: string[];
+    rematchState: [string, number, number, string[]];
+    rematchStart?: { roomId: string; reason: string; config: RaceConfig };
+  }> {
+    if (room.type === 'custom' || room.state !== 'finished') {
+      throw new Error('rematch_unavailable');
+    }
+    const player = room.players[userId];
+    if (!player || player.status === 'left') throw new Error('rematch_unavailable');
+    if (!room.rematchVotes) room.rematchVotes = [];
+    if (!room.rematchVotes.includes(userId)) room.rematchVotes.push(userId);
+    await this.cancelAlarmsForRoom(room.id, 'room-dispose');
+    this.scheduleAlarm(LIMITS.finishedRoomTtlMs, { kind: 'room-dispose', roomId: room.id });
+    this.emitRematchState(room);
+    const votes = room.rematchVotes.slice();
+    const needed = Math.max(1, this.remainingDualHumans(room).length);
+    const rematchState: [string, number, number, string[]] = [
+      room.id,
+      votes.length,
+      needed,
+      votes,
+    ];
+    let rematchStart: { roomId: string; reason: string; config: RaceConfig } | undefined;
+    if (votes.length >= needed) {
+      await this.startDualRematch(room);
+      rematchStart = {
+        roomId: room.id,
+        reason: room.type,
+        config: room.config,
+      };
+    }
+    await this.persist();
+    return {
+      userIds: room.allowedUserIds.slice(),
+      rematchState,
+      rematchStart,
+    };
+  }
+
   private async startDualRematch(room: Room) {
     if (room.type === 'custom' || room.state !== 'finished') return;
     await this.cancelAlarmsForRoom(room.id, 'room-dispose');
@@ -1558,6 +1623,34 @@ export class MultiplayerHub implements DurableObject {
         || event.startsWith('race:')
         || raceRoomEvents.has(event);
       const isLobbyEvent = event.startsWith('duel:') || lobbyRoomEvents.has(event);
+      // Rematch must work from the lobby socket after idle tabs lose the race DO connection.
+      if (this.role === 'lobby' && event === 'race:rematch') {
+        const roomId = String(payload || this.userToRoom.get(userId) || '');
+        if (!roomId) throw new Error('rematch_unavailable');
+        const res = await this.raceStub(roomId).fetch('https://race-do/internal/rematch', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+        let body: {
+          ok?: boolean;
+          error?: string;
+          userIds?: string[];
+          rematchState?: [string, number, number, string[]];
+          rematchStart?: { roomId: string; reason: string; config: RaceConfig };
+        } = {};
+        try { body = await res.json(); } catch { /* ignore */ }
+        if (!res.ok || !body.ok) throw new Error(body.error || 'rematch_unavailable');
+        const recipients = Array.isArray(body.userIds) ? body.userIds : [userId];
+        if (body.rematchState) {
+          for (const uid of recipients) this.emitToUser(uid, 'race:rematch-state', body.rematchState);
+        }
+        if (body.rematchStart) {
+          for (const uid of recipients) this.emitToUser(uid, 'race:rematch-start', body.rematchStart);
+        }
+        safeAck(ws, reqId, { ok: true });
+        return;
+      }
       if (this.role === 'lobby' && isRaceEvent) {
         throw new Error('connect_race_socket');
       }
@@ -1660,6 +1753,15 @@ export class MultiplayerHub implements DurableObject {
           this.userToRoom.delete(listing.ownerUserId);
         }
         this.removeListing(listing.id);
+        const joiner = this.profiles.get(userId) || { name: 'Opponent' };
+        const acceptedPayload = {
+          listingId,
+          fromUserId: userId,
+          fromName: joiner.name || 'Opponent',
+          config: listing.config,
+        };
+        this.emitToUser(listing.ownerUserId, 'duel:accepted', acceptedPayload);
+        this.emitToUser(userId, 'duel:accepted', acceptedPayload);
         const room = await this.createRoom('public', listing.config, [listing.ownerUserId, userId]);
         this.notifyMatchReady(room, 'listing');
         safeAck(ws, reqId, { ok: true, roomId: room.id });
@@ -1968,6 +2070,16 @@ export class MultiplayerHub implements DurableObject {
           await this.persist();
           return;
         }
+        // Notify both players immediately — createRoom (prompt + race DO) can take seconds.
+        const accepter = this.profiles.get(userId) || { name: 'Opponent' };
+        const acceptedPayload = {
+          inviteId,
+          fromUserId: userId,
+          fromName: accepter.name || 'Opponent',
+          config: invite.config,
+        };
+        this.emitToUser(invite.fromUserId, 'duel:accepted', acceptedPayload);
+        this.emitToUser(invite.toUserId, 'duel:accepted', acceptedPayload);
         const room = await this.createRoom('friend', invite.config, [invite.fromUserId, invite.toUserId]);
         this.notifyMatchReady(room, 'friend-accepted');
         safeAck(ws, reqId, { ok: true, accepted: true, roomId: room.id });
@@ -1987,20 +2099,9 @@ export class MultiplayerHub implements DurableObject {
       if (event === 'race:rematch') {
         const roomId = String(payload || '');
         const room = this.rooms.get(roomId);
-        if (!room || room.type === 'custom' || room.state !== 'finished') {
-          throw new Error('rematch_unavailable');
-        }
-        const player = room.players[userId];
-        if (!player || player.status === 'left') throw new Error('rematch_unavailable');
-        if (!room.rematchVotes) room.rematchVotes = [];
-        if (!room.rematchVotes.includes(userId)) room.rematchVotes.push(userId);
-        await this.cancelAlarmsForRoom(room.id, 'room-dispose');
-        this.scheduleAlarm(LIMITS.finishedRoomTtlMs, { kind: 'room-dispose', roomId: room.id });
-        this.emitRematchState(room);
-        const needed = Math.max(1, this.remainingDualHumans(room).length);
-        if (room.rematchVotes.length >= needed) await this.startDualRematch(room);
+        if (!room) throw new Error('rematch_unavailable');
+        await this.applyRematchVote(room, userId);
         safeAck(ws, reqId, { ok: true });
-        await this.persist();
         return;
       }
       if (event === 'room:create') {

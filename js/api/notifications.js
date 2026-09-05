@@ -261,9 +261,18 @@
             else if (String(notification.type || '').indexOf('duel_') === 0) iconText = 'swords';
         }
 
+        var toastId = notification && notification.id ? String(notification.id) : '';
+        if (toastId) {
+            var existing = stack.querySelector('[data-notification-id="' + toastId.replace(/"/g, '') + '"]');
+            if (existing) {
+                return updateToastElement(existing, notification, iconText);
+            }
+        }
+
         var toast = document.createElement('div');
         toast.className = 'notification-toast glass-panel border border-primary/25 shadow-[0_0_20px_rgba(0,208,255,0.15)]';
         toast.style.backdropFilter = 'blur(20px)';
+        if (toastId) toast.setAttribute('data-notification-id', toastId);
         var icon = document.createElement('span');
         icon.className = 'material-symbols-outlined ' +
             ((iconText === 'error' || iconText === 'cancel') ? 'text-error' : 'text-primary') +
@@ -300,6 +309,11 @@
         requestAnimationFrame(function () { toast.classList.add('is-visible'); });
         // Choice toasts stay until the user picks an action.
         if (actions.length) return toast;
+        scheduleToastDismiss(toast);
+        return toast;
+    }
+
+    function scheduleToastDismiss(toast) {
         var remaining = TOAST_MS;
         var startedAt = 0;
         var dismissTimer = null;
@@ -314,11 +328,58 @@
             remaining = Math.max(0, remaining - (Date.now() - startedAt));
         }
         toast._cancelDismiss = pauseDismiss;
+        toast._rescheduleDismiss = function () {
+            pauseDismiss();
+            remaining = TOAST_MS;
+            if (toast.dataset.removing !== 'true') scheduleDismiss();
+        };
         toast.addEventListener('mouseenter', pauseDismiss);
         toast.addEventListener('mouseleave', function () {
             if (toast.dataset.removing !== 'true') scheduleDismiss();
         });
         scheduleDismiss();
+    }
+
+    function updateToastElement(toast, notification, iconText) {
+        if (!toast || !notification) return toast;
+        var icon = toast.querySelector('.material-symbols-outlined');
+        if (icon) {
+            icon.textContent = iconText || icon.textContent;
+            icon.className = 'material-symbols-outlined ' +
+                ((iconText === 'error' || iconText === 'cancel') ? 'text-error' : 'text-primary') +
+                ' text-[18px] shrink-0';
+        }
+        var message = toast.querySelector('.notification-toast-message');
+        if (message) message.textContent = notification.title || 'Notification';
+
+        var oldActions = toast.querySelector('.notification-toast-actions');
+        if (oldActions) oldActions.remove();
+        var actions = actionsFor(notification);
+        if (actions.length) {
+            if (typeof toast._cancelDismiss === 'function') toast._cancelDismiss();
+            var actionWrap = document.createElement('div');
+            actionWrap.className = 'notification-toast-actions';
+            actions.forEach(function (action, index) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = action.label || (index ? 'Dismiss' : 'Open');
+                var tone = action.tone
+                    || (index === 0 ? 'primary' : (index === actions.length - 1 ? 'danger' : 'neutral'));
+                button.className = tone === 'danger'
+                    ? 'px-2.5 py-1 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-[11px] font-bold transition-colors'
+                    : tone === 'neutral'
+                        ? 'px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-[11px] font-bold transition-colors'
+                        : 'px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors';
+                actionWrap.appendChild(button);
+                bindAction(button, action, notification, toast, null);
+            });
+            toast.appendChild(actionWrap);
+        } else if (typeof toast._rescheduleDismiss === 'function') {
+            toast._rescheduleDismiss();
+        } else {
+            scheduleToastDismiss(toast);
+        }
+        toast.classList.add('is-visible');
         return toast;
     }
 

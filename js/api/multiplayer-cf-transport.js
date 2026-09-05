@@ -31,6 +31,8 @@
 
     function isRaceEvent(event) {
         var e = String(event || '');
+        // Rematch is proxied by the lobby so idle clients don't need a live race socket.
+        if (e === 'race:rematch') return false;
         if (e.indexOf('match:') === 0 || e.indexOf('race:') === 0) return true;
         return e === 'room:ready'
             || e === 'room:update-config'
@@ -56,6 +58,12 @@
         var raceConnectPromise = null;
         var raceReconnectTimer = null;
         var intentionalRaceClose = false;
+        var lobbyConnectPromise = null;
+        var lobbyReconnectTimer = null;
+        var lobbyReconnectAttempt = 0;
+        var intentionalLobbyClose = false;
+        var lobbyHeartbeatTimer = null;
+        var raceHeartbeatTimer = null;
 
         function on(event, fn) {
             if (!handlers[event]) handlers[event] = [];
@@ -164,6 +172,8 @@
 
                 socket.addEventListener('message', function (ev) {
                     var raw = String(ev.data || '');
+                    // Cloudflare DO auto-response keepalive (plain text).
+                    if (raw === 'pong' || raw === 'ping') return;
                     var msg;
                     try { msg = JSON.parse(raw); } catch (_) { return; }
                     if (msg.t === 'ev' && msg.e === 'multiplayer:ready' && !localReady) {
@@ -197,8 +207,58 @@
             }, 350);
         }
 
+        function stopLobbyHeartbeat() {
+            if (lobbyHeartbeatTimer) {
+                clearInterval(lobbyHeartbeatTimer);
+                lobbyHeartbeatTimer = null;
+            }
+        }
+
+        function startLobbyHeartbeat() {
+            stopLobbyHeartbeat();
+            lobbyHeartbeatTimer = setInterval(function () {
+                if (!lobbyWs || lobbyWs.readyState !== 1) return;
+                try { lobbyWs.send('ping'); } catch (_) { /* ignore */ }
+            }, 20_000);
+        }
+
+        function stopRaceHeartbeat() {
+            if (raceHeartbeatTimer) {
+                clearInterval(raceHeartbeatTimer);
+                raceHeartbeatTimer = null;
+            }
+        }
+
+        function startRaceHeartbeat() {
+            stopRaceHeartbeat();
+            raceHeartbeatTimer = setInterval(function () {
+                if (!raceWs || raceWs.readyState !== 1) return;
+                try { raceWs.send('ping'); } catch (_) { /* ignore */ }
+            }, 20_000);
+        }
+
+        function scheduleLobbyReconnect() {
+            if (intentionalLobbyClose || !active) return;
+            if (lobbyReconnectTimer) clearTimeout(lobbyReconnectTimer);
+            var delay = Math.min(10_000, 350 * Math.pow(2, Math.min(lobbyReconnectAttempt, 5)));
+            lobbyReconnectAttempt += 1;
+            lobbyReconnectTimer = setTimeout(function () {
+                lobbyReconnectTimer = null;
+                if (intentionalLobbyClose || !active) return;
+                if (lobbyConnected && lobbyReady && lobbyWs && lobbyWs.readyState === 1) return;
+                connect().catch(function () {
+                    scheduleLobbyReconnect();
+                });
+            }, delay);
+        }
+
+        function isLobbyReady() {
+            return !!(lobbyConnected && lobbyReady && lobbyWs && lobbyWs.readyState === 1);
+        }
+
         function closeRace() {
             intentionalRaceClose = true;
+            stopRaceHeartbeat();
             if (raceReconnectTimer) {
                 clearTimeout(raceReconnectTimer);
                 raceReconnectTimer = null;
@@ -217,7 +277,7 @@
         function ensureRaceConnected(roomId) {
             roomId = String(roomId || '').trim();
             if (!roomId) return Promise.reject(new Error('missing_room'));
-            if (raceWs && raceConnected && raceReady && raceRoomId === roomId) {
+            if (raceWs && raceConnected && raceReady && raceRoomId === roomId && raceWs.readyState === 1) {
                 return Promise.resolve(raceWs);
             }
             if (raceConnectPromise && raceRoomId === roomId) return raceConnectPromise;
@@ -233,8 +293,10 @@
                 raceWs = socket;
                 raceConnected = true;
                 raceReady = true;
+                startRaceHeartbeat();
                 socket.addEventListener('close', function () {
                     if (raceWs === socket) {
+                        stopRaceHeartbeat();
                         raceConnected = false;
                         raceReady = false;
                         raceWs = null;
@@ -255,30 +317,65 @@
         }
 
         function connect() {
-            if (active && lobbyConnected && lobbyReady) return Promise.resolve();
+            if (isLobbyReady()) return Promise.resolve();
+            if (lobbyConnectPromise) return lobbyConnectPromise;
+
+            intentionalLobbyClose = false;
+            active = true;
             var url = wsLobbyUrl();
             if (!url) return Promise.reject(new Error('Multiplayer URL is not configured.'));
-            active = true;
-            return openSocket(url, { fromRace: false }).then(function (socket) {
+
+            if (lobbyWs) {
+                try { lobbyWs.close(); } catch (_) { /* ignore */ }
+                lobbyWs = null;
+            }
+            lobbyConnected = false;
+            lobbyReady = false;
+            stopLobbyHeartbeat();
+
+            lobbyConnectPromise = openSocket(url, { fromRace: false }).then(function (socket) {
                 lobbyWs = socket;
                 lobbyConnected = true;
                 lobbyReady = true;
+                lobbyReconnectAttempt = 0;
+                lobbyConnectPromise = null;
+                startLobbyHeartbeat();
                 emitLocal('connect', null);
                 socket.addEventListener('close', function () {
                     if (lobbyWs === socket) {
+                        stopLobbyHeartbeat();
                         lobbyConnected = false;
                         lobbyReady = false;
                         lobbyWs = null;
+                        lobbyConnectPromise = null;
                         emitLocal('disconnect', 'transport close');
+                        scheduleLobbyReconnect();
                     }
                 });
+            }).catch(function (err) {
+                lobbyConnectPromise = null;
+                lobbyConnected = false;
+                lobbyReady = false;
+                lobbyWs = null;
+                if (active && !intentionalLobbyClose) scheduleLobbyReconnect();
+                throw err;
             });
+
+            return lobbyConnectPromise;
         }
 
         function disconnect() {
+            intentionalLobbyClose = true;
             active = false;
             lobbyConnected = false;
             lobbyReady = false;
+            lobbyConnectPromise = null;
+            lobbyReconnectAttempt = 0;
+            stopLobbyHeartbeat();
+            if (lobbyReconnectTimer) {
+                clearTimeout(lobbyReconnectTimer);
+                lobbyReconnectTimer = null;
+            }
             closeRace();
             if (lobbyWs) {
                 try { lobbyWs.close(); } catch (_) { /* ignore */ }
@@ -353,6 +450,7 @@
             ensureRaceConnected: ensureRaceConnected,
             closeRace: closeRace,
             isRaceEvent: isRaceEvent,
+            isLobbyReady: isLobbyReady,
         };
 
         Object.defineProperty(socket, 'connected', {

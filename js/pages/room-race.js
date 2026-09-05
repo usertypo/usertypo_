@@ -973,6 +973,7 @@
             if (!pendingRacePayload || state === 'finished' || state === 'closed' || state === 'racing') {
                 return false;
             }
+            if (!pendingRacePayload.startsAt) return false;
             if (Date.now() < racePayloadStartsAt(pendingRacePayload) - 50) return false;
             var payload = pendingRacePayload;
             pendingRacePayload = null;

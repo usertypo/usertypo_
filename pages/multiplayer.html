@@ -29,6 +29,22 @@
             color: var(--theme-text, #cbd5e1);
         }
 
+        /* Material Symbols sets display:inline-block, which beats Tailwind .hidden */
+        .mp-create-btn-spinner {
+            display: none !important;
+            animation: mp-btn-spin 0.8s linear infinite;
+        }
+        .mp-create-btn.is-loading .mp-create-btn-label,
+        .mp-create-btn.is-loading .mp-create-btn-hint {
+            display: none !important;
+        }
+        .mp-create-btn.is-loading .mp-create-btn-spinner {
+            display: inline-block !important;
+        }
+        @keyframes mp-btn-spin {
+            to { transform: rotate(360deg); }
+        }
+
         .panel-surface {
             background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
@@ -46,6 +62,11 @@
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 tracking-tight mb-3">Multiplayer</h1>
                 <p class="text-xs sm:text-sm text-slate-400 mb-2">Challenge opponents in real-time typing races.</p>
             </div>
+
+            <p id="mp-availability-banner"
+                class="hidden text-center text-sm font-medium text-red-400 leading-snug px-4"
+                role="status"
+                aria-live="polite"></p>
 
             <!-- Duel & Room Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 opacity-0 animate-fade-in-up [animation-delay:250ms] mt-4">
@@ -233,10 +254,11 @@
 
                     <!-- Submit Action -->
                     <button id="submit-create-room-btn"
-                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
-                        <span>Create Match Room</span>
+                        class="mp-create-btn w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center gap-2">
+                        <span class="mp-create-btn-label">Create Match Room</span>
                         <span
-                            class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                            class="mp-create-btn-hint text-xs opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                        <span class="mp-create-btn-spinner material-symbols-outlined text-[1.25rem]" aria-hidden="true">progress_activity</span>
                     </button>
                 </div>
             </div>
@@ -373,10 +395,11 @@
                     </div>
 
                     <button id="submit-find-match-btn"
-                        class="w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center">
-                        <span>Find Match</span>
+                        class="mp-create-btn w-full bg-primary text-background-dark font-bold py-3 mt-4 rounded-xl hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(0,208,255,0.4)] transition-all flex items-center justify-center gap-2">
+                        <span class="mp-create-btn-label">Find Match</span>
                         <span
-                            class="text-xs ml-3 opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                            class="mp-create-btn-hint text-xs opacity-70 border border-current rounded px-1 hidden sm:inline">Enter</span>
+                        <span class="mp-create-btn-spinner material-symbols-outlined text-[1.25rem]" aria-hidden="true">progress_activity</span>
                     </button>
                 </div>
             </div>
@@ -460,6 +483,59 @@ window.__spaPageInit = function() {
 
             // Reset any stale inert left from a prior visit or aborted modal close.
             setPageBackgroundInert(false);
+
+            function setCreateButtonLoading(button, loading) {
+                if (!button) return;
+                button.disabled = !!loading;
+                button.setAttribute('aria-busy', loading ? 'true' : 'false');
+                button.classList.toggle('is-loading', !!loading);
+            }
+
+            const mpAvailabilityBanner = document.getElementById('mp-availability-banner');
+            const mpOpenDualBtn = document.getElementById('mp-open-dual-btn');
+            const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
+
+            function isMultiplayerUnavailable() {
+                const status = window.usertypoMultiplayer?.getAvailability?.()?.status;
+                return status === 'offline' || status === 'maintenance';
+            }
+
+            function applyMultiplayerAvailability(detail) {
+                const info = detail || window.usertypoMultiplayer?.getAvailability?.() || { status: 'unknown' };
+                const unavailable = info.status === 'offline' || info.status === 'maintenance';
+                if (mpAvailabilityBanner) {
+                    if (unavailable && info.message) {
+                        mpAvailabilityBanner.textContent = info.message;
+                        mpAvailabilityBanner.classList.remove('hidden');
+                    } else {
+                        mpAvailabilityBanner.textContent = '';
+                        mpAvailabilityBanner.classList.add('hidden');
+                    }
+                }
+                [mpOpenDualBtn, mpOpenRoomBtn].forEach((btn) => {
+                    if (!btn) return;
+                    btn.disabled = unavailable;
+                    btn.classList.toggle('opacity-50', unavailable);
+                    btn.classList.toggle('pointer-events-none', unavailable);
+                    btn.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+                });
+            }
+
+            window.addEventListener('usertypo:multiplayer:availability', (event) => {
+                applyMultiplayerAvailability(event.detail);
+            });
+            window.addEventListener('offline', () => {
+                applyMultiplayerAvailability({
+                    status: 'offline',
+                    message: 'You appear to be offline. Check your internet connection and try again.',
+                });
+            });
+            window.addEventListener('online', () => {
+                applyMultiplayerAvailability(window.usertypoMultiplayer?.getAvailability?.());
+                window.usertypoMultiplayer?.refreshAvailability?.();
+            });
+            applyMultiplayerAvailability();
+            window.usertypoMultiplayer?.refreshAvailability?.();
 
             function toggleModalSetting(btn) {
                 const isActive = btn.classList.contains('text-primary');
@@ -705,6 +781,7 @@ window.__spaPageInit = function() {
                         : 'Private Room';
 
                     submitCreateRoomBtn.disabled = true;
+                    setCreateButtonLoading(submitCreateRoomBtn, true);
                     try {
                         const result = await window.usertypoMultiplayer.createRoom({
                             name: roomName,
@@ -725,7 +802,7 @@ window.__spaPageInit = function() {
                         }).toString());
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not create room', 'error');
-                        submitCreateRoomBtn.disabled = false;
+                        setCreateButtonLoading(submitCreateRoomBtn, false);
                     }
                 });
             }
@@ -915,17 +992,18 @@ window.__spaPageInit = function() {
             }
 
             // Wire up the page-level buttons to open the modals
-            const mpOpenDualBtn = document.getElementById('mp-open-dual-btn');
-            const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
-
             if (mpOpenDualBtn) {
                 mpOpenDualBtn.addEventListener('click', () => {
+                    if (isMultiplayerUnavailable()) return;
                     openFindMatchModal();
                     showFindMatchChoice();
                 });
             }
             if (mpOpenRoomBtn) {
-                mpOpenRoomBtn.addEventListener('click', openRoomsChoiceModal);
+                mpOpenRoomBtn.addEventListener('click', () => {
+                    if (isMultiplayerUnavailable()) return;
+                    openRoomsChoiceModal();
+                });
             }
 
             joinPublicDualBtn?.addEventListener('click', showPublicDualList);
@@ -1001,14 +1079,14 @@ window.__spaPageInit = function() {
             if (submitFindMatchBtn) {
                 submitFindMatchBtn.addEventListener('click', async () => {
                     const config = collectFmConfig();
-                    submitFindMatchBtn.disabled = true;
+                    setCreateButtonLoading(submitFindMatchBtn, true);
                     try {
                         await startFindMatchFlow(config);
                         closeFindMatchModal();
                     } catch (error) {
                         window.usertypoNotifications?.showToast(error.message || 'Could not create dual', 'error');
                     } finally {
-                        submitFindMatchBtn.disabled = false;
+                        setCreateButtonLoading(submitFindMatchBtn, false);
                     }
                 });
             }

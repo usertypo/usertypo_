@@ -16,6 +16,183 @@
     var activeRoomIsBot = false;
     var pendingLeaveRoomId = null;
     var lastAuthIdentity = null;
+    var pendingDuelFlowId = '';
+
+    var availabilityStatus = 'unknown';
+    var availabilityEvalTimer = null;
+    var availabilityPollId = null;
+    var unavailableSince = 0;
+    var AVAILABILITY_DEBOUNCE_MS = 10000;
+    var AVAILABILITY_OFFLINE_DEBOUNCE_MS = 2000;
+    var AVAILABILITY_POLL_MS = 30000;
+    var AVAILABILITY_MESSAGES = {
+        offline: 'You appear to be offline. Check your internet connection and try again.',
+        maintenance: 'Multiplayer is currently unavailable. Try reloading the page, or try again later.',
+    };
+
+    function setAvailabilityStatus(status) {
+        if (status !== 'up' && status !== 'offline' && status !== 'maintenance' && status !== 'unknown') return;
+        if (availabilityStatus === status) return;
+        availabilityStatus = status;
+        dispatch('availability', {
+            status: status,
+            message: status === 'offline'
+                ? AVAILABILITY_MESSAGES.offline
+                : status === 'maintenance'
+                    ? AVAILABILITY_MESSAGES.maintenance
+                    : '',
+        });
+    }
+
+    function getAvailability() {
+        return {
+            status: availabilityStatus,
+            message: availabilityStatus === 'offline'
+                ? AVAILABILITY_MESSAGES.offline
+                : availabilityStatus === 'maintenance'
+                    ? AVAILABILITY_MESSAGES.maintenance
+                    : '',
+        };
+    }
+
+    function scheduleAvailabilityEval(delayMs) {
+        if (availabilityEvalTimer) clearTimeout(availabilityEvalTimer);
+        availabilityEvalTimer = nativeSetTimeout(function () {
+            availabilityEvalTimer = null;
+            evaluateAvailability();
+        }, typeof delayMs === 'number' ? delayMs : 500);
+    }
+
+    function probeSiteReachable() {
+        var origin = window.location.origin || '';
+        if (!origin) return Promise.resolve(true);
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timeoutId = null;
+        if (controller) {
+            timeoutId = nativeSetTimeout(function () {
+                try { controller.abort(); } catch (_) { /* ignore */ }
+            }, 5000);
+        }
+        return fetch(origin + '/', {
+            method: 'HEAD',
+            cache: 'no-store',
+            credentials: 'same-origin',
+            signal: controller ? controller.signal : undefined,
+        }).then(function (res) {
+            if (timeoutId) clearTimeout(timeoutId);
+            return !!(res && (res.ok || res.status === 304));
+        }).catch(function () {
+            if (timeoutId) clearTimeout(timeoutId);
+            return false;
+        });
+    }
+
+    function evaluateAvailability() {
+        // Browser offline is authoritative — do not wait on a stale readyState/socket.
+        if (navigator.onLine === false) {
+            if (!unavailableSince) unavailableSince = Date.now();
+            setAvailabilityStatus('offline');
+            return Promise.resolve();
+        }
+
+        var lobbyAlive = !!(socket && readyState && (
+            typeof socket.isLobbyReady === 'function'
+                ? socket.isLobbyReady()
+                : !!(socket.connected && socket.active)
+        ));
+        if (lobbyAlive) {
+            unavailableSince = 0;
+            setAvailabilityStatus('up');
+            return Promise.resolve();
+        }
+
+        return probeSiteReachable().then(function (siteUp) {
+            if (navigator.onLine === false) {
+                if (!unavailableSince) unavailableSince = Date.now();
+                setAvailabilityStatus('offline');
+                return;
+            }
+
+            var lobbyAliveNow = !!(socket && readyState && (
+                typeof socket.isLobbyReady === 'function'
+                    ? socket.isLobbyReady()
+                    : !!(socket.connected && socket.active)
+            ));
+            if (lobbyAliveNow) {
+                unavailableSince = 0;
+                setAvailabilityStatus('up');
+                return;
+            }
+
+            var now = Date.now();
+
+            if (!siteUp) {
+                if (!unavailableSince) unavailableSince = now;
+                if (now - unavailableSince >= AVAILABILITY_OFFLINE_DEBOUNCE_MS) {
+                    setAvailabilityStatus('offline');
+                } else {
+                    scheduleAvailabilityEval(AVAILABILITY_OFFLINE_DEBOUNCE_MS - (now - unavailableSince) + 100);
+                }
+                return;
+            }
+
+            if (!unavailableSince) unavailableSince = now;
+            if (now - unavailableSince < AVAILABILITY_DEBOUNCE_MS) {
+                scheduleAvailabilityEval(AVAILABILITY_DEBOUNCE_MS - (now - unavailableSince) + 100);
+                return;
+            }
+
+            if (socket && socket.connected && !readyState) {
+                scheduleAvailabilityEval(3000);
+                return;
+            }
+
+            setAvailabilityStatus('maintenance');
+        });
+    }
+
+    function startAvailabilityMonitor() {
+        window.addEventListener('online', function () {
+            unavailableSince = 0;
+            setAvailabilityStatus('unknown');
+            scheduleAvailabilityEval(500);
+        });
+        window.addEventListener('offline', function () {
+            unavailableSince = Date.now();
+            setAvailabilityStatus('offline');
+        });
+        scheduleAvailabilityEval(1500);
+        if (!availabilityPollId) {
+            availabilityPollId = nativeSetInterval(function () {
+                if (navigator.onLine === false) {
+                    setAvailabilityStatus('offline');
+                    return;
+                }
+                if (availabilityStatus === 'up') {
+                    var lobbyAlive = !!(socket && readyState && (
+                        typeof socket.isLobbyReady === 'function'
+                            ? socket.isLobbyReady()
+                            : !!(socket.connected && socket.active)
+                    ));
+                    if (!lobbyAlive) evaluateAvailability();
+                    return;
+                }
+                evaluateAvailability();
+            }, AVAILABILITY_POLL_MS);
+        }
+    }
+
+    function duelFlowNotify(partial) {
+        var row = Object.assign({
+            type: 'duel_notice',
+            title: 'Dual accepted',
+            body: '',
+            data: {},
+        }, partial || {});
+        if (!row.id) row.id = pendingDuelFlowId || ('duel-flow:' + Date.now());
+        pendingDuelFlowId = row.id;
+        return notify(row);
+    }
 
     function dispatch(name, detail) {
         try {
@@ -76,12 +253,15 @@
             timeout: 'Multiplayer server did not respond.',
             offline: 'Could not reach the multiplayer server.',
             race_connect_failed: 'Could not connect to the race server.',
+            rematch_unavailable: 'Rematch is no longer available for this match.',
+            connect_race_socket: 'Lost connection to the race. Reconnecting — try again.',
             missing_room: 'Room not found. Check the Room ID and try again.',
         };
         return messages[code] || String(code || 'Multiplayer request failed.');
     }
 
     function isRaceBoundEvent(event) {
+        if (String(event || '') === 'race:rematch') return false;
         if (window.usertypoMultiplayerCf && typeof window.usertypoMultiplayerCf.isRaceEvent === 'function') {
             return window.usertypoMultiplayerCf.isRaceEvent(event);
         }
@@ -147,16 +327,30 @@
 
     function bindSocketEvents(activeSocket) {
         activeSocket.on('connect', function () {
+            unavailableSince = 0;
+            if (!readyState) setAvailabilityStatus('unknown');
+            scheduleAvailabilityEval(5000);
             dispatch('connected', { socketId: activeSocket.id });
         });
         activeSocket.on('disconnect', function (reason) {
             readyState = null;
+            if (navigator.onLine === false) {
+                unavailableSince = Date.now();
+                setAvailabilityStatus('offline');
+            } else {
+                scheduleAvailabilityEval(1500);
+            }
             dispatch('disconnected', { reason: reason });
+            // Heal in the background so create/join/ready do not wait for a full page reload.
+            nativeSetTimeout(healConnection, 250);
         });
         activeSocket.on('connect_error', function (error) {
+            scheduleAvailabilityEval(2000);
             dispatch('error', { code: 'connection_failed', message: error && error.message });
         });
         activeSocket.on('multiplayer:ready', function (state) {
+            unavailableSince = 0;
+            setAvailabilityStatus('up');
             readyState = state;
             if (state && state.userId) {
                 lastAuthIdentity = String(state.userId);
@@ -224,7 +418,14 @@
                 _actions: [
                     {
                         label: 'Accept',
-                        run: function () { return respondToChallenge(invite.inviteId, true); },
+                        run: function () {
+                            duelFlowNotify({
+                                id: 'duel-flow:' + invite.inviteId,
+                                type: 'duel_notice',
+                                title: 'Dual accepted — preparing match…',
+                            });
+                            return respondToChallenge(invite.inviteId, true);
+                        },
                     },
                     {
                         label: 'Reject',
@@ -233,6 +434,15 @@
                 ],
             });
             dispatch('incoming', invite);
+        });
+        activeSocket.on('duel:accepted', function (payload) {
+            var key = (payload && (payload.inviteId || payload.listingId)) || String(Date.now());
+            duelFlowNotify({
+                id: 'duel-flow:' + key,
+                type: 'duel_notice',
+                title: 'Dual accepted — preparing match…',
+            });
+            dispatch('accepted', payload);
         });
         activeSocket.on('duel:ready', function (match) {
             pendingMatches[match.roomId] = match;
@@ -243,11 +453,12 @@
                 && window.DualMatch.consumeAutoJoinBotMatch();
             dispatch('match-ready', match);
             if (autoJoinBot) {
+                pendingDuelFlowId = '';
                 navigateToMatch(match.roomId);
                 return;
             }
-            notify({
-                id: 'duel-ready:' + match.roomId,
+            duelFlowNotify({
+                id: pendingDuelFlowId || ('duel-flow:' + match.roomId),
                 type: 'duel_ready',
                 title: isBot ? 'No player found — bot match ready' : 'Dual accepted — match ready',
                 body: (isBot ? 'You will race against TypeBot. ' : '') + 'Click Join when you are ready.',
@@ -255,7 +466,10 @@
                 _actions: [{
                     label: 'Join',
                     resolve: false,
-                    run: function () { navigateToMatch(match.roomId); },
+                    run: function () {
+                        pendingDuelFlowId = '';
+                        navigateToMatch(match.roomId);
+                    },
                 }],
             });
         });
@@ -375,7 +589,7 @@
         if (window.usertypoMultiplayerCf) return Promise.resolve();
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = '/js/api/multiplayer-cf-transport.js?v=9';
+            script.src = '/js/api/multiplayer-cf-transport.js?v=11';
             script.async = true;
             script.onload = function () {
                 if (window.usertypoMultiplayerCf) resolve();
@@ -417,7 +631,12 @@
     }
 
     async function ensureConnected() {
-        if (socket && socket.connected && readyState) {
+        var lobbyOk = !!(socket && readyState && (
+            typeof socket.isLobbyReady === 'function'
+                ? socket.isLobbyReady()
+                : (socket.connected && socket.active)
+        ));
+        if (lobbyOk) {
             var authState = window.usertypoAuth.getState();
             if (authState && authState.isSignedIn && authState.user && authState.user.id) {
                 var expectedId = String(authState.user.id);
@@ -441,7 +660,8 @@
                 socket = window.usertypoMultiplayerCf.createSocket({ auth: authPayloadCallback });
                 bindSocketEvents(socket);
             }
-            if (!socket.active) await socket.connect();
+            // Always reopen when lobby is dead — do not trust socket.active alone.
+            await socket.connect();
             if (!readyState) {
                 await new Promise(function (resolve, reject) {
                     var timeout = nativeSetTimeout(function () {
@@ -471,6 +691,17 @@
         } finally {
             connectPromise = null;
         }
+    }
+
+    function healConnection() {
+        ensureConnected().then(function (activeSocket) {
+            if (!activeRoomId || !activeSocket || typeof activeSocket.ensureRaceConnected !== 'function') {
+                return null;
+            }
+            return activeSocket.ensureRaceConnected(activeRoomId);
+        }).catch(function (error) {
+            console.warn('[multiplayer] reconnect failed:', error && error.message);
+        });
     }
 
     function describeConfig(config) {
@@ -526,7 +757,18 @@
     }
 
     function requestRematch(roomId) {
-        return emitAck('race:rematch', String(roomId || ''));
+        var target = String(roomId || activeRoomId || '');
+        return ensureConnected().then(function () {
+            return emitAck('race:rematch', target);
+        }).catch(function (error) {
+            var message = String(error && error.message || '');
+            if (!/connect_race_socket|race_connect_failed|Could not connect|offline|timeout|Lost connection/i.test(message)) {
+                throw error;
+            }
+            return ensureConnected().then(function () {
+                return emitAck('race:rematch', target);
+            });
+        });
     }
 
     function loadListings() {
@@ -736,12 +978,27 @@
             }
             ensureConnected().catch(function (error) {
                 console.warn('[multiplayer] connect failed:', error && error.message);
+                scheduleAvailabilityEval(1000);
             });
         });
         window.usertypoAuth.ready().then(function () {
             return ensureConnected();
-        }).catch(function () { /* auth unavailable */ });
+        }).catch(function () {
+            scheduleAvailabilityEval(1000);
+        });
     }
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        healConnection();
+        scheduleAvailabilityEval(800);
+    });
+
+    window.addEventListener('online', function () {
+        healConnection();
+    });
+
+    startAvailabilityMonitor();
 
     window.usertypoMultiplayer = {
         connect: ensureConnected,
@@ -784,5 +1041,7 @@
         getPendingMatch: function (roomId) { return pendingMatches[roomId] || null; },
         getSocket: function () { return socket; },
         getReadyState: function () { return readyState; },
+        getAvailability: getAvailability,
+        refreshAvailability: evaluateAvailability,
     };
 })();
