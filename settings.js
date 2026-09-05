@@ -18,22 +18,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'usertypo_settings';
-const STAGING_GLOW_DEFAULT_FLAG = 'usertypo:stagingGlowDefault50';
-
-function isStagingHost() {
-    try {
-        const host = String(location.hostname || '').toLowerCase();
-        return host === 'dev.usertypo.com'
-            || host === 'www.dev.usertypo.com'
-            || host === 'dev.usertypo.pages.dev';
-    } catch (e) {
-        return false;
-    }
-}
+const GLOW_DEFAULT_50_FLAG = 'usertypo:glowDefault50';
+const STAGING_GLOW_DEFAULT_FLAG = 'usertypo:stagingGlowDefault50'; // legacy; treat as already migrated
 
 function getDefaultGlowIntensity() {
-    // Staging-only default for experiments; live stays at 100.
-    return isStagingHost() ? 50 : 100;
+    return 50;
 }
 
 const DEFAULTS = {
@@ -100,7 +89,7 @@ const DEFAULTS = {
         colorTheme: 'Abyss',
         fontFamily: 'JetBrains Mono',
         randomizeTheme: 'Off',
-        glowIntensity: 100, // overwritten in cloneDefaults() for staging hosts (50)
+        glowIntensity: 50,
         customTheme: {
             mode: 'Dark',
             mainColor: '#ffffff',
@@ -152,18 +141,20 @@ function loadSettings() {
         }
     } catch { /* corrupt — use defaults */ }
 
-    // Staging experiment: one-time shift to the new 50% default so existing
-    // localStorage on the DEV host shows the change without wiping other settings.
-    // Live site never runs this. Users can still change the slider afterward.
-    if (isStagingHost()) {
-        try {
-            if (!localStorage.getItem(STAGING_GLOW_DEFAULT_FLAG)) {
+    // One-time shift from the old 100% default to 50%. Only rewrites when the
+    // saved value is still exactly 100 so intentional custom levels are kept.
+    // Staging hosts that already ran the earlier migration are skipped via the legacy flag.
+    try {
+        const alreadyMigrated = localStorage.getItem(GLOW_DEFAULT_50_FLAG)
+            || localStorage.getItem(STAGING_GLOW_DEFAULT_FLAG);
+        if (!alreadyMigrated) {
+            if (Number(settings.lookFeel.glowIntensity) === 100) {
                 settings.lookFeel.glowIntensity = 50;
-                localStorage.setItem(STAGING_GLOW_DEFAULT_FLAG, '1');
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
             }
-        } catch (e) { /* ignore quota / private mode */ }
-    }
+            localStorage.setItem(GLOW_DEFAULT_50_FLAG, '1');
+        }
+    } catch (e) { /* ignore quota / private mode */ }
 
     // Sanitize any corrupted soundPack names from old saves
     if (settings.soundscape && settings.soundscape.soundPack) {
@@ -1710,7 +1701,7 @@ function publishThemeCssVars(p, derived) {
     if (glowPct != null) root.setAttribute('data-glow-intensity', String(glowPct));
 }
 
-/** Clamp glow intensity to 0–100. Missing/invalid → host default (100 live / 50 staging). */
+/** Clamp glow intensity to 0–100. Missing/invalid → default (50). */
 function normalizeGlowIntensity(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return getDefaultGlowIntensity();

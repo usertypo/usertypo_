@@ -115,7 +115,7 @@
         var onPrimary = isLight ? '#ffffff' : '#000000';
         var fgStrong = isLight ? '#333333' : '#ffffff';
         var ringTrack = isLight ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.12)';
-        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}#spa-boot-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:40!important;display:block!important;margin:0!important;padding:0!important;pointer-events:none!important;}#spa-boot-overlay[hidden]{display:none!important;}#spa-boot-typing,.spa-boot-typing-inner{position:fixed!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;z-index:41!important;pointer-events:none;user-select:none;text-align:center;}';
+        var css = ':root{--theme-primary:' + p.accentPrimary + ';--theme-primary-rgb:' + accentRGB + ';--theme-primary-hover:' + p.accentHover + ';--theme-bg:' + p.bgMain + ';--theme-bg-rgb:' + bgMainRGB + ';--theme-bg-secondary:' + p.bgSecondary + ';--theme-bg-secondary-rgb:' + bgSecRGB + ';--theme-menu-bg:rgba(' + bgSecRGB + ', 0.4);--theme-text:' + p.textPrimary + ';--theme-text-muted:' + p.textMuted + ';--theme-error:' + p.error + ';--theme-error-rgb:' + errorRGB + ';--theme-on-primary:' + onPrimary + ';--theme-fg-strong:' + fgStrong + ';--theme-ring-track:' + ringTrack + ';--theme-is-light:' + (isLight ? '1' : '0') + ';--glow-intensity:0.5;}html,body{background-color:var(--theme-bg) !important;}#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}.text-primary{color:var(--theme-primary) !important;}.bg-primary{background-color:var(--theme-primary) !important;}.bg-background,.bg-background-dark{background-color:var(--theme-bg) !important;}.bg-surface{background-color:var(--theme-bg-secondary) !important;}#caret::after,#spa-boot-caret::after{background-color:var(--theme-primary) !important;}#spa-boot-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:40!important;display:block!important;margin:0!important;padding:0!important;pointer-events:none!important;}#spa-boot-overlay[hidden]{display:none!important;}#spa-boot-typing,.spa-boot-typing-inner{position:fixed!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;z-index:41!important;pointer-events:none;user-select:none;text-align:center;}';
         var style = document.createElement('style');
         style.id = 'usertypo-boot-theme';
         style.textContent = css;
@@ -1598,7 +1598,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=9"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=83"></script>
+    <script src="settings.js?v=84"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=11"></script>
     <!-- Auth + data API (before router) -->
@@ -1628,7 +1628,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=54"></script>
     <script src="dual.js?v=12"></script>
-    <script src="js/page-fragments.js?v=279"></script>
+    <script src="js/page-fragments.js?v=280"></script>
     <script src="js/router.js?v=115"></script>
 
     <script>

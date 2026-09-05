@@ -76,7 +76,7 @@
         '--theme-fg-strong:' + fgStrong + ';',
         '--theme-ring-track:' + ringTrack + ';',
         '--theme-is-light:' + (isLight ? '1' : '0') + ';',
-        '--glow-intensity:1;',
+        '--glow-intensity:0.5;',
         '}',
         'html,body{background-color:var(--theme-bg) !important;}',
         '#app-backdrop,#spa-content,#spa-boot-overlay{background-color:var(--theme-bg) !important;}',
