@@ -227,7 +227,7 @@
             throw new Error('Clerk is not ready yet.');
         }
 
-        pendingDisplayUsername = fields.displayUsername || fields.username || '';
+        setPendingDisplayUsername(fields.displayUsername || fields.username || '');
 
         var payload = {
             emailAddress: fields.email,
@@ -242,8 +242,7 @@
         if (signUp.status === 'complete') {
             await activateSession(signUp.createdSessionId);
             pendingSignUp = null;
-            await applyDisplayUsername(pendingDisplayUsername);
-            pendingDisplayUsername = '';
+            await applyDisplayUsername(getPendingDisplayUsername());
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -271,8 +270,7 @@
         if (result.status === 'complete') {
             await activateSession(result.createdSessionId);
             pendingSignUp = null;
-            await applyDisplayUsername(pendingDisplayUsername);
-            pendingDisplayUsername = '';
+            await applyDisplayUsername(getPendingDisplayUsername());
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -288,17 +286,49 @@
         return sanitizeUsername('u' + suffix);
     }
 
+    /** Clerk-only placeholder usernames (not public display names). */
+    function isInternalClerkUsername(raw) {
+        return /^u\d{8,10}$/i.test(String(raw || '').trim());
+    }
+
+    function getPendingDisplayUsername() {
+        return String(pendingDisplayUsername || '').trim();
+    }
+
+    function setPendingDisplayUsername(raw) {
+        pendingDisplayUsername = String(raw || '').trim();
+        return pendingDisplayUsername;
+    }
+
+    /**
+     * Persist the public display name to Supabase.
+     * Retries briefly so a concurrent ensureMyProfile insert can finish first.
+     */
     async function applyDisplayUsername(raw) {
-        var name = String(raw || '').trim();
-        if (!name) return;
+        var name = String(raw || pendingDisplayUsername || '').trim();
+        if (!name || isInternalClerkUsername(name)) return false;
+        setPendingDisplayUsername(name);
+
         if (!window.usertypoProfiles || typeof window.usertypoProfiles.setUsername !== 'function') {
-            return;
+            console.warn('[usertypo auth] profiles API missing; display name deferred');
+            return false;
         }
-        try {
-            await window.usertypoProfiles.setUsername(name);
-        } catch (err) {
-            console.warn('[usertypo auth] display name save failed', err);
+
+        var lastErr = null;
+        for (var attempt = 0; attempt < 8; attempt += 1) {
+            try {
+                await window.usertypoProfiles.setUsername(name);
+                pendingDisplayUsername = '';
+                return true;
+            } catch (err) {
+                lastErr = err;
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 60 + attempt * 40);
+                });
+            }
         }
+        console.warn('[usertypo auth] display name save failed', lastErr);
+        return false;
     }
 
     async function fulfillClerkUsernameRequirement(signUp) {
@@ -566,9 +596,13 @@
         firstNameSnapshot = signUp.firstName || firstNameSnapshot;
         lastNameSnapshot = signUp.lastName || lastNameSnapshot;
 
+        if (preferredDisplayUsername) {
+            setPendingDisplayUsername(preferredDisplayUsername);
+        }
+
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
-            await applyDisplayUsername(preferredDisplayUsername);
+            await applyDisplayUsername(preferredDisplayUsername || getPendingDisplayUsername());
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -583,7 +617,10 @@
             };
         }
 
-        var displaySeed = preferredDisplayUsername ? sanitizeUsername(preferredDisplayUsername) : '';
+        var displaySeed = preferredDisplayUsername
+            ? sanitizeUsername(preferredDisplayUsername)
+            : sanitizeUsername(getPendingDisplayUsername());
+        if (displaySeed) setPendingDisplayUsername(displaySeed);
         var attempts = 0;
         var maxAttempts = displaySeed ? 12 : 3;
 
@@ -641,7 +678,7 @@
                 signUp = await signUp.update(updates);
                 if (signUp.status === 'complete' && signUp.createdSessionId) {
                     await activateSession(signUp.createdSessionId);
-                    await applyDisplayUsername(displaySeed);
+                    await applyDisplayUsername(displaySeed || getPendingDisplayUsername());
                     markAuthWelcome('new');
                     return { status: 'complete' };
                 }
@@ -660,7 +697,7 @@
 
         if (signUp.status === 'complete' && signUp.createdSessionId) {
             await activateSession(signUp.createdSessionId);
-            await applyDisplayUsername(displaySeed);
+            await applyDisplayUsername(displaySeed || getPendingDisplayUsername());
             markAuthWelcome('new');
             return { status: 'complete' };
         }
@@ -823,9 +860,13 @@
         if (name.length < 4) {
             throw new Error('Username must be at least 4 characters.');
         }
+        setPendingDisplayUsername(name);
         var finished = await completePendingOAuthSignUp(name);
         notify(getState());
         if (finished.status === 'complete' || getState().isSignedIn) {
+            // Session may already be active from completePendingOAuthSignUp; make sure
+            // the chosen display name won over any concurrent placeholder profile sync.
+            await applyDisplayUsername(name);
             markAuthWelcome('new');
             return { status: 'complete', redirectTo: config.afterSignInUrl || '/' };
         }
@@ -989,6 +1030,8 @@
         signUpWithGoogle: signUpWithGoogle,
         handleSsoCallback: handleSsoCallback,
         finishOAuthUsername: finishOAuthUsername,
+        getPendingDisplayUsername: getPendingDisplayUsername,
+        isInternalClerkUsername: isInternalClerkUsername,
         signOut: signOut,
     };
 })();
