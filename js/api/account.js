@@ -139,41 +139,22 @@
     async function updateUsername(username) {
         var state = await requireAuth();
         var name = String(username || '')
+            .replace(/[\u0000-\u001F\u007F]/g, '')
             .trim()
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_]/g, '')
-            .replace(/_+/g, '_')
-            .replace(/^_+/g, '')
-            .slice(0, 32);
+            .replace(/\s+/g, ' ');
+        if (window.usertypoAuth && typeof window.usertypoAuth.normalizeDisplayName === 'function') {
+            name = window.usertypoAuth.normalizeDisplayName(username);
+        }
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
         }
 
-        if (typeof state.user.update !== 'function') {
-            throw new Error('Could not update account name.');
-        }
-
-        await withReverification(async function () {
-            var user = window.usertypoAuth.getState().user;
-            if (!user || typeof user.update !== 'function') {
-                throw new Error('Could not update account name.');
-            }
-            await user.update({ username: name });
-            if (typeof user.reload === 'function') {
-                await user.reload();
-            }
-        }, 'first_factor');
-
-        var user = window.usertypoAuth.getState().user;
-
-        // Profiles row is the display source of truth for the app UI.
-        // Do not call ensureMyProfile afterward — a concurrent/stale Clerk sync
-        // used to overwrite the new username in cache (and sometimes DB).
+        // Clerk keeps an internal unique username; public display name lives in Supabase only.
         var profileResult = null;
         if (window.usertypoProfiles && typeof window.usertypoProfiles.setUsername === 'function') {
             profileResult = await window.usertypoProfiles.setUsername(name);
         } else if (window.usertypoDb) {
+            var user = state.user;
             var client = await window.usertypoDb.getClient();
             var updated = await client
                 .from('profiles')

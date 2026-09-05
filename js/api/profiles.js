@@ -9,18 +9,53 @@
     var cachedProfile = null;
     var lastFingerprint = null;
 
+    function normalizeDisplayName(raw) {
+        if (window.usertypoAuth && typeof window.usertypoAuth.normalizeDisplayName === 'function') {
+            return window.usertypoAuth.normalizeDisplayName(raw);
+        }
+        var name = String(raw || '')
+            .replace(/[\u0000-\u001F\u007F]/g, '')
+            .trim()
+            .replace(/\s+/g, ' ');
+        if (name.length > 32) name = name.slice(0, 32).trim();
+        return name;
+    }
+
+    /** Clerk fills a hidden unique username like u123456789; never use it as the public name. */
+    function isPlaceholderUsername(raw) {
+        var name = String(raw || '').trim();
+        if (!name) return true;
+        if (window.usertypoAuth && typeof window.usertypoAuth.isInternalClerkUsername === 'function') {
+            return window.usertypoAuth.isInternalClerkUsername(name);
+        }
+        return /^u\d{8,10}$/i.test(name);
+    }
+
     function pickUsername(user) {
+        // Preferred name from in-progress sign-up / OAuth chooser wins over Clerk.
+        if (window.usertypoAuth && typeof window.usertypoAuth.getPendingDisplayUsername === 'function') {
+            var pending = normalizeDisplayName(window.usertypoAuth.getPendingDisplayUsername());
+            if (pending && pending.length >= 3 && !isPlaceholderUsername(pending)) {
+                return pending;
+            }
+        }
         if (!user) return null;
-        // App username only — never Google/OAuth fullName or firstName.
-        if (user.username) return String(user.username).trim() || null;
+        // App username only — never Google/OAuth fullName via Clerk fields alone,
+        // and never Clerk's auto-generated placeholder usernames.
+        if (user.username) {
+            var fromClerk = normalizeDisplayName(user.username);
+            if (fromClerk && !isPlaceholderUsername(fromClerk)) return fromClerk;
+        }
         return null;
     }
 
-    /** Public-facing name for any profile-like object. Never returns Google display names. */
+    /** Public-facing name for any profile-like object. Prefer display_name, then username. */
     function publicUsername(source, fallback) {
         if (!source || typeof source !== 'object') return fallback || 'Player';
+        var display = String(source.display_name || '').trim();
+        if (display && !isPlaceholderUsername(display)) return display;
         var name = String(source.username || '').trim();
-        if (name) return name;
+        if (name && !isPlaceholderUsername(name)) return name;
         return fallback || 'Player';
     }
 
@@ -202,9 +237,20 @@
                 if (!avatarUrl && existing.data.avatar_url) {
                     nextAvatar = null;
                 }
-                // Once a profile username exists, it is app-managed (setUsername / settings).
-                // Do not clobber it with a stale Clerk user object or Google fullName.
-                var nextUsername = existing.data.username || username;
+
+                // Re-read before committing — applyDisplayUsername / setUsername may have
+                // already replaced a Clerk placeholder while this sync was in flight.
+                var latest = await client.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
+                if (latest.error) throw latest.error;
+                if (latest.data) existing = latest;
+
+                var existingIsPlaceholder = isPlaceholderUsername(existing.data.username);
+                var preferred = username && !isPlaceholderUsername(username) ? username : null;
+                // Once a real app username exists, it is app-managed (setUsername / settings).
+                // Placeholder u##### rows must be replaced when a preferred display name exists.
+                var nextUsername = existingIsPlaceholder
+                    ? (preferred || existing.data.username)
+                    : (existing.data.username || preferred);
                 // Keep display_name mirrored to username so Google names never linger.
                 var nextDisplayName = nextUsername || existing.data.username || null;
 
@@ -212,6 +258,18 @@
                     (nextUsername && existing.data.username !== nextUsername) ||
                     (existing.data.avatar_url || null) !== (nextAvatar || null) ||
                     (nextDisplayName && existing.data.display_name !== nextDisplayName);
+
+                // Never write a Clerk placeholder over a real username that landed concurrently.
+                if (
+                    needsUpdate
+                    && isPlaceholderUsername(nextUsername)
+                    && existing.data.username
+                    && !isPlaceholderUsername(existing.data.username)
+                ) {
+                    needsUpdate = (existing.data.avatar_url || null) !== (nextAvatar || null);
+                    nextUsername = existing.data.username;
+                    nextDisplayName = existing.data.username;
+                }
 
                 if (!needsUpdate) {
                     cachedProfile = existing.data;
@@ -240,8 +298,8 @@
                 return updated.data;
             }
 
-            if (!username) {
-                // Wait for username choice / Clerk username — never insert a Google fullName.
+            if (!username || isPlaceholderUsername(username)) {
+                // Wait for username choice / preferred display name — never insert Clerk's u#####.
                 throw new Error('username_required');
             }
 
@@ -349,23 +407,65 @@
     }
 
     async function setUsername(username) {
-        var name = String(username || '')
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_]/g, '')
-            .replace(/_+/g, '_')
-            .replace(/^_+/g, '')
-            .slice(0, 32);
+        var name = normalizeDisplayName(username);
         if (name.length < 3 || name.length > 32) {
             throw new Error('form_username_invalid_length');
         }
-        var profile = await updateMyProfileFields({
-            username: name,
-            display_name: name,
-        });
+        if (isPlaceholderUsername(name)) {
+            throw new Error('form_username_invalid_length');
+        }
+
+        var user = await requireSignedInUser();
+        var client = await window.usertypoDb.getClient();
+        var existing = await client.from('profiles').select('*').eq('user_id', user.id).maybeSingle();
+        if (existing.error) throw existing.error;
+
+        var result;
+        if (existing.data) {
+            result = await client
+                .from('profiles')
+                .update({
+                    username: name,
+                    display_name: name,
+                })
+                .eq('user_id', user.id)
+                .select('*')
+                .single();
+        } else {
+            result = await client
+                .from('profiles')
+                .insert({
+                    user_id: user.id,
+                    username: name,
+                    display_name: name,
+                    avatar_url: pickAvatar(user),
+                })
+                .select('*')
+                .single();
+
+            // Concurrent ensureMyProfile may have inserted first — fall back to update.
+            if (result.error && (result.error.code === '23505' || /duplicate|unique/i.test(String(result.error.message || '')))) {
+                result = await client
+                    .from('profiles')
+                    .update({
+                        username: name,
+                        display_name: name,
+                    })
+                    .eq('user_id', user.id)
+                    .select('*')
+                    .single();
+            }
+        }
+
+        if (result.error) throw result.error;
+
+        cachedProfile = result.data;
+        lastFingerprint = userFingerprint(user);
+        lastSyncedUserId = user.id;
+        storeProfile(user.id, lastFingerprint, result.data);
+        notifyProfileSynced(result.data);
         console.info('[usertypo profiles] username =', name);
-        return { profile: profile };
+        return { profile: result.data };
     }
 
     async function updateMyAvatar(file) {
@@ -430,6 +530,10 @@
                     }
                 })
                 .catch(function (err) {
+                    if (err && err.message === 'username_required') {
+                        // Normal during sign-up before the display-name step finishes.
+                        return;
+                    }
                     var details = err;
                     if (err && typeof err === 'object') {
                         details = {

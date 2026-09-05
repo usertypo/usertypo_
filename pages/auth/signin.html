@@ -907,7 +907,8 @@ window.__spaPageInit = function() {
 
     function selectOAuthChoice(mode) {
         oauthChoiceMode = mode;
-        var hasGoogle = !!(oauthChoiceData && oauthChoiceData.hasGoogleName && oauthChoiceData.googleUsername);
+        var hasGoogle = !!(oauthChoiceData && oauthChoiceData.hasGoogleName
+            && (oauthChoiceData.googleDisplayName || oauthChoiceData.googleUsername));
         if (mode === 'google' && !hasGoogle) mode = 'custom';
         oauthChoiceMode = mode;
 
@@ -942,14 +943,13 @@ window.__spaPageInit = function() {
         if (btnVerify) btnVerify.classList.add('hidden');
         if (btnOAuthUsername) btnOAuthUsername.classList.remove('hidden');
 
-        var hasGoogle = !!(oauthChoiceData.hasGoogleName && oauthChoiceData.googleUsername);
+        var googleLabel = oauthChoiceData.googleDisplayName || oauthChoiceData.googleUsername || '';
+        var hasGoogle = !!(oauthChoiceData.hasGoogleName && googleLabel);
         if (oauthChoiceGoogle) {
             if (hasGoogle) {
                 oauthChoiceGoogle.classList.remove('hidden');
                 if (oauthChoiceGoogleSub) {
-                    oauthChoiceGoogleSub.textContent = oauthChoiceData.googleUsername
-                        ? ('Username will be “' + oauthChoiceData.googleUsername + '”')
-                        : '';
+                    oauthChoiceGoogleSub.textContent = 'Display name will be “' + googleLabel + '”';
                 }
             } else {
                 oauthChoiceGoogle.classList.add('hidden');
@@ -1157,7 +1157,7 @@ window.__spaPageInit = function() {
 
         var username = '';
         if (oauthChoiceMode === 'google') {
-            username = (oauthChoiceData && oauthChoiceData.googleUsername) || '';
+            username = (oauthChoiceData && (oauthChoiceData.googleDisplayName || oauthChoiceData.googleUsername)) || '';
         } else {
             username = (oauthUsernameInput && oauthUsernameInput.value || '').trim();
         }
