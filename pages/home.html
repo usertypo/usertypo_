@@ -4987,101 +4987,12 @@ window.setTimeout = function(handler, timeout) {
             const btn = document.getElementById('screenshot-btn');
             if (!captureArea || !window.StatsScreenshot) return;
 
-
-            // Pre-render logo layers with current theme colors using offscreen canvases
-            // The raw PNGs are mask shapes — we fill them with theme colors just like the CSS mask-image does
-            const logoOrigin = location.origin;
-            const rootCS = getComputedStyle(document.documentElement);
-            const themePrimary = rootCS.getPropertyValue('--theme-primary').trim() || '#00d0ff';
-            const themeText = rootCS.getPropertyValue('--theme-text').trim() || '#ffffff';
-
-            async function colorMaskImage(url, fillColor, dilatePasses) {
-                const passes = Math.max(0, dilatePasses == null ? 2 : dilatePasses);
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => {
-                        const c = document.createElement('canvas');
-                        c.width = img.naturalWidth;
-                        c.height = img.naturalHeight;
-                        const ctx = c.getContext('2d');
-                        // Draw mask to read its shape
-                        ctx.drawImage(img, 0, 0);
-                        // Parse the fill color to RGB using a temp canvas
-                        const tmp = document.createElement('canvas');
-                        tmp.width = 1; tmp.height = 1;
-                        const tmpCtx = tmp.getContext('2d');
-                        tmpCtx.fillStyle = fillColor;
-                        tmpCtx.fillRect(0, 0, 1, 1);
-                        const [fr, fg, fb] = tmpCtx.getImageData(0, 0, 1, 1).data;
-                        // Pixel-level recolor: every non-transparent pixel gets exact fill color at full opacity
-                        const imageData = ctx.getImageData(0, 0, c.width, c.height);
-                        const d = imageData.data;
-                        const w = c.width, h = c.height;
-                        for (let i = 0; i < d.length; i += 4) {
-                            if (d[i + 3] > 0) {
-                                d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255;
-                            }
-                        }
-                        // Dilate: expand shape outward so thin strokes (underscore) stay bold in the capture
-                        for (let pass = 0; pass < passes; pass++) {
-                            const snap = new Uint8ClampedArray(d);
-                            for (let y = 0; y < h; y++) {
-                                for (let x = 0; x < w; x++) {
-                                    const idx = (y * w + x) * 4;
-                                    if (snap[idx + 3] === 255) continue; // already filled
-                                    // 8-connected neighborhood so horizontal strokes thicken more evenly
-                                    const neighbors = [
-                                        idx - 4,           // left
-                                        idx + 4,           // right
-                                        idx - w * 4,       // up
-                                        idx + w * 4,       // down
-                                        idx - w * 4 - 4,   // up-left
-                                        idx - w * 4 + 4,   // up-right
-                                        idx + w * 4 - 4,   // down-left
-                                        idx + w * 4 + 4,   // down-right
-                                    ];
-                                    for (const ni of neighbors) {
-                                        if (ni >= 0 && ni < snap.length && snap[ni + 3] === 255) {
-                                            d[idx] = fr; d[idx + 1] = fg; d[idx + 2] = fb; d[idx + 3] = 255;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        ctx.putImageData(imageData, 0, 0);
-                        resolve(c.toDataURL('image/png'));
-                    };
-                    img.onerror = () => resolve('');
-                    img.src = url;
-                });
-            }
-
-            const [logoTypDataUrl, logoUserDataUrl, logoODataUrl] = await Promise.all([
-                // Extra dilation on typ_ so the underscore matches the live header weight
-                colorMaskImage(logoOrigin + '/logo-assets/typ_.png', themePrimary, 4),
-                colorMaskImage(logoOrigin + '/logo-assets/user.png', themeText, 2),
-                // The "o" dot keeps its original red color — no recoloring needed
-                new Promise((resolve) => {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => {
-                        const c = document.createElement('canvas');
-                        c.width = img.naturalWidth; c.height = img.naturalHeight;
-                        c.getContext('2d').drawImage(img, 0, 0);
-                        resolve(c.toDataURL('image/png'));
-                    };
-                    img.onerror = () => resolve('');
-                    img.src = logoOrigin + '/logo-assets/o.png';
-                }),
-            ]);
-
             await StatsScreenshot.capture({
                 captureArea,
                 button: btn,
                 hideSelectors: ['#stats-action-buttons'],
                 padding: 56,
+                injectLogo: true,
                 patchCloneRoot: (cloned) => {
                     const overlay = cloned.querySelector('#graph-info-overlay');
                     const graphContainer = cloned.querySelector('#graph-container');
@@ -5100,51 +5011,6 @@ window.setTimeout = function(handler, timeout) {
                             legend.style.opacity = '1';
                             legend.style.pointerEvents = 'auto';
                         }
-                    }
-
-
-                    // ── Usertypo logo: inject at top-center of capture area ──
-                    if (logoODataUrl) {
-                        const doc = cloned.ownerDocument || document;
-                        // Pull logo closer to the top edge of the capture.
-                        const logoWrap = doc.createElement('div');
-                        logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-top:-1.1rem;margin-bottom:0.15rem;';
-
-                        // Tall enough for USER (above) + typo_ descenders/_ (below)
-                        const logoClip = doc.createElement('div');
-                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:6.2rem;overflow:hidden;flex-shrink:0;';
-
-                        // Inner square sized like the header logo (without CSS transform).
-                        // Keep truly centered so USER is not clipped off the top.
-                        const logoBox = doc.createElement('div');
-                        logoBox.style.cssText = 'position:absolute;left:50%;top:50%;width:19.983rem;height:19.983rem;margin-left:-9.9915rem;margin-top:-9.9915rem;flex-shrink:0;';
-
-                        // Layer 1: "typ_" text (theme primary)
-                        if (logoTypDataUrl) {
-                            const typImg = doc.createElement('img');
-                            typImg.src = logoTypDataUrl;
-                            typImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
-                            logoBox.appendChild(typImg);
-                        }
-
-                        // Layer 2: "user" text (theme text)
-                        if (logoUserDataUrl) {
-                            const userImg = doc.createElement('img');
-                            userImg.src = logoUserDataUrl;
-                            userImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
-                            logoBox.appendChild(userImg);
-                        }
-
-                        // Layer 3: "o" dot (red) — always on top
-                        const oImg = doc.createElement('img');
-                        oImg.src = logoODataUrl;
-                        oImg.alt = 'usertypo_';
-                        oImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:3;';
-                        logoBox.appendChild(oImg);
-
-                        logoClip.appendChild(logoBox);
-                        logoWrap.appendChild(logoClip);
-                        cloned.insertBefore(logoWrap, cloned.firstChild);
                     }
                 },
             });

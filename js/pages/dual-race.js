@@ -3334,6 +3334,7 @@
                             button: screenshot,
                             hideSelectors: ['#stats-action-buttons'],
                             padding: 56,
+                            injectLogo: true,
                         });
                     }
                 }, { signal: signal });
