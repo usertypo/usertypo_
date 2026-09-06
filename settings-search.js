@@ -17,7 +17,8 @@
     let indexPromise = null;
 
     function injectStyles() {
-        if (document.getElementById('global-settings-search-styles')) return;
+        const existing = document.getElementById('global-settings-search-styles');
+        if (existing) existing.remove();
         const style = document.createElement('style');
         style.id = 'global-settings-search-styles';
         style.textContent = `
@@ -193,8 +194,14 @@
                 border-radius: 0.75rem;
                 padding: 0.75rem 1rem;
                 margin-bottom: 0.5rem;
+                position: relative;
+                z-index: 1;
+                overflow: visible;
             }
             #global-settings-search-overlay .search-result-item:last-child { margin-bottom: 0; }
+            #global-settings-search-overlay .search-result-item:has(.custom-popover.is-open) {
+                z-index: 40;
+            }
             #global-settings-search-overlay .search-result-category {
                 font-size: 0.625rem;
                 font-weight: 700;
@@ -220,6 +227,45 @@
             }
             #global-settings-search-overlay .search-result-controls {
                 margin-top: 0.35rem;
+                overflow: visible;
+            }
+            #global-settings-search-overlay .custom-popover-wrapper {
+                position: relative !important;
+                overflow: visible !important;
+                z-index: 2;
+            }
+            /* Keep closed popovers fully out of the layout; open ones portal as fixed */
+            #global-settings-search-overlay .custom-popover {
+                display: none !important;
+                width: 13.5rem !important;
+                min-width: 13.5rem !important;
+                max-width: none !important;
+                background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+                background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+                background-image: none !important;
+                backdrop-filter: blur(4px) !important;
+                -webkit-backdrop-filter: blur(4px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+                opacity: 1 !important;
+            }
+            #global-settings-search-overlay .custom-popover.is-open {
+                display: flex !important;
+            }
+            #global-settings-search-overlay .custom-popover.is-portaled {
+                position: fixed !important;
+                top: var(--popover-top, 0px) !important;
+                left: var(--popover-left, 0px) !important;
+                right: auto !important;
+                bottom: auto !important;
+                transform: none !important;
+                margin: 0 !important;
+                z-index: 120 !important;
+            }
+            #global-settings-search-overlay .custom-popover input,
+            #global-settings-search-overlay .custom-popover > button {
+                width: 100% !important;
+                border-radius: 0.75rem !important;
             }
             #global-settings-search-overlay .toggle-track {
                 width: 2.5rem; height: 1.375rem;
@@ -672,6 +718,8 @@
     }
 
     function renderResults(results, query) {
+        if (typeof closeAllCustomPopovers === 'function') closeAllCustomPopovers();
+
         const settingsApi = api();
         if (!results.length) {
             resultsPanel.classList.add('active');
@@ -695,12 +743,18 @@
 
             if (row) {
                 const controls = extractControls(row);
+                // Custom popovers must stay closed until the user clicks Custom
+                controls.querySelectorAll('.custom-popover').forEach(p => {
+                    p.classList.remove('is-open', 'is-portaled', 'opacity-100', 'pointer-events-auto');
+                    p.classList.add('opacity-0', 'pointer-events-none');
+                });
                 if (query) {
                     const matchesTitle = item.name.toLowerCase().includes(query) ||
                                          item.desc.toLowerCase().includes(query) ||
                                          item.categoryName.toLowerCase().includes(query);
                     if (!matchesTitle) {
                         controls.querySelectorAll('.opt-btn, [data-lang], .lang-btn, .font-btn').forEach(btn => {
+                            if (btn.closest('.custom-popover')) return;
                             if (!norm(btn.textContent).toLowerCase().includes(query)) {
                                 btn.style.display = 'none';
                             }

@@ -4878,72 +4878,11 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 // Inject CSS to force transparent styling on custom popovers
 // This overrides any Tailwind classes in the HTML (bg-slate-900, border-primary, etc.)
 (function injectCustomPopoverCSS() {
+    const existing = document.getElementById('custom-popover-override-css');
+    if (existing) existing.remove();
     const style = document.createElement('style');
     style.id = 'custom-popover-override-css';
-    style.textContent = `
-        /* Force open-menu glass — matches #expanding-bubble.is-open */
-        .custom-popover {
-            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
-            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
-            background-image: none !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            /* Open to the RIGHT of the button, not below */
-            top: 50% !important;
-            left: 100% !important;
-            right: auto !important;
-            bottom: auto !important;
-            transform: translateY(-50%) !important;
-            margin-top: 0 !important;
-            margin-left: 8px !important;
-        }
-
-        /* Glass-style input — same menu fill as popover shell */
-        .custom-popover input {
-            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
-            background-image: none !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            color: var(--theme-fg-strong, #fff) !important;
-            -moz-appearance: textfield !important;
-            appearance: textfield !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
-        }
-        .custom-popover input:focus {
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            outline: none !important;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-        }
-
-        /* Remove number input spinners/arrows */
-        .custom-popover input::-webkit-outer-spin-button,
-        .custom-popover input::-webkit-inner-spin-button {
-            -webkit-appearance: none !important;
-            margin: 0 !important;
-        }
-
-        /* Glass-style Apply button */
-        .custom-popover button {
-            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
-            background-image: none !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            color: var(--theme-fg-strong, #fff) !important;
-        }
-        .custom-popover button:hover {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        /* Make sure parent cards don't clip the popover */
-        .custom-popover-wrapper {
-            position: relative;
-        }
-        .setting-card, .sub-setting-card, .sub-setting-content, .glass-card {
-            overflow: visible !important;
-        }
-    `;
+    style.textContent = "\n        /* Closed until .is-open \u2014 never use opacity to hide (breaks backdrop-filter) */\n        .custom-popover {\n            display: none !important;\n            position: absolute !important;\n            flex-direction: column !important;\n            align-items: center !important;\n            justify-content: center !important;\n            gap: 0.75rem !important;\n            padding: 0.75rem !important;\n            box-sizing: border-box !important;\n            width: 13.5rem !important;\n            min-width: 13.5rem !important;\n            max-width: none !important;\n            /* Same glass as #expanding-bubble.is-open */\n            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;\n            background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;\n            background-image: none !important;\n            backdrop-filter: blur(4px) !important;\n            -webkit-backdrop-filter: blur(4px) !important;\n            border: 1px solid rgba(255, 255, 255, 0.05) !important;\n            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;\n            border-radius: var(--theme-box-radius, 1.375rem) !important;\n            z-index: 80 !important;\n            top: 50% !important;\n            left: 100% !important;\n            right: auto !important;\n            bottom: auto !important;\n            transform: translateY(-50%) !important;\n            margin-top: 0 !important;\n            margin-left: 8px !important;\n            opacity: 1 !important;\n            visibility: visible !important;\n            pointer-events: none !important;\n            transition: none !important;\n        }\n        .custom-popover.is-open {\n            display: flex !important;\n            pointer-events: auto !important;\n        }\n        .custom-popover.is-portaled {\n            position: fixed !important;\n            top: var(--popover-top, 0px) !important;\n            left: var(--popover-left, 0px) !important;\n            right: auto !important;\n            bottom: auto !important;\n            transform: none !important;\n            margin: 0 !important;\n            z-index: 120 !important;\n        }\n        .custom-popover input {\n            display: block !important;\n            width: 100% !important;\n            min-width: 0 !important;\n            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;\n            background-image: none !important;\n            border: 1px solid rgba(255, 255, 255, 0.05) !important;\n            color: var(--theme-fg-strong, #fff) !important;\n            -moz-appearance: textfield !important;\n            appearance: textfield !important;\n            border-radius: 0.75rem !important;\n            padding: 0.5rem !important;\n            text-align: center !important;\n            font-size: 0.875rem !important;\n            outline: none !important;\n        }\n        .custom-popover input:focus {\n            border-color: rgba(255, 255, 255, 0.15) !important;\n            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) !important;\n        }\n        .custom-popover input::-webkit-outer-spin-button,\n        .custom-popover input::-webkit-inner-spin-button {\n            -webkit-appearance: none !important;\n            margin: 0 !important;\n        }\n        .custom-popover > button {\n            display: block !important;\n            width: 100% !important;\n            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;\n            background-image: none !important;\n            border: 1px solid rgba(255, 255, 255, 0.05) !important;\n            color: var(--theme-fg-strong, #fff) !important;\n            border-radius: 0.75rem !important;\n            padding: 0.375rem 0.5rem !important;\n            font-weight: 700 !important;\n            font-size: 0.875rem !important;\n            cursor: pointer !important;\n        }\n        .custom-popover > button:hover {\n            background: rgba(255, 255, 255, 0.08) !important;\n            border-color: rgba(255, 255, 255, 0.1) !important;\n        }\n        .custom-popover-wrapper {\n            position: relative !important;\n            overflow: visible !important;\n        }\n        .setting-card, .sub-setting-card, .sub-setting-content, .glass-card {\n            overflow: visible !important;\n        }\n";
     if (document.head) {
         document.head.appendChild(style);
     } else {
@@ -4951,22 +4890,77 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
     }
 })();
 
+function clearCustomPopoverStackBoost(popover) {
+    const item = popover && popover._popoverResultItem;
+    if (item) item.style.zIndex = '';
+}
+
+function restoreCustomPopoverHome(popover) {
+    if (!popover) return;
+    popover.classList.remove('is-open', 'is-portaled', 'opacity-100', 'pointer-events-auto');
+    popover.classList.add('opacity-0', 'pointer-events-none');
+    popover.style.top = '';
+    popover.style.left = '';
+    popover.style.right = '';
+    popover.style.bottom = '';
+    popover.style.transform = '';
+    popover.style.margin = '';
+    popover.style.zIndex = '';
+    popover.style.position = '';
+    popover.style.removeProperty('--popover-top');
+    popover.style.removeProperty('--popover-left');
+    if (popover._popoverHome && popover.parentElement !== popover._popoverHome) {
+        popover._popoverHome.appendChild(popover);
+    }
+    clearCustomPopoverStackBoost(popover);
+}
+
+function closeAllCustomPopovers() {
+    document.querySelectorAll('.custom-popover').forEach(restoreCustomPopoverHome);
+}
+
+function openCustomPopover(btn, popover) {
+    popover._popoverTrigger = btn;
+    popover._popoverHome = popover._popoverHome || popover.parentElement;
+
+    const searchOverlay = document.getElementById('global-settings-search-overlay');
+    const inSearch = !!(searchOverlay && searchOverlay.contains(btn));
+
+    if (inSearch) {
+        // Result cards use glass/backdrop-filter; nested blur cannot frost siblings.
+        // Portal to the overlay and pin with fixed coords (same material as the menu).
+        const rect = btn.getBoundingClientRect();
+        const resultItem = btn.closest('.search-result-item');
+        popover._popoverResultItem = resultItem || null;
+        if (resultItem) resultItem.style.zIndex = '40';
+
+        searchOverlay.appendChild(popover);
+        popover.classList.add('is-portaled');
+        popover.style.setProperty('--popover-top', `${Math.round(rect.bottom + 6)}px`);
+        popover.style.setProperty('--popover-left', `${Math.round(rect.left)}px`);
+    } else {
+        const item = popover.closest('.search-result-item');
+        popover._popoverResultItem = item || null;
+        if (item) item.style.zIndex = '40';
+    }
+
+    popover.classList.remove('opacity-0', 'pointer-events-none');
+    popover.classList.add('is-open', 'opacity-100', 'pointer-events-auto');
+    const inp = popover.querySelector('input');
+    if (inp) inp.focus();
+}
+
 // Toggle popover open/close
 window.toggleCustomPopover = function (btn) {
-    const popover = btn.nextElementSibling;
-    const isShowing = popover.classList.contains('opacity-100');
+    const wrapper = btn.closest('.custom-popover-wrapper');
+    const popover = (wrapper && wrapper.querySelector('.custom-popover')) || btn.nextElementSibling;
+    if (!popover || !popover.classList.contains('custom-popover')) return;
+    const isShowing = popover.classList.contains('is-open');
 
-    // Close all other popovers first
-    document.querySelectorAll('.custom-popover').forEach(p => {
-        p.classList.remove('opacity-100', 'pointer-events-auto');
-        p.classList.add('opacity-0', 'pointer-events-none');
-    });
+    closeAllCustomPopovers();
 
     if (!isShowing) {
-        popover.classList.remove('opacity-0', 'pointer-events-none');
-        popover.classList.add('opacity-100', 'pointer-events-auto');
-        const inp = popover.querySelector('input');
-        if (inp) inp.focus();
+        openCustomPopover(btn, popover);
     }
 };
 
@@ -4975,10 +4969,10 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     const popover = btn.closest('.custom-popover');
     const input = popover.querySelector('input');
     const val = input.value.trim();
+    const triggerBtn = popover._popoverTrigger || popover.previousElementSibling;
 
     if (!val) {
-        popover.classList.remove('opacity-100', 'pointer-events-auto');
-        popover.classList.add('opacity-0', 'pointer-events-none');
+        restoreCustomPopoverHome(popover);
         return;
     }
 
@@ -5012,7 +5006,7 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     if (typeof triggerSave === 'function') triggerSave();
 
     // UI update — set button text to the entered value
-    const container = btn.closest('[data-setting]');
+    const container = (triggerBtn && triggerBtn.closest('[data-setting]')) || btn.closest('[data-setting]');
     if (container) {
         // Reset all buttons in this group
         container.querySelectorAll('.opt-btn').forEach(b => {
@@ -5022,8 +5016,8 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
             }
         });
 
-        // Set the trigger button (the one right before the popover div) as active
-        const optBtn = popover.previousElementSibling;
+        // Set the trigger button as active
+        const optBtn = triggerBtn;
         if (optBtn) {
             optBtn.classList.add('active');
             // Save original text so we can restore it later
@@ -5036,18 +5030,14 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     }
 
     // Close the popover
-    popover.classList.remove('opacity-100', 'pointer-events-auto');
-    popover.classList.add('opacity-0', 'pointer-events-none');
+    restoreCustomPopoverHome(popover);
     input.value = '';
 };
 
 // Close popover when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.custom-popover-wrapper')) {
-        document.querySelectorAll('.custom-popover').forEach(p => {
-            p.classList.remove('opacity-100', 'pointer-events-auto');
-            p.classList.add('opacity-0', 'pointer-events-none');
-        });
+    if (!e.target.closest('.custom-popover-wrapper') && !e.target.closest('.custom-popover')) {
+        closeAllCustomPopovers();
     }
 });
 
