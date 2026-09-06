@@ -225,12 +225,15 @@
                 min-height: 1.25rem;
                 border-radius: 4px;
                 background: rgba(255,255,255,0.18);
-                cursor: grab;
+                cursor: default;
                 touch-action: none;
+                transition: background 0.15s ease;
+            }
+            #global-settings-search-overlay .gss-scrollbar-thumb:hover {
+                background: rgba(255,255,255,0.32);
             }
             #global-settings-search-overlay .gss-scrollbar-thumb:active {
-                cursor: grabbing;
-                background: rgba(255,255,255,0.28);
+                background: rgba(255,255,255,0.4);
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
