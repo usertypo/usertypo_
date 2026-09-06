@@ -496,15 +496,25 @@ window.__spaPageInit = function() {
             const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
 
             function isMultiplayerUnavailable() {
+                if (window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
+                    && window.usertypoMobile.isMobileClient()) {
+                    return true;
+                }
                 const status = window.usertypoMultiplayer?.getAvailability?.()?.status;
                 return status === 'offline' || status === 'maintenance';
             }
 
             function applyMultiplayerAvailability(detail) {
                 const info = detail || window.usertypoMultiplayer?.getAvailability?.() || { status: 'unknown' };
-                const unavailable = info.status === 'offline' || info.status === 'maintenance';
+                const mobileBlocked = !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
+                    && window.usertypoMobile.isMobileClient());
+                const unavailable = mobileBlocked || info.status === 'offline' || info.status === 'maintenance';
                 if (mpAvailabilityBanner) {
-                    if (unavailable && info.message) {
+                    if (mobileBlocked) {
+                        mpAvailabilityBanner.textContent = window.usertypoMobile.DESKTOP_ONLY_MESSAGE
+                            || 'Multiplayer is currently only available on PC';
+                        mpAvailabilityBanner.classList.remove('hidden');
+                    } else if (unavailable && info.message) {
                         mpAvailabilityBanner.textContent = info.message;
                         mpAvailabilityBanner.classList.remove('hidden');
                     } else {
@@ -994,6 +1004,7 @@ window.__spaPageInit = function() {
             // Wire up the page-level buttons to open the modals
             if (mpOpenDualBtn) {
                 mpOpenDualBtn.addEventListener('click', () => {
+                    if (window.usertypoMobile && window.usertypoMobile.blockMultiplayerIfMobile()) return;
                     if (isMultiplayerUnavailable()) return;
                     openFindMatchModal();
                     showFindMatchChoice();
@@ -1001,6 +1012,7 @@ window.__spaPageInit = function() {
             }
             if (mpOpenRoomBtn) {
                 mpOpenRoomBtn.addEventListener('click', () => {
+                    if (window.usertypoMobile && window.usertypoMobile.blockMultiplayerIfMobile()) return;
                     if (isMultiplayerUnavailable()) return;
                     openRoomsChoiceModal();
                 });

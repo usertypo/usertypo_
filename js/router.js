@@ -246,6 +246,20 @@
         return path + '?' + queryString;
     }
 
+    function guardMultiplayerMobile(path) {
+        if (!window.usertypoMobile || typeof window.usertypoMobile.isMultiplayerPath !== 'function') {
+            return false;
+        }
+        if (!window.usertypoMobile.isMultiplayerPath(path)) return false;
+        if (typeof window.usertypoMobile.isMobileClient === 'function' && !window.usertypoMobile.isMobileClient()) {
+            return false;
+        }
+        if (typeof window.usertypoMobile.blockMultiplayerIfMobile === 'function') {
+            window.usertypoMobile.blockMultiplayerIfMobile();
+        }
+        return true;
+    }
+
     window.navigateTo = function navigateTo(path, queryParams) {
         let targetPath = path;
         let search = '';
@@ -258,6 +272,9 @@
             if (qs) search = '?' + qs;
         }
         targetPath = normalizePath(targetPath);
+        if (guardMultiplayerMobile(targetPath)) {
+            return Promise.resolve(false);
+        }
         const url = buildUrl(targetPath, search);
         if (url === window.location.pathname + window.location.search) {
             return loadRoute(targetPath);
@@ -750,6 +767,14 @@
             return;
         }
 
+        // Phones/tablets: multiplayer rooms & duels are desktop-only.
+        if (guardMultiplayerMobile(path)) {
+            if (normalizePath(window.location.pathname) !== '/') {
+                history.replaceState({ spa: true, path: '/', search: '' }, '', '/');
+            }
+            return loadRoute('/');
+        }
+
         isNavigating = true;
 
         var routeConfig = routes[path];
@@ -894,6 +919,7 @@
         if (!routes[normalizePath(path.split('?')[0])]) return;
         e.preventDefault();
         var routePath = normalizePath(path.split('?')[0]);
+        if (guardMultiplayerMobile(routePath)) return;
         history.pushState({ spa: true, path: routePath, search: search }, '', buildUrl(routePath, search));
         loadRoute(routePath);
     }
