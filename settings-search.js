@@ -179,16 +179,61 @@
             }
             #global-settings-search-overlay .gss-results-panel {
                 display: none;
+                position: relative;
                 max-height: min(70vh, 560px);
-                overflow-y: auto;
+                overflow: hidden;
                 border-radius: 1rem;
-                padding: 0.75rem;
+                padding: 0;
+                box-sizing: border-box;
             }
             #global-settings-search-overlay .gss-results-panel.active { display: block; }
-            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar { width: 4px; }
-            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.1);
+            /* Equal pad on all sides. Native bar hidden so it can't steal right space. */
+            #global-settings-search-overlay #global-settings-search-results {
+                max-height: min(70vh, 560px);
+                overflow-y: auto;
+                overflow-x: hidden;
+                box-sizing: border-box;
+                padding: 0.75rem;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar {
+                width: 0 !important;
+                height: 0 !important;
+                display: none !important;
+            }
+            /* Custom bar on the right edge; wide hit target, thin visual thumb */
+            #global-settings-search-overlay .gss-scrollbar {
+                position: absolute;
+                top: 0.75rem;
+                bottom: 0.75rem;
+                right: 0;
+                width: 12px;
+                pointer-events: none;
+                opacity: 0;
+                z-index: 20;
+                cursor: default;
+            }
+            #global-settings-search-overlay .gss-results-panel.has-scroll .gss-scrollbar {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            #global-settings-search-overlay .gss-scrollbar-thumb {
+                position: absolute;
+                left: 4px;
+                width: 4px;
+                min-height: 1.25rem;
                 border-radius: 4px;
+                background: rgba(255,255,255,0.18);
+                cursor: default;
+                touch-action: none;
+                transition: background 0.15s ease;
+            }
+            #global-settings-search-overlay .gss-scrollbar-thumb:hover {
+                background: rgba(255,255,255,0.32);
+            }
+            #global-settings-search-overlay .gss-scrollbar-thumb:active {
+                background: rgba(255,255,255,0.4);
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
@@ -375,7 +420,16 @@
     }
 
     function injectOverlay() {
-        if (document.getElementById('global-settings-search-overlay')) return;
+        // Rebuild overlay so a stale DOM from an older CSS approach can't linger
+        const existingOverlay = document.getElementById('global-settings-search-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+            overlayEl = null;
+            searchInput = null;
+            searchClearBtn = null;
+            resultsPanel = null;
+            resultsContainer = null;
+        }
         injectStyles();
 
         overlayEl = document.createElement('div');
@@ -416,6 +470,7 @@
                 </div>
                 <div id="global-settings-search-results-panel" class="gss-results-panel glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
                     <div id="global-settings-search-results"></div>
+                    <div class="gss-scrollbar" aria-hidden="true"><div class="gss-scrollbar-thumb"></div></div>
                 </div>
             </div>
         `;
@@ -425,6 +480,9 @@
         searchClearBtn = document.getElementById('global-settings-search-clear');
         resultsPanel = document.getElementById('global-settings-search-results-panel');
         resultsContainer = document.getElementById('global-settings-search-results');
+        resultsContainer.addEventListener('scroll', syncCustomScrollbar, { passive: true });
+        window.addEventListener('resize', syncCustomScrollbar);
+        wireCustomScrollbar();
 
         overlayEl.querySelector('[data-gss-close]').addEventListener('click', closeOverlay);
         overlayEl.addEventListener('keydown', (e) => {
@@ -710,6 +768,92 @@
         });
     }
 
+    let scrollbarDragging = false;
+
+    function syncCustomScrollbar() {
+        if (!resultsPanel || !resultsContainer || scrollbarDragging) return;
+        const thumb = resultsPanel.querySelector('.gss-scrollbar-thumb');
+        if (!thumb) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = resultsContainer;
+        const canScroll = scrollHeight > clientHeight + 1;
+        resultsPanel.classList.toggle('has-scroll', canScroll);
+        if (!canScroll) return;
+
+        const track = resultsPanel.querySelector('.gss-scrollbar');
+        const trackH = track ? track.clientHeight : clientHeight;
+        const thumbH = Math.max(20, (clientHeight / scrollHeight) * trackH);
+        const maxTop = Math.max(0, trackH - thumbH);
+        const top = maxTop === 0 ? 0 : (scrollTop / (scrollHeight - clientHeight)) * maxTop;
+        thumb.style.height = `${thumbH}px`;
+        thumb.style.transform = `translateY(${top}px)`;
+    }
+
+    function wireCustomScrollbar() {
+        if (!resultsPanel || !resultsContainer) return;
+        const track = resultsPanel.querySelector('.gss-scrollbar');
+        const thumb = resultsPanel.querySelector('.gss-scrollbar-thumb');
+        if (!track || !thumb || track.dataset.wired === '1') return;
+        track.dataset.wired = '1';
+
+        const scrollFromPointerY = (clientY) => {
+            const { scrollHeight, clientHeight } = resultsContainer;
+            const maxScroll = scrollHeight - clientHeight;
+            if (maxScroll <= 0) return;
+            const rect = track.getBoundingClientRect();
+            const trackH = rect.height;
+            const thumbH = thumb.offsetHeight || 20;
+            const maxTop = Math.max(0, trackH - thumbH);
+            const y = clientY - rect.top - thumbH / 2;
+            const ratio = maxTop === 0 ? 0 : Math.min(1, Math.max(0, y / maxTop));
+            resultsContainer.scrollTop = ratio * maxScroll;
+            thumb.style.height = `${Math.max(20, (clientHeight / scrollHeight) * trackH)}px`;
+            thumb.style.transform = `translateY(${ratio * maxTop}px)`;
+        };
+
+        thumb.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            scrollbarDragging = true;
+            thumb.setPointerCapture(e.pointerId);
+            const onMove = (ev) => {
+                scrollFromPointerY(ev.clientY);
+            };
+            const onUp = (ev) => {
+                scrollbarDragging = false;
+                thumb.releasePointerCapture(ev.pointerId);
+                thumb.removeEventListener('pointermove', onMove);
+                thumb.removeEventListener('pointerup', onUp);
+                thumb.removeEventListener('pointercancel', onUp);
+                syncCustomScrollbar();
+            };
+            thumb.addEventListener('pointermove', onMove);
+            thumb.addEventListener('pointerup', onUp);
+            thumb.addEventListener('pointercancel', onUp);
+        });
+
+        track.addEventListener('pointerdown', (e) => {
+            if (e.target === thumb) return;
+            e.preventDefault();
+            e.stopPropagation();
+            scrollFromPointerY(e.clientY);
+            scrollbarDragging = true;
+            track.setPointerCapture(e.pointerId);
+            const onMove = (ev) => scrollFromPointerY(ev.clientY);
+            const onUp = (ev) => {
+                scrollbarDragging = false;
+                track.releasePointerCapture(ev.pointerId);
+                track.removeEventListener('pointermove', onMove);
+                track.removeEventListener('pointerup', onUp);
+                track.removeEventListener('pointercancel', onUp);
+                syncCustomScrollbar();
+            };
+            track.addEventListener('pointermove', onMove);
+            track.addEventListener('pointerup', onUp);
+            track.addEventListener('pointercancel', onUp);
+        });
+    }
+
     function highlightText(text, query) {
         if (!query) return text;
         const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -724,6 +868,7 @@
         if (!results.length) {
             resultsPanel.classList.add('active');
             resultsContainer.innerHTML = '<p class="gss-empty">No settings were found.</p>';
+            requestAnimationFrame(syncCustomScrollbar);
             return;
         }
 
@@ -772,6 +917,7 @@
             settingsApi.restoreUI(settingsApi.loadSettings());
             resultsContainer.querySelectorAll('input[type="range"].custom-slider').forEach(updateSlider);
         }
+        requestAnimationFrame(syncCustomScrollbar);
     }
 
     async function onSearchInput() {
@@ -807,7 +953,7 @@
         if (!searchInput) return;
         searchInput.value = '';
         searchClearBtn.classList.remove('visible');
-        resultsPanel.classList.remove('active');
+        resultsPanel.classList.remove('active', 'has-scroll');
         resultsContainer.innerHTML = '';
         if (shouldFocus && isOpen) searchInput.focus({ preventScroll: true });
     }
