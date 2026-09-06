@@ -402,6 +402,7 @@ html {
     cursor: pointer;
     line-height: 0;
     font: inherit;
+    text-decoration: none;
 }
 
 .footer-social-btn:hover {
