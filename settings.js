@@ -4878,28 +4878,34 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 // Inject CSS to force transparent styling on custom popovers
 // This overrides any Tailwind classes in the HTML (bg-slate-900, border-primary, etc.)
 (function injectCustomPopoverCSS() {
+    const existing = document.getElementById('custom-popover-override-css');
+    if (existing) existing.remove();
     const style = document.createElement('style');
     style.id = 'custom-popover-override-css';
-    style.textContent = `
-        /* Force open-menu glass — matches #expanding-bubble.is-open */
+    style.textContent = \
+        /* Closed until .is-open — never use opacity to hide (breaks backdrop-filter) */
         .custom-popover {
+            display: none !important;
+            position: absolute !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.75rem !important;
+            padding: 0.75rem !important;
+            box-sizing: border-box !important;
+            width: 13.5rem !important;
+            min-width: 13.5rem !important;
+            max-width: none !important;
+            /* Same glass as #expanding-bubble.is-open */
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
-            /* Opacity on this node kills backdrop-filter — hide with visibility instead */
-            opacity: 1 !important;
-            visibility: hidden;
-            pointer-events: none;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            width: 13.5rem !important;
-            min-width: 13.5rem !important;
-            max-width: none !important;
-            box-sizing: border-box !important;
+            border-radius: var(--theme-box-radius, 1.375rem) !important;
             z-index: 80 !important;
-            /* Open to the RIGHT of the button, not below */
             top: 50% !important;
             left: 100% !important;
             right: auto !important;
@@ -4907,13 +4913,15 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             transform: translateY(-50%) !important;
             margin-top: 0 !important;
             margin-left: 8px !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: none !important;
             transition: none !important;
         }
         .custom-popover.is-open {
-            visibility: visible !important;
+            display: flex !important;
             pointer-events: auto !important;
         }
-        /* Fixed portal copy used inside global search (escapes parent glass stacking) */
         .custom-popover.is-portaled {
             position: fixed !important;
             top: var(--popover-top, 0px) !important;
@@ -4924,9 +4932,8 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             margin: 0 !important;
             z-index: 120 !important;
         }
-
-        /* Nested controls — solid menu fill (blur lives on the shell) */
         .custom-popover input {
+            display: block !important;
             width: 100% !important;
             min-width: 0 !important;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
@@ -4936,43 +4943,45 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             -moz-appearance: textfield !important;
             appearance: textfield !important;
             border-radius: 0.75rem !important;
+            padding: 0.5rem !important;
+            text-align: center !important;
+            font-size: 0.875rem !important;
+            outline: none !important;
         }
         .custom-popover input:focus {
             border-color: rgba(255, 255, 255, 0.15) !important;
-            outline: none !important;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
         }
-
-        /* Remove number input spinners/arrows */
         .custom-popover input::-webkit-outer-spin-button,
         .custom-popover input::-webkit-inner-spin-button {
             -webkit-appearance: none !important;
             margin: 0 !important;
         }
-
-        /* Glass-style Apply button */
-        .custom-popover button {
+        .custom-popover > button {
+            display: block !important;
             width: 100% !important;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: var(--theme-fg-strong, #fff) !important;
             border-radius: 0.75rem !important;
+            padding: 0.375rem 0.5rem !important;
+            font-weight: 700 !important;
+            font-size: 0.875rem !important;
+            cursor: pointer !important;
         }
-        .custom-popover button:hover {
+        .custom-popover > button:hover {
             background: rgba(255, 255, 255, 0.08) !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
         }
-
-        /* Make sure parent cards don't clip the popover */
         .custom-popover-wrapper {
-            position: relative;
+            position: relative !important;
             overflow: visible !important;
         }
         .setting-card, .sub-setting-card, .sub-setting-content, .glass-card {
             overflow: visible !important;
         }
-    `;
+    \;
     if (document.head) {
         document.head.appendChild(style);
     } else {
@@ -5042,7 +5051,8 @@ function openCustomPopover(btn, popover) {
 
 // Toggle popover open/close
 window.toggleCustomPopover = function (btn) {
-    const popover = btn.nextElementSibling;
+    const wrapper = btn.closest('.custom-popover-wrapper');
+    const popover = (wrapper && wrapper.querySelector('.custom-popover')) || btn.nextElementSibling;
     if (!popover || !popover.classList.contains('custom-popover')) return;
     const isShowing = popover.classList.contains('is-open');
 
