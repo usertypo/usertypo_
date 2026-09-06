@@ -180,48 +180,34 @@
             #global-settings-search-overlay .gss-results-panel {
                 display: none;
                 max-height: min(70vh, 560px);
-                overflow: hidden;
-                border-radius: 1rem;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            #global-settings-search-overlay .gss-results-panel.active { display: block; }
-            /*
-             * No horizontal padding on the scroller — that insets the thumb from the
-             * right edge. Side inset is on the cards so L/R match and the bar is flush.
-             */
-            #global-settings-search-overlay #global-settings-search-results {
-                max-height: min(70vh, 560px);
                 overflow-y: auto;
-                overflow-x: hidden;
-                box-sizing: border-box;
-                padding: 0.75rem 0;
-                margin: 0;
+                border-radius: 1rem;
+                padding: 0.75rem;
                 scrollbar-width: thin;
                 scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
-            #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar {
+            #global-settings-search-overlay .gss-results-panel.active { display: block; }
+            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar {
                 width: 4px;
             }
-            #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-track {
+            /* Keep the thumb inside the rounded corners (same layout as before) */
+            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-track {
                 background: transparent;
                 margin-block: 0.75rem;
             }
-            #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-thumb {
+            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-thumb {
                 background: rgba(255,255,255,0.1);
                 border-radius: 4px;
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
                 padding: 0.75rem 1rem;
-                margin: 0 0.75rem 0.5rem;
+                margin-bottom: 0.5rem;
                 position: relative;
                 z-index: 1;
                 overflow: visible;
             }
-            #global-settings-search-overlay .search-result-item:last-child {
-                margin-bottom: 0;
-            }
+            #global-settings-search-overlay .search-result-item:last-child { margin-bottom: 0; }
             #global-settings-search-overlay .search-result-item:has(.custom-popover.is-open) {
                 z-index: 40;
             }
@@ -389,7 +375,6 @@
             #global-settings-search-overlay .gss-empty {
                 text-align: center;
                 padding: 2rem 1rem;
-                margin: 0 0.75rem;
                 color: #94a3b8;
                 font-size: 0.875rem;
                 font-weight: 600;
