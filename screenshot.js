@@ -190,7 +190,9 @@
         const pos = cs.position;
         if (pos !== 'absolute' && pos !== 'fixed') return false;
         const cls = el.className?.toString?.() || '';
-        if (/\bblur-/.test(cls)) return true;
+        // Filter blur utilities only (blur-2xl). Do NOT match backdrop-blur-* —
+        // those are used by real UI chrome (PB badge, tooltips, glass pills).
+        if (/(?:^|\s)blur-(?:none|sm|md|lg|xl|2xl|3xl|\[)/.test(cls)) return true;
         if (cs.filter && cs.filter !== 'none' && cs.filter.includes('blur')) return true;
         if (cs.backgroundImage?.includes('radial-gradient')) return true;
         return false;
@@ -266,13 +268,46 @@
 
         const ocs = getComputedStyle(original);
         const cls = original.className?.toString?.() || '';
+        const isPbBadge = original.id === 'stats-pb-badge';
+        const pbShown = isPbBadge && original.getAttribute('data-pb-shown') === '1';
 
-        if (cls.includes('opacity-0') || (cls.includes('stats-animate-card') && parseFloat(ocs.opacity) < 0.99)) {
+        // Personal Best pill: freeze the live shown/hidden state into the clone.
+        if (isPbBadge) {
+            cloned.style.animation = 'none';
+            cloned.style.transition = 'none';
+            if (pbShown) {
+                cloned.style.opacity = '1';
+                cloned.style.transform = 'scale(1)';
+                cloned.style.transformOrigin = 'left bottom';
+                cloned.classList.remove('opacity-0');
+                if (!cloned.classList.contains('opacity-100')) {
+                    cloned.classList.add('opacity-100');
+                }
+            } else {
+                cloned.style.opacity = '0';
+                cloned.style.transform = 'scale(0.7)';
+                cloned.style.display = 'none';
+            }
+        } else if (
+            // Entrance-animation cards keep opacity-0 in class after animating in;
+            // force them fully visible. Do NOT apply this to hover tooltips
+            // (opacity-0 + group-hover:opacity-100) or other intentionally hidden UI.
+            cls.includes('stats-animate-card') &&
+            (cls.includes('opacity-0') || parseFloat(ocs.opacity) < 0.99)
+        ) {
             cloned.style.animation = 'none';
             cloned.style.animationDelay = '0s';
             cloned.style.transition = 'none';
             cloned.style.opacity = '1';
             cloned.style.transform = 'none';
+        } else if (
+            cls.includes('opacity-0') &&
+            cls.includes('group-hover:opacity-100') &&
+            parseFloat(ocs.opacity) < 0.5
+        ) {
+            // Hover tooltips — keep out of share screenshots
+            cloned.style.opacity = '0';
+            cloned.style.display = 'none';
         }
 
         if (cls.includes('backdrop-blur') || cls.includes('glass-panel') || cls.includes('glass-card') || cls.includes('panel-surface')) {
@@ -286,6 +321,14 @@
         const inline = original.getAttribute('style') || '';
         if (inline.includes('var(')) {
             copyResolvedInlineStyles(cloned, original);
+        }
+
+        // After var() style copy, re-assert PB visibility so resolved transforms
+        // don't overwrite the freeze-frame above.
+        if (isPbBadge && pbShown) {
+            cloned.style.opacity = '1';
+            cloned.style.transform = 'scale(1)';
+            cloned.style.display = '';
         }
 
         inlineMaterialIcon(cloned, original);
