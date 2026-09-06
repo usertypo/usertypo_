@@ -586,36 +586,139 @@
             z-index: 1;
         }
 
-        /* Header account hover preview — open-menu glass + settings-tab radius */
+        /* Header account hover chip — icon slides left; identity + stats expand */
         #header-account-wrap {
+            position: relative;
             z-index: 45;
+            display: inline-flex;
+            justify-content: flex-end;
+            align-items: flex-start;
         }
-        .header-account-preview {
-            position: absolute;
-            top: calc(100% + 0.55rem);
-            right: 0;
-            min-width: 11.5rem;
-            max-width: min(18rem, calc(100vw - 1.5rem));
-            padding: 0.85rem 1rem;
+        #header-account-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
             box-sizing: border-box;
+            width: 2.75rem;
+            max-width: min(18rem, calc(100vw - 1.5rem));
+            padding: 0;
+            border-radius: 9999px;
+            border: 1px solid transparent;
+            background: transparent;
+            background-image: none;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            overflow: hidden;
+            transform-origin: top right;
+            transition:
+                width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                padding 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-radius 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 200ms ease,
+                box-shadow 200ms ease,
+                background-color 200ms ease;
+        }
+        .header-account-chip__main {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0;
+            min-width: 0;
+            transition: gap 280ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #header-account-btn {
+            flex-shrink: 0;
+        }
+        .header-account-chip__identity {
+            min-width: 0;
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            pointer-events: none;
+            transform: translateX(0.35rem);
+            transition:
+                max-width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 180ms ease,
+                transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .header-account-chip__stats {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.55rem;
+            max-height: 0;
+            margin-top: 0;
+            padding-left: 0.15rem;
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+            white-space: nowrap;
+            transform: translateY(-0.15rem);
+            transition:
+                max-height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                margin-top 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 180ms ease,
+                transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .header-account-chip__stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.22rem;
+            font-size: 0.58rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--theme-text-muted, #94a3b8);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .header-account-chip__stat strong {
+            color: var(--theme-text, #e2e8f0);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .header-account-chip__stat--rank strong {
+            color: var(--theme-primary, #fff);
+        }
+        .header-account-chip__stat--streak {
+            color: #fbbf24;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .header-account-chip__stat--streak strong {
+            color: #fbbf24;
+        }
+        #header-account-wrap.is-signed-in:hover #header-account-preview,
+        #header-account-wrap.is-signed-in:focus-within #header-account-preview {
+            width: 14.25rem;
+            padding: 0.4rem 0.7rem 0.5rem 0.4rem;
             border-radius: var(--theme-box-radius, 1.375rem);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: translateY(0.3rem);
-            transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
-            z-index: 50;
         }
-        #header-account-wrap.is-signed-in:hover .header-account-preview,
-        #header-account-wrap.is-signed-in:focus-within .header-account-preview {
+        #header-account-wrap.is-signed-in:hover .header-account-chip__main,
+        #header-account-wrap.is-signed-in:focus-within .header-account-chip__main {
+            gap: 0.65rem;
+        }
+        #header-account-wrap.is-signed-in:hover .header-account-chip__identity,
+        #header-account-wrap.is-signed-in:focus-within .header-account-chip__identity {
+            max-width: 9rem;
             opacity: 1;
-            visibility: visible;
+            transform: translateX(0);
+        }
+        #header-account-wrap.is-signed-in:hover .header-account-chip__stats,
+        #header-account-wrap.is-signed-in:focus-within .header-account-chip__stats {
+            max-height: 1.1rem;
+            margin-top: 0.4rem;
+            opacity: 1;
             transform: translateY(0);
         }
 
@@ -1224,36 +1327,37 @@
                 class="hidden opacity-0 translate-y-1 pointer-events-none select-none text-sm font-black text-primary transition-all duration-300"
                 style="text-shadow: 0 0 12px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1)));"
                 aria-live="polite">+0</span>
-            <div id="header-account-wrap" class="relative inline-flex items-center justify-center">
-                <a href="/signin" data-spa-link id="header-account-btn"
-                    class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
-                    title="Sign in" aria-label="Sign in" aria-describedby="header-account-preview"></a>
+            <div id="header-account-wrap" class="relative inline-flex items-start justify-end">
                 <div id="header-account-preview"
-                    class="header-account-preview glass-panel"
-                    role="tooltip"
+                    class="header-account-preview"
+                    role="group"
+                    aria-label="Account"
                     aria-hidden="true">
-                    <p id="hap-name" class="text-sm font-bold text-white truncate leading-tight">Guest</p>
-                    <div class="flex items-center gap-1.5 mt-1 mb-3">
-                        <span class="text-[0.6rem] font-bold uppercase tracking-widest text-slate-500">ID</span>
-                        <span id="hap-id" class="font-mono text-xs font-bold tracking-wider text-slate-300">—</span>
+                    <div class="header-account-chip__main">
+                        <a href="/signin" data-spa-link id="header-account-btn"
+                            class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-colors group"
+                            title="Sign in" aria-label="Sign in"></a>
+                        <div class="header-account-chip__identity">
+                            <p id="hap-name" class="text-sm font-bold text-white truncate leading-tight">Guest</p>
+                            <div class="flex items-center gap-1 mt-0.5 min-w-0">
+                                <span class="text-[0.55rem] font-bold uppercase tracking-widest text-slate-500 shrink-0">ID</span>
+                                <span id="hap-id" class="font-mono text-[0.7rem] font-bold tracking-wider text-slate-300 truncate">—</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex flex-col gap-1.5 text-[0.7rem] font-bold">
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">XP</span>
-                            <span id="hap-xp" class="text-slate-200 tracking-wide tabular-nums">0 / 100</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">Rank</span>
-                            <span id="hap-rank" class="text-primary tabular-nums">—</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">Streak</span>
-                            <span class="flex items-center gap-1 text-amber-400">
-                                <span class="material-symbols-outlined text-[0.8rem]" aria-hidden="true">local_fire_department</span>
-                                <span id="hap-streak" class="tabular-nums">0</span>
-                                <span class="text-slate-500 font-bold">day</span>
-                            </span>
-                        </div>
+                    <div class="header-account-chip__stats" aria-hidden="true">
+                        <span class="header-account-chip__stat">
+                            <span>XP</span>
+                            <strong id="hap-xp">0 / 100</strong>
+                        </span>
+                        <span class="header-account-chip__stat header-account-chip__stat--rank">
+                            <span>Rank</span>
+                            <strong id="hap-rank">—</strong>
+                        </span>
+                        <span class="header-account-chip__stat header-account-chip__stat--streak">
+                            <span class="material-symbols-outlined text-[0.75rem]" aria-hidden="true">local_fire_department</span>
+                            <strong id="hap-streak">0</strong>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1654,7 +1758,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=9"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=86"></script>
+    <script src="settings.js?v=87"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=11"></script>
     <!-- Auth + data API (before router) -->
@@ -1673,7 +1777,7 @@
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
     <script src="js/ui/contact.js?v=204"></script>
-    <script src="js/auth/header.js?v=10"></script>
+    <script src="js/auth/header.js?v=11"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
