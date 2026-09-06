@@ -2754,6 +2754,9 @@ function applyThemeSettings(settings) {
         /* Keymap keys keep the original smaller radius (pre–box-radius unify) */
         .keymap-key {
             border-radius: 0.5rem !important;
+            box-sizing: border-box !important;
+            height: 2rem !important;
+            flex-shrink: 0 !important;
         }
 
         /* ── Scrollbar thumb ── */
@@ -4793,9 +4796,13 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
         if (!rowHasVisibleKeys) return;
 
         html += '<div class="flex gap-[0.32rem] w-full justify-center min-w-max">';
+        // 1u keys match h-8 (2rem) so letter/number/punct keys are square;
+        // wider modifiers still span u units + inter-key gaps.
+        const KEY_UNIT_REM = 2;
+        const KEY_GAP_REM = 0.32;
         row.forEach((keyObj) => {
             const u = keyObj.u || 1;
-            const widthRem = u * 1.705 + (u - 1) * 0.32;
+            const widthRem = u * KEY_UNIT_REM + (u - 1) * KEY_GAP_REM;
             const rawMain = keyObj.k;
             const rawQwerty = keyObj.q || '';
             const modifier = isModifier(rawMain);
