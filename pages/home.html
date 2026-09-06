@@ -4995,7 +4995,8 @@ window.setTimeout = function(handler, timeout) {
             const themePrimary = rootCS.getPropertyValue('--theme-primary').trim() || '#00d0ff';
             const themeText = rootCS.getPropertyValue('--theme-text').trim() || '#ffffff';
 
-            async function colorMaskImage(url, fillColor) {
+            async function colorMaskImage(url, fillColor, dilatePasses) {
+                const passes = Math.max(0, dilatePasses == null ? 2 : dilatePasses);
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
@@ -5022,19 +5023,23 @@ window.setTimeout = function(handler, timeout) {
                                 d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255;
                             }
                         }
-                        // Dilate 2px: expand shape outward so thin strokes (underscore) appear bolder
-                        for (let pass = 0; pass < 2; pass++) {
+                        // Dilate: expand shape outward so thin strokes (underscore) stay bold in the capture
+                        for (let pass = 0; pass < passes; pass++) {
                             const snap = new Uint8ClampedArray(d);
                             for (let y = 0; y < h; y++) {
                                 for (let x = 0; x < w; x++) {
                                     const idx = (y * w + x) * 4;
                                     if (snap[idx + 3] === 255) continue; // already filled
-                                    // Check 4 cardinal neighbors for an opaque pixel
+                                    // 8-connected neighborhood so horizontal strokes thicken more evenly
                                     const neighbors = [
                                         idx - 4,           // left
                                         idx + 4,           // right
                                         idx - w * 4,       // up
                                         idx + w * 4,       // down
+                                        idx - w * 4 - 4,   // up-left
+                                        idx - w * 4 + 4,   // up-right
+                                        idx + w * 4 - 4,   // down-left
+                                        idx + w * 4 + 4,   // down-right
                                     ];
                                     for (const ni of neighbors) {
                                         if (ni >= 0 && ni < snap.length && snap[ni + 3] === 255) {
@@ -5054,8 +5059,9 @@ window.setTimeout = function(handler, timeout) {
             }
 
             const [logoTypDataUrl, logoUserDataUrl, logoODataUrl] = await Promise.all([
-                colorMaskImage(logoOrigin + '/logo-assets/typ_.png', themePrimary),
-                colorMaskImage(logoOrigin + '/logo-assets/user.png', themeText),
+                // Extra dilation on typ_ so the underscore matches the live header weight
+                colorMaskImage(logoOrigin + '/logo-assets/typ_.png', themePrimary, 4),
+                colorMaskImage(logoOrigin + '/logo-assets/user.png', themeText, 2),
                 // The "o" dot keeps its original red color — no recoloring needed
                 new Promise((resolve) => {
                     const img = new Image();
@@ -5100,20 +5106,20 @@ window.setTimeout = function(handler, timeout) {
                     // ── Usertypo logo: inject at top-center of capture area ──
                     if (logoODataUrl) {
                         const doc = cloned.ownerDocument || document;
-                        // Outer wrapper: centers the logo and clips to the visible text band
-                        // Matches header-logo-link dimensions (9.592rem × 2.557rem)
+                        // Pull logo closer to the top edge of the capture.
                         const logoWrap = doc.createElement('div');
-                        logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:0.5rem;';
+                        logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-top:-1.1rem;margin-bottom:0.15rem;';
 
+                        // Taller clip so y/p descenders + underscore are not cropped
                         const logoClip = doc.createElement('div');
-                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:3.836rem;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:5.1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
 
-                        // Inner square: matches header-logo-container (26.644rem × 26.644rem @ scale 0.5 = 13.322rem visual)
-                        // We use the final visual size directly instead of transform (domToCanvas doesn't handle transforms well)
+                        // Inner square sized like the header logo (without CSS transform)
                         const logoBox = doc.createElement('div');
-                        logoBox.style.cssText = 'position:absolute;width:19.983rem;height:19.983rem;flex-shrink:0;';
+                        // Shift artwork up inside the clip so more of the bottom (descenders/_) shows
+                        logoBox.style.cssText = 'position:absolute;left:50%;top:50%;width:19.983rem;height:19.983rem;margin-left:-9.9915rem;margin-top:-10.55rem;flex-shrink:0;';
 
-                        // Layer 1: "typ_" text (cyan)
+                        // Layer 1: "typ_" text (theme primary)
                         if (logoTypDataUrl) {
                             const typImg = doc.createElement('img');
                             typImg.src = logoTypDataUrl;
@@ -5121,7 +5127,7 @@ window.setTimeout = function(handler, timeout) {
                             logoBox.appendChild(typImg);
                         }
 
-                        // Layer 2: "user" text (white)
+                        // Layer 2: "user" text (theme text)
                         if (logoUserDataUrl) {
                             const userImg = doc.createElement('img');
                             userImg.src = logoUserDataUrl;
