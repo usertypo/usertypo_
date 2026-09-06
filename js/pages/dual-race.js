@@ -1522,13 +1522,16 @@
         }
 
         function buildLocalRacePayload(promptWords) {
-            var startsAt = Date.now() + 7000;
+            // Unlock when the countdown ends — never bake a relative startsInMs here.
+            // A frozen startsInMs (e.g. 7000) would re-wait that long after the intro finishes.
+            var startsAt = countdownEndsAtTarget > Date.now()
+                ? countdownEndsAtTarget
+                : Date.now() + 5000;
             return {
                 roomId: roomId,
                 config: config,
                 words: promptWords,
                 startsAt: startsAt,
-                startsInMs: Math.max(0, startsAt - Date.now()),
                 endsAt: config.mode === 'time' ? startsAt + (config.amount * 1000) : null,
                 players: players,
                 bot: bot,
@@ -1551,11 +1554,11 @@
             bot.finished = false;
             bot.finishedAt = 0;
             var prompt = await window.usertypoLocalPrompt.createPrompt(config);
-            pendingRacePayload = buildLocalRacePayload(prompt.words);
             rematchVotes = 0;
             selfRematchVoted = false;
             updateRematchButton();
             countdownEndsAtTarget = Date.now() + 5000;
+            pendingRacePayload = buildLocalRacePayload(prompt.words);
             prepareWaitingTestView();
             ensureCountdownSequence();
         }
@@ -1576,7 +1579,13 @@
                 if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 return;
             }
-            config = raceConfig;
+            config = {
+                mode: raceConfig.mode === 'words' ? 'words' : 'time',
+                amount: Number(raceConfig.amount) || 30,
+                lang: 'english',
+                punct: configFlag(raceConfig.punct),
+                nums: configFlag(raceConfig.nums),
+            };
             matchReason = 'bot';
             bindDualKeymapRenderArgs();
             setDualFooterMode('test-compact');
@@ -1624,10 +1633,10 @@
             };
             rematchNeeded = 1;
             try {
-                var prompt = await window.usertypoLocalPrompt.createPrompt(raceConfig);
-                pendingRacePayload = buildLocalRacePayload(prompt.words);
+                var prompt = await window.usertypoLocalPrompt.createPrompt(config);
                 paintDualOpponentAvatar(players[1]);
                 countdownEndsAtTarget = Date.now() + 5000;
+                pendingRacePayload = buildLocalRacePayload(prompt.words);
                 prepareWaitingTestView();
                 ensureCountdownSequence();
             } catch (error) {
@@ -2037,11 +2046,17 @@
 
         function raceUnlockDelayMs(payload) {
             if (!payload) return 0;
-            // Prefer relative delay so clock skew cannot delay typing unlock.
+            var fromAbsolute = payload.startsAt != null && Number.isFinite(Number(payload.startsAt))
+                ? Math.max(0, Number(payload.startsAt) - Date.now())
+                : null;
+            // Prefer relative delay so clock skew cannot delay typing unlock — but if
+            // absolute start is already due, never re-wait on a stale startsInMs.
             if (payload.startsInMs != null && Number.isFinite(Number(payload.startsInMs))) {
-                return Math.max(0, Number(payload.startsInMs));
+                var relative = Math.max(0, Number(payload.startsInMs));
+                if (fromAbsolute != null) return Math.min(relative, fromAbsolute);
+                return relative;
             }
-            if (payload.startsAt) return Math.max(0, Number(payload.startsAt) - Date.now());
+            if (fromAbsolute != null) return fromAbsolute;
             return 0;
         }
 
