@@ -1,7 +1,6 @@
 /**
  * Shell header ↔ auth state binding.
  * Account bubble: shared player-level-avatar (photo + XP ring + level) + transient +XP toast.
- * Signed-in hover preview: display name, public id, XP, rank, streak.
  *
  * Important: do NOT remount the avatar DOM on every XP tick — replacing <img> makes the
  * photo disappear until it reloads (noticeable after finishing a test).
@@ -9,10 +8,6 @@
 (function () {
     var xpToastTimer = null;
     var lastAccountOpts = null;
-    var cachedRankLabel = '—';
-    var rankFetchToken = 0;
-    var rankFetchedForUserId = null;
-    var RANK_CONTEXT = { mode: 'time', amount: 30, timeframe: 'alltime' };
 
     function displayName(user, profile) {
         if (window.usertypoProfiles && typeof window.usertypoProfiles.publicUsername === 'function') {
@@ -90,9 +85,8 @@
 
         pla.setAttribute('data-level', String(level));
         pla.setAttribute('data-xp-percent', String(pct));
-        // Keep aria-label; skip native title so it doesn't fight the hover preview.
-        pla.removeAttribute('title');
         if (opts.name) {
+            pla.setAttribute('title', opts.name);
             pla.setAttribute('aria-label', opts.name + (showLevel ? (', level ' + level) : ''));
         }
 
@@ -150,10 +144,7 @@
                 showLevel: !!merged.showLevel,
                 clickable: false,
                 className: 'header-account-pla',
-                title: '',
             });
-            var plaMounted = mount.querySelector('.player-level-avatar');
-            if (plaMounted) plaMounted.removeAttribute('title');
             applyEagerHeaderImg(mount);
             return;
         }
@@ -207,62 +198,6 @@
             }, 300);
             xpToastTimer = null;
         }, 5000);
-    }
-
-    function setPreviewOpenState(isSignedIn) {
-        var wrap = document.getElementById('header-account-wrap');
-        var preview = document.getElementById('header-account-preview');
-        if (wrap) wrap.classList.toggle('is-signed-in', !!isSignedIn);
-        if (preview) preview.setAttribute('aria-hidden', isSignedIn ? 'false' : 'true');
-    }
-
-    function fillAccountPreview(opts) {
-        setText('hap-name', opts.name || 'Guest');
-        setText('hap-id', opts.publicId || '—');
-        setText('hap-xp', opts.xpLabel || '0 / 100');
-        setText('hap-rank', opts.rankLabel != null ? opts.rankLabel : '—');
-        setText('hap-streak', String(opts.streak != null ? opts.streak : 0));
-    }
-
-    function resetAccountPreview() {
-        cachedRankLabel = '—';
-        rankFetchToken += 1;
-        rankFetchedForUserId = null;
-        fillAccountPreview({
-            name: 'Guest',
-            publicId: '—',
-            xpLabel: '0 / 100',
-            rankLabel: '—',
-            streak: 0,
-        });
-        setPreviewOpenState(false);
-    }
-
-    function refreshHeaderRank(userId, force) {
-        if (!userId) return;
-        if (!force && rankFetchedForUserId === userId) return;
-        if (!window.usertypoLeaderboards || typeof window.usertypoLeaderboards.getMyRank !== 'function') {
-            return;
-        }
-        rankFetchedForUserId = userId;
-        var token = ++rankFetchToken;
-        window.usertypoLeaderboards.getMyRank(RANK_CONTEXT).then(function (result) {
-            if (token !== rankFetchToken) return;
-            if (window.usertypoLeaderboards.formatGlobalRankLabel) {
-                cachedRankLabel = window.usertypoLeaderboards.formatGlobalRankLabel(result && result.rank);
-            } else if (result && result.rank != null && Number(result.rank) > 0) {
-                cachedRankLabel = '#' + Number(result.rank).toLocaleString();
-            } else {
-                cachedRankLabel = '—';
-            }
-            setText('hap-rank', cachedRankLabel);
-        }).catch(function () {
-            if (token !== rankFetchToken) return;
-            // Allow a later retry if this attempt failed.
-            if (rankFetchedForUserId === userId) rankFetchedForUserId = null;
-            cachedRankLabel = '—';
-            setText('hap-rank', '—');
-        });
     }
 
     function updateHeader(state) {
@@ -343,8 +278,7 @@
             if (authIcon) authIcon.textContent = 'logout';
             if (accountBtn) {
                 accountBtn.setAttribute('href', '/userstats');
-                // Native title fights the custom hover preview — keep aria-label only.
-                accountBtn.removeAttribute('title');
+                accountBtn.title = name;
                 accountBtn.setAttribute('aria-label', 'Your profile');
             }
             // Keep last known photo if this update somehow has no URL (avoids blank flash mid-sync)
@@ -357,26 +291,6 @@
                 showLevel: true,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/userstats');
-
-            var publicId = profile && profile.public_id
-                ? String(profile.public_id).toUpperCase()
-                : '—';
-            var xpLabel = (progression
-                ? ((progression.xpIntoLevel || 0) + ' / ' + (progression.xpToNext || 100))
-                : '0 / 100') + ' XP';
-            var streak = progression && progression.currentStreak != null
-                ? progression.currentStreak
-                : 0;
-
-            fillAccountPreview({
-                name: name,
-                publicId: publicId,
-                xpLabel: xpLabel,
-                rankLabel: cachedRankLabel,
-                streak: streak,
-            });
-            setPreviewOpenState(true);
-            refreshHeaderRank(state.user.id, false);
         } else {
             if (authAction) {
                 authAction.setAttribute('href', '/signin');
@@ -399,7 +313,6 @@
                 showLevel: false,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/signin');
-            resetAccountPreview();
         }
     }
 
@@ -412,7 +325,6 @@
             percentToNext: 0,
             showLevel: false,
         });
-        resetAccountPreview();
 
         if (!window.usertypoAuth) {
             updateHeader({ isSignedIn: false, user: null });

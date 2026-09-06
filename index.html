@@ -586,60 +586,6 @@
             z-index: 1;
         }
 
-        /* Header account hover preview — glass sits behind icon (icon in top-right) */
-        #header-account-wrap {
-            position: relative;
-            z-index: 45;
-        }
-        #header-account-btn {
-            position: relative;
-            z-index: 2;
-        }
-        .header-account-preview {
-            position: absolute;
-            top: 0;
-            right: 0;
-            min-width: 12.75rem;
-            max-width: min(18rem, calc(100vw - 1.5rem));
-            padding: 0.7rem 0.85rem 0.85rem;
-            box-sizing: border-box;
-            border-radius: var(--theme-box-radius, 1.375rem);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
-            background-image: none;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity 160ms ease, visibility 160ms ease;
-            z-index: 1;
-        }
-        .header-account-preview__head {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.55rem;
-            margin-bottom: 0.75rem;
-            min-width: 0;
-        }
-        .header-account-preview__identity {
-            min-width: 0;
-            flex: 1 1 auto;
-            padding-top: 0.15rem;
-        }
-        .header-account-preview__icon-slot {
-            width: 2.75rem;
-            height: 2.75rem;
-            flex-shrink: 0;
-            pointer-events: none;
-        }
-        #header-account-wrap.is-signed-in:hover .header-account-preview,
-        #header-account-wrap.is-signed-in:focus-within .header-account-preview {
-            opacity: 1;
-            visibility: visible;
-        }
-
         #expanding-menu-wrapper {
             position: relative;
             overflow: visible !important;
@@ -1245,44 +1191,9 @@
                 class="hidden opacity-0 translate-y-1 pointer-events-none select-none text-sm font-black text-primary transition-all duration-300"
                 style="text-shadow: 0 0 12px rgba(var(--theme-primary-rgb), calc(0.55 * var(--glow-intensity, 1)));"
                 aria-live="polite">+0</span>
-            <div id="header-account-wrap" class="relative inline-flex items-center justify-center">
-                <a href="/signin" data-spa-link id="header-account-btn"
-                    class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
-                    title="Sign in" aria-label="Sign in" aria-describedby="header-account-preview"></a>
-                <div id="header-account-preview"
-                    class="header-account-preview glass-panel"
-                    role="tooltip"
-                    aria-hidden="true">
-                    <div class="header-account-preview__head">
-                        <div class="header-account-preview__identity">
-                            <p id="hap-name" class="text-sm font-bold text-white truncate leading-tight">Guest</p>
-                            <div class="flex items-center gap-1.5 mt-1 min-w-0">
-                                <span class="text-[0.6rem] font-bold uppercase tracking-widest text-slate-500 shrink-0">ID</span>
-                                <span id="hap-id" class="font-mono text-xs font-bold tracking-wider text-slate-300 truncate">—</span>
-                            </div>
-                        </div>
-                        <span class="header-account-preview__icon-slot" aria-hidden="true"></span>
-                    </div>
-                    <div class="flex flex-col gap-1.5 text-[0.7rem] font-bold">
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">XP</span>
-                            <span id="hap-xp" class="text-slate-200 tracking-wide tabular-nums">0 / 100</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">Rank</span>
-                            <span id="hap-rank" class="text-primary tabular-nums">—</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <span class="text-slate-500 uppercase tracking-wider text-[0.58rem]">Streak</span>
-                            <span class="flex items-center gap-1 text-amber-400">
-                                <span class="material-symbols-outlined text-[0.8rem]" aria-hidden="true">local_fire_department</span>
-                                <span id="hap-streak" class="tabular-nums">0</span>
-                                <span class="text-slate-500 font-bold">day</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <a href="/signin" data-spa-link id="header-account-btn"
+                class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
+                title="Sign in" aria-label="Sign in"></a>
         </div>
     </header>
 
@@ -1680,7 +1591,7 @@
     <script src="screenshot.js?v=2"></script>
     <script src="js/config/public.js?v=9"></script>
     <script src="js/cookies.js?v=3"></script>
-    <script src="settings.js?v=86"></script>
+    <script src="settings.js?v=85"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=11"></script>
     <!-- Auth + data API (before router) -->
@@ -1699,7 +1610,7 @@
     <script src="js/ui/player-profile-card.js?v=3"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
     <script src="js/ui/contact.js?v=204"></script>
-    <script src="js/auth/header.js?v=10"></script>
+    <script src="js/auth/header.js?v=9"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
