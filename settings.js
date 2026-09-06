@@ -4886,11 +4886,14 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-color: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
+            /* Opacity on this node kills backdrop-filter — hide with visibility instead */
+            opacity: 1 !important;
+            visibility: hidden;
+            pointer-events: none;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
-            /* Keep a usable width even when flex/search clones shrink the wrapper */
             width: 13.5rem !important;
             min-width: 13.5rem !important;
             max-width: none !important;
@@ -4904,9 +4907,25 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             transform: translateY(-50%) !important;
             margin-top: 0 !important;
             margin-left: 8px !important;
+            transition: none !important;
+        }
+        .custom-popover.is-open {
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+        /* Fixed portal copy used inside global search (escapes parent glass stacking) */
+        .custom-popover.is-portaled {
+            position: fixed !important;
+            top: var(--popover-top, 0px) !important;
+            left: var(--popover-left, 0px) !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            margin: 0 !important;
+            z-index: 120 !important;
         }
 
-        /* Glass-style input — same menu fill as popover shell */
+        /* Nested controls — solid menu fill (blur lives on the shell) */
         .custom-popover input {
             width: 100% !important;
             min-width: 0 !important;
@@ -4916,8 +4935,6 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             color: var(--theme-fg-strong, #fff) !important;
             -moz-appearance: textfield !important;
             appearance: textfield !important;
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
             border-radius: 0.75rem !important;
         }
         .custom-popover input:focus {
@@ -4964,36 +4981,75 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 })();
 
 function clearCustomPopoverStackBoost(popover) {
-    const item = popover && popover.closest('.search-result-item');
+    const item = popover && popover._popoverResultItem;
     if (item) item.style.zIndex = '';
 }
 
+function restoreCustomPopoverHome(popover) {
+    if (!popover) return;
+    popover.classList.remove('is-open', 'is-portaled', 'opacity-100', 'pointer-events-auto');
+    popover.classList.add('opacity-0', 'pointer-events-none');
+    popover.style.top = '';
+    popover.style.left = '';
+    popover.style.right = '';
+    popover.style.bottom = '';
+    popover.style.transform = '';
+    popover.style.margin = '';
+    popover.style.zIndex = '';
+    popover.style.position = '';
+    popover.style.removeProperty('--popover-top');
+    popover.style.removeProperty('--popover-left');
+    if (popover._popoverHome && popover.parentElement !== popover._popoverHome) {
+        popover._popoverHome.appendChild(popover);
+    }
+    clearCustomPopoverStackBoost(popover);
+}
+
 function closeAllCustomPopovers() {
-    document.querySelectorAll('.custom-popover').forEach(p => {
-        p.classList.remove('opacity-100', 'pointer-events-auto');
-        p.classList.add('opacity-0', 'pointer-events-none');
-        clearCustomPopoverStackBoost(p);
-    });
+    document.querySelectorAll('.custom-popover').forEach(restoreCustomPopoverHome);
+}
+
+function openCustomPopover(btn, popover) {
+    popover._popoverTrigger = btn;
+    popover._popoverHome = popover._popoverHome || popover.parentElement;
+
+    const searchOverlay = document.getElementById('global-settings-search-overlay');
+    const inSearch = !!(searchOverlay && searchOverlay.contains(btn));
+
+    if (inSearch) {
+        // Result cards use glass/backdrop-filter; nested blur cannot frost siblings.
+        // Portal to the overlay and pin with fixed coords (same material as the menu).
+        const rect = btn.getBoundingClientRect();
+        const resultItem = btn.closest('.search-result-item');
+        popover._popoverResultItem = resultItem || null;
+        if (resultItem) resultItem.style.zIndex = '40';
+
+        searchOverlay.appendChild(popover);
+        popover.classList.add('is-portaled');
+        popover.style.setProperty('--popover-top', `${Math.round(rect.bottom + 6)}px`);
+        popover.style.setProperty('--popover-left', `${Math.round(rect.left)}px`);
+    } else {
+        const item = popover.closest('.search-result-item');
+        popover._popoverResultItem = item || null;
+        if (item) item.style.zIndex = '40';
+    }
+
+    popover.classList.remove('opacity-0', 'pointer-events-none');
+    popover.classList.add('is-open', 'opacity-100', 'pointer-events-auto');
+    const inp = popover.querySelector('input');
+    if (inp) inp.focus();
 }
 
 // Toggle popover open/close
 window.toggleCustomPopover = function (btn) {
     const popover = btn.nextElementSibling;
     if (!popover || !popover.classList.contains('custom-popover')) return;
-    const isShowing = popover.classList.contains('opacity-100');
+    const isShowing = popover.classList.contains('is-open');
 
-    // Close all other popovers first
     closeAllCustomPopovers();
 
     if (!isShowing) {
-        popover.classList.remove('opacity-0', 'pointer-events-none');
-        popover.classList.add('opacity-100', 'pointer-events-auto');
-        // Search result cards each create a stacking context (glass/backdrop).
-        // Raise the active card so the popover paints above neighbors.
-        const item = popover.closest('.search-result-item');
-        if (item) item.style.zIndex = '40';
-        const inp = popover.querySelector('input');
-        if (inp) inp.focus();
+        openCustomPopover(btn, popover);
     }
 };
 
@@ -5002,11 +5058,10 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     const popover = btn.closest('.custom-popover');
     const input = popover.querySelector('input');
     const val = input.value.trim();
+    const triggerBtn = popover._popoverTrigger || popover.previousElementSibling;
 
     if (!val) {
-        popover.classList.remove('opacity-100', 'pointer-events-auto');
-        popover.classList.add('opacity-0', 'pointer-events-none');
-        clearCustomPopoverStackBoost(popover);
+        restoreCustomPopoverHome(popover);
         return;
     }
 
@@ -5040,7 +5095,7 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     if (typeof triggerSave === 'function') triggerSave();
 
     // UI update — set button text to the entered value
-    const container = btn.closest('[data-setting]');
+    const container = (triggerBtn && triggerBtn.closest('[data-setting]')) || btn.closest('[data-setting]');
     if (container) {
         // Reset all buttons in this group
         container.querySelectorAll('.opt-btn').forEach(b => {
@@ -5050,8 +5105,8 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
             }
         });
 
-        // Set the trigger button (the one right before the popover div) as active
-        const optBtn = popover.previousElementSibling;
+        // Set the trigger button as active
+        const optBtn = triggerBtn;
         if (optBtn) {
             optBtn.classList.add('active');
             // Save original text so we can restore it later
@@ -5064,15 +5119,13 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     }
 
     // Close the popover
-    popover.classList.remove('opacity-100', 'pointer-events-auto');
-    popover.classList.add('opacity-0', 'pointer-events-none');
-    clearCustomPopoverStackBoost(popover);
+    restoreCustomPopoverHome(popover);
     input.value = '';
 };
 
 // Close popover when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.custom-popover-wrapper')) {
+    if (!e.target.closest('.custom-popover-wrapper') && !e.target.closest('.custom-popover')) {
         closeAllCustomPopovers();
     }
 });
