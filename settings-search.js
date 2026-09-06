@@ -180,20 +180,29 @@
             #global-settings-search-overlay .gss-results-panel {
                 display: none;
                 max-height: min(70vh, 560px);
+                overflow-x: hidden;
                 overflow-y: auto;
                 border-radius: 1rem;
-                padding: 0.75rem;
+                /* No right pad — that floats the scrollbar inward from the edge */
+                padding: 0.75rem 0 0.75rem 0.75rem;
+                box-sizing: border-box;
+                /* Clip the thumb to the rounded card so it can't stick out the corners */
+                clip-path: inset(0 round 1rem);
+                -webkit-clip-path: inset(0 round 1rem);
                 scrollbar-width: thin;
                 scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
             #global-settings-search-overlay .gss-results-panel.active { display: block; }
+            /* Match the left pad on the content so L/R stay equal with the bar on the edge */
+            #global-settings-search-overlay #global-settings-search-results {
+                padding-right: 0.75rem;
+                box-sizing: border-box;
+            }
             #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar {
                 width: 4px;
             }
-            /* Keep the thumb inside the rounded corners (same layout as before) */
             #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-track {
                 background: transparent;
-                margin-block: 0.75rem;
             }
             #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-thumb {
                 background: rgba(255,255,255,0.1);
@@ -384,7 +393,16 @@
     }
 
     function injectOverlay() {
-        if (document.getElementById('global-settings-search-overlay')) return;
+        // Rebuild overlay so a stale DOM from an older CSS approach can't linger
+        const existingOverlay = document.getElementById('global-settings-search-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+            overlayEl = null;
+            searchInput = null;
+            searchClearBtn = null;
+            resultsPanel = null;
+            resultsContainer = null;
+        }
         injectStyles();
 
         overlayEl = document.createElement('div');
@@ -886,7 +904,6 @@
     function openOverlay() {
         if (!isShortcutContextAllowed()) return;
         if (!isQuickSettingsEnabled()) return;
-        injectStyles();
         injectOverlay();
         updateOverlayPosition();
         isOpen = true;
