@@ -290,7 +290,7 @@
         if (notification) {
             if (notification.type === 'friend_accepted') iconText = 'check_circle';
             else if (notification.type === 'friend_request') iconText = 'person_add';
-            else if (notification.type === 'friend_online') iconText = 'sensors';
+            else if (notification.type === 'friend_online') iconText = 'account_circle';
             else if (String(notification.type || '').indexOf('duel_') === 0) iconText = 'swords';
         }
 
