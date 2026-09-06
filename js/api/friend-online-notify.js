@@ -1,14 +1,12 @@
 /**
- * Friend online alerts — login summary + live offline→online notifications.
+ * Friend online alerts — page-load summary + live offline→online notifications.
  * Public API: window.usertypoFriendOnlineNotify
  */
 (function () {
     var nativeSetInterval = window.setInterval.bind(window);
     var nativeClearInterval = window.clearInterval.bind(window);
 
-    var POLL_MS = 30000;
-    var LOGIN_PENDING_KEY = 'usertypo_friend_online_pending';
-    var LOGIN_DONE_KEY = 'usertypo_friend_online_login_done';
+    var POLL_MS = 15000;
 
     var pollTimer = null;
     var started = false;
@@ -17,6 +15,7 @@
     var onlineMap = {};
     var mapSeeded = false;
     var checkInFlight = false;
+    var summaryShownThisLoad = false;
 
     function friendLabel(friend) {
         if (window.usertypoProfiles && typeof window.usertypoProfiles.publicUsername === 'function') {
@@ -37,48 +36,6 @@
         if (list.length === 2) return list[0] + ' and ' + list[1] + ' are online';
         var head = list.slice(0, -1).join(', ');
         return head + ', and ' + list[list.length - 1] + ' are online';
-    }
-
-    function markLoginPending() {
-        try { sessionStorage.setItem(LOGIN_PENDING_KEY, '1'); } catch (e) { /* ignore */ }
-    }
-
-    function peekLoginPending() {
-        try {
-            if (sessionStorage.getItem(LOGIN_PENDING_KEY) === '1') return true;
-        } catch (e) { /* ignore */ }
-        try {
-            var welcome = sessionStorage.getItem('usertypo_auth_welcome');
-            if (welcome === 'new' || welcome === 'back') return true;
-        } catch (e) { /* ignore */ }
-        return window.__usertypoPendingWelcome === 'new'
-            || window.__usertypoPendingWelcome === 'back';
-    }
-
-    function consumeLoginPending() {
-        var pending = peekLoginPending();
-        try { sessionStorage.removeItem(LOGIN_PENDING_KEY); } catch (e) { /* ignore */ }
-        return pending;
-    }
-
-    function loginSummaryAlreadyDone() {
-        try { return sessionStorage.getItem(LOGIN_DONE_KEY) === '1'; } catch (e) { return false; }
-    }
-
-    function markLoginSummaryDone() {
-        try { sessionStorage.setItem(LOGIN_DONE_KEY, '1'); } catch (e) { /* ignore */ }
-    }
-
-    function clearLoginSummaryDone() {
-        try { sessionStorage.removeItem(LOGIN_DONE_KEY); } catch (e) { /* ignore */ }
-    }
-
-    function hookAuthWelcome() {
-        var previous = window.usertypoSetAuthWelcome;
-        window.usertypoSetAuthWelcome = function (kind) {
-            if (typeof previous === 'function') previous(kind);
-            if (kind === 'new' || kind === 'back') markLoginPending();
-        };
     }
 
     function buildOnlineMap(friends) {
@@ -115,11 +72,10 @@
         }
     }
 
-    async function maybeLoginSummary() {
-        if (loginSummaryAlreadyDone()) return;
-        if (!consumeLoginPending()) return;
-
-        markLoginSummaryDone();
+    /** Once per full page load: toast + save who's currently online. */
+    async function showOnlineSummaryIfAny() {
+        if (summaryShownThisLoad) return;
+        summaryShownThisLoad = true;
         try {
             if (!window.usertypoFriends) return;
             var dash = await window.usertypoFriends.loadDashboard();
@@ -135,12 +91,12 @@
             if (!title) return;
 
             await persistOnlineNotice(title, {
-                kind: 'login_summary',
+                kind: 'load_summary',
                 friend_user_ids: online.map(function (f) { return f.user_id; }),
                 names: names,
             });
         } catch (err) {
-            console.warn('[usertypo friend-online] login summary failed', err);
+            console.warn('[usertypo friend-online] load summary failed', err);
         }
     }
 
@@ -213,18 +169,11 @@
         }, POLL_MS);
     }
 
-    async function onSignedIn(isFreshLogin) {
-        if (sessionActive) {
-            if (isFreshLogin) await maybeLoginSummary();
-            return;
-        }
+    async function onSignedIn() {
+        if (sessionActive) return;
         sessionActive = true;
-        if (isFreshLogin) {
-            await maybeLoginSummary();
-            if (!mapSeeded) await seedMapWithoutNotify();
-        } else {
-            await seedMapWithoutNotify();
-        }
+        await showOnlineSummaryIfAny();
+        if (!mapSeeded) await seedMapWithoutNotify();
         startPolling();
     }
 
@@ -233,7 +182,6 @@
         stopPolling();
         onlineMap = {};
         mapSeeded = false;
-        clearLoginSummaryDone();
     }
 
     function bindAuth() {
@@ -242,14 +190,14 @@
             var signedIn = !!(state && state.isSignedIn && state.user);
             if (wasSignedIn === null) {
                 wasSignedIn = signedIn;
-                if (signedIn) onSignedIn(peekLoginPending());
+                if (signedIn) onSignedIn();
                 return;
             }
 
             if (signedIn && !wasSignedIn) {
-                markLoginPending();
                 sessionActive = false;
-                onSignedIn(true);
+                summaryShownThisLoad = false;
+                onSignedIn();
             } else if (!signedIn && wasSignedIn) {
                 onSignedOut();
             }
@@ -260,7 +208,6 @@
     function start() {
         if (started) return;
         started = true;
-        hookAuthWelcome();
 
         if (!window.usertypoAuth) return;
         window.usertypoAuth.ready().then(function () {
