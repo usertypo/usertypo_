@@ -586,17 +586,22 @@
             z-index: 1;
         }
 
-        /* Header account hover preview — open-menu glass + settings-tab radius */
+        /* Header account hover preview — glass sits behind icon (icon in top-right) */
         #header-account-wrap {
+            position: relative;
             z-index: 45;
+        }
+        #header-account-btn {
+            position: relative;
+            z-index: 2;
         }
         .header-account-preview {
             position: absolute;
-            top: calc(100% + 0.55rem);
+            top: 0;
             right: 0;
-            min-width: 11.5rem;
+            min-width: 12.75rem;
             max-width: min(18rem, calc(100vw - 1.5rem));
-            padding: 0.85rem 1rem;
+            padding: 0.7rem 0.85rem 0.85rem;
             box-sizing: border-box;
             border-radius: var(--theme-box-radius, 1.375rem);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -608,15 +613,31 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transform: translateY(0.3rem);
-            transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
-            z-index: 50;
+            transition: opacity 160ms ease, visibility 160ms ease;
+            z-index: 1;
+        }
+        .header-account-preview__head {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.55rem;
+            margin-bottom: 0.75rem;
+            min-width: 0;
+        }
+        .header-account-preview__identity {
+            min-width: 0;
+            flex: 1 1 auto;
+            padding-top: 0.15rem;
+        }
+        .header-account-preview__icon-slot {
+            width: 2.75rem;
+            height: 2.75rem;
+            flex-shrink: 0;
+            pointer-events: none;
         }
         #header-account-wrap.is-signed-in:hover .header-account-preview,
         #header-account-wrap.is-signed-in:focus-within .header-account-preview {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
         }
 
         #expanding-menu-wrapper {
@@ -1232,10 +1253,15 @@
                     class="header-account-preview glass-panel"
                     role="tooltip"
                     aria-hidden="true">
-                    <p id="hap-name" class="text-sm font-bold text-white truncate leading-tight">Guest</p>
-                    <div class="flex items-center gap-1.5 mt-1 mb-3">
-                        <span class="text-[0.6rem] font-bold uppercase tracking-widest text-slate-500">ID</span>
-                        <span id="hap-id" class="font-mono text-xs font-bold tracking-wider text-slate-300">—</span>
+                    <div class="header-account-preview__head">
+                        <div class="header-account-preview__identity">
+                            <p id="hap-name" class="text-sm font-bold text-white truncate leading-tight">Guest</p>
+                            <div class="flex items-center gap-1.5 mt-1 min-w-0">
+                                <span class="text-[0.6rem] font-bold uppercase tracking-widest text-slate-500 shrink-0">ID</span>
+                                <span id="hap-id" class="font-mono text-xs font-bold tracking-wider text-slate-300 truncate">—</span>
+                            </div>
+                        </div>
+                        <span class="header-account-preview__icon-slot" aria-hidden="true"></span>
                     </div>
                     <div class="flex flex-col gap-1.5 text-[0.7rem] font-bold">
                         <div class="flex items-center justify-between gap-4">
