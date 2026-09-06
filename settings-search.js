@@ -187,15 +187,16 @@
             }
             #global-settings-search-overlay .gss-results-panel.active { display: block; }
             /*
-             * Scroll fills the panel so the thumb sits on the right edge (clipped by
-             * overflow:hidden + border-radius). Equal content padding L/R.
+             * No horizontal padding on the scroller — that insets the thumb from the
+             * right edge. Side inset is on the cards so L/R match and the bar is flush.
              */
             #global-settings-search-overlay #global-settings-search-results {
                 max-height: min(70vh, 560px);
                 overflow-y: auto;
                 overflow-x: hidden;
                 box-sizing: border-box;
-                padding: 0.75rem;
+                padding: 0.75rem 0;
+                margin: 0;
                 scrollbar-width: thin;
                 scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
@@ -213,12 +214,14 @@
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
                 padding: 0.75rem 1rem;
-                margin-bottom: 0.5rem;
+                margin: 0 0.75rem 0.5rem;
                 position: relative;
                 z-index: 1;
                 overflow: visible;
             }
-            #global-settings-search-overlay .search-result-item:last-child { margin-bottom: 0; }
+            #global-settings-search-overlay .search-result-item:last-child {
+                margin-bottom: 0;
+            }
             #global-settings-search-overlay .search-result-item:has(.custom-popover.is-open) {
                 z-index: 40;
             }
@@ -386,6 +389,7 @@
             #global-settings-search-overlay .gss-empty {
                 text-align: center;
                 padding: 2rem 1rem;
+                margin: 0 0.75rem;
                 color: #94a3b8;
                 font-size: 0.875rem;
                 font-weight: 600;
@@ -897,6 +901,7 @@
     function openOverlay() {
         if (!isShortcutContextAllowed()) return;
         if (!isQuickSettingsEnabled()) return;
+        injectStyles();
         injectOverlay();
         updateOverlayPosition();
         isOpen = true;
