@@ -21,3 +21,9 @@ D1 schema: `schema.sql` — run after creating the database:
 ```bash
 npm run d1:migrate:dev --prefix workers/notifications
 ```
+
+To allow `friend_online` rows on an existing database (rebuilds the table CHECK):
+
+```bash
+npm run d1:migrate:friend-online:dev --prefix workers/notifications
+```

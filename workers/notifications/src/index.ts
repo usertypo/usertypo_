@@ -96,7 +96,7 @@ async function insertNotification(
   env: Env,
   input: {
     userId: string;
-    type: 'friend_request' | 'friend_accepted';
+    type: 'friend_request' | 'friend_accepted' | 'friend_online';
     title: string;
     body: string;
     data: Record<string, unknown>;
@@ -191,14 +191,42 @@ async function clearAllForUser(env: Env, userId: string) {
   return { ok: true, deleted: result.meta.changes || 0 };
 }
 
+async function emitFriendOnlineNotification(
+  env: Env,
+  actorId: string,
+  body: Record<string, unknown>,
+): Promise<{ ok: true; notification: ReturnType<typeof toClientRow>; kind: string }> {
+  const title = String(body.title || '').trim();
+  if (!title) throw new Error('missing_title');
+  if (title.length > 240) throw new Error('title_too_long');
+
+  const bodyText = String(body.body || '').trim().slice(0, 500);
+  const dataRaw = body.data && typeof body.data === 'object'
+    ? body.data as Record<string, unknown>
+    : {};
+
+  const row = await insertNotification(env, {
+    userId: actorId,
+    type: 'friend_online',
+    title,
+    body: bodyText,
+    data: dataRaw,
+  });
+  return { ok: true, notification: toClientRow(row), kind: 'friend_online' };
+}
+
 async function emitFriendNotification(
   env: Env,
   actorId: string,
   userToken: string,
   body: Record<string, unknown>,
 ): Promise<{ ok: true; notification: ReturnType<typeof toClientRow>; kind: string }> {
-  const requestId = String(body.request_id || '').trim();
   const typeHint = String(body.type || '').trim();
+  if (typeHint === 'friend_online') {
+    return emitFriendOnlineNotification(env, actorId, body);
+  }
+
+  const requestId = String(body.request_id || '').trim();
   if (!requestId) throw new Error('missing_request_id');
 
   const fr = await fetchFriendRequest(env, requestId, userToken);
@@ -292,7 +320,12 @@ function statusForAuthError(err: unknown): number {
   const msg = err instanceof Error ? err.message : String(err || '');
   if (msg === 'missing_token' || msg === 'invalid_token') return 401;
   if (msg === 'forbidden' || msg === 'request_not_pending' || msg === 'not_friends') return 403;
-  if (msg === 'request_not_found' || msg === 'missing_request_id') return 400;
+  if (
+    msg === 'request_not_found'
+    || msg === 'missing_request_id'
+    || msg === 'missing_title'
+    || msg === 'title_too_long'
+  ) return 400;
   if (msg === 'supabase_not_configured') return 500;
   return 400;
 }

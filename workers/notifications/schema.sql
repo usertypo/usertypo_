@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('friend_request', 'friend_accepted')),
+  type TEXT NOT NULL CHECK (type IN ('friend_request', 'friend_accepted', 'friend_online')),
   title TEXT NOT NULL,
   body TEXT,
   data TEXT NOT NULL DEFAULT '{}',

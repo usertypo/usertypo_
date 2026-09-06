@@ -8,7 +8,9 @@
     "deploy:dev": "wrangler deploy --env dev",
     "deploy:prod": "wrangler deploy --env production",
     "d1:migrate:dev": "wrangler d1 execute usertypo-notifications-dev --env dev --remote --file=./schema.sql",
-    "d1:migrate:prod": "wrangler d1 execute usertypo-notifications --env production --remote --file=./schema.sql"
+    "d1:migrate:prod": "wrangler d1 execute usertypo-notifications --env production --remote --file=./schema.sql",
+    "d1:migrate:friend-online:dev": "wrangler d1 execute usertypo-notifications-dev --env dev --remote --file=./migrate_friend_online.sql",
+    "d1:migrate:friend-online:prod": "wrangler d1 execute usertypo-notifications --env production --remote --file=./migrate_friend_online.sql"
   },
   "dependencies": {
     "@clerk/backend": "^3.11.7",
