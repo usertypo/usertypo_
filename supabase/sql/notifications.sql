@@ -390,7 +390,7 @@ declare
   v_friends jsonb := '[]'::jsonb;
   v_incoming jsonb := '[]'::jsonb;
   v_outgoing jsonb := '[]'::jsonb;
-  v_online_cutoff timestamptz := now() - interval '2 minutes';
+  v_online_cutoff timestamptz := now() - interval '45 seconds';
 begin
   if v_me is null then
     return jsonb_build_object(

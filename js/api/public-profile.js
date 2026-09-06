@@ -63,6 +63,9 @@
             title: raw.title || (window.usertypoProgression && window.usertypoProgression.levelTitle
                 ? window.usertypoProgression.levelTitle(level)
                 : 'Novice'),
+            rank: raw.rank != null && isFinite(Number(raw.rank)) && Number(raw.rank) > 0
+                ? Math.floor(Number(raw.rank))
+                : null,
             summary: {
                 tests: Math.max(0, Math.floor(Number(summary.tests) || 0)),
                 totalSeconds: Math.max(0, Math.floor(Number(summary.total_seconds) || 0)),

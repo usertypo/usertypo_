@@ -80,6 +80,38 @@
         }
     }
 
+    /** Persist a friend-online notice for the current user and toast it immediately. */
+    async function emitFriendOnlineNotification(payload) {
+        if (!useNotificationsWorker()) {
+            var ephemeral = addEphemeral({
+                type: 'friend_online',
+                title: (payload && payload.title) || 'Friend is online',
+                body: (payload && payload.body) || '',
+                data: (payload && payload.data) || {},
+            });
+            return { ok: true, notification: ephemeral, kind: 'friend_online', ephemeral: true };
+        }
+        try {
+            var result = await workerFetch('/notifications/emit', {
+                method: 'POST',
+                body: JSON.stringify(Object.assign({ type: 'friend_online' }, payload || {})),
+            });
+            if (result && result.notification) {
+                ingestNotification(result.notification, { toast: true });
+            }
+            return result;
+        } catch (err) {
+            console.warn('[usertypo notifications] friend_online emit failed', err);
+            var fallback = addEphemeral({
+                type: 'friend_online',
+                title: (payload && payload.title) || 'Friend is online',
+                body: (payload && payload.body) || '',
+                data: (payload && payload.data) || {},
+            });
+            return { ok: true, notification: fallback, kind: 'friend_online', ephemeral: true, error: err };
+        }
+    }
+
     async function clearAllMine() {
         if (!useNotificationsWorker()) return { skipped: true, reason: 'not_configured' };
         try {
@@ -258,6 +290,7 @@
         if (notification) {
             if (notification.type === 'friend_accepted') iconText = 'check_circle';
             else if (notification.type === 'friend_request') iconText = 'person_add';
+            else if (notification.type === 'friend_online') iconText = 'account_circle';
             else if (String(notification.type || '').indexOf('duel_') === 0) iconText = 'swords';
         }
 
@@ -466,6 +499,7 @@
         var type = String(n && n.type || '');
         if (type === 'friend_accepted' || type === 'duel_ready') return 'check_circle';
         if (type === 'friend_request') return 'person_add';
+        if (type === 'friend_online') return 'account_circle';
         if (type.indexOf('duel_') === 0 || type.indexOf('match_') === 0) return 'swords';
         if (type.indexOf('invalid') !== -1) return 'error';
         return 'notifications';
@@ -855,6 +889,7 @@
         showPending: showPending,
         resolvePending: resolvePending,
         emitFriendNotification: emitFriendNotification,
+        emitFriendOnlineNotification: emitFriendOnlineNotification,
         clearAllMine: clearAllMine,
     };
 })();

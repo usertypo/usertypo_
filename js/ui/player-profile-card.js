@@ -296,7 +296,15 @@
         if (testsEl) testsEl.textContent = formatCompact(card.summary && card.summary.tests);
         if (timeEl) timeEl.textContent = formatDuration(card.summary && card.summary.totalSeconds);
         if (wordsEl) wordsEl.textContent = formatCompact(card.summary && card.summary.totalWords);
-        if (rankEl) rankEl.textContent = '—';
+        if (rankEl) {
+            if (window.usertypoLeaderboards && typeof window.usertypoLeaderboards.formatGlobalRankLabel === 'function') {
+                rankEl.textContent = window.usertypoLeaderboards.formatGlobalRankLabel(card.rank);
+            } else {
+                rankEl.textContent = card.rank != null && Number(card.rank) > 0
+                    ? '#' + Number(card.rank).toLocaleString()
+                    : '—';
+            }
+        }
 
         fillBest('time', 15, card.bests['time:15']);
         fillBest('time', 30, card.bests['time:30']);

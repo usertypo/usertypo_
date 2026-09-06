@@ -1,5 +1,4 @@
--- One lean RPC for the mid-page player profile box.
--- Enforces profiles.profile_visibility (public | friends | private).
+-- Profile card: include all-time timed 30s global rank.
 create or replace function public.get_public_profile_card(p_user_id text)
 returns jsonb
 language plpgsql
@@ -16,6 +15,7 @@ declare
   v_bests jsonb;
   v_xp_to_next integer;
   v_visibility text;
+  v_rank bigint;
 begin
   if v_me is null or trim(v_me) = '' then
     return jsonb_build_object('error', 'not_authenticated');
@@ -93,6 +93,57 @@ begin
     order by ts.mode, ts.amount, ts.wpm desc, ts.accuracy desc nulls last
   ) b;
 
+  -- All-time timed 30s global rank (same eligibility as get_my_leaderboard_rank).
+  v_rank := null;
+  if coalesce(v_profile.show_on_leaderboard, true) then
+    with user_test_counts as (
+      select
+        ts.user_id,
+        count(*)::integer as completed_tests
+      from public.typing_sessions ts
+      where ts.failed = false
+      group by ts.user_id
+    ),
+    filtered_sessions as (
+      select
+        ts.user_id,
+        ts.wpm,
+        ts.accuracy,
+        ts.created_at
+      from public.typing_sessions ts
+      inner join public.profiles p on p.user_id = ts.user_id
+      left join user_test_counts utc on utc.user_id = ts.user_id
+      where ts.mode = 'time'
+        and ts.amount = 30
+        and ts.failed = false
+        and ts.accuracy >= 75
+        and ts.wpm >= 30
+        and p.show_on_leaderboard = true
+        and coalesce(utc.completed_tests, 0) >= 50
+    ),
+    best_per_user as (
+      select distinct on (fs.user_id)
+        fs.user_id,
+        fs.wpm,
+        fs.accuracy,
+        fs.created_at as session_created_at
+      from filtered_sessions fs
+      order by fs.user_id, fs.wpm desc, fs.accuracy desc nulls last, fs.created_at asc
+    ),
+    ranked as (
+      select
+        row_number() over (
+          order by bpu.wpm desc, bpu.accuracy desc nulls last, bpu.session_created_at asc
+        ) as rank,
+        bpu.user_id
+      from best_per_user bpu
+    )
+    select r.rank
+    into v_rank
+    from ranked r
+    where r.user_id = v_target;
+  end if;
+
   return jsonb_build_object(
     'user_id', v_profile.user_id,
     'public_id', v_profile.public_id,
@@ -113,6 +164,7 @@ begin
     'xp_to_next', v_xp_to_next,
     'current_streak', coalesce(v_prog.current_streak, 0),
     'title', public.level_title(coalesce(v_prog.level, 1)),
+    'rank', v_rank,
     'summary', coalesce(v_summary, jsonb_build_object('tests', 0, 'total_seconds', 0, 'total_words', 0)),
     'bests', coalesce(v_bests, '[]'::jsonb)
   );
