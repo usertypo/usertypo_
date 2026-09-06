@@ -200,7 +200,14 @@ async function requireCallerProfile(env: Env, authHeader: string | null) {
   if (!profile?.user_id) {
     return { error: json(env, 401, { error: 'profile_required' }) };
   }
-  return { profile };
+  return {
+    profile: {
+      user_id: profile.user_id,
+      username: profile.username ?? null,
+      avatar_url: profile.avatar_url ?? null,
+      show_on_leaderboard: profile.show_on_leaderboard ?? null,
+    },
+  };
 }
 
 async function handleTop(env: Env, body: Record<string, unknown>, authHeader: string | null, request: Request) {
