@@ -869,7 +869,8 @@
                             captureArea: captureArea,
                             button: screenshotBtn,
                             hideSelectors: ['#stats-action-buttons'],
-                            padding: 56
+                            padding: 56,
+                            injectLogo: true,
                         });
                     }
                 }, { signal: signal });

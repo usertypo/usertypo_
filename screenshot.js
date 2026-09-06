@@ -490,6 +490,139 @@
         }
     }
 
+    async function colorMaskImage(url, fillColor, dilatePasses) {
+        const passes = Math.max(0, dilatePasses == null ? 2 : dilatePasses);
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const c = document.createElement('canvas');
+                c.width = img.naturalWidth;
+                c.height = img.naturalHeight;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const tmp = document.createElement('canvas');
+                tmp.width = 1;
+                tmp.height = 1;
+                const tmpCtx = tmp.getContext('2d');
+                tmpCtx.fillStyle = fillColor;
+                tmpCtx.fillRect(0, 0, 1, 1);
+                const [fr, fg, fb] = tmpCtx.getImageData(0, 0, 1, 1).data;
+                const imageData = ctx.getImageData(0, 0, c.width, c.height);
+                const d = imageData.data;
+                const w = c.width;
+                const h = c.height;
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] > 0) {
+                        d[i] = fr;
+                        d[i + 1] = fg;
+                        d[i + 2] = fb;
+                        d[i + 3] = 255;
+                    }
+                }
+                for (let pass = 0; pass < passes; pass++) {
+                    const snap = new Uint8ClampedArray(d);
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const idx = (y * w + x) * 4;
+                            if (snap[idx + 3] === 255) continue;
+                            const neighbors = [
+                                idx - 4,
+                                idx + 4,
+                                idx - w * 4,
+                                idx + w * 4,
+                                idx - w * 4 - 4,
+                                idx - w * 4 + 4,
+                                idx + w * 4 - 4,
+                                idx + w * 4 + 4,
+                            ];
+                            for (const ni of neighbors) {
+                                if (ni >= 0 && ni < snap.length && snap[ni + 3] === 255) {
+                                    d[idx] = fr;
+                                    d[idx + 1] = fg;
+                                    d[idx + 2] = fb;
+                                    d[idx + 3] = 255;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+                resolve(c.toDataURL('image/png'));
+            };
+            img.onerror = () => resolve('');
+            img.src = url;
+        });
+    }
+
+    async function loadImageDataUrl(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const c = document.createElement('canvas');
+                c.width = img.naturalWidth;
+                c.height = img.naturalHeight;
+                c.getContext('2d').drawImage(img, 0, 0);
+                resolve(c.toDataURL('image/png'));
+            };
+            img.onerror = () => resolve('');
+            img.src = url;
+        });
+    }
+
+    /** Theme-colored logo layers for share screenshots (matches live header). */
+    async function prepareBrandLogoLayers() {
+        const origin = location.origin;
+        const rootCS = getComputedStyle(document.documentElement);
+        const themePrimary = rootCS.getPropertyValue('--theme-primary').trim() || '#00d0ff';
+        const themeText = rootCS.getPropertyValue('--theme-text').trim() || '#ffffff';
+        const [typ, user, o] = await Promise.all([
+            colorMaskImage(origin + '/logo-assets/typ_.png', themePrimary, 4),
+            colorMaskImage(origin + '/logo-assets/user.png', themeText, 2),
+            loadImageDataUrl(origin + '/logo-assets/o.png'),
+        ]);
+        return { typ, user, o };
+    }
+
+    function injectBrandLogo(cloned, layers) {
+        if (!cloned || !layers || !layers.o) return;
+        const doc = cloned.ownerDocument || document;
+        const logoWrap = doc.createElement('div');
+        logoWrap.setAttribute('data-screenshot-logo', '1');
+        logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-top:-1.1rem;margin-bottom:0.15rem;';
+
+        const logoClip = doc.createElement('div');
+        logoClip.style.cssText = 'position:relative;width:14.388rem;height:6.2rem;overflow:hidden;flex-shrink:0;';
+
+        const logoBox = doc.createElement('div');
+        logoBox.style.cssText = 'position:absolute;left:50%;top:50%;width:19.983rem;height:19.983rem;margin-left:-9.9915rem;margin-top:-9.9915rem;flex-shrink:0;';
+
+        if (layers.typ) {
+            const typImg = doc.createElement('img');
+            typImg.src = layers.typ;
+            typImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
+            logoBox.appendChild(typImg);
+        }
+        if (layers.user) {
+            const userImg = doc.createElement('img');
+            userImg.src = layers.user;
+            userImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;';
+            logoBox.appendChild(userImg);
+        }
+
+        const oImg = doc.createElement('img');
+        oImg.src = layers.o;
+        oImg.alt = 'usertypo_';
+        oImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;z-index:3;';
+        logoBox.appendChild(oImg);
+
+        logoClip.appendChild(logoBox);
+        logoWrap.appendChild(logoClip);
+        cloned.insertBefore(logoWrap, cloned.firstChild);
+    }
+
     async function captureStatsScreenshot(options) {
         const {
             captureArea,
@@ -498,6 +631,7 @@
             scale,
             padding = DEFAULT_PADDING,
             patchCloneRoot,
+            injectLogo = false,
             beforeCapture,
             afterCapture,
         } = options;
@@ -529,10 +663,15 @@
         let rootPatched = false;
         const bgColor = getThemeBackgroundColor();
         const pixelScale = scale || Math.min(window.devicePixelRatio || 1, 2);
+        let logoLayers = null;
 
         try {
             if (typeof beforeCapture === 'function') {
                 await beforeCapture();
+            }
+
+            if (injectLogo) {
+                logoLayers = await prepareBrandLogoLayers();
             }
 
             const rect = captureArea.getBoundingClientRect();
@@ -559,6 +698,7 @@
                     if (original) patchClonedNode(cloned, original);
                     if (!rootPatched && cloned.getAttribute(REF_ATTR)?.endsWith('-root')) {
                         rootPatched = true;
+                        if (logoLayers) injectBrandLogo(cloned, logoLayers);
                         if (typeof patchCloneRoot === 'function') {
                             patchCloneRoot(cloned, captureArea);
                         }
@@ -606,5 +746,7 @@
     global.StatsScreenshot = {
         capture: captureStatsScreenshot,
         getThemeBackgroundColor,
+        prepareBrandLogoLayers,
+        injectBrandLogo,
     };
 })(window);
