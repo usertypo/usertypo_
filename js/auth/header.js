@@ -212,10 +212,8 @@
     function setPreviewOpenState(isSignedIn) {
         var wrap = document.getElementById('header-account-wrap');
         var preview = document.getElementById('header-account-preview');
-        var stats = preview && preview.querySelector('.header-account-chip__stats');
         if (wrap) wrap.classList.toggle('is-signed-in', !!isSignedIn);
         if (preview) preview.setAttribute('aria-hidden', isSignedIn ? 'false' : 'true');
-        if (stats) stats.setAttribute('aria-hidden', isSignedIn ? 'false' : 'true');
     }
 
     function fillAccountPreview(opts) {
@@ -363,9 +361,9 @@
             var publicId = profile && profile.public_id
                 ? String(profile.public_id).toUpperCase()
                 : '—';
-            var xpLabel = progression
+            var xpLabel = (progression
                 ? ((progression.xpIntoLevel || 0) + ' / ' + (progression.xpToNext || 100))
-                : '0 / 100';
+                : '0 / 100') + ' XP';
             var streak = progression && progression.currentStreak != null
                 ? progression.currentStreak
                 : 0;
