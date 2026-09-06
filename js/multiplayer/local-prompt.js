@@ -100,12 +100,17 @@
         return words;
     }
 
+    function flagOn(value) {
+        // UI stores '0'/'1' strings — do not use truthiness ('0' is truthy).
+        return value === true || value === 1 || value === '1';
+    }
+
     function decorateWord(word, index, config) {
         var value = String(word);
-        if (config.nums && index > 0 && index % 11 === 0) {
+        if (flagOn(config && config.nums) && index > 0 && index % 11 === 0) {
             value = String(10 + randomInt(990));
         }
-        if (config.punct) {
+        if (flagOn(config && config.punct)) {
             if (index % 13 === 0) value = value.charAt(0).toUpperCase() + value.slice(1);
             if (index % 9 === 8) value += ['.', ',', '?', '!'][randomInt(4)];
         }
