@@ -179,34 +179,50 @@
             }
             #global-settings-search-overlay .gss-results-panel {
                 display: none;
+                position: relative;
                 max-height: min(70vh, 560px);
-                overflow-x: hidden;
-                overflow-y: auto;
+                overflow: hidden;
                 border-radius: 1rem;
-                /* No right pad — that floats the scrollbar inward from the edge */
-                padding: 0.75rem 0 0.75rem 0.75rem;
+                padding: 0;
                 box-sizing: border-box;
-                /* Clip the thumb to the rounded card so it can't stick out the corners */
-                clip-path: inset(0 round 1rem);
-                -webkit-clip-path: inset(0 round 1rem);
-                scrollbar-width: thin;
-                scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
             #global-settings-search-overlay .gss-results-panel.active { display: block; }
-            /* Match the left pad on the content so L/R stay equal with the bar on the edge */
+            /* Equal pad on all sides. Native bar hidden so it can't steal right space. */
             #global-settings-search-overlay #global-settings-search-results {
-                padding-right: 0.75rem;
+                max-height: min(70vh, 560px);
+                overflow-y: auto;
+                overflow-x: hidden;
                 box-sizing: border-box;
+                padding: 0.75rem;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
-            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar {
+            #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar {
+                width: 0 !important;
+                height: 0 !important;
+                display: none !important;
+            }
+            /* Custom bar on the right edge, starting/ending inside the rounded corners */
+            #global-settings-search-overlay .gss-scrollbar {
+                position: absolute;
+                top: 0.75rem;
+                bottom: 0.75rem;
+                right: 2px;
                 width: 4px;
+                pointer-events: none;
+                opacity: 0;
+                z-index: 5;
             }
-            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-track {
-                background: transparent;
+            #global-settings-search-overlay .gss-results-panel.has-scroll .gss-scrollbar {
+                opacity: 1;
             }
-            #global-settings-search-overlay .gss-results-panel::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.1);
+            #global-settings-search-overlay .gss-scrollbar-thumb {
+                position: absolute;
+                left: 0;
+                width: 100%;
+                min-height: 1.25rem;
                 border-radius: 4px;
+                background: rgba(255,255,255,0.12);
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
@@ -443,6 +459,7 @@
                 </div>
                 <div id="global-settings-search-results-panel" class="gss-results-panel glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
                     <div id="global-settings-search-results"></div>
+                    <div class="gss-scrollbar" aria-hidden="true"><div class="gss-scrollbar-thumb"></div></div>
                 </div>
             </div>
         `;
@@ -452,6 +469,8 @@
         searchClearBtn = document.getElementById('global-settings-search-clear');
         resultsPanel = document.getElementById('global-settings-search-results-panel');
         resultsContainer = document.getElementById('global-settings-search-results');
+        resultsContainer.addEventListener('scroll', syncCustomScrollbar, { passive: true });
+        window.addEventListener('resize', syncCustomScrollbar);
 
         overlayEl.querySelector('[data-gss-close]').addEventListener('click', closeOverlay);
         overlayEl.addEventListener('keydown', (e) => {
@@ -737,6 +756,25 @@
         });
     }
 
+    function syncCustomScrollbar() {
+        if (!resultsPanel || !resultsContainer) return;
+        const thumb = resultsPanel.querySelector('.gss-scrollbar-thumb');
+        if (!thumb) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = resultsContainer;
+        const canScroll = scrollHeight > clientHeight + 1;
+        resultsPanel.classList.toggle('has-scroll', canScroll);
+        if (!canScroll) return;
+
+        const track = resultsPanel.querySelector('.gss-scrollbar');
+        const trackH = track ? track.clientHeight : clientHeight;
+        const thumbH = Math.max(20, (clientHeight / scrollHeight) * trackH);
+        const maxTop = Math.max(0, trackH - thumbH);
+        const top = maxTop === 0 ? 0 : (scrollTop / (scrollHeight - clientHeight)) * maxTop;
+        thumb.style.height = `${thumbH}px`;
+        thumb.style.transform = `translateY(${top}px)`;
+    }
+
     function highlightText(text, query) {
         if (!query) return text;
         const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -751,6 +789,7 @@
         if (!results.length) {
             resultsPanel.classList.add('active');
             resultsContainer.innerHTML = '<p class="gss-empty">No settings were found.</p>';
+            requestAnimationFrame(syncCustomScrollbar);
             return;
         }
 
@@ -799,6 +838,7 @@
             settingsApi.restoreUI(settingsApi.loadSettings());
             resultsContainer.querySelectorAll('input[type="range"].custom-slider').forEach(updateSlider);
         }
+        requestAnimationFrame(syncCustomScrollbar);
     }
 
     async function onSearchInput() {
@@ -834,7 +874,7 @@
         if (!searchInput) return;
         searchInput.value = '';
         searchClearBtn.classList.remove('visible');
-        resultsPanel.classList.remove('active');
+        resultsPanel.classList.remove('active', 'has-scroll');
         resultsContainer.innerHTML = '';
         if (shouldFocus && isOpen) searchInput.focus({ preventScroll: true });
     }
