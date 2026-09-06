@@ -258,6 +258,106 @@
         });
     }
 
+    function parseCssColor(color) {
+        if (!color) return null;
+        const tmp = document.createElement('canvas');
+        tmp.width = 1;
+        tmp.height = 1;
+        const ctx = tmp.getContext('2d');
+        if (!ctx) return null;
+        ctx.fillStyle = '#000';
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+        return { r, g, b, a: a / 255 };
+    }
+
+    function rgbaString(r, g, b, a) {
+        const alpha = Math.max(0, Math.min(1, a));
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    /** Raise alpha so translucent glass still reads as a pill without backdrop-filter. */
+    function solidifyColor(color, minAlpha) {
+        const parsed = parseCssColor(color);
+        if (!parsed) return color || 'rgba(30, 32, 36, 0.85)';
+        return rgbaString(parsed.r, parsed.g, parsed.b, Math.max(parsed.a, minAlpha));
+    }
+
+    function flattenPersonalBestBadge(cloned, original, ocs) {
+        const root = getComputedStyle(document.documentElement);
+        const primaryRgb = root.getPropertyValue('--theme-primary-rgb').trim() || '255, 255, 255';
+        const menuBg = root.getPropertyValue('--theme-menu-bg').trim()
+            || ocs.backgroundColor
+            || 'rgba(30, 32, 36, 0.85)';
+        const glow = Math.min(1, Math.max(0.2, parseFloat(root.getPropertyValue('--glow-intensity')) || 0.5));
+
+        cloned.classList.remove('opacity-0', 'pb-breath-glow');
+        if (!cloned.classList.contains('opacity-100')) cloned.classList.add('opacity-100');
+
+        // Kill effects modern-screenshot rasterizes into smeared blobs.
+        cloned.style.animation = 'none';
+        cloned.style.animationDelay = '0s';
+        cloned.style.transition = 'none';
+        cloned.style.filter = 'none';
+        cloned.style.backdropFilter = 'none';
+        cloned.style.webkitBackdropFilter = 'none';
+
+        // Match live pill geometry / placement (absolute above the WPM label).
+        cloned.style.boxSizing = 'border-box';
+        cloned.style.display = 'flex';
+        cloned.style.flexDirection = 'row';
+        cloned.style.alignItems = 'center';
+        cloned.style.justifyContent = 'flex-start';
+        cloned.style.gap = '0px';
+        cloned.style.position = 'absolute';
+        cloned.style.left = '0px';
+        cloned.style.right = 'auto';
+        cloned.style.top = 'auto';
+        cloned.style.bottom = '100%';
+        cloned.style.margin = '0';
+        cloned.style.marginBottom = ocs.marginBottom && ocs.marginBottom !== '0px'
+            ? ocs.marginBottom
+            : '0.75rem';
+        cloned.style.height = ocs.height && ocs.height !== 'auto' ? ocs.height : '2.238rem';
+        cloned.style.width = 'auto';
+        cloned.style.minWidth = '0';
+        cloned.style.maxWidth = 'none';
+        cloned.style.paddingTop = '0';
+        cloned.style.paddingBottom = '0';
+        cloned.style.paddingLeft = ocs.paddingLeft && ocs.paddingLeft !== '0px' ? ocs.paddingLeft : '0.75rem';
+        cloned.style.paddingRight = ocs.paddingRight && ocs.paddingRight !== '0px' ? ocs.paddingRight : '0.75rem';
+        cloned.style.borderRadius = '9999px';
+        cloned.style.whiteSpace = 'nowrap';
+        cloned.style.overflow = 'visible';
+        cloned.style.pointerEvents = 'none';
+        cloned.style.zIndex = '20';
+        cloned.style.opacity = '1';
+        cloned.style.transform = 'scale(1)';
+        cloned.style.transformOrigin = 'left bottom';
+
+        // Opaque stand-in for bg-surface/40 + backdrop-blur-md.
+        cloned.style.background = 'none';
+        cloned.style.backgroundImage = 'none';
+        cloned.style.backgroundColor = solidifyColor(menuBg, 0.78);
+        cloned.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+        // Static rest-state breath glow — tight so it doesn't smear into a void.
+        cloned.style.boxShadow = `0 0 10px rgba(${primaryRgb}, ${0.4 * glow})`;
+
+        // Keep icon + divider + label on one row and vertically centered.
+        Array.from(cloned.children).forEach((child) => {
+            if (child.nodeType !== 1) return;
+            child.style.flexShrink = '0';
+            child.style.alignSelf = 'center';
+            if (child.tagName === 'IMG' || child.querySelector?.('img[data-screenshot-icon]')) {
+                child.style.display = 'inline-flex';
+                child.style.alignItems = 'center';
+                child.style.justifyContent = 'center';
+                child.style.lineHeight = '0';
+            }
+        });
+    }
+
     function patchClonedNode(cloned, original) {
         if (!cloned || !original || cloned.nodeType !== 1 || original.nodeType !== 1) return;
 
@@ -271,27 +371,19 @@
         const isPbBadge = original.id === 'stats-pb-badge';
         const pbShown = isPbBadge && original.getAttribute('data-pb-shown') === '1';
 
-        // Personal Best pill: freeze the live shown/hidden state into the clone.
-        if (isPbBadge) {
+        if (isPbBadge && !pbShown) {
             cloned.style.animation = 'none';
             cloned.style.transition = 'none';
-            if (pbShown) {
-                cloned.style.opacity = '1';
-                cloned.style.transform = 'scale(1)';
-                cloned.style.transformOrigin = 'left bottom';
-                cloned.classList.remove('opacity-0');
-                if (!cloned.classList.contains('opacity-100')) {
-                    cloned.classList.add('opacity-100');
-                }
-            } else {
-                cloned.style.opacity = '0';
-                cloned.style.transform = 'scale(0.7)';
-                cloned.style.display = 'none';
-            }
-        } else if (
+            cloned.style.opacity = '0';
+            cloned.style.display = 'none';
+            return;
+        }
+
+        if (
             // Entrance-animation cards keep opacity-0 in class after animating in;
             // force them fully visible. Do NOT apply this to hover tooltips
             // (opacity-0 + group-hover:opacity-100) or other intentionally hidden UI.
+            !isPbBadge &&
             cls.includes('stats-animate-card') &&
             (cls.includes('opacity-0') || parseFloat(ocs.opacity) < 0.99)
         ) {
@@ -301,6 +393,7 @@
             cloned.style.opacity = '1';
             cloned.style.transform = 'none';
         } else if (
+            !isPbBadge &&
             cls.includes('opacity-0') &&
             cls.includes('group-hover:opacity-100') &&
             parseFloat(ocs.opacity) < 0.5
@@ -310,7 +403,10 @@
             cloned.style.display = 'none';
         }
 
-        if (cls.includes('backdrop-blur') || cls.includes('glass-panel') || cls.includes('glass-card') || cls.includes('panel-surface')) {
+        if (
+            !isPbBadge &&
+            (cls.includes('backdrop-blur') || cls.includes('glass-panel') || cls.includes('glass-card') || cls.includes('panel-surface'))
+        ) {
             cloned.style.backdropFilter = 'none';
             cloned.style.webkitBackdropFilter = 'none';
             if (ocs.backgroundColor && ocs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
@@ -319,19 +415,16 @@
         }
 
         const inline = original.getAttribute('style') || '';
-        if (inline.includes('var(')) {
+        if (!isPbBadge && inline.includes('var(')) {
             copyResolvedInlineStyles(cloned, original);
         }
 
-        // After var() style copy, re-assert PB visibility so resolved transforms
-        // don't overwrite the freeze-frame above.
-        if (isPbBadge && pbShown) {
-            cloned.style.opacity = '1';
-            cloned.style.transform = 'scale(1)';
-            cloned.style.display = '';
-        }
-
         inlineMaterialIcon(cloned, original);
+
+        // Flatten last so later style copies cannot undo the solid pill.
+        if (isPbBadge && pbShown) {
+            flattenPersonalBestBadge(cloned, original, ocs);
+        }
     }
 
     const WATERMARK = {
