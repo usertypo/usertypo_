@@ -227,6 +227,8 @@ async function handleTop(env: Env, body: Record<string, unknown>, authHeader: st
     raw_wpm: row.raw_wpm == null ? null : Number(row.raw_wpm),
     consistency: row.consistency == null ? null : Number(row.consistency),
     session_created_at: row.session_created_at || null,
+    level: row.level == null ? null : Number(row.level),
+    percent_to_next: row.percent_to_next == null ? null : Number(row.percent_to_next),
   }));
 
   return json(env, 200, {

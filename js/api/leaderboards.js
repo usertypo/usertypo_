@@ -249,10 +249,10 @@
             userId: row.user_id,
             username: row.username || 'Player',
             avatarUrl: row.avatar_url || null,
-            level: row.level != null ? Math.max(1, Math.floor(Number(row.level) || 1)) : 1,
+            level: row.level != null ? Math.max(1, Math.floor(Number(row.level) || 1)) : null,
             percentToNext: row.percent_to_next != null
                 ? Number(row.percent_to_next)
-                : (row.percentToNext != null ? Number(row.percentToNext) : 0),
+                : (row.percentToNext != null ? Number(row.percentToNext) : null),
             wpm: Number(row.wpm) || 0,
             rawWpm: rawWpm == null || rawWpm === '' ? null : Number(rawWpm),
             accuracy: row.accuracy == null ? null : Number(row.accuracy),

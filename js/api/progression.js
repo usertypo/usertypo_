@@ -424,13 +424,15 @@
         if (!row || !prog) return;
         var incomingLevel = Math.max(1, Math.floor(Number(prog.level) || 1));
         var existingLevel = Math.max(1, Math.floor(Number(row.level) || 1));
+        var prevLevel = row.level == null ? null : Number(row.level);
         var isStub = incomingLevel <= 1
             && !(Number(prog.percentToNext) > 0)
             && !(Number(prog.xpIntoLevel) > 0);
         // Never clobber a known real level with a stub placeholder.
         if (isStub && existingLevel > 1) return;
         if (force || row.level == null || Number(row.level) <= 1) row.level = prog.level;
-        if (force || (row.percentToNext == null && row.percent_to_next == null) || Number(row.level) <= 1) {
+        // Use prevLevel so updating level first doesn't skip percent enrichment.
+        if (force || row.percentToNext == null || row.percent_to_next == null || prevLevel == null || prevLevel <= 1) {
             row.percentToNext = prog.percentToNext;
         }
         if (force || (row.xpIntoLevel == null && row.xp_into_level == null)) {
