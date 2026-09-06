@@ -174,13 +174,34 @@
         if (!current || current.mode !== 'matchmaking' || !current.listingId) {
             throw new Error('No active dual search.');
         }
-        var raceConfig = current.config;
-        clearPendingIndicator(current.pendingId);
+        return startLocalBot(current.config);
+    }
+
+    /** Start an offline local bot dual with the given config (no server required). */
+    function startLocalBot(config) {
+        var raceConfig = config && typeof config === 'object' ? {
+            mode: config.mode === 'words' ? 'words' : 'time',
+            amount: Number(config.amount) || 30,
+            lang: 'english',
+            punct: config.punct === true || config.punct === 1 || config.punct === '1' ? '1' : '0',
+            nums: config.nums === true || config.nums === 1 || config.nums === '1' ? '1' : '0',
+        } : {
+            mode: 'time',
+            amount: 30,
+            lang: 'english',
+            punct: '0',
+            nums: '0',
+        };
+        clearPendingIndicator(current && current.pendingId);
         autoJoinBotMatch = false;
-        try {
-            await api().cancelPublicDuel();
-        } catch (_) {
-            // Offline or listing already cleared — local bot race does not need the server.
+        // Best-effort cancel if a public search is open; ignore offline/server failures.
+        if (current && current.mode === 'matchmaking' && (current.status === 'searching' || current.status === 'awaiting-choice')) {
+            try {
+                var cancelPromise = api().cancelPublicDuel();
+                if (cancelPromise && typeof cancelPromise.catch === 'function') {
+                    cancelPromise.catch(function () { /* local bot does not need the server */ });
+                }
+            } catch (_) { /* ignore */ }
         }
         try {
             sessionStorage.setItem('usertypo:local-bot-config', JSON.stringify(raceConfig));
@@ -191,6 +212,7 @@
         } else {
             window.location.href = '/dual?local=bot';
         }
+        return Promise.resolve({ ok: true, local: true });
     }
 
     function showNoPlayersFound(payload) {
@@ -268,6 +290,7 @@
         clearRequest: clearRequest,
         continueSearching: continueSearching,
         playAgainstBot: playAgainstBot,
+        startLocalBot: startLocalBot,
         consumeAutoJoinBotMatch: function () {
             var value = autoJoinBotMatch;
             autoJoinBotMatch = false;
@@ -283,6 +306,6 @@
         refresh: function () {},
         _stopTicker: function () {},
         _resetJoining: function () {},
-        version: 9,
+        version: 10,
     };
 })();

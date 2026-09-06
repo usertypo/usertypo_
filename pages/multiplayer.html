@@ -504,17 +504,22 @@ window.__spaPageInit = function() {
                 return status === 'offline' || status === 'maintenance';
             }
 
+            function isMobileMultiplayerBlocked() {
+                return !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
+                    && window.usertypoMobile.isMobileClient());
+            }
+
             function applyMultiplayerAvailability(detail) {
                 const info = detail || window.usertypoMultiplayer?.getAvailability?.() || { status: 'unknown' };
-                const mobileBlocked = !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
-                    && window.usertypoMobile.isMobileClient());
-                const unavailable = mobileBlocked || info.status === 'offline' || info.status === 'maintenance';
+                const mobileBlocked = isMobileMultiplayerBlocked();
+                const serverUnavailable = info.status === 'offline' || info.status === 'maintenance';
+                const roomsUnavailable = mobileBlocked || serverUnavailable;
                 if (mpAvailabilityBanner) {
                     if (mobileBlocked) {
                         mpAvailabilityBanner.textContent = window.usertypoMobile.DESKTOP_ONLY_MESSAGE
                             || 'Multiplayer is currently only available on PC';
                         mpAvailabilityBanner.classList.remove('hidden');
-                    } else if (unavailable && info.message) {
+                    } else if (serverUnavailable && info.message) {
                         mpAvailabilityBanner.textContent = info.message;
                         mpAvailabilityBanner.classList.remove('hidden');
                     } else {
@@ -522,13 +527,19 @@ window.__spaPageInit = function() {
                         mpAvailabilityBanner.classList.add('hidden');
                     }
                 }
-                [mpOpenDualBtn, mpOpenRoomBtn].forEach((btn) => {
-                    if (!btn) return;
-                    btn.disabled = unavailable;
-                    btn.classList.toggle('opacity-50', unavailable);
-                    btn.classList.toggle('pointer-events-none', unavailable);
-                    btn.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
-                });
+                // Dual stays usable offline for the always-available local bot match.
+                if (mpOpenDualBtn) {
+                    mpOpenDualBtn.disabled = mobileBlocked;
+                    mpOpenDualBtn.classList.toggle('opacity-50', mobileBlocked);
+                    mpOpenDualBtn.classList.toggle('pointer-events-none', mobileBlocked);
+                    mpOpenDualBtn.setAttribute('aria-disabled', mobileBlocked ? 'true' : 'false');
+                }
+                if (mpOpenRoomBtn) {
+                    mpOpenRoomBtn.disabled = roomsUnavailable;
+                    mpOpenRoomBtn.classList.toggle('opacity-50', roomsUnavailable);
+                    mpOpenRoomBtn.classList.toggle('pointer-events-none', roomsUnavailable);
+                    mpOpenRoomBtn.setAttribute('aria-disabled', roomsUnavailable ? 'true' : 'false');
+                }
             }
 
             window.addEventListener('usertypo:multiplayer:availability', (event) => {
@@ -929,52 +940,99 @@ window.__spaPageInit = function() {
                 };
             }
 
+            var LOCAL_BOT_LISTING_CONFIG = {
+                mode: 'time',
+                amount: 30,
+                lang: 'english',
+                punct: false,
+                nums: false,
+            };
+
+            function appendDualListingRow(options) {
+                if (!publicDualList) return;
+                const config = options.config || LOCAL_BOT_LISTING_CONFIG;
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.035]';
+                const info = document.createElement('div');
+                info.className = 'min-w-0 flex-1';
+                const name = document.createElement('div');
+                name.className = 'text-sm text-white font-bold truncate';
+                name.textContent = options.name || 'Player';
+                const details = document.createElement('div');
+                details.className = 'text-xs text-slate-400 mt-1';
+                details.textContent = window.usertypoMultiplayer?.describeConfig(config) || (config.amount + ' seconds');
+                const joinButton = document.createElement('button');
+                joinButton.type = 'button';
+                joinButton.className = 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
+                joinButton.textContent = 'Join';
+                joinButton.addEventListener('click', async () => {
+                    joinButton.disabled = true;
+                    try {
+                        if (typeof options.onJoin === 'function') {
+                            await options.onJoin();
+                        }
+                        closeFindMatchModal();
+                    } catch (error) {
+                        joinButton.disabled = false;
+                        window.usertypoNotifications?.showToast(error.message || 'Could not join dual', 'error');
+                    }
+                });
+                info.append(name, details);
+                item.append(info, joinButton);
+                publicDualList.appendChild(item);
+            }
+
             function renderPublicDualListings(rows) {
                 if (!publicDualList || !publicDualListEmpty) return;
                 publicDualList.innerHTML = '';
                 const listings = Array.isArray(rows) ? rows : [];
-                publicDualListEmpty.classList.toggle('hidden', listings.length > 0);
+
+                // Always available offline — local bot dual, styled like a normal listing.
+                appendDualListingRow({
+                    name: 'TypeBot',
+                    config: LOCAL_BOT_LISTING_CONFIG,
+                    onJoin: function () {
+                        if (!window.DualMatch || typeof window.DualMatch.startLocalBot !== 'function') {
+                            return Promise.reject(new Error('Bot dual is not ready.'));
+                        }
+                        return window.DualMatch.startLocalBot(LOCAL_BOT_LISTING_CONFIG);
+                    },
+                });
+
                 listings.forEach(row => {
                     const config = decodeListingConfig(row);
-                    const item = document.createElement('div');
-                    item.className = 'flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.035]';
-                    const info = document.createElement('div');
-                    info.className = 'min-w-0 flex-1';
-                    const name = document.createElement('div');
-                    name.className = 'text-sm text-white font-bold truncate';
-                    name.textContent = row[1] || 'Player';
-                    const details = document.createElement('div');
-                    details.className = 'text-xs text-slate-400 mt-1';
-                    details.textContent = window.usertypoMultiplayer?.describeConfig(config) || (config.amount + ' ' + config.mode);
-                    const joinButton = document.createElement('button');
-                    joinButton.type = 'button';
-                    joinButton.className = 'px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold transition-colors';
-                    joinButton.textContent = 'Join';
-                    joinButton.addEventListener('click', async () => {
-                        joinButton.disabled = true;
-                        try {
-                            await window.usertypoMultiplayer.joinListing(row[0]);
-                            closeFindMatchModal();
-                        } catch (error) {
-                            joinButton.disabled = false;
-                            window.usertypoNotifications?.showToast(error.message || 'Could not join dual', 'error');
-                        }
+                    appendDualListingRow({
+                        name: row[1] || 'Player',
+                        config: config,
+                        onJoin: function () {
+                            if (!window.usertypoMultiplayer || typeof window.usertypoMultiplayer.joinListing !== 'function') {
+                                return Promise.reject(new Error('Multiplayer is not ready.'));
+                            }
+                            return window.usertypoMultiplayer.joinListing(row[0]);
+                        },
                     });
-                    info.append(name, details);
-                    item.append(info, joinButton);
-                    publicDualList.appendChild(item);
                 });
+
+                // Bot row is always present, so the empty state stays hidden.
+                publicDualListEmpty.classList.add('hidden');
             }
 
             async function showPublicDualList() {
                 findMatchChoice?.classList.add('hidden');
                 findMatchForm?.classList.add('hidden');
                 findMatchListView?.classList.remove('hidden');
+                // Show the bot row immediately so offline / server-down still works.
+                renderPublicDualListings([]);
+                if (!window.usertypoMultiplayer || typeof window.usertypoMultiplayer.loadListings !== 'function') {
+                    return;
+                }
+                if (isMultiplayerUnavailable()) {
+                    return;
+                }
                 try {
                     renderPublicDualListings(await window.usertypoMultiplayer.loadListings());
-                } catch (error) {
-                    renderPublicDualListings([]);
-                    window.usertypoNotifications?.showToast(error.message || 'Could not load available duals', 'error');
+                } catch (_) {
+                    // Keep the local bot row; human listings are optional.
                 }
             }
 
@@ -1005,7 +1063,7 @@ window.__spaPageInit = function() {
             if (mpOpenDualBtn) {
                 mpOpenDualBtn.addEventListener('click', () => {
                     if (window.usertypoMobile && window.usertypoMobile.blockMultiplayerIfMobile()) return;
-                    if (isMultiplayerUnavailable()) return;
+                    // Dual stays open offline so users can join the local bot listing.
                     openFindMatchModal();
                     showFindMatchChoice();
                 });
@@ -1020,6 +1078,13 @@ window.__spaPageInit = function() {
 
             joinPublicDualBtn?.addEventListener('click', showPublicDualList);
             createPublicDualBtn?.addEventListener('click', () => {
+                if (isMultiplayerUnavailable()) {
+                    window.usertypoNotifications?.showToast(
+                        'Creating a dual needs the multiplayer server. You can still join TypeBot from Join a dual.',
+                        'error'
+                    );
+                    return;
+                }
                 const request = window.DualMatch?.loadRequest?.();
                 if (request?.mode === 'matchmaking' && request?.status === 'searching') {
                     window.usertypoNotifications?.showToast(
