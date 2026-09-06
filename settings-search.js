@@ -182,6 +182,7 @@
                 max-height: min(70vh, 560px);
                 overflow: hidden;
                 border-radius: 1rem;
+                /* Same inset L/R; scrollbar stays inside this padded content box */
                 padding: 0.75rem;
                 box-sizing: border-box;
             }
@@ -189,15 +190,14 @@
                 display: flex;
                 flex-direction: column;
             }
-            /* Scroll inside equal panel padding so left/right inset matches */
             #global-settings-search-overlay #global-settings-search-results {
                 flex: 1 1 auto;
                 min-height: 0;
+                width: 100%;
                 overflow-y: auto;
                 overflow-x: hidden;
-                padding: 0;
                 box-sizing: border-box;
-                scrollbar-gutter: stable both-edges;
+                padding: 0;
                 scrollbar-width: thin;
                 scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
@@ -206,7 +206,6 @@
             }
             #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-track {
                 background: transparent;
-                margin-block: 0.25rem;
             }
             #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-thumb {
                 background: rgba(255,255,255,0.1);
@@ -216,6 +215,7 @@
                 border-radius: 0.75rem;
                 padding: 0.75rem 1rem;
                 margin-bottom: 0.5rem;
+                margin-right: 0;
                 position: relative;
                 z-index: 1;
                 overflow: visible;
