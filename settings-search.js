@@ -202,27 +202,35 @@
                 height: 0 !important;
                 display: none !important;
             }
-            /* Custom bar on the right edge, starting/ending inside the rounded corners */
+            /* Custom bar on the right edge; wide hit target, thin visual thumb */
             #global-settings-search-overlay .gss-scrollbar {
                 position: absolute;
                 top: 0.75rem;
                 bottom: 0.75rem;
-                right: 2px;
-                width: 4px;
+                right: 0;
+                width: 12px;
                 pointer-events: none;
                 opacity: 0;
-                z-index: 5;
+                z-index: 20;
+                cursor: default;
             }
             #global-settings-search-overlay .gss-results-panel.has-scroll .gss-scrollbar {
                 opacity: 1;
+                pointer-events: auto;
             }
             #global-settings-search-overlay .gss-scrollbar-thumb {
                 position: absolute;
-                left: 0;
-                width: 100%;
+                left: 4px;
+                width: 4px;
                 min-height: 1.25rem;
                 border-radius: 4px;
-                background: rgba(255,255,255,0.12);
+                background: rgba(255,255,255,0.18);
+                cursor: grab;
+                touch-action: none;
+            }
+            #global-settings-search-overlay .gss-scrollbar-thumb:active {
+                cursor: grabbing;
+                background: rgba(255,255,255,0.28);
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
@@ -471,6 +479,7 @@
         resultsContainer = document.getElementById('global-settings-search-results');
         resultsContainer.addEventListener('scroll', syncCustomScrollbar, { passive: true });
         window.addEventListener('resize', syncCustomScrollbar);
+        wireCustomScrollbar();
 
         overlayEl.querySelector('[data-gss-close]').addEventListener('click', closeOverlay);
         overlayEl.addEventListener('keydown', (e) => {
@@ -756,8 +765,10 @@
         });
     }
 
+    let scrollbarDragging = false;
+
     function syncCustomScrollbar() {
-        if (!resultsPanel || !resultsContainer) return;
+        if (!resultsPanel || !resultsContainer || scrollbarDragging) return;
         const thumb = resultsPanel.querySelector('.gss-scrollbar-thumb');
         if (!thumb) return;
 
@@ -773,6 +784,71 @@
         const top = maxTop === 0 ? 0 : (scrollTop / (scrollHeight - clientHeight)) * maxTop;
         thumb.style.height = `${thumbH}px`;
         thumb.style.transform = `translateY(${top}px)`;
+    }
+
+    function wireCustomScrollbar() {
+        if (!resultsPanel || !resultsContainer) return;
+        const track = resultsPanel.querySelector('.gss-scrollbar');
+        const thumb = resultsPanel.querySelector('.gss-scrollbar-thumb');
+        if (!track || !thumb || track.dataset.wired === '1') return;
+        track.dataset.wired = '1';
+
+        const scrollFromPointerY = (clientY) => {
+            const { scrollHeight, clientHeight } = resultsContainer;
+            const maxScroll = scrollHeight - clientHeight;
+            if (maxScroll <= 0) return;
+            const rect = track.getBoundingClientRect();
+            const trackH = rect.height;
+            const thumbH = thumb.offsetHeight || 20;
+            const maxTop = Math.max(0, trackH - thumbH);
+            const y = clientY - rect.top - thumbH / 2;
+            const ratio = maxTop === 0 ? 0 : Math.min(1, Math.max(0, y / maxTop));
+            resultsContainer.scrollTop = ratio * maxScroll;
+            thumb.style.height = `${Math.max(20, (clientHeight / scrollHeight) * trackH)}px`;
+            thumb.style.transform = `translateY(${ratio * maxTop}px)`;
+        };
+
+        thumb.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            scrollbarDragging = true;
+            thumb.setPointerCapture(e.pointerId);
+            const onMove = (ev) => {
+                scrollFromPointerY(ev.clientY);
+            };
+            const onUp = (ev) => {
+                scrollbarDragging = false;
+                thumb.releasePointerCapture(ev.pointerId);
+                thumb.removeEventListener('pointermove', onMove);
+                thumb.removeEventListener('pointerup', onUp);
+                thumb.removeEventListener('pointercancel', onUp);
+                syncCustomScrollbar();
+            };
+            thumb.addEventListener('pointermove', onMove);
+            thumb.addEventListener('pointerup', onUp);
+            thumb.addEventListener('pointercancel', onUp);
+        });
+
+        track.addEventListener('pointerdown', (e) => {
+            if (e.target === thumb) return;
+            e.preventDefault();
+            e.stopPropagation();
+            scrollFromPointerY(e.clientY);
+            scrollbarDragging = true;
+            track.setPointerCapture(e.pointerId);
+            const onMove = (ev) => scrollFromPointerY(ev.clientY);
+            const onUp = (ev) => {
+                scrollbarDragging = false;
+                track.releasePointerCapture(ev.pointerId);
+                track.removeEventListener('pointermove', onMove);
+                track.removeEventListener('pointerup', onUp);
+                track.removeEventListener('pointercancel', onUp);
+                syncCustomScrollbar();
+            };
+            track.addEventListener('pointermove', onMove);
+            track.addEventListener('pointerup', onUp);
+            track.addEventListener('pointercancel', onUp);
+        });
     }
 
     function highlightText(text, query) {
