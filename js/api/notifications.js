@@ -274,12 +274,14 @@
         toast.style.backdropFilter = 'blur(20px)';
         if (toastId) toast.setAttribute('data-notification-id', toastId);
         var icon = document.createElement('span');
+        var isErrorTone = iconText === 'error' || iconText === 'cancel' || iconText === 'warning';
         icon.className = 'material-symbols-outlined ' +
-            ((iconText === 'error' || iconText === 'cancel') ? 'text-error' : 'text-primary') +
+            (isErrorTone ? 'text-error' : 'text-primary') +
             ' text-[18px] shrink-0';
         icon.textContent = iconText;
         var message = document.createElement('span');
-        message.className = 'notification-toast-message text-sm font-semibold text-slate-100';
+        message.className = 'notification-toast-message text-sm font-semibold ' +
+            (isErrorTone ? 'text-error' : 'text-slate-100');
         message.textContent = notification ? (notification.title || 'Notification') : String(notificationOrMessage || 'Notification');
         toast.appendChild(icon);
         toast.appendChild(message);
@@ -342,15 +344,20 @@
 
     function updateToastElement(toast, notification, iconText) {
         if (!toast || !notification) return toast;
+        var isErrorTone = iconText === 'error' || iconText === 'cancel' || iconText === 'warning';
         var icon = toast.querySelector('.material-symbols-outlined');
         if (icon) {
             icon.textContent = iconText || icon.textContent;
             icon.className = 'material-symbols-outlined ' +
-                ((iconText === 'error' || iconText === 'cancel') ? 'text-error' : 'text-primary') +
+                (isErrorTone ? 'text-error' : 'text-primary') +
                 ' text-[18px] shrink-0';
         }
         var message = toast.querySelector('.notification-toast-message');
-        if (message) message.textContent = notification.title || 'Notification';
+        if (message) {
+            message.textContent = notification.title || 'Notification';
+            message.className = 'notification-toast-message text-sm font-semibold ' +
+                (isErrorTone ? 'text-error' : 'text-slate-100');
+        }
 
         var oldActions = toast.querySelector('.notification-toast-actions');
         if (oldActions) oldActions.remove();

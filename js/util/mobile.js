@@ -45,7 +45,8 @@
 
     function notifyDesktopOnly() {
         if (global.usertypoNotifications && typeof global.usertypoNotifications.showToast === 'function') {
-            global.usertypoNotifications.showToast(DESKTOP_ONLY_MESSAGE, 'computer');
+            // Use 'error' — it's in the Material Symbols subset and styles the toast red.
+            global.usertypoNotifications.showToast(DESKTOP_ONLY_MESSAGE, 'error');
             return;
         }
         try { global.alert(DESKTOP_ONLY_MESSAGE); } catch (_) { /* ignore */ }
