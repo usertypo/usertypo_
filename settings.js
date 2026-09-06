@@ -4890,6 +4890,12 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             -webkit-backdrop-filter: blur(4px) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+            /* Keep a usable width even when flex/search clones shrink the wrapper */
+            width: 13.5rem !important;
+            min-width: 13.5rem !important;
+            max-width: none !important;
+            box-sizing: border-box !important;
+            z-index: 80 !important;
             /* Open to the RIGHT of the button, not below */
             top: 50% !important;
             left: 100% !important;
@@ -4902,6 +4908,8 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 
         /* Glass-style input — same menu fill as popover shell */
         .custom-popover input {
+            width: 100% !important;
+            min-width: 0 !important;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -4910,6 +4918,7 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             appearance: textfield !important;
             backdrop-filter: blur(4px) !important;
             -webkit-backdrop-filter: blur(4px) !important;
+            border-radius: 0.75rem !important;
         }
         .custom-popover input:focus {
             border-color: rgba(255, 255, 255, 0.15) !important;
@@ -4926,10 +4935,12 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 
         /* Glass-style Apply button */
         .custom-popover button {
+            width: 100% !important;
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
             background-image: none !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: var(--theme-fg-strong, #fff) !important;
+            border-radius: 0.75rem !important;
         }
         .custom-popover button:hover {
             background: rgba(255, 255, 255, 0.08) !important;
@@ -4939,6 +4950,7 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
         /* Make sure parent cards don't clip the popover */
         .custom-popover-wrapper {
             position: relative;
+            overflow: visible !important;
         }
         .setting-card, .sub-setting-card, .sub-setting-content, .glass-card {
             overflow: visible !important;
@@ -4951,20 +4963,35 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
     }
 })();
 
-// Toggle popover open/close
-window.toggleCustomPopover = function (btn) {
-    const popover = btn.nextElementSibling;
-    const isShowing = popover.classList.contains('opacity-100');
+function clearCustomPopoverStackBoost(popover) {
+    const item = popover && popover.closest('.search-result-item');
+    if (item) item.style.zIndex = '';
+}
 
-    // Close all other popovers first
+function closeAllCustomPopovers() {
     document.querySelectorAll('.custom-popover').forEach(p => {
         p.classList.remove('opacity-100', 'pointer-events-auto');
         p.classList.add('opacity-0', 'pointer-events-none');
+        clearCustomPopoverStackBoost(p);
     });
+}
+
+// Toggle popover open/close
+window.toggleCustomPopover = function (btn) {
+    const popover = btn.nextElementSibling;
+    if (!popover || !popover.classList.contains('custom-popover')) return;
+    const isShowing = popover.classList.contains('opacity-100');
+
+    // Close all other popovers first
+    closeAllCustomPopovers();
 
     if (!isShowing) {
         popover.classList.remove('opacity-0', 'pointer-events-none');
         popover.classList.add('opacity-100', 'pointer-events-auto');
+        // Search result cards each create a stacking context (glass/backdrop).
+        // Raise the active card so the popover paints above neighbors.
+        const item = popover.closest('.search-result-item');
+        if (item) item.style.zIndex = '40';
         const inp = popover.querySelector('input');
         if (inp) inp.focus();
     }
@@ -4979,6 +5006,7 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     if (!val) {
         popover.classList.remove('opacity-100', 'pointer-events-auto');
         popover.classList.add('opacity-0', 'pointer-events-none');
+        clearCustomPopoverStackBoost(popover);
         return;
     }
 
@@ -5038,16 +5066,14 @@ window.applyCustomPopover = function (btn, path, isFlex = false) {
     // Close the popover
     popover.classList.remove('opacity-100', 'pointer-events-auto');
     popover.classList.add('opacity-0', 'pointer-events-none');
+    clearCustomPopoverStackBoost(popover);
     input.value = '';
 };
 
 // Close popover when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-popover-wrapper')) {
-        document.querySelectorAll('.custom-popover').forEach(p => {
-            p.classList.remove('opacity-100', 'pointer-events-auto');
-            p.classList.add('opacity-0', 'pointer-events-none');
-        });
+        closeAllCustomPopovers();
     }
 });
 
