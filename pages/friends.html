@@ -1259,6 +1259,7 @@ window.__spaPageInit = function() {
             }
 
             function openConfigureDualModal(friendUserId, friendName, avatar) {
+                if (window.usertypoMobile && window.usertypoMobile.blockMultiplayerIfMobile()) return;
                 dualTargetFriend = { userId: friendUserId, name: friendName };
                 dualTargetAvatar = avatar || '';
                 resetConfigureDualForm();

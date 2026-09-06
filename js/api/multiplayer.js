@@ -215,15 +215,29 @@
         var params = { room: roomId };
         if (roomCode) params.code = String(roomCode);
         var url = '/room?' + new URLSearchParams(params).toString();
-        if (typeof window.navigateTo === 'function') window.navigateTo(url);
-        else window.location.href = url;
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo(url);
+            return;
+        }
+        if (window.usertypoMobile && typeof window.usertypoMobile.blockMultiplayerIfMobile === 'function'
+            && window.usertypoMobile.blockMultiplayerIfMobile()) {
+            return;
+        }
+        window.location.href = url;
     }
 
     function navigateToMatch(roomId) {
         if (!roomId) return;
         var url = '/dual?' + new URLSearchParams({ room: roomId }).toString();
-        if (typeof window.navigateTo === 'function') window.navigateTo(url);
-        else window.location.href = url;
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo(url);
+            return;
+        }
+        if (window.usertypoMobile && typeof window.usertypoMobile.blockMultiplayerIfMobile === 'function'
+            && window.usertypoMobile.blockMultiplayerIfMobile()) {
+            return;
+        }
+        window.location.href = url;
     }
 
     function friendlyError(code) {
