@@ -499,7 +499,7 @@
         var type = String(n && n.type || '');
         if (type === 'friend_accepted' || type === 'duel_ready') return 'check_circle';
         if (type === 'friend_request') return 'person_add';
-        if (type === 'friend_online') return 'sensors';
+        if (type === 'friend_online') return 'account_circle';
         if (type.indexOf('duel_') === 0 || type.indexOf('match_') === 0) return 'swords';
         if (type.indexOf('invalid') !== -1) return 'error';
         return 'notifications';
