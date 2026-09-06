@@ -182,31 +182,35 @@
                 max-height: min(70vh, 560px);
                 overflow: hidden;
                 border-radius: 1rem;
-                padding: 0;
-            }
-            #global-settings-search-overlay .gss-results-panel.active { display: block; }
-            /* Scroll lives on the inner list so the thumb stays clipped inside the rounded panel */
-            #global-settings-search-overlay #global-settings-search-results {
-                max-height: min(70vh, 560px);
-                overflow-y: auto;
-                overflow-x: hidden;
                 padding: 0.75rem;
                 box-sizing: border-box;
+            }
+            #global-settings-search-overlay .gss-results-panel.active {
+                display: flex;
+                flex-direction: column;
+            }
+            /* Scroll inside equal panel padding so left/right inset matches */
+            #global-settings-search-overlay #global-settings-search-results {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: 0;
+                box-sizing: border-box;
+                scrollbar-gutter: stable both-edges;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
             #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar {
                 width: 4px;
             }
             #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-track {
                 background: transparent;
-                margin-block: 0.75rem;
+                margin-block: 0.25rem;
             }
             #global-settings-search-overlay #global-settings-search-results::-webkit-scrollbar-thumb {
                 background: rgba(255,255,255,0.1);
                 border-radius: 4px;
-            }
-            #global-settings-search-overlay #global-settings-search-results {
-                scrollbar-width: thin;
-                scrollbar-color: rgba(255,255,255,0.1) transparent;
             }
             #global-settings-search-overlay .search-result-item {
                 border-radius: 0.75rem;
