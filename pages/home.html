@@ -5110,14 +5110,14 @@ window.setTimeout = function(handler, timeout) {
                         const logoWrap = doc.createElement('div');
                         logoWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;margin-top:-1.1rem;margin-bottom:0.15rem;';
 
-                        // Taller clip so y/p descenders + underscore are not cropped
+                        // Tall enough for USER (above) + typo_ descenders/_ (below)
                         const logoClip = doc.createElement('div');
-                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:5.1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+                        logoClip.style.cssText = 'position:relative;width:14.388rem;height:6.2rem;overflow:hidden;flex-shrink:0;';
 
-                        // Inner square sized like the header logo (without CSS transform)
+                        // Inner square sized like the header logo (without CSS transform).
+                        // Keep truly centered so USER is not clipped off the top.
                         const logoBox = doc.createElement('div');
-                        // Shift artwork up inside the clip so more of the bottom (descenders/_) shows
-                        logoBox.style.cssText = 'position:absolute;left:50%;top:50%;width:19.983rem;height:19.983rem;margin-left:-9.9915rem;margin-top:-10.55rem;flex-shrink:0;';
+                        logoBox.style.cssText = 'position:absolute;left:50%;top:50%;width:19.983rem;height:19.983rem;margin-left:-9.9915rem;margin-top:-9.9915rem;flex-shrink:0;';
 
                         // Layer 1: "typ_" text (theme primary)
                         if (logoTypDataUrl) {
