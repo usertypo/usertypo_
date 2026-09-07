@@ -630,7 +630,7 @@
                 try { window.usertypoMultiplayer.leaveRace(roomId); } catch (_) { /* ignore */ }
             }
             if (window.usertypoNotifications) {
-                window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
+                window.usertypoNotifications.showToast('You left the duel because the page was refreshed.', 'cancel');
             }
             if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
             else window.location.replace('/multiplayer');
@@ -1640,7 +1640,7 @@
                 prepareWaitingTestView();
                 ensureCountdownSequence();
             } catch (error) {
-                showMessage('Could not start bot dual', error.message || 'Prompt generation failed.');
+                showMessage('Could not start bot duel', error.message || 'Prompt generation failed.');
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 }, 1800);
@@ -3255,7 +3255,7 @@
                 return;
             }
             var label = document.getElementById('stats-race-label');
-            if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
+            if (label) label.textContent = 'Duel Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3]) opponentLeft = true;
             if (payload[3] || opponentLeft) {
                 var capture = document.getElementById('stats-capture-area') || statsView;
@@ -3264,7 +3264,7 @@
                 var notice = document.createElement('div');
                 notice.setAttribute('data-dual-opponent-left-notice', '1');
                 notice.className = 'mx-auto mb-4 px-4 py-2 rounded-full bg-error/10 border border-error/25 text-error text-sm font-semibold';
-                notice.textContent = 'Your opponent left the dual mid-game.';
+                notice.textContent = 'Your opponent left the duel mid-game.';
                 capture.insertBefore(notice, capture.firstChild);
             }
             rematchVotes = 0;
@@ -3425,13 +3425,13 @@
                 // Stats view (or explicit stats leave): close dual immediately.
                 if (state === 'finished' || reason === 'stats-left') {
                     updateRematchButton();
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    closeDualToFriends('Your opponent left the duel.', 'person_remove');
                     return;
                 }
 
                 // Waiting / countdown: auto-close — no race to finish.
                 if (state === 'joining' || state === 'countdown') {
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    closeDualToFriends('Your opponent left the duel.', 'person_remove');
                     return;
                 }
 
@@ -3459,7 +3459,7 @@
                     && state !== 'waiting-result'
                     && state !== 'finished'
                 ) {
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    closeDualToFriends('Your opponent left the duel.', 'person_remove');
                     return;
                 }
                 // Bot matches may still receive a server finished after the local UI settled.
@@ -3603,7 +3603,7 @@
                 prepareWaitingTestView();
             } catch (error) {
                 markDualMembership(false);
-                showMessage('Could not join dual', error.message);
+                showMessage('Could not join duel', error.message);
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 }, 1800);

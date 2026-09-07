@@ -185,7 +185,7 @@
     function duelFlowNotify(partial) {
         var row = Object.assign({
             type: 'duel_notice',
-            title: 'Dual accepted',
+            title: 'Duel accepted',
             body: '',
             data: {},
         }, partial || {});
@@ -246,10 +246,10 @@
             friend_offline: 'That friend is no longer online.',
             not_friends: 'You can only challenge friends.',
             blocked: 'This player has blocked you.',
-            invite_not_found: 'That dual request has expired.',
-            listing_unavailable: 'That dual is no longer available.',
-            already_searching: 'You cannot create a dual while already looking for a dual.',
-            own_listing: 'You cannot join your own dual.',
+            invite_not_found: 'That duel request has expired.',
+            listing_unavailable: 'That duel is no longer available.',
+            already_searching: 'You cannot create a duel while already looking for a duel.',
+            own_listing: 'You cannot join your own duel.',
             already_in_match: 'You are already in a match.',
             room_not_found: 'Room not found. Check the Room ID and try again.',
             room_full: 'This room is full.',
@@ -426,7 +426,7 @@
             notify({
                 id: 'duel-invite:' + invite.inviteId,
                 type: 'duel_request',
-                title: invite.fromName + ' challenged you to a dual',
+                title: invite.fromName + ' challenged you to a duel',
                 body: describeConfig(invite.config),
                 data: { inviteId: invite.inviteId },
                 _actions: [
@@ -436,7 +436,7 @@
                             duelFlowNotify({
                                 id: 'duel-flow:' + invite.inviteId,
                                 type: 'duel_notice',
-                                title: 'Dual accepted — preparing match…',
+                                title: 'Duel accepted — preparing match…',
                             });
                             return respondToChallenge(invite.inviteId, true);
                         },
@@ -454,7 +454,7 @@
             duelFlowNotify({
                 id: 'duel-flow:' + key,
                 type: 'duel_notice',
-                title: 'Dual accepted — preparing match…',
+                title: 'Duel accepted — preparing match…',
             });
             dispatch('accepted', payload);
         });
@@ -474,7 +474,7 @@
             duelFlowNotify({
                 id: pendingDuelFlowId || ('duel-flow:' + match.roomId),
                 type: 'duel_ready',
-                title: isBot ? 'No player found — bot match ready' : 'Dual accepted — match ready',
+                title: isBot ? 'No player found — bot match ready' : 'Duel accepted — match ready',
                 body: (isBot ? 'You will race against TypeBot. ' : '') + 'Click Join when you are ready.',
                 data: { roomId: match.roomId },
                 _actions: [{
@@ -494,7 +494,7 @@
             notify({
                 id: 'duel-rejected:' + payload[0],
                 type: 'duel_rejected',
-                title: (payload[2] || 'Your friend') + ' rejected your dual request',
+                title: (payload[2] || 'Your friend') + ' rejected your duel request',
                 body: 'You can send another challenge whenever they are ready.',
             });
             dispatch('rejected', payload);
@@ -503,7 +503,7 @@
             notify({
                 id: 'duel-expired:' + payload[0],
                 type: 'duel_notice',
-                title: 'Dual request expired',
+                title: 'Duel request expired',
                 body: 'The request was not accepted while both players were online.',
             });
             dispatch('expired', payload);
