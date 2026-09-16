@@ -467,6 +467,9 @@
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
             }
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.enable === 'function') {
+                window.usertypoPageScrollbar.enable();
+            }
             var body = document.getElementById('app-body');
             var content = document.getElementById('spa-content');
             var pageRoot = document.getElementById('spa-page-root');
@@ -2072,6 +2075,9 @@
                 });
             }
             clearOpponentLeftStatsUi();
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
+            }
             statsShellRevealed = false;
             if (testView) {
                 testView.classList.remove('hidden');
@@ -2699,9 +2705,7 @@
                     }, {
                         size: 'xl',
                         id: prefix + '-avatar',
-                        className: prefix === 'w'
-                            ? 'shadow-[0_0_16px_rgba(0,208,255,0.3)]'
-                            : '',
+                        className: prefix === 'w' ? 'dual-stats-avatar-glow' : '',
                     });
                     if (avatar.classList && avatar.classList.contains('player-level-avatar')) {
                         avatar.outerHTML = html;
@@ -3338,6 +3342,9 @@
                     showOpponentLeftNotice(payload[3] ? 'mid' : 'stats');
                     updateRematchButton();
                 }
+                if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.refresh === 'function') {
+                    window.usertypoPageScrollbar.refresh();
+                }
             }
             if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
                 window.usertypoProgression.attachToList(players, 'userId').then(afterPaint).catch(afterPaint);
@@ -3356,8 +3363,38 @@
             if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
         }
 
+        async function startLocalBotRematch() {
+            if (!config || selfRematchVoted) return;
+            selfRematchVoted = true;
+            updateRematchButton();
+            var raceConfig = {
+                mode: config.mode === 'words' ? 'words' : 'time',
+                amount: Number(config.amount) || 30,
+                lang: config.lang || 'english',
+                punct: config.punct === true || config.punct === 1 || config.punct === '1' ? '1' : '0',
+                nums: config.nums === true || config.nums === 1 || config.nums === '1' ? '1' : '0',
+            };
+            try {
+                sessionStorage.setItem('usertypo:local-bot-config', JSON.stringify(raceConfig));
+            } catch (_) { /* ignore */ }
+            try {
+                if (roomId && window.usertypoMultiplayer) {
+                    await window.usertypoMultiplayer.leaveRace(roomId);
+                }
+            } catch (_) { /* ignore */ }
+            markDualMembership(false);
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/dual?local=bot');
+            } else {
+                window.location.href = '/dual?local=bot';
+            }
+        }
+
         async function requestRematch() {
             if (state !== 'finished' || !config || selfRematchVoted) return;
+            if (opponentLeft && !isBotMatch() && !isLocalBotMatch()) {
+                return startLocalBotRematch();
+            }
             if (isLocalBotMatch()) {
                 selfRematchVoted = true;
                 rematchVotes = 1;
@@ -3698,6 +3735,9 @@
                 window.applyDualLiveFeedSettings = null;
             }
             latestResults = null;
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
+            }
         }
 
         window.applyDualLiveFeedSettings = applyDualLiveFeedSettings;

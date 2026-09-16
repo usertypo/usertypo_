@@ -143,6 +143,12 @@
             filter: grayscale(0.55);
             pointer-events: none;
         }
+        .dual-stats-winner-glow {
+            background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);
+        }
+        .dual-stats-avatar-glow {
+            box-shadow: 0 0 16px rgba(var(--theme-primary-rgb), 0.3);
+        }
         #dual-stats-compare > .dual-stats-player.is-opponent-left .dual-stats-avatar-wrap::after {
             content: 'Left';
             position: absolute;
@@ -495,8 +501,7 @@
                                 <span id="w-you" class="hidden text-[10px] font-semibold text-slate-500">(you)</span>
                             </div>
                             <div class="dual-stats-avatar-wrap relative">
-                                <div class="absolute -inset-5 rounded-full" data-screenshot-glow
-                                    style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);"></div>
+                                <div class="absolute -inset-5 rounded-full dual-stats-winner-glow" data-screenshot-glow></div>
                                 <div id="w-avatar" class="relative z-10 flex items-center justify-center"></div>
                             </div>
                             <span id="w-name" class="dual-stats-name text-white font-bold tracking-wide text-center truncate">—</span>

@@ -2143,11 +2143,9 @@
                 ? 'text-shadow: 0 0 20px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));'
                 : 'text-shadow: 0 0 12px rgba(255, 255, 255, var(--gi-15, 0.15));';
             var glowHtml = place === 1
-                ? '<div class="absolute -inset-5 rounded-full" data-screenshot-glow style="background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.18) 0%, transparent 70%);"></div>'
+                ? '<div class="absolute -inset-5 rounded-full dual-stats-winner-glow" data-screenshot-glow></div>'
                 : '';
-            var avatarHtml = playerAvatarHtml(player, 'xl', place === 1
-                ? 'shadow-[0_0_16px_rgba(var(--theme-primary-rgb),0.3)]'
-                : '');
+            var avatarHtml = playerAvatarHtml(player, 'xl', place === 1 ? 'dual-stats-avatar-glow' : '');
             var youHtml = player.isMe
                 ? ' <span class="text-[10px] font-semibold text-slate-500">(you)</span>'
                 : (player.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '');
@@ -2251,6 +2249,14 @@
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
             }
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.enable === 'function') {
+                window.usertypoPageScrollbar.enable();
+                setTimeout(function () {
+                    if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.refresh === 'function') {
+                        window.usertypoPageScrollbar.refresh();
+                    }
+                }, 350);
+            }
             window.scrollTo(0, 0);
             setRoomHeaderInteractive(true);
             var animCards = document.querySelectorAll('#stats-view .anim-card');
@@ -2295,6 +2301,9 @@
             setRoomHeaderInteractive(false);
             if (typeof window.usertypo_lockTypingScroll === 'function') {
                 window.usertypo_lockTypingScroll();
+            }
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
             }
             renderLobby(room);
             updateReturnLobbyButton();
@@ -2622,6 +2631,9 @@
             window.toggleReady = null;
             window.showLobbyView = null;
             window.applyRoomLiveFeedSettings = null;
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
+            }
         }
 
         window.toggleReady = readyUp;
