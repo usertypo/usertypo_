@@ -3226,6 +3226,10 @@ function applyThemeSettings(settings) {
         [data-screenshot-glow] {
             opacity: var(--glow-intensity, 1) !important;
             transition: opacity 0.12s ease;
+            background: radial-gradient(circle, rgba(${accentRGB}, 0.18) 0%, transparent 70%) !important;
+        }
+        .dual-stats-avatar-glow {
+            box-shadow: 0 0 16px rgba(${accentRGB}, 0.3) !important;
         }
 
         /* Common white glow utilities (not remapped by accent overrides) */

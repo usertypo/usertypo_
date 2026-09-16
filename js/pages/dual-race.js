@@ -467,6 +467,9 @@
             if (typeof window.usertypo_unlockStatsScroll === 'function') {
                 window.usertypo_unlockStatsScroll();
             }
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.enable === 'function') {
+                window.usertypoPageScrollbar.enable();
+            }
             var body = document.getElementById('app-body');
             var content = document.getElementById('spa-content');
             var pageRoot = document.getElementById('spa-page-root');
@@ -630,7 +633,7 @@
                 try { window.usertypoMultiplayer.leaveRace(roomId); } catch (_) { /* ignore */ }
             }
             if (window.usertypoNotifications) {
-                window.usertypoNotifications.showToast('You left the dual because the page was refreshed.', 'cancel');
+                window.usertypoNotifications.showToast('You left the duel because the page was refreshed.', 'cancel');
             }
             if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
             else window.location.replace('/multiplayer');
@@ -1640,7 +1643,7 @@
                 prepareWaitingTestView();
                 ensureCountdownSequence();
             } catch (error) {
-                showMessage('Could not start bot dual', error.message || 'Prompt generation failed.');
+                showMessage('Could not start bot duel', error.message || 'Prompt generation failed.');
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 }, 1800);
@@ -1983,17 +1986,76 @@
         function updateRematchButton() {
             var button = document.getElementById('rematch-btn');
             var label = document.getElementById('rematch-btn-label');
+            var offerBot = !!opponentLeft && !isBotMatch();
             if (label) {
-                label.textContent = rematchVotes > 0
-                    ? ('Rematch (' + rematchVotes + '/' + rematchNeeded + ')')
-                    : 'Rematch';
+                if (offerBot) {
+                    label.textContent = 'Go against a bot';
+                } else {
+                    label.textContent = rematchVotes > 0
+                        ? ('Rematch (' + rematchVotes + '/' + rematchNeeded + ')')
+                        : 'Rematch';
+                }
             }
             if (button) {
-                var disabled = !!selfRematchVoted || (!!opponentLeft && !isBotMatch());
+                // Opponent-left: keep enabled so the remaining player can play a bot.
+                var disabled = !!selfRematchVoted;
                 button.disabled = disabled;
                 if (disabled) button.setAttribute('aria-disabled', 'true');
                 else button.removeAttribute('aria-disabled');
             }
+        }
+
+        function clearOpponentLeftStatsUi() {
+            var compare = document.getElementById('dual-stats-compare');
+            if (compare) {
+                compare.querySelectorAll('.dual-stats-player.is-opponent-left').forEach(function (el) {
+                    el.classList.remove('is-opponent-left');
+                });
+            }
+            if (statsView) {
+                var notice = statsView.querySelector('[data-dual-opponent-left-notice]');
+                if (notice) notice.remove();
+            }
+        }
+
+        function dimOpponentStatsCard() {
+            var compare = document.getElementById('dual-stats-compare');
+            if (!compare) return;
+            compare.querySelectorAll('.dual-stats-player').forEach(function (el) {
+                el.classList.remove('is-opponent-left');
+            });
+            ['w', 'l'].forEach(function (prefix) {
+                var youEl = document.getElementById(prefix + '-you');
+                var isYou = !!(youEl && !youEl.classList.contains('hidden'));
+                if (isYou) return;
+                var nameEl = document.getElementById(prefix + '-name');
+                var card = nameEl && nameEl.closest('.dual-stats-player');
+                if (card) card.classList.add('is-opponent-left');
+            });
+        }
+
+        function showOpponentLeftNotice(kind) {
+            if (!statsView) return;
+            var capture = document.getElementById('stats-capture-area') || statsView;
+            var existingNotice = capture.querySelector('[data-dual-opponent-left-notice]');
+            if (existingNotice) existingNotice.remove();
+            var notice = document.createElement('div');
+            notice.setAttribute('data-dual-opponent-left-notice', '1');
+            notice.className = 'mx-auto mb-4 px-4 py-2 rounded-full bg-error/10 border border-error/25 text-error text-sm font-semibold';
+            notice.textContent = kind === 'mid'
+                ? 'Your opponent left the duel mid-game.'
+                : 'Your opponent left the duel.';
+            capture.insertBefore(notice, capture.firstChild);
+        }
+
+        function applyOpponentLeftOnStats(kind) {
+            opponentLeft = true;
+            rematchVotes = 0;
+            rematchNeeded = 1;
+            selfRematchVoted = false;
+            dimOpponentStatsCard();
+            showOpponentLeftNotice(kind || 'stats');
+            updateRematchButton();
         }
 
         function leaveStatsForRematch() {
@@ -2011,8 +2073,10 @@
                     card.style.opacity = '';
                     card.style.transform = '';
                 });
-                var notice = statsView.querySelector('[data-dual-opponent-left-notice]');
-                if (notice) notice.remove();
+            }
+            clearOpponentLeftStatsUi();
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
             }
             statsShellRevealed = false;
             if (testView) {
@@ -2641,9 +2705,7 @@
                     }, {
                         size: 'xl',
                         id: prefix + '-avatar',
-                        className: prefix === 'w'
-                            ? 'shadow-[0_0_16px_rgba(0,208,255,0.3)]'
-                            : '',
+                        className: prefix === 'w' ? 'dual-stats-avatar-glow' : '',
                     });
                     if (avatar.classList && avatar.classList.contains('player-level-avatar')) {
                         avatar.outerHTML = html;
@@ -3255,20 +3317,10 @@
                 return;
             }
             var label = document.getElementById('stats-race-label');
-            if (label) label.textContent = 'Dual Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
+            if (label) label.textContent = 'Duel Race · ' + config.amount + ' ' + (config.mode === 'words' ? 'Words' : 'Seconds');
             if (payload[3]) opponentLeft = true;
-            if (payload[3] || opponentLeft) {
-                var capture = document.getElementById('stats-capture-area') || statsView;
-                var existingNotice = capture.querySelector('[data-dual-opponent-left-notice]');
-                if (existingNotice) existingNotice.remove();
-                var notice = document.createElement('div');
-                notice.setAttribute('data-dual-opponent-left-notice', '1');
-                notice.className = 'mx-auto mb-4 px-4 py-2 rounded-full bg-error/10 border border-error/25 text-error text-sm font-semibold';
-                notice.textContent = 'Your opponent left the dual mid-game.';
-                capture.insertBefore(notice, capture.firstChild);
-            }
             rematchVotes = 0;
-            rematchNeeded = bot ? 1 : 2;
+            rematchNeeded = bot || opponentLeft ? 1 : 2;
             selfRematchVoted = false;
             updateRematchButton();
             var statsAlreadyOpen = !!statsShellRevealed
@@ -3283,10 +3335,21 @@
             } else {
                 freezeDualStatsEnterAnimation();
             }
-            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
-                window.usertypoProgression.attachToList(players, 'userId').then(paintResults).catch(paintResults);
-            } else {
+            function afterPaint() {
                 paintResults();
+                if (opponentLeft && !isBotMatch()) {
+                    dimOpponentStatsCard();
+                    showOpponentLeftNotice(payload[3] ? 'mid' : 'stats');
+                    updateRematchButton();
+                }
+                if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.refresh === 'function') {
+                    window.usertypoPageScrollbar.refresh();
+                }
+            }
+            if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
+                window.usertypoProgression.attachToList(players, 'userId').then(afterPaint).catch(afterPaint);
+            } else {
+                afterPaint();
             }
         }
 
@@ -3300,11 +3363,37 @@
             if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
         }
 
+        async function startLocalBotRematch() {
+            if (!config || selfRematchVoted) return;
+            selfRematchVoted = true;
+            updateRematchButton();
+            var raceConfig = {
+                mode: config.mode === 'words' ? 'words' : 'time',
+                amount: Number(config.amount) || 30,
+                lang: config.lang || 'english',
+                punct: config.punct === true || config.punct === 1 || config.punct === '1' ? '1' : '0',
+                nums: config.nums === true || config.nums === 1 || config.nums === '1' ? '1' : '0',
+            };
+            try {
+                sessionStorage.setItem('usertypo:local-bot-config', JSON.stringify(raceConfig));
+            } catch (_) { /* ignore */ }
+            try {
+                if (roomId && window.usertypoMultiplayer) {
+                    await window.usertypoMultiplayer.leaveRace(roomId);
+                }
+            } catch (_) { /* ignore */ }
+            markDualMembership(false);
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/dual?local=bot');
+            } else {
+                window.location.href = '/dual?local=bot';
+            }
+        }
+
         async function requestRematch() {
             if (state !== 'finished' || !config || selfRematchVoted) return;
-            if (opponentLeft && !isBotMatch()) {
-                window.usertypoNotifications?.showToast('Your opponent left — rematch is unavailable.', 'person_remove');
-                return;
+            if (opponentLeft && !isBotMatch() && !isLocalBotMatch()) {
+                return startLocalBotRematch();
             }
             if (isLocalBotMatch()) {
                 selfRematchVoted = true;
@@ -3330,6 +3419,8 @@
                 updateRematchButton();
             } catch (error) {
                 if (button) button.disabled = false;
+                selfRematchVoted = false;
+                updateRematchButton();
                 window.usertypoNotifications?.showToast(error.message || 'Could not rematch', 'error');
             }
         }
@@ -3422,16 +3513,21 @@
                 var reason = String(payload[2] || 'left');
                 opponentLeft = true;
 
-                // Stats view (or explicit stats leave): close dual immediately.
+                // Stats view (or explicit stats leave): stay on results, offer bot rematch.
                 if (state === 'finished' || reason === 'stats-left') {
-                    updateRematchButton();
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    applyOpponentLeftOnStats(reason === 'stats-left' ? 'stats' : 'mid');
+                    if (window.usertypoNotifications) {
+                        window.usertypoNotifications.showToast(
+                            'Your opponent left the duel.',
+                            'person_remove'
+                        );
+                    }
                     return;
                 }
 
                 // Waiting / countdown: auto-close — no race to finish.
                 if (state === 'joining' || state === 'countdown') {
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    closeDualToFriends('Your opponent left the duel.', 'person_remove');
                     return;
                 }
 
@@ -3459,7 +3555,7 @@
                     && state !== 'waiting-result'
                     && state !== 'finished'
                 ) {
-                    closeDualToFriends('Your opponent left the dual.', 'person_remove');
+                    closeDualToFriends('Your opponent left the duel.', 'person_remove');
                     return;
                 }
                 // Bot matches may still receive a server finished after the local UI settled.
@@ -3473,12 +3569,18 @@
                 rematchNeeded = Math.max(1, Number(payload[2]) || 1);
                 var agreedIds = payload[3] || [];
                 if (selfUserId && agreedIds.indexOf(selfUserId) !== -1) selfRematchVoted = true;
+                else if (!agreedIds.length) selfRematchVoted = false;
                 updateRematchButton();
             });
             listen('race-rematch-start', function (event) {
                 var payload = event.detail || {};
                 if (!payload.roomId || payload.roomId !== roomId) return;
                 matchReason = payload.reason || matchReason;
+                opponentLeft = false;
+                clearOpponentLeftStatsUi();
+                if (window.usertypoMultiplayer && typeof window.usertypoMultiplayer.markActiveRoomBot === 'function') {
+                    window.usertypoMultiplayer.markActiveRoomBot(matchReason === 'bot');
+                }
                 if (payload.config) {
                     applyDualRaceConfig(payload.config);
                     bindDualKeymapRenderArgs();
@@ -3603,7 +3705,7 @@
                 prepareWaitingTestView();
             } catch (error) {
                 markDualMembership(false);
-                showMessage('Could not join dual', error.message);
+                showMessage('Could not join duel', error.message);
                 setTimeout(function () {
                     if (typeof window.navigateTo === 'function') window.navigateTo('/multiplayer');
                 }, 1800);
@@ -3633,6 +3735,9 @@
                 window.applyDualLiveFeedSettings = null;
             }
             latestResults = null;
+            if (window.usertypoPageScrollbar && typeof window.usertypoPageScrollbar.disable === 'function') {
+                window.usertypoPageScrollbar.disable();
+            }
         }
 
         window.applyDualLiveFeedSettings = applyDualLiveFeedSettings;
