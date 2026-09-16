@@ -821,6 +821,10 @@
         });
     }
 
+    function markActiveRoomBot(isBot) {
+        activeRoomIsBot = !!isBot;
+    }
+
     function sendProgress(roomId, sequence, completedWords, totalKeystrokes, finalPacket, finalStats) {
         // Bot duals: allow only the final settle packet (no live progress spam).
         if (activeRoomIsBot && !finalPacket) {
@@ -1027,6 +1031,7 @@
         loadListings: loadListings,
         joinListing: joinListing,
         joinMatch: joinMatch,
+        markActiveRoomBot: markActiveRoomBot,
         sendProgress: sendProgress,
         reportConsistency: reportConsistency,
         sendCursorState: sendCursorState,
