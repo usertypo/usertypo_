@@ -136,6 +136,30 @@
             min-width: 0;
             padding-left: clamp(0.25rem, 1.5vw, 1.5rem);
             padding-right: clamp(0.25rem, 1.5vw, 1.5rem);
+            transition: opacity 0.35s ease, filter 0.35s ease;
+        }
+        #dual-stats-compare > .dual-stats-player.is-opponent-left {
+            opacity: 0.38;
+            filter: grayscale(0.55);
+            pointer-events: none;
+        }
+        #dual-stats-compare > .dual-stats-player.is-opponent-left .dual-stats-avatar-wrap::after {
+            content: 'Left';
+            position: absolute;
+            left: 50%;
+            bottom: -0.15rem;
+            transform: translateX(-50%);
+            z-index: 20;
+            font-size: 0.55rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgb(248 113 113);
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(248, 113, 113, 0.35);
+            border-radius: 999px;
+            padding: 0.1rem 0.4rem;
+            pointer-events: none;
         }
         #dual-stats-compare .dual-stats-avatar-wrap {
             margin-bottom: clamp(0.85rem, 2vh, 1.35rem);
