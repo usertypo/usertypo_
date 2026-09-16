@@ -84,10 +84,10 @@
         var targetName = typeof target === 'object' && target ? target.name : '';
         if (!userId) throw new Error('Select an online friend.');
         if (current && current.status === 'searching') {
-            throw new Error('Cancel your current dual search before challenging a friend.');
+            throw new Error('Cancel your current duel search before challenging a friend.');
         }
         if (current && current.mode === 'challenge' && current.status === 'pending') {
-            throw new Error('Cancel your pending dual request before sending another one.');
+            throw new Error('Cancel your pending duel request before sending another one.');
         }
         current = {
             mode: 'challenge',
@@ -117,10 +117,10 @@
 
     async function sendMatchmaking(config) {
         if (current && current.mode === 'matchmaking' && current.status === 'searching') {
-            throw new Error('You cannot create a dual while already looking for a dual.');
+            throw new Error('You cannot create a duel while already looking for a duel.');
         }
         if (current && current.mode === 'challenge' && current.status === 'pending') {
-            throw new Error('Cancel your pending friend challenge before creating a dual.');
+            throw new Error('Cancel your pending friend challenge before creating a duel.');
         }
         current = { mode: 'matchmaking', status: 'searching', config: config };
         try {
@@ -158,7 +158,7 @@
 
     async function continueSearching() {
         if (!current || current.mode !== 'matchmaking' || !current.listingId) {
-            throw new Error('No active dual search.');
+            throw new Error('No active duel search.');
         }
         await api().extendPublicDuelSearch(current.listingId);
         current.status = 'searching';
@@ -172,7 +172,7 @@
 
     async function playAgainstBot() {
         if (!current || current.mode !== 'matchmaking' || !current.listingId) {
-            throw new Error('No active dual search.');
+            throw new Error('No active duel search.');
         }
         return startLocalBot(current.config);
     }

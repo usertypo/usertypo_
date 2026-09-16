@@ -296,7 +296,7 @@
         </div>
     </div>
 
-    <!-- Find Match Modal (Multiplayer → Dual matchmaking) -->
+    <!-- Find Match Modal (Multiplayer → Duel matchmaking) -->
     <div id="find-match-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="find-match-backdrop" class="absolute inset-0 cursor-pointer"></div>
@@ -305,25 +305,25 @@
             id="find-match-content">
             <div id="find-match-choice">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-white tracking-tight">Dual</h2>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Duel</h2>
                     <button id="close-find-match-choice-btn"
                         class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
-                <p class="text-sm text-slate-400 mb-5">Join a waiting player or create a dual with your own settings.</p>
+                <p class="text-sm text-slate-400 mb-5">Join a waiting player or create a duel with your own settings.</p>
                 <div class="grid grid-cols-2 gap-3">
                     <button id="join-public-dual-btn" type="button"
                         class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
                         <span class="material-symbols-outlined text-primary text-2xl">groups</span>
-                        <span class="block text-white font-bold mt-2">Join a dual</span>
+                        <span class="block text-white font-bold mt-2">Join a duel</span>
                         <span class="block text-xs text-slate-400 mt-1">Browse available matches</span>
                         <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500">Enter</span>
                     </button>
                     <button id="create-public-dual-btn" type="button"
                         class="p-5 rounded-xl border border-white/10 bg-white/[0.04] hover:border-primary/25 hover:bg-primary/10 focus-visible:border-primary/25 focus-visible:bg-primary/10 focus-visible:outline-none text-left transition-colors">
                         <span class="material-symbols-outlined text-primary text-2xl">add_circle</span>
-                        <span class="block text-white font-bold mt-2">Create a dual</span>
+                        <span class="block text-white font-bold mt-2">Create a duel</span>
                         <span class="block text-xs text-slate-400 mt-1">Choose match settings</span>
                         <span class="inline-flex mt-3 px-2 py-0.5 rounded border border-white/15 text-[0.533rem] font-mono text-slate-500">Tab + Enter</span>
                     </button>
@@ -337,7 +337,7 @@
                         <span class="material-symbols-outlined text-lg">arrow_back</span>
                         <span class="text-sm font-semibold">Back</span>
                     </button>
-                    <h2 class="text-xl font-bold text-white">Available Duals</h2>
+                    <h2 class="text-xl font-bold text-white">Available Duels</h2>
                     <button id="close-find-match-list-btn"
                         class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
                         <span class="material-symbols-outlined">close</span>
@@ -974,7 +974,7 @@ window.__spaPageInit = function() {
                         closeFindMatchModal();
                     } catch (error) {
                         joinButton.disabled = false;
-                        window.usertypoNotifications?.showToast(error.message || 'Could not join dual', 'error');
+                        window.usertypoNotifications?.showToast(error.message || 'Could not join duel', 'error');
                     }
                 });
                 info.append(name, details);
@@ -993,7 +993,7 @@ window.__spaPageInit = function() {
                     config: LOCAL_BOT_LISTING_CONFIG,
                     onJoin: function () {
                         if (!window.DualMatch || typeof window.DualMatch.startLocalBot !== 'function') {
-                            return Promise.reject(new Error('Bot dual is not ready.'));
+                            return Promise.reject(new Error('Bot duel is not ready.'));
                         }
                         return window.DualMatch.startLocalBot(LOCAL_BOT_LISTING_CONFIG);
                     },
@@ -1080,7 +1080,7 @@ window.__spaPageInit = function() {
             createPublicDualBtn?.addEventListener('click', () => {
                 if (isMultiplayerUnavailable()) {
                     window.usertypoNotifications?.showToast(
-                        'Creating a dual needs the multiplayer server. You can still join TypeBot from Join a dual.',
+                        'Creating a duel needs the multiplayer server. You can still join TypeBot from Join a duel.',
                         'error'
                     );
                     return;
@@ -1088,7 +1088,7 @@ window.__spaPageInit = function() {
                 const request = window.DualMatch?.loadRequest?.();
                 if (request?.mode === 'matchmaking' && request?.status === 'searching') {
                     window.usertypoNotifications?.showToast(
-                        'You cannot create a dual while already looking for a dual.',
+                        'You cannot create a duel while already looking for a duel.',
                         'error'
                     );
                     return;
@@ -1161,7 +1161,7 @@ window.__spaPageInit = function() {
                         await startFindMatchFlow(config);
                         closeFindMatchModal();
                     } catch (error) {
-                        window.usertypoNotifications?.showToast(error.message || 'Could not create dual', 'error');
+                        window.usertypoNotifications?.showToast(error.message || 'Could not create duel', 'error');
                     } finally {
                         setCreateButtonLoading(submitFindMatchBtn, false);
                     }

@@ -445,7 +445,7 @@
         if (!indicator || !title || !body || !cancel) return null;
 
         pendingIndicatorId = String(options.id || ('pending:' + Date.now()));
-        title.textContent = options.title || 'Waiting for a dual';
+        title.textContent = options.title || 'Waiting for a duel';
         body.textContent = options.body || '';
         cancel.textContent = options.cancelLabel || 'Cancel';
         cancel.disabled = false;

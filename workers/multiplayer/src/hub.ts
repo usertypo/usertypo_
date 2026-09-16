@@ -533,11 +533,15 @@ export class MultiplayerHub implements DurableObject {
         ? this.rooms.get(this.boundRoomId)
         : [...this.rooms.values()][0];
       if (room && userId && room.players[userId]) {
-        const player = room.players[userId];
         if (room.state !== 'racing') {
-          player.status = 'left';
-          player.joined = false;
-          this.userToRoom.delete(userId);
+          if (room.type === 'custom') {
+            const player = room.players[userId];
+            player.status = 'left';
+            player.joined = false;
+            this.userToRoom.delete(userId);
+          } else {
+            await this.handleDualRaceLeave(room, userId);
+          }
           await this.persist();
         }
       }
@@ -1332,8 +1336,14 @@ export class MultiplayerHub implements DurableObject {
     return Object.values(room.players).filter((p) => p.status !== 'left');
   }
 
+  private pruneRematchVotes(room: Room) {
+    const activeIds = new Set(this.remainingDualHumans(room).map((p) => p.userId));
+    room.rematchVotes = (room.rematchVotes || []).filter((id) => activeIds.has(id));
+  }
+
   private emitRematchState(room: Room) {
     if (room.type === 'custom' || room.state !== 'finished') return;
+    this.pruneRematchVotes(room);
     const votes = room.rematchVotes || [];
     this.emitRoom(room, 'race:rematch-state', [
       room.id,
@@ -1355,11 +1365,13 @@ export class MultiplayerHub implements DurableObject {
     if (!player || player.status === 'left') throw new Error('rematch_unavailable');
     if (!room.rematchVotes) room.rematchVotes = [];
     if (!room.rematchVotes.includes(userId)) room.rematchVotes.push(userId);
+    this.pruneRematchVotes(room);
     await this.cancelAlarmsForRoom(room.id, 'room-dispose');
     this.scheduleAlarm(LIMITS.finishedRoomTtlMs, { kind: 'room-dispose', roomId: room.id });
     this.emitRematchState(room);
     const votes = room.rematchVotes.slice();
-    const needed = Math.max(1, this.remainingDualHumans(room).length);
+    const remaining = this.remainingDualHumans(room);
+    const needed = Math.max(1, remaining.length);
     const rematchState: [string, number, number, string[]] = [
       room.id,
       votes.length,
@@ -1368,10 +1380,12 @@ export class MultiplayerHub implements DurableObject {
     ];
     let rematchStart: { roomId: string; reason: string; config: RaceConfig } | undefined;
     if (votes.length >= needed) {
-      await this.startDualRematch(room);
+      // Solo rematch after an opponent left must be vs a bot — never a 1-player ghost race.
+      const withBot = !!room.opponentLeft || remaining.length < 2;
+      const reason = await this.startDualRematch(room, { withBot });
       rematchStart = {
         roomId: room.id,
-        reason: room.type,
+        reason,
         config: room.config,
       };
     }
@@ -1383,8 +1397,12 @@ export class MultiplayerHub implements DurableObject {
     };
   }
 
-  private async startDualRematch(room: Room) {
-    if (room.type === 'custom' || room.state !== 'finished') return;
+  private async startDualRematch(
+    room: Room,
+    options?: { withBot?: boolean },
+  ): Promise<string> {
+    if (room.type === 'custom' || room.state !== 'finished') return room.type;
+    const withBot = !!(options?.withBot || room.opponentLeft);
     await this.cancelAlarmsForRoom(room.id, 'room-dispose');
     room.state = 'waiting';
     room.prompt = await createPrompt(this.env.PUBLIC_SITE_URL || 'https://dev.usertypo.com', room.config);
@@ -1394,7 +1412,19 @@ export class MultiplayerHub implements DurableObject {
     room.lastResults = null;
     room.finishReason = '';
     room.rematchVotes = [];
-    room.bot = null;
+
+    // Drop humans who already left so countdown/join checks stay correct.
+    for (const [uid, player] of Object.entries(room.players)) {
+      if (player.status === 'left') {
+        delete room.players[uid];
+        room.allowedUserIds = room.allowedUserIds.filter((id) => id !== uid);
+        this.userToRoom.delete(uid);
+      }
+    }
+    Object.values(room.players).forEach((item, index) => { item.index = index; });
+
+    room.bot = withBot ? this.createCustomRoomBot(room) : null;
+    const reason = withBot ? 'bot' : room.type;
     for (const player of this.remainingDualHumans(room)) {
       this.resetPlayerForLobby(player);
       player.joined = true;
@@ -1402,11 +1432,57 @@ export class MultiplayerHub implements DurableObject {
     }
     this.emitRoom(room, 'race:rematch-start', {
       roomId: room.id,
-      reason: room.type,
+      reason,
       config: room.config,
     });
     this.startCountdown(room);
     await this.persist();
+    return reason;
+  }
+
+  /** Dual PvP leave: notify remaining player and (on stats) clear rematch votes. */
+  private async handleDualRaceLeave(room: Room, userId: string) {
+    const player = room.players[userId];
+    if (!player || player.status === 'left') return;
+
+    const priorState = room.state;
+    const leaveReason = priorState === 'finished'
+      ? 'stats-left'
+      : priorState === 'racing'
+        ? 'left'
+        : 'left';
+
+    player.status = 'left';
+    player.leftMidGame = priorState === 'racing';
+    player.joined = false;
+    this.userToRoom.delete(userId);
+
+    if (priorState === 'racing' || priorState === 'finished') {
+      room.opponentLeft = true;
+    }
+
+    if (priorState === 'finished') {
+      // Force the remaining player to explicitly choose "Go against a bot".
+      room.rematchVotes = [];
+    }
+
+    this.emitRoom(room, 'race:player-left', [
+      room.id,
+      player.index,
+      leaveReason,
+    ]);
+
+    if (priorState === 'finished') {
+      this.emitRematchState(room);
+    } else if (priorState === 'racing') {
+      await this.maybeFinishRoom(room);
+    } else if (priorState === 'waiting' || priorState === 'countdown') {
+      const remaining = this.remainingDualHumans(room);
+      if (!remaining.length) {
+        room.state = 'disposed';
+        this.rooms.delete(room.id);
+      }
+    }
   }
 
   private playerResult(player: Player, room: Room): Array<string | number> {
@@ -1872,13 +1948,9 @@ export class MultiplayerHub implements DurableObject {
           return;
         }
         if (room) {
-          const player = room.players[userId];
-          if (player) {
-            player.status = 'left';
-            player.leftMidGame = room.state === 'racing';
-          }
+          await this.handleDualRaceLeave(room, userId);
+        } else {
           this.userToRoom.delete(userId);
-          if (room.state === 'racing') room.opponentLeft = true;
         }
         if (this.role === 'race' && rid) {
           await this.notifyLobbyMembershipClear(rid, [userId]);

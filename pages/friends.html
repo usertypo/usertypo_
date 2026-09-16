@@ -360,7 +360,7 @@
     </div>
 
 
-    <!-- Configure Dual Modal -->
+    <!-- Configure Duel Modal -->
     <div id="configure-dual-modal"
         class="fixed inset-0 z-[200] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
         <div id="configure-dual-backdrop" class="absolute inset-0 cursor-pointer"></div>
@@ -369,7 +369,7 @@
             id="configure-dual-content">
             <div id="configure-dual-form">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-white tracking-tight">Configure Dual</h2>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Configure Duel</h2>
                     <button id="close-configure-dual-btn"
                         class="text-slate-400 hover:text-error transition-colors p-1 rounded-lg hover:bg-white/5">
                         <span class="material-symbols-outlined">close</span>
@@ -787,7 +787,7 @@ window.__spaPageInit = function() {
                 var actionsWrapClass = 'friend-card-actions w-full sm:w-auto mt-1 sm:mt-0' +
                     (isChallengePending ? ' has-pending' : ' opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity');
                 var pendingSlot = isChallengePending
-                    ? '<span class="friend-dual-pending-slot" title="Waiting for response" aria-label="Dual request pending">' +
+                    ? '<span class="friend-dual-pending-slot" title="Waiting for response" aria-label="Duel request pending">' +
                       '<span class="material-symbols-outlined text-primary text-[1.066rem] friend-dual-pending-spin">progress_activity</span></span>'
                     : '';
 
@@ -1341,7 +1341,7 @@ window.__spaPageInit = function() {
                         await window.DualMatch.sendRequest(target, collectDualConfig());
                         renderFriendsList();
                     } catch (error) {
-                        window.usertypoNotifications?.showToast(error.message || 'Could not send dual request', 'error');
+                        window.usertypoNotifications?.showToast(error.message || 'Could not send duel request', 'error');
                     } finally {
                         submitDualRequestBtn.disabled = false;
                     }
