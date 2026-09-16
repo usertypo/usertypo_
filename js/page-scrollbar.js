@@ -7,26 +7,28 @@
     var wired = false;
     var active = false;
     var isDragging = false;
-    var startY = 0;
-    var startScrollTop = 0;
+    var thumbClickOffset = 0;
     var track = null;
     var thumb = null;
 
     function updatePageScrollbar() {
         if (!active || !track || !thumb) return;
-        var docH = document.documentElement.scrollHeight;
+        var docH = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
         var winH = window.innerHeight;
         var scrollable = docH - winH;
         if (scrollable <= 0) {
             track.style.display = 'none';
+            track.style.visibility = 'hidden';
             return;
         }
         track.style.display = 'block';
-        var pct = Math.min(1, Math.max(0, window.scrollY / scrollable));
+        track.style.visibility = 'visible';
         var trackH = track.clientHeight;
         var thumbH = Math.max(trackH * (winH / docH), 40);
         thumb.style.height = thumbH + 'px';
+        // While dragging, mousemove owns thumb position for immediate feedback.
         if (!isDragging) {
+            var pct = Math.min(1, Math.max(0, window.scrollY / scrollable));
             thumb.style.top = (pct * (trackH - thumbH)) + 'px';
         }
     }
@@ -44,9 +46,10 @@
 
     function onThumbMouseDown(e) {
         if (!active || !thumb) return;
+        e.preventDefault();
         isDragging = true;
-        startY = e.clientY;
-        startScrollTop = window.scrollY;
+        var thumbRect = thumb.getBoundingClientRect();
+        thumbClickOffset = e.clientY - thumbRect.top;
         document.body.style.userSelect = 'none';
         thumb.classList.add('bg-primary');
     }
@@ -54,15 +57,20 @@
     function onDocumentMouseMove(e) {
         showTrackNearCursor(e);
         if (!isDragging || !track || !thumb) return;
-        var docH = document.documentElement.scrollHeight;
-        var winH = window.innerHeight;
-        var maxScroll = docH - winH;
+
+        var trackRect = track.getBoundingClientRect();
         var thumbH = thumb.clientHeight;
-        var maxThumbTop = track.clientHeight - thumbH;
-        var deltaY = e.clientY - startY;
-        if (maxThumbTop > 0 && maxScroll > 0) {
-            window.scrollTo(0, startScrollTop + (deltaY / maxThumbTop) * maxScroll);
-        }
+        var maxThumbTop = trackRect.height - thumbH;
+        var newThumbTop = e.clientY - trackRect.top - thumbClickOffset;
+        newThumbTop = Math.max(0, Math.min(newThumbTop, maxThumbTop));
+
+        // Move thumb immediately so it doesn't feel stuck while the page scrolls.
+        thumb.style.top = newThumbTop + 'px';
+
+        var scrollRatio = maxThumbTop > 0 ? newThumbTop / maxThumbTop : 0;
+        var docH = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        var maxScroll = Math.max(0, docH - window.innerHeight);
+        window.scrollTo(0, scrollRatio * maxScroll);
     }
 
     function onDocumentMouseUp() {
@@ -79,7 +87,7 @@
         track = document.getElementById('page-scroll-track');
         thumb = document.getElementById('page-scroll-thumb');
         document.addEventListener('mousemove', onDocumentMouseMove);
-        window.addEventListener('scroll', updatePageScrollbar);
+        window.addEventListener('scroll', updatePageScrollbar, { passive: true });
         window.addEventListener('resize', updatePageScrollbar);
         document.addEventListener('mouseup', onDocumentMouseUp);
         if (thumb) thumb.addEventListener('mousedown', onThumbMouseDown);
@@ -99,6 +107,7 @@
             track.classList.add('opacity-0', 'translate-x-4', 'pointer-events-none');
             track.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
             track.style.display = '';
+            track.style.visibility = '';
         }
         track = null;
         thumb = null;
