@@ -422,6 +422,11 @@
             padding-left: 0.853rem;
             padding-right: 0.853rem;
         }
+        /* Hide OS mouse pointer while actively typing (restored on mousemove) */
+        body.hide-mouse-cursor,
+        body.hide-mouse-cursor * {
+            cursor: none !important;
+        }
         /* Hide number input spinners for custom prompt */
         #custom-prompt-input::-webkit-outer-spin-button,
         #custom-prompt-input::-webkit-inner-spin-button {
@@ -4493,10 +4498,12 @@ window.setTimeout = function(handler, timeout) {
 
         function hideZenElements() {
             zenElements.forEach(el => el.classList.add('zen-hidden'));
+            document.body.classList.add('hide-mouse-cursor');
         }
 
         function showZenElements() {
             zenElements.forEach(el => el.classList.remove('zen-hidden'));
+            document.body.classList.remove('hide-mouse-cursor');
         }
 
         function setupGraphCardHover() {
