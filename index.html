@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- SPA Shell: For direct URL access / refresh on any route, configure the server to serve this file for all paths. See _redirects. -->
 <html lang="en">
 
@@ -237,7 +237,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
-    <link href="css/global.css?v=32" rel="stylesheet" />
+    <link href="css/global.css?v=33" rel="stylesheet" />
     <link href="css/material-symbols.css?v=1" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -1444,11 +1444,13 @@
         aria-labelledby="ppc-username">
         <div id="player-profile-box"
             class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 opacity-0 relative">
-            <button type="button" id="ppc-close-btn"
-                class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Close profile">
-                <span class="material-symbols-outlined text-[1.172rem]">close</span>
-            </button>
+            <div class="sticky top-0 z-10 flex justify-end -mb-2 pointer-events-none">
+                <button type="button" id="ppc-close-btn"
+                    class="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors bg-surface/40 backdrop-blur-sm"
+                    aria-label="Close profile">
+                    <span class="material-symbols-outlined text-[1.172rem]">close</span>
+                </button>
+            </div>
             <p id="ppc-status" class="text-center text-xs text-slate-500 font-bold mb-2 min-h-[1rem]"></p>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
                 <div class="flex flex-col gap-3 order-2 lg:order-1">
@@ -1605,10 +1607,10 @@
     <script src="js/api/progression.js?v=8"></script>
     <script src="js/api/site-stats.js?v=2"></script>
     <script src="js/util/escape.js?v=1"></script>
-    <script src="js/util/mobile.js?v=2"></script>
+    <script src="js/util/mobile.js?v=3"></script>
     <script src="js/ui/player-avatar.js?v=5"></script>
     <script src="js/api/public-profile.js?v=4"></script>
-    <script src="js/ui/player-profile-card.js?v=4"></script>
+    <script src="js/ui/player-profile-card.js?v=5"></script>
     <script src="js/ui/system-confirm.js?v=6"></script>
     <script src="js/ui/contact.js?v=204"></script>
     <script src="js/auth/header.js?v=9"></script>
@@ -1616,14 +1618,14 @@
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
     <script src="js/api/leaderboards.js?v=17"></script>
-    <script src="js/api/friends.js?v=4"></script>
+    <script src="js/api/friends.js?v=5"></script>
     <script src="js/api/presence.js?v=2"></script>
     <script src="js/api/notifications.js?v=13"></script>
     <script src="js/api/friend-online-notify.js?v=3"></script>
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=56"></script>
     <script src="dual.js?v=14"></script>
-    <script src="js/page-fragments.js?v=289"></script>
+    <script src="js/page-fragments.js?v=294"></script>
     <script src="js/page-scrollbar.js?v=2"></script>
     <script src="js/router.js?v=120"></script>
 

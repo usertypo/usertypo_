@@ -610,6 +610,36 @@ html {
     padding: 1.25rem;
     background: transparent;
     transition: opacity 0.2s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+#player-profile-box {
+    width: min(100%, 72rem);
+    max-height: calc(100vh - 2.5rem);
+    max-height: calc(100dvh - 2.5rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 0;
+    margin: auto;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, rgb(var(--theme-primary-rgb, 0, 208, 255)) 45%, transparent) transparent;
+}
+
+#player-profile-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+#player-profile-box::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#player-profile-box::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, rgb(var(--theme-primary-rgb, 0, 208, 255)) 45%, transparent);
+    border-radius: 9999px;
 }
 
 /* System confirm — same menu-bubble glass, transparent hit area (no page dim) */
