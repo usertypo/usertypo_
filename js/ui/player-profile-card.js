@@ -49,6 +49,8 @@
             box.classList.remove('scale-95', 'opacity-0');
             box.classList.add('scale-100', 'opacity-100');
             overlay.setAttribute('aria-hidden', 'false');
+            try { box.scrollTop = 0; } catch (_) { /* ignore */ }
+            try { overlay.scrollTop = 0; } catch (_) { /* ignore */ }
         } else {
             overlay.classList.add('pointer-events-none', 'opacity-0');
             overlay.classList.remove('pointer-events-auto', 'opacity-100');
