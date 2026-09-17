@@ -47,6 +47,13 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.05);
+            /* Tall stacked cards on phones — keep a soft box radius, not a capsule. */
+            border-radius: 1.25rem !important;
+        }
+        @media (min-width: 640px) {
+            .friend-card {
+                border-radius: 9999px !important;
+            }
         }
         .friend-card-actions {
             position: relative;
@@ -755,7 +762,7 @@ window.__spaPageInit = function() {
                 var isOnline = !!friend.is_online;
                 var avatarUrl = friend.avatar_url || '';
                 var card = document.createElement('div');
-                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-full hover:border-primary/25 transition-colors group';
+                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-2xl sm:rounded-full hover:border-primary/25 transition-colors group';
                 card.dataset.status = isOnline ? 'online' : 'offline';
                 card.dataset.cardType = 'friend';
                 card.dataset.friendName = name;
@@ -821,7 +828,7 @@ window.__spaPageInit = function() {
             function renderPendingCard(request, direction) {
                 var name = displayName(request);
                 var card = document.createElement('div');
-                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-full hover:border-primary/25 transition-colors group';
+                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-2xl sm:rounded-full hover:border-primary/25 transition-colors group';
                 card.dataset.status = 'pending';
                 card.dataset.cardType = direction;
                 card.dataset.requestId = request.request_id;
