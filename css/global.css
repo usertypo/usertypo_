@@ -642,13 +642,6 @@ html {
     border-radius: 9999px;
 }
 
-#ppc-close-btn {
-    position: sticky !important;
-    top: 0.35rem;
-    float: right;
-    margin: 0 0 0.5rem 0.5rem;
-}
-
 /* System confirm — same menu-bubble glass, transparent hit area (no page dim) */
 #system-confirm-modal {
     position: fixed;
