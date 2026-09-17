@@ -331,11 +331,28 @@
             syncDualKeymapLayout();
         }
 
+        var lastMouseX = null;
+        var lastMouseY = null;
+        var ignoreMouseRevealUntil = 0;
+
+        function shouldRevealFromMouseMove(e) {
+            if (performance.now() < ignoreMouseRevealUntil) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                return false;
+            }
+            if (lastMouseX === e.clientX && lastMouseY === e.clientY) return false;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            return true;
+        }
+
         function hideZenElements() {
             document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
             document.body.classList.add('hide-mouse-cursor');
+            ignoreMouseRevealUntil = performance.now() + 120;
         }
 
         function showZenElements() {
@@ -343,6 +360,7 @@
                 el.classList.remove('zen-hidden');
             });
             document.body.classList.remove('hide-mouse-cursor');
+            ignoreMouseRevealUntil = 0;
         }
 
         function resetZenState() {
@@ -353,8 +371,9 @@
         function wireZenHandlers() {
             if (zenHandlersBound) return;
             zenHandlersBound = true;
-            document.addEventListener('mousemove', function () {
+            document.addEventListener('mousemove', function (e) {
                 if (state !== 'racing' || !zenTypingActive) return;
+                if (!shouldRevealFromMouseMove(e)) return;
                 showZenElements();
             }, { signal: signal });
         }

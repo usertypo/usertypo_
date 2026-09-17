@@ -4489,21 +4489,41 @@ window.setTimeout = function(handler, timeout) {
             }
         }
 
-        document.addEventListener('mousemove', () => {
+        document.addEventListener('mousemove', (e) => {
             resetActivityTimers(false);
-            if (isTyping && !testComplete) {
-                showZenElements();
-            }
+            if (!isTyping || testComplete) return;
+            if (!shouldRevealFromMouseMove(e)) return;
+            showZenElements();
         });
+
+        let lastMouseX = null;
+        let lastMouseY = null;
+        let ignoreMouseRevealUntil = 0;
+
+        function shouldRevealFromMouseMove(e) {
+            // Ignore synthetic/zero-delta moves (common on Windows after keydown)
+            // and a short window right after we hide the cursor.
+            if (performance.now() < ignoreMouseRevealUntil) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                return false;
+            }
+            if (lastMouseX === e.clientX && lastMouseY === e.clientY) return false;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            return true;
+        }
 
         function hideZenElements() {
             zenElements.forEach(el => el.classList.add('zen-hidden'));
             document.body.classList.add('hide-mouse-cursor');
+            ignoreMouseRevealUntil = performance.now() + 120;
         }
 
         function showZenElements() {
             zenElements.forEach(el => el.classList.remove('zen-hidden'));
             document.body.classList.remove('hide-mouse-cursor');
+            ignoreMouseRevealUntil = 0;
         }
 
         function setupGraphCardHover() {
