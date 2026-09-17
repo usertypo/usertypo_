@@ -384,6 +384,12 @@
             transition: opacity 0.5s ease-in-out;
         }
 
+        /* Hide OS mouse pointer while actively typing (restored on mousemove) */
+        body.hide-mouse-cursor,
+        body.hide-mouse-cursor * {
+            cursor: none !important;
+        }
+
         /* --- CARET WITH SLOW OPACITY FADE INCLUDED --- */
         #caret {
             position: absolute;
@@ -1625,9 +1631,9 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=56"></script>
     <script src="dual.js?v=14"></script>
-    <script src="js/page-fragments.js?v=294"></script>
+    <script src="js/page-fragments.js?v=295"></script>
     <script src="js/page-scrollbar.js?v=2"></script>
-    <script src="js/router.js?v=120"></script>
+    <script src="js/router.js?v=121"></script>
 
     <script>
     window.usertypoInitExpandingBubble = function (expandingBubble, bubbleToggle) {
