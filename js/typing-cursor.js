@@ -1,9 +1,9 @@
 /**
  * Typing mouse-cursor hide — shared by home / dual / room.
  *
- * Chrome often keeps the old pointer glyph until a real mouse move or a
- * visibility change when only CSS cursor:none is toggled. A full-viewport
- * shield under the pointer forces an immediate cursor refresh on first key.
+ * Chrome (Chromium issue 26723) often keeps the old pointer glyph while the
+ * mouse is idle. The reliable workaround: insert an overlay, THEN change the
+ * cursor style on that overlay / an ancestor so Chrome schedules a refresh.
  */
 (function (global) {
     'use strict';
@@ -22,8 +22,8 @@
     var lastMouseY = null;
     var revealOriginX = null;
     var revealOriginY = null;
-    var touched = [];
     var autoWired = false;
+    var refreshToken = 0;
 
     function ensureStyleEl() {
         if (styleEl && styleEl.isConnected) return styleEl;
@@ -62,28 +62,74 @@
         shieldEl = document.createElement('div');
         shieldEl.id = SHIELD_ID;
         shieldEl.setAttribute('aria-hidden', 'true');
-        shieldEl.style.cssText = [
+        return shieldEl;
+    }
+
+    /**
+     * Chromium only applies a new CSS cursor after a style change on the
+     * current hover target (or ancestor) that happens *after* DOM mutation.
+     */
+    function forceChromeCursorRefresh(shield) {
+        if (!document.body || !shield) return;
+        var token = ++refreshToken;
+
+        // Step 1: overlay is already in the DOM with a non-none cursor.
+        shield.style.setProperty('cursor', 'default', 'important');
+        document.body.style.setProperty('cursor', 'default', 'important');
+        document.documentElement.style.setProperty('cursor', 'default', 'important');
+        void shield.offsetWidth;
+
+        // Step 2: change to none so Chrome schedules a cursor update.
+        shield.style.setProperty('cursor', 'none', 'important');
+        document.body.style.setProperty('cursor', 'none', 'important');
+        document.documentElement.style.setProperty('cursor', 'none', 'important');
+        void document.body.offsetWidth;
+
+        // Step 3: tiny layout nudge under the pointer (extra insurance).
+        shield.style.transform = 'translate(1px, 0)';
+        void shield.offsetWidth;
+        shield.style.transform = 'translate(0, 0)';
+
+        // Step 4: one more flip on the next frames — covers first-paint races.
+        requestAnimationFrame(function () {
+            if (token !== refreshToken || !hidden) return;
+            document.body.style.setProperty('cursor', 'auto', 'important');
+            void document.body.offsetWidth;
+            document.body.style.setProperty('cursor', 'none', 'important');
+            if (shieldEl) shieldEl.style.setProperty('cursor', 'none', 'important');
+            requestAnimationFrame(function () {
+                if (token !== refreshToken || !hidden) return;
+                document.documentElement.style.setProperty('cursor', 'wait', 'important');
+                void document.documentElement.offsetWidth;
+                document.documentElement.style.setProperty('cursor', 'none', 'important');
+                if (shieldEl) {
+                    shieldEl.style.setProperty('cursor', 'none', 'important');
+                    shieldEl.style.transform = 'translate(0, 1px)';
+                    void shieldEl.offsetWidth;
+                    shieldEl.style.transform = '';
+                }
+            });
+        });
+    }
+
+    function mountShieldAndRefresh() {
+        if (!document.body) return;
+        var el = ensureShield();
+        // Start as "default" so the later flip to "none" is a real style change.
+        el.style.cssText = [
             'position:fixed',
             'inset:0',
             'z-index:2147483646',
             'background:transparent',
             'pointer-events:auto',
-            'cursor:none',
+            'cursor:default',
         ].join(';');
-        return shieldEl;
-    }
-
-    function mountShield() {
-        if (!document.body) return;
-        var el = ensureShield();
-        // Re-append so it sits on top and Chrome re-evaluates the cursor target.
         document.body.appendChild(el);
-        el.style.setProperty('cursor', 'none', 'important');
-        // Force a layout pass so the pointer glyph refreshes on first hide.
-        void el.offsetWidth;
+        forceChromeCursorRefresh(el);
     }
 
     function removeShield() {
+        refreshToken += 1;
         if (shieldEl && shieldEl.parentNode) {
             shieldEl.parentNode.removeChild(shieldEl);
         }
@@ -92,37 +138,17 @@
         shieldEl = null;
     }
 
-    function forceTargetCursor(el) {
-        if (!el || !el.style || typeof el.style.setProperty !== 'function') return;
-        if (el.id === SHIELD_ID) return;
-        el.style.setProperty('cursor', 'none', 'important');
-        touched.push(el);
-        if (touched.length > 250) {
-            var old = touched.shift();
-            try {
-                if (old && old.style) old.style.removeProperty('cursor');
-            } catch (_) { /* ignore */ }
-        }
-    }
-
-    function clearTouchedCursors() {
-        while (touched.length) {
-            var el = touched.pop();
-            try {
-                if (el && el.style) el.style.removeProperty('cursor');
-            } catch (_) { /* ignore */ }
-        }
-    }
-
     function hide() {
         hidden = true;
         lastTypingActivityAt = performance.now();
         mountStyleLast();
+
+        // Overlay first (with default cursor), then flip styles — order matters.
+        mountShieldAndRefresh();
+
         document.documentElement.classList.add(CLASS_NAME);
         if (document.body) document.body.classList.add(CLASS_NAME);
-        document.documentElement.style.setProperty('cursor', 'none', 'important');
-        if (document.body) document.body.style.setProperty('cursor', 'none', 'important');
-        mountShield();
+
         revealOriginX = lastMouseX;
         revealOriginY = lastMouseY;
     }
@@ -139,7 +165,6 @@
         if (document.body) document.body.classList.remove(CLASS_NAME);
         document.documentElement.style.removeProperty('cursor');
         if (document.body) document.body.style.removeProperty('cursor');
-        clearTouchedCursors();
     }
 
     function noteTypingActivity() {
@@ -147,7 +172,9 @@
         if (!hidden) hide();
         else {
             mountStyleLast();
-            mountShield();
+            // Re-run the Chrome refresh sequence while still hidden.
+            if (shieldEl && shieldEl.isConnected) forceChromeCursorRefresh(shieldEl);
+            else mountShieldAndRefresh();
         }
     }
 
@@ -185,15 +212,22 @@
         lastMouseY = e.clientY;
     }
 
-    function onMouseOver(e) {
-        if (!hidden) return;
-        forceTargetCursor(e.target);
-    }
-
     function onMouseMove(e) {
         trackMouse(e);
         if (!hidden) return;
-        forceTargetCursor(e.target);
+        // movementX is more reliable than absolute deltas for "intentional" move
+        if (
+            typeof e.movementX === 'number'
+            && typeof e.movementY === 'number'
+            && (Math.abs(e.movementX) > MOUSE_REVEAL_MIN_PX || Math.abs(e.movementY) > MOUSE_REVEAL_MIN_PX)
+            && (performance.now() - lastTypingActivityAt >= MOUSE_REVEAL_IDLE_MS)
+        ) {
+            show();
+            try {
+                global.dispatchEvent(new CustomEvent('usertypo:typing-cursor-revealed'));
+            } catch (_) { /* ignore */ }
+            return;
+        }
         if (!shouldRevealFromMouseMove(e)) return;
         show();
         try {
@@ -232,9 +266,9 @@
 
     function onVisibilityChange() {
         if (document.hidden || !hidden) return;
-        // Tab focus refreshes the cursor; remount shield so first-load state stays hidden.
         mountStyleLast();
-        mountShield();
+        if (shieldEl && shieldEl.isConnected) forceChromeCursorRefresh(shieldEl);
+        else mountShieldAndRefresh();
     }
 
     function installGlobalListeners() {
@@ -242,7 +276,6 @@
         autoWired = true;
         document.addEventListener('keydown', onKeyDownCapture, true);
         document.addEventListener('mousemove', onMouseMove, true);
-        document.addEventListener('mouseover', onMouseOver, true);
         document.addEventListener('visibilitychange', onVisibilityChange);
     }
 
