@@ -31,6 +31,16 @@
         return false;
     }
 
+    /** Android soft keyboards need beforeinput/input; iOS keydowns are reliable. */
+    function isAndroidClient() {
+        try {
+            return typeof navigator !== 'undefined'
+                && /Android/i.test(navigator.userAgent || '');
+        } catch (_) {
+            return false;
+        }
+    }
+
     function normalizePath(path) {
         var p = String(path || '').split('?')[0];
         if (!p) return '/';
@@ -61,6 +71,7 @@
 
     global.usertypoMobile = {
         isMobileClient: isMobileClient,
+        isAndroidClient: isAndroidClient,
         isMultiplayerPath: isMultiplayerPath,
         blockMultiplayerIfMobile: blockMultiplayerIfMobile,
         notifyDesktopOnly: notifyDesktopOnly,
