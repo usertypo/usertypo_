@@ -90,25 +90,69 @@
             if (footerNavLinks) footerNavLinks.style.display = compact ? 'none' : '';
         }
 
+        var lastMouseX = null;
+        var lastMouseY = null;
+        var lastTypingActivityAt = 0;
+        var MOUSE_REVEAL_MIN_PX = 8;
+        var MOUSE_REVEAL_IDLE_MS = 650;
+
+        function shouldRevealFromMouseMove(e) {
+            if (performance.now() - lastTypingActivityAt < MOUSE_REVEAL_IDLE_MS) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                return false;
+            }
+            if (lastMouseX == null || lastMouseY == null) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                return false;
+            }
+            var dx = e.clientX - lastMouseX;
+            var dy = e.clientY - lastMouseY;
+            if ((dx * dx + dy * dy) < (MOUSE_REVEAL_MIN_PX * MOUSE_REVEAL_MIN_PX)) {
+                return false;
+            }
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            return true;
+        }
+
         function hideZenElements() {
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
-            document.body.classList.add('hide-mouse-cursor');
+            lastTypingActivityAt = performance.now();
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.hide();
+            else {
+                document.documentElement.classList.add('hide-mouse-cursor');
+                document.body.classList.add('hide-mouse-cursor');
+            }
         }
 
         function showZenElements() {
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
-            document.body.classList.remove('hide-mouse-cursor');
+            lastTypingActivityAt = 0;
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.show();
+            else {
+                document.documentElement.classList.remove('hide-mouse-cursor');
+                document.body.classList.remove('hide-mouse-cursor');
+            }
         }
 
         function startZenMode() {
             hideZenElements();
             if (!zenMouseHandler) {
-                zenMouseHandler = function () { showZenElements(); };
+                zenMouseHandler = function (e) {
+                    if (window.usertypoTypingCursor && window.usertypoTypingCursor.isHidden()) return;
+                    if (!shouldRevealFromMouseMove(e)) return;
+                    showZenElements();
+                };
                 document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
+                document.addEventListener('usertypo:typing-cursor-revealed', function () {
+                    showZenElements();
+                }, { signal: signal });
             }
         }
 
