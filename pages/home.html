@@ -1248,6 +1248,10 @@ window.setTimeout = function(handler, timeout) {
         let mobileTypingWired = false;
         /** True while we re-dispatch a soft-keyboard character into the keydown handler. */
         let mobileKeyFromSoftKeyboard = false;
+        /** Dedupe Android Backspace when keydown + input/beforeinput both fire. */
+        let lastMobileBackspaceAt = 0;
+        /** Keeps Android capture non-empty so delete beforeinput/input always fires. */
+        const ANDROID_CAPTURE_SENTINEL = '\u200B';
 
         function isMobileTypingCapture(el) {
             return !!(el && el.id === 'mobile-typing-input');
@@ -1256,6 +1260,12 @@ window.setTimeout = function(handler, timeout) {
         function isMobileTypingEnabled() {
             return !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
                 && window.usertypoMobile.isMobileClient());
+        }
+
+        /** Android: characters arrive via beforeinput/input. iOS: native keydowns are reliable. */
+        function usesAndroidSoftKeyboardInput() {
+            return !!(window.usertypoMobile && typeof window.usertypoMobile.isAndroidClient === 'function'
+                && window.usertypoMobile.isAndroidClient());
         }
 
         function focusMobileTypingInput() {
@@ -1268,6 +1278,7 @@ window.setTimeout = function(handler, timeout) {
             } catch (_) {
                 try { mobileTypingInput.focus(); } catch (__) { /* ignore */ }
             }
+            if (usesAndroidSoftKeyboardInput()) armAndroidCaptureBuffer();
         }
 
         function blurMobileTypingInput() {
@@ -1279,6 +1290,7 @@ window.setTimeout = function(handler, timeout) {
         /** Feed soft-keyboard characters into the shared document keydown handler. */
         function dispatchMobileTypingKey(key) {
             if (!key) return;
+            if (key === 'Backspace') lastMobileBackspaceAt = Date.now();
             mobileKeyFromSoftKeyboard = true;
             try {
                 document.dispatchEvent(new KeyboardEvent('keydown', {
@@ -1295,11 +1307,27 @@ window.setTimeout = function(handler, timeout) {
             try { mobileTypingInput.value = ''; } catch (_) { /* ignore */ }
         }
 
+        function armAndroidCaptureBuffer() {
+            if (!mobileTypingInput || !usesAndroidSoftKeyboardInput()) return;
+            try {
+                mobileTypingInput.value = ANDROID_CAPTURE_SENTINEL;
+                const len = ANDROID_CAPTURE_SENTINEL.length;
+                if (typeof mobileTypingInput.setSelectionRange === 'function') {
+                    mobileTypingInput.setSelectionRange(len, len);
+                }
+            } catch (_) { /* ignore */ }
+        }
+
+        function emitMobileBackspace() {
+            if (Date.now() - lastMobileBackspaceAt < 40) return;
+            dispatchMobileTypingKey('Backspace');
+        }
+
         function feedMobileTypingData(data) {
             if (!data) return;
             for (let i = 0; i < data.length; i++) {
                 const ch = data.charAt(i);
-                if (ch === '\n' || ch === '\r') continue;
+                if (ch === '\n' || ch === '\r' || ch === ANDROID_CAPTURE_SENTINEL) continue;
                 dispatchMobileTypingKey(ch);
             }
         }
@@ -1319,6 +1347,7 @@ window.setTimeout = function(handler, timeout) {
             mobileTypingInput.setAttribute('tabindex', '0');
             // Android Gboard can still force capitalize without this explicit attr.
             mobileTypingInput.setAttribute('autocapitalize', 'none');
+            if (usesAndroidSoftKeyboardInput()) armAndroidCaptureBuffer();
 
             if (mobileTypingWired) return;
             mobileTypingWired = true;
@@ -1337,11 +1366,12 @@ window.setTimeout = function(handler, timeout) {
             typingArea.addEventListener('pointerdown', keepFocused);
             typingArea.addEventListener('click', keepFocused);
 
-            // Android soft keyboards often skip keydown (or send Unidentified) and only
-            // emit beforeinput/input. Drive the test from those events.
+            // Android: soft keyboards often skip keydown (or send Unidentified) and only
+            // emit beforeinput/input. iOS: native keydowns work — do not re-feed here or
+            // characters double-insert / get blocked.
             let handledByBeforeInput = false;
             mobileTypingInput.addEventListener('beforeinput', function (e) {
-                if (!isMobileTypingEnabled()) return;
+                if (!isMobileTypingEnabled() || !usesAndroidSoftKeyboardInput()) return;
                 const inputType = e.inputType || '';
                 if (
                     inputType === 'deleteContentBackward'
@@ -1353,8 +1383,8 @@ window.setTimeout = function(handler, timeout) {
                 ) {
                     e.preventDefault();
                     handledByBeforeInput = true;
-                    dispatchMobileTypingKey('Backspace');
-                    clearMobileTypingBuffer();
+                    emitMobileBackspace();
+                    armAndroidCaptureBuffer();
                     return;
                 }
                 if (
@@ -1369,18 +1399,39 @@ window.setTimeout = function(handler, timeout) {
                     e.preventDefault();
                     handledByBeforeInput = true;
                     feedMobileTypingData(data);
-                    clearMobileTypingBuffer();
+                    armAndroidCaptureBuffer();
                 }
             });
 
             mobileTypingInput.addEventListener('input', function () {
-                // Fallback when beforeinput is missing/ignored; also clears any leftover IME text.
                 const alreadyHandled = handledByBeforeInput;
                 handledByBeforeInput = false;
                 const val = mobileTypingInput.value || '';
-                clearMobileTypingBuffer();
-                if (alreadyHandled || !val || !isMobileTypingEnabled()) return;
-                feedMobileTypingData(val);
+
+                // iOS: only clear leftover IME text; keydown already drove the test.
+                if (!usesAndroidSoftKeyboardInput()) {
+                    clearMobileTypingBuffer();
+                    return;
+                }
+                if (!isMobileTypingEnabled()) {
+                    armAndroidCaptureBuffer();
+                    return;
+                }
+                if (alreadyHandled) {
+                    armAndroidCaptureBuffer();
+                    return;
+                }
+
+                // Sentinel was deleted → backspace (primary path when keydown is missing).
+                if (val === '' || val.length < ANDROID_CAPTURE_SENTINEL.length) {
+                    emitMobileBackspace();
+                    armAndroidCaptureBuffer();
+                    return;
+                }
+
+                const typed = val.split(ANDROID_CAPTURE_SENTINEL).join('');
+                if (typed) feedMobileTypingData(typed);
+                armAndroidCaptureBuffer();
             });
 
             mobileTypingInput.addEventListener('blur', function () {
@@ -2366,13 +2417,24 @@ window.setTimeout = function(handler, timeout) {
                 return;
             }
 
-            // Soft-keyboard path: characters/backspace come from beforeinput/input on
-            // #mobile-typing-input. Ignore duplicate native keydowns (iOS fires both;
-            // Android often only fires Unidentified / nothing). Allow our re-dispatched
-            // synthetic keydowns through via mobileKeyFromSoftKeyboard.
-            if (isMobileTypingCapture(activeTypingEl) && !mobileKeyFromSoftKeyboard) {
-                if (
-                    e.key === 'Backspace'
+            // Android only: printable chars come from beforeinput/input. Do not block
+            // Backspace — an empty capture field often never fires delete beforeinput.
+            // iOS keeps native keydowns (no suppress) so typing still works there.
+            if (
+                isMobileTypingCapture(activeTypingEl)
+                && !mobileKeyFromSoftKeyboard
+                && usesAndroidSoftKeyboardInput()
+            ) {
+                if (e.key === 'Backspace') {
+                    // Allow through; dedupe if beforeinput already handled it.
+                    if (Date.now() - lastMobileBackspaceAt < 40) {
+                        e.preventDefault();
+                        return;
+                    }
+                    lastMobileBackspaceAt = Date.now();
+                } else if (
+                    e.key === 'Unidentified'
+                    || e.keyCode === 229
                     || e.key === ' '
                     || e.key === 'Spacebar'
                     || (e.key && e.key.length === 1)
