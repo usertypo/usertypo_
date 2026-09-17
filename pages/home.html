@@ -22,7 +22,8 @@
             transform-origin: bottom center;
         }
 
-        /* Soft-keyboard capture — invisible overlay; 16px font avoids iOS focus zoom */
+        /* Soft-keyboard capture — near-invisible overlay; 16px font avoids iOS focus zoom.
+           opacity:0 breaks Android Chrome (keyboard opens but inserts nothing). */
         #mobile-typing-input {
             position: absolute;
             inset: 0;
@@ -32,7 +33,7 @@
             padding: 0;
             border: 0;
             resize: none;
-            opacity: 0;
+            opacity: 0.01;
             color: transparent;
             caret-color: transparent;
             background: transparent;
@@ -43,6 +44,8 @@
             overflow: hidden;
             -webkit-user-select: text;
             user-select: text;
+            -webkit-text-security: none;
+            touch-action: manipulation;
         }
         #mobile-typing-input:not(.is-active) {
             display: none;
@@ -796,7 +799,7 @@
                             <textarea id="mobile-typing-input"
                                 autocomplete="off"
                                 autocorrect="off"
-                                autocapitalize="off"
+                                autocapitalize="none"
                                 spellcheck="false"
                                 inputmode="text"
                                 enterkeyhint="done"
@@ -1243,6 +1246,8 @@ window.setTimeout = function(handler, timeout) {
         let configBar = document.getElementById('config-bar');
         let mobileTypingInput = document.getElementById('mobile-typing-input');
         let mobileTypingWired = false;
+        /** True while we re-dispatch a soft-keyboard character into the keydown handler. */
+        let mobileKeyFromSoftKeyboard = false;
 
         function isMobileTypingCapture(el) {
             return !!(el && el.id === 'mobile-typing-input');
@@ -1271,6 +1276,34 @@ window.setTimeout = function(handler, timeout) {
             mobileTypingInput.value = '';
         }
 
+        /** Feed soft-keyboard characters into the shared document keydown handler. */
+        function dispatchMobileTypingKey(key) {
+            if (!key) return;
+            mobileKeyFromSoftKeyboard = true;
+            try {
+                document.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: key,
+                    bubbles: true,
+                    cancelable: true,
+                }));
+            } catch (_) { /* ignore */ }
+            mobileKeyFromSoftKeyboard = false;
+        }
+
+        function clearMobileTypingBuffer() {
+            if (!mobileTypingInput) return;
+            try { mobileTypingInput.value = ''; } catch (_) { /* ignore */ }
+        }
+
+        function feedMobileTypingData(data) {
+            if (!data) return;
+            for (let i = 0; i < data.length; i++) {
+                const ch = data.charAt(i);
+                if (ch === '\n' || ch === '\r') continue;
+                dispatchMobileTypingKey(ch);
+            }
+        }
+
         function setupMobileTypingInput() {
             mobileTypingInput = document.getElementById('mobile-typing-input');
             typingArea = document.getElementById('typing-area') || typingArea;
@@ -1284,6 +1317,8 @@ window.setTimeout = function(handler, timeout) {
 
             mobileTypingInput.classList.add('is-active');
             mobileTypingInput.setAttribute('tabindex', '0');
+            // Android Gboard can still force capitalize without this explicit attr.
+            mobileTypingInput.setAttribute('autocapitalize', 'none');
 
             if (mobileTypingWired) return;
             mobileTypingWired = true;
@@ -1295,18 +1330,62 @@ window.setTimeout = function(handler, timeout) {
                     e.target.closest('button, a, input, textarea, select, [contenteditable="true"]')
                     && !isMobileTypingCapture(e.target)
                 )) return;
+                // Focus in the same user gesture so Android opens the soft keyboard.
                 focusMobileTypingInput();
             };
 
             typingArea.addEventListener('pointerdown', keepFocused);
             typingArea.addEventListener('click', keepFocused);
 
-            mobileTypingInput.addEventListener('input', function () {
-                // Keep buffer empty so IME/autocorrect never paints into the field.
-                mobileTypingInput.value = '';
+            // Android soft keyboards often skip keydown (or send Unidentified) and only
+            // emit beforeinput/input. Drive the test from those events.
+            let handledByBeforeInput = false;
+            mobileTypingInput.addEventListener('beforeinput', function (e) {
+                if (!isMobileTypingEnabled()) return;
+                const inputType = e.inputType || '';
+                if (
+                    inputType === 'deleteContentBackward'
+                    || inputType === 'deleteContentForward'
+                    || inputType === 'deleteByCut'
+                    || inputType === 'deleteContent'
+                    || inputType === 'deleteWordBackward'
+                    || inputType === 'deleteWordForward'
+                ) {
+                    e.preventDefault();
+                    handledByBeforeInput = true;
+                    dispatchMobileTypingKey('Backspace');
+                    clearMobileTypingBuffer();
+                    return;
+                }
+                if (
+                    inputType === 'insertText'
+                    || inputType === 'insertCompositionText'
+                    || inputType === 'insertFromPaste'
+                    || inputType === 'insertReplacementText'
+                    || inputType === 'insertFromDrop'
+                ) {
+                    const data = e.data;
+                    if (!data) return;
+                    e.preventDefault();
+                    handledByBeforeInput = true;
+                    feedMobileTypingData(data);
+                    clearMobileTypingBuffer();
+                }
             });
+
+            mobileTypingInput.addEventListener('input', function () {
+                // Fallback when beforeinput is missing/ignored; also clears any leftover IME text.
+                const alreadyHandled = handledByBeforeInput;
+                handledByBeforeInput = false;
+                const val = mobileTypingInput.value || '';
+                clearMobileTypingBuffer();
+                if (alreadyHandled || !val || !isMobileTypingEnabled()) return;
+                feedMobileTypingData(val);
+            });
+
             mobileTypingInput.addEventListener('blur', function () {
                 // Soft keyboards dismiss on blur; leave inactive until user taps again.
+                clearMobileTypingBuffer();
             });
         }
 
@@ -2285,6 +2364,22 @@ window.setTimeout = function(handler, timeout) {
                     showTestView(true);
                 }
                 return;
+            }
+
+            // Soft-keyboard path: characters/backspace come from beforeinput/input on
+            // #mobile-typing-input. Ignore duplicate native keydowns (iOS fires both;
+            // Android often only fires Unidentified / nothing). Allow our re-dispatched
+            // synthetic keydowns through via mobileKeyFromSoftKeyboard.
+            if (isMobileTypingCapture(activeTypingEl) && !mobileKeyFromSoftKeyboard) {
+                if (
+                    e.key === 'Backspace'
+                    || e.key === ' '
+                    || e.key === 'Spacebar'
+                    || (e.key && e.key.length === 1)
+                ) {
+                    e.preventDefault();
+                    return;
+                }
             }
 
             if (e.key === ' ' || e.key === 'Spacebar') {
