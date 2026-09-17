@@ -333,15 +333,26 @@
 
         var lastMouseX = null;
         var lastMouseY = null;
-        var ignoreMouseRevealUntil = 0;
+        var lastTypingActivityAt = 0;
+        var MOUSE_REVEAL_MIN_PX = 8;
+        var MOUSE_REVEAL_IDLE_MS = 650;
 
         function shouldRevealFromMouseMove(e) {
-            if (performance.now() < ignoreMouseRevealUntil) {
+            if (performance.now() - lastTypingActivityAt < MOUSE_REVEAL_IDLE_MS) {
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
                 return false;
             }
-            if (lastMouseX === e.clientX && lastMouseY === e.clientY) return false;
+            if (lastMouseX == null || lastMouseY == null) {
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                return false;
+            }
+            var dx = e.clientX - lastMouseX;
+            var dy = e.clientY - lastMouseY;
+            if ((dx * dx + dy * dy) < (MOUSE_REVEAL_MIN_PX * MOUSE_REVEAL_MIN_PX)) {
+                return false;
+            }
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
             return true;
@@ -351,16 +362,18 @@
             document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
+            document.documentElement.classList.add('hide-mouse-cursor');
             document.body.classList.add('hide-mouse-cursor');
-            ignoreMouseRevealUntil = performance.now() + 120;
+            lastTypingActivityAt = performance.now();
         }
 
         function showZenElements() {
             document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
+            document.documentElement.classList.remove('hide-mouse-cursor');
             document.body.classList.remove('hide-mouse-cursor');
-            ignoreMouseRevealUntil = 0;
+            lastTypingActivityAt = 0;
         }
 
         function resetZenState() {
