@@ -121,28 +121,38 @@
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
-            document.documentElement.classList.add('hide-mouse-cursor');
-            document.body.classList.add('hide-mouse-cursor');
             lastTypingActivityAt = performance.now();
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.hide();
+            else {
+                document.documentElement.classList.add('hide-mouse-cursor');
+                document.body.classList.add('hide-mouse-cursor');
+            }
         }
 
         function showZenElements() {
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
-            document.documentElement.classList.remove('hide-mouse-cursor');
-            document.body.classList.remove('hide-mouse-cursor');
             lastTypingActivityAt = 0;
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.show();
+            else {
+                document.documentElement.classList.remove('hide-mouse-cursor');
+                document.body.classList.remove('hide-mouse-cursor');
+            }
         }
 
         function startZenMode() {
             hideZenElements();
             if (!zenMouseHandler) {
                 zenMouseHandler = function (e) {
+                    if (window.usertypoTypingCursor && window.usertypoTypingCursor.isHidden()) return;
                     if (!shouldRevealFromMouseMove(e)) return;
                     showZenElements();
                 };
                 document.addEventListener('mousemove', zenMouseHandler, { signal: signal });
+                document.addEventListener('usertypo:typing-cursor-revealed', function () {
+                    showZenElements();
+                }, { signal: signal });
             }
         }
 

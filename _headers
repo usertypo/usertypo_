@@ -25,6 +25,17 @@
 /js/favicon-theme.js
   Cache-Control: public, max-age=0, must-revalidate
 
+# Large SPA page bundle — always revalidate so home typing fixes are not stuck
+# behind a year-long immutable cache in a long-lived Chrome profile.
+/js/page-fragments.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/js/typing-cursor.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/js/router.js
+  Cache-Control: public, max-age=0, must-revalidate
+
 /logo-assets/favicon-abyss.png
   Cache-Control: public, max-age=0, must-revalidate
 

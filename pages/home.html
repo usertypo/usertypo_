@@ -4500,8 +4500,19 @@ window.setTimeout = function(handler, timeout) {
         document.addEventListener('mousemove', (e) => {
             resetActivityTimers(false);
             if (!isTyping || testComplete) return;
-            if (!shouldRevealFromMouseMove(e)) return;
+            // Cursor reveal is owned by js/typing-cursor.js (capture listener).
+            // Only restore zen chrome when that module reports a real reveal,
+            // or when movement clears the shared gates.
+            if (window.usertypoTypingCursor) {
+                if (window.usertypoTypingCursor.isHidden()) return;
+            } else if (!shouldRevealFromMouseMove(e)) {
+                return;
+            }
             showZenElements();
+        });
+
+        document.addEventListener('usertypo:typing-cursor-revealed', () => {
+            if (isTyping && !testComplete) showZenElements();
         });
 
         let lastMouseX = null;
@@ -4511,8 +4522,9 @@ window.setTimeout = function(handler, timeout) {
         const MOUSE_REVEAL_IDLE_MS = 650;
 
         function shouldRevealFromMouseMove(e) {
-            // Keep pointer hidden while keys are still being pressed (and briefly after).
-            // Also ignore tiny/synthetic deltas so Windows keydown noise cannot restore it.
+            if (window.usertypoTypingCursor && typeof window.usertypoTypingCursor.shouldRevealFromMouseMove === 'function') {
+                return window.usertypoTypingCursor.shouldRevealFromMouseMove(e);
+            }
             if (performance.now() - lastTypingActivityAt < MOUSE_REVEAL_IDLE_MS) {
                 lastMouseX = e.clientX;
                 lastMouseY = e.clientY;
@@ -4535,16 +4547,22 @@ window.setTimeout = function(handler, timeout) {
 
         function hideZenElements() {
             zenElements.forEach(el => el.classList.add('zen-hidden'));
-            document.documentElement.classList.add('hide-mouse-cursor');
-            document.body.classList.add('hide-mouse-cursor');
             lastTypingActivityAt = performance.now();
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.hide();
+            else {
+                document.documentElement.classList.add('hide-mouse-cursor');
+                document.body.classList.add('hide-mouse-cursor');
+            }
         }
 
         function showZenElements() {
             zenElements.forEach(el => el.classList.remove('zen-hidden'));
-            document.documentElement.classList.remove('hide-mouse-cursor');
-            document.body.classList.remove('hide-mouse-cursor');
             lastTypingActivityAt = 0;
+            if (window.usertypoTypingCursor) window.usertypoTypingCursor.show();
+            else {
+                document.documentElement.classList.remove('hide-mouse-cursor');
+                document.body.classList.remove('hide-mouse-cursor');
+            }
         }
 
         function setupGraphCardHover() {
