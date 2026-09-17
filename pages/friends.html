@@ -47,6 +47,12 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.05);
+            /* Always a pill: radius tracks height, content can wrap/grow. */
+            border-radius: 9999px !important;
+            width: 100%;
+            min-width: 0;
+            flex-wrap: wrap;
+            row-gap: 0.5rem;
         }
         .friend-card-actions {
             position: relative;
@@ -698,6 +704,12 @@ window.__spaPageInit = function() {
                 return days + 'd ago';
             }
 
+            function lastOnlineText(friend) {
+                if (friend && friend.is_online) return 'Last Online now';
+                var rel = relativeTime(friend && friend.last_seen_at);
+                return rel ? ('Last Online ' + rel) : 'Last Online —';
+            }
+
             function setFriendsStatus(el, message, tone) {
                 if (!el) return;
                 if (!message) {
@@ -755,7 +767,7 @@ window.__spaPageInit = function() {
                 var isOnline = !!friend.is_online;
                 var avatarUrl = friend.avatar_url || '';
                 var card = document.createElement('div');
-                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-full hover:border-primary/25 transition-colors group';
+                card.className = 'friend-card flex flex-row items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3 rounded-full hover:border-primary/25 transition-colors group';
                 card.dataset.status = isOnline ? 'online' : 'offline';
                 card.dataset.cardType = 'friend';
                 card.dataset.friendName = name;
@@ -767,8 +779,8 @@ window.__spaPageInit = function() {
 
                 var statusDot = isOnline ? 'bg-green-500' : 'bg-slate-500';
                 var statusBadge = isOnline
-                    ? '<span class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">Online</span>'
-                    : '<span class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20">Offline</span>';
+                    ? '<span class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20 shrink-0">Online</span>'
+                    : '<span class="text-xs text-slate-400 bg-slate-400/10 px-2 py-0.5 rounded-full border border-slate-400/20 shrink-0">Offline</span>';
 
                 var actions = '';
                 var pendingChallengeUserId = window.DualMatch && typeof window.DualMatch.getPendingChallengeUserId === 'function'
@@ -784,7 +796,7 @@ window.__spaPageInit = function() {
                     '<button type="button" class="remove-friend-btn w-10 h-10 flex items-center justify-center rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-all" title="Remove Friend" data-user-id="' + escapeHtml(friend.user_id) + '">' +
                     '<span class="material-symbols-outlined text-xl">person_remove</span></button>';
 
-                var actionsWrapClass = 'friend-card-actions w-full sm:w-auto mt-1 sm:mt-0' +
+                var actionsWrapClass = 'friend-card-actions shrink-0 ml-auto' +
                     (isChallengePending ? ' has-pending' : ' opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity');
                 var pendingSlot = isChallengePending
                     ? '<span class="friend-dual-pending-slot" title="Waiting for response" aria-label="Duel request pending">' +
@@ -795,12 +807,12 @@ window.__spaPageInit = function() {
                     '<div class="relative shrink-0">' + avatarBlock +
                     '<div class="absolute top-0 right-0 w-3.5 h-3.5 ' + statusDot + ' border-2 border-background-dark rounded-full z-[3]"></div></div>' +
                     '<div class="flex-1 min-w-0' + (isOnline ? '' : ' opacity-90') + '">' +
-                    '<div class="flex items-center gap-2 mb-0.5"><h3 class="font-bold text-slate-100 truncate">' + escapeHtml(name) + '</h3>' +
+                    '<div class="flex items-center gap-2 mb-0.5 min-w-0"><h3 class="font-bold text-slate-100 truncate">' + escapeHtml(name) + '</h3>' +
                     statusBadge + '</div>' +
-                    '<div class="text-xs text-slate-500 font-mono">Friends since ' + relativeTime(friend.friends_since) + '</div></div>' +
+                    '<div class="text-xs text-slate-500 font-mono truncate">' + escapeHtml(lastOnlineText(friend)) + '</div></div>' +
                     '<div class="' + actionsWrapClass + '">' +
                     pendingSlot +
-                    '<div class="friend-card-action-btns w-full sm:w-auto">' +
+                    '<div class="friend-card-action-btns">' +
                     actions + '</div></div>';
 
                 var challengeBtn = card.querySelector('.dual-challenge-btn');
@@ -821,7 +833,7 @@ window.__spaPageInit = function() {
             function renderPendingCard(request, direction) {
                 var name = displayName(request);
                 var card = document.createElement('div');
-                card.className = 'friend-card flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-full hover:border-primary/25 transition-colors group';
+                card.className = 'friend-card flex flex-row items-center gap-2 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3 rounded-full hover:border-primary/25 transition-colors group';
                 card.dataset.status = 'pending';
                 card.dataset.cardType = direction;
                 card.dataset.requestId = request.request_id;
@@ -830,20 +842,20 @@ window.__spaPageInit = function() {
                 var avatarBlock = levelAvatarHtml(request, 'lg');
 
                 var badge = direction === 'incoming'
-                    ? '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Incoming</span>'
-                    : '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Sent Request</span>';
+                    ? '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 shrink-0">Incoming</span>'
+                    : '<span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 shrink-0">Sent Request</span>';
 
                 var actions = direction === 'incoming'
-                    ? '<button type="button" class="accept-request-btn flex-1 sm:flex-none px-3 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold">Accept</button>' +
-                      '<button type="button" class="decline-request-btn flex-1 sm:flex-none px-3 py-2 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Decline</button>'
-                    : '<button type="button" class="cancel-request-btn flex-1 sm:flex-none px-3 py-2 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Cancel</button>';
+                    ? '<button type="button" class="accept-request-btn shrink-0 px-3 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold">Accept</button>' +
+                      '<button type="button" class="decline-request-btn shrink-0 px-3 py-2 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Decline</button>'
+                    : '<button type="button" class="cancel-request-btn shrink-0 px-3 py-2 rounded-full bg-error/10 hover:bg-error/20 text-error border border-error/20 text-xs font-bold">Cancel</button>';
 
                 card.innerHTML =
                     '<div class="relative shrink-0">' + avatarBlock +
                     '<div class="absolute top-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-background-dark rounded-full z-[3]"></div></div>' +
-                    '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-0.5"><h3 class="font-bold text-slate-100 truncate">' + escapeHtml(name) + '</h3>' + badge + '</div>' +
-                    '<div class="text-xs text-slate-400">Requested ' + relativeTime(request.created_at) + '</div></div>' +
-                    '<div class="flex items-center gap-2 w-full sm:w-auto mt-1 sm:mt-0">' + actions + '</div>';
+                    '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-0.5 min-w-0"><h3 class="font-bold text-slate-100 truncate">' + escapeHtml(name) + '</h3>' + badge + '</div>' +
+                    '<div class="text-xs text-slate-400 truncate">Requested ' + relativeTime(request.created_at) + '</div></div>' +
+                    '<div class="flex items-center gap-2 shrink-0 ml-auto">' + actions + '</div>';
 
                 if (direction === 'incoming') {
                     card.querySelector('.accept-request-btn').addEventListener('click', async function () {

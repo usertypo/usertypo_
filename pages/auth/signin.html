@@ -513,6 +513,34 @@
             color: var(--theme-text-muted, #94a3b8);
         }
         #oauth-username-wrap.hidden { display: none !important; }
+
+        /* Narrow / phone: form only — hide side logo, keep Sign In / Sign Up toggle */
+        @media (max-width: 860px) {
+            #brand-side {
+                display: none !important;
+            }
+            #auth-stage,
+            #auth-stage.show-signup {
+                flex-direction: column !important;
+                gap: 0 !important;
+                transform: none !important;
+                max-width: 100%;
+                padding: 0 0.25rem;
+                width: 100%;
+            }
+            #form-side-wrapper {
+                flex: 1 1 auto;
+                max-width: 23.44rem;
+                width: 100%;
+            }
+            #form-side {
+                max-height: calc(100dvh - 9rem);
+            }
+            main.opacity-0 {
+                padding-top: 1.25rem !important;
+                gap: 1.25rem !important;
+            }
+        }
 </style>
 
 <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â MAIN Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->

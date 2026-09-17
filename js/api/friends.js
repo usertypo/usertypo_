@@ -17,6 +17,15 @@
         var match = raw.match(/(?:ERROR:\s*)?(\w+)/i);
         code = match ? match[1] : '';
 
+        // Browser network failures (paused project, DNS, offline, CORS) — not RPC codes.
+        if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
+            return {
+                error: err,
+                code: 'network',
+                message: 'Could not reach the server. Check your connection and try again.',
+            };
+        }
+
         var friendly = {
             already_friends: 'You are already friends with this user.',
             request_already_sent: 'Friend request already sent.',
