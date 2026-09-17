@@ -94,12 +94,14 @@
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
+            document.body.classList.add('hide-mouse-cursor');
         }
 
         function showZenElements() {
             document.querySelectorAll('.zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
+            document.body.classList.remove('hide-mouse-cursor');
         }
 
         function startZenMode() {
@@ -1868,6 +1870,7 @@
                 event.preventDefault();
                 return;
             }
+            hideZenElements();
             if (event.key === 'Backspace') {
                 event.preventDefault();
                 if (lockedAt != null && errorHistory.length) {

@@ -335,12 +335,14 @@
             document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.add('zen-hidden');
             });
+            document.body.classList.add('hide-mouse-cursor');
         }
 
         function showZenElements() {
             document.querySelectorAll('#test-view .zen-element').forEach(function (el) {
                 el.classList.remove('zen-hidden');
             });
+            document.body.classList.remove('hide-mouse-cursor');
         }
 
         function resetZenState() {
