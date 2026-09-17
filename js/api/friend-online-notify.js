@@ -1,20 +1,11 @@
 /**
- * Friend online alerts — page-load summary + live offline→online notifications.
+ * Friend online alerts — one summary toast on first website load only.
  * Public API: window.usertypoFriendOnlineNotify
  */
 (function () {
-    var nativeSetInterval = window.setInterval.bind(window);
-    var nativeClearInterval = window.clearInterval.bind(window);
-
-    var POLL_MS = 15000;
-
-    var pollTimer = null;
     var started = false;
     var sessionActive = false;
     var wasSignedIn = null;
-    var onlineMap = {};
-    var mapSeeded = false;
-    var checkInFlight = false;
     var summaryShownThisLoad = false;
 
     function friendLabel(friend) {
@@ -36,18 +27,6 @@
         if (list.length === 2) return list[0] + ' and ' + list[1] + ' are online';
         var head = list.slice(0, -1).join(', ');
         return head + ', and ' + list[list.length - 1] + ' are online';
-    }
-
-    function buildOnlineMap(friends) {
-        var next = {};
-        (friends || []).forEach(function (f) {
-            if (!f || !f.user_id) return;
-            next[String(f.user_id)] = {
-                online: !!f.is_online,
-                label: friendLabel(f),
-            };
-        });
-        return next;
     }
 
     async function persistOnlineNotice(title, data) {
@@ -80,8 +59,6 @@
             if (!window.usertypoFriends) return;
             var dash = await window.usertypoFriends.loadDashboard();
             var friends = (dash && dash.friends) || [];
-            onlineMap = buildOnlineMap(friends);
-            mapSeeded = true;
 
             var online = friends.filter(function (f) { return f && f.is_online; });
             if (!online.length) return;
@@ -100,88 +77,14 @@
         }
     }
 
-    async function seedMapWithoutNotify() {
-        try {
-            if (!window.usertypoFriends) return;
-            var dash = await window.usertypoFriends.loadDashboard();
-            onlineMap = buildOnlineMap((dash && dash.friends) || []);
-            mapSeeded = true;
-        } catch (err) {
-            console.warn('[usertypo friend-online] seed failed', err);
-        }
-    }
-
-    async function pollPresence() {
-        if (checkInFlight) return;
-        if (!window.usertypoAuth) return;
-        var state = window.usertypoAuth.getState();
-        if (!state || !state.isSignedIn || !state.user) return;
-        if (!window.usertypoFriends) return;
-
-        checkInFlight = true;
-        try {
-            var dash = await window.usertypoFriends.loadDashboard();
-            var friends = (dash && dash.friends) || [];
-            var nextMap = buildOnlineMap(friends);
-
-            if (mapSeeded) {
-                var newlyOnline = [];
-                friends.forEach(function (f) {
-                    if (!f || !f.user_id || !f.is_online) return;
-                    var id = String(f.user_id);
-                    var prev = onlineMap[id];
-                    if (!prev || !prev.online) newlyOnline.push(f);
-                });
-
-                for (var i = 0; i < newlyOnline.length; i++) {
-                    var friend = newlyOnline[i];
-                    var label = friendLabel(friend);
-                    var title = formatOnlineTitle([label]);
-                    if (!title) continue;
-                    await persistOnlineNotice(title, {
-                        kind: 'came_online',
-                        friend_user_id: friend.user_id,
-                        names: [label],
-                    });
-                }
-            }
-
-            onlineMap = nextMap;
-            mapSeeded = true;
-        } catch (err) {
-            console.warn('[usertypo friend-online] poll failed', err);
-        } finally {
-            checkInFlight = false;
-        }
-    }
-
-    function stopPolling() {
-        if (pollTimer) {
-            nativeClearInterval(pollTimer);
-            pollTimer = null;
-        }
-    }
-
-    function startPolling() {
-        stopPolling();
-        pollTimer = nativeSetInterval(function () {
-            pollPresence();
-        }, POLL_MS);
-    }
-
     async function onSignedIn() {
         if (sessionActive) return;
         sessionActive = true;
         await showOnlineSummaryIfAny();
-        if (!mapSeeded) await seedMapWithoutNotify();
-        startPolling();
     }
 
     function onSignedOut() {
         sessionActive = false;
-        stopPolling();
-        onlineMap = {};
-        mapSeeded = false;
     }
 
     function bindAuth() {
@@ -195,8 +98,8 @@
             }
 
             if (signedIn && !wasSignedIn) {
+                // Fresh sign-in this page load (do not reset summary if already shown).
                 sessionActive = false;
-                summaryShownThisLoad = false;
                 onSignedIn();
             } else if (!signedIn && wasSignedIn) {
                 onSignedOut();
@@ -213,17 +116,6 @@
         window.usertypoAuth.ready().then(function () {
             bindAuth();
         });
-
-        document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState !== 'visible') return;
-            var s = window.usertypoAuth && window.usertypoAuth.getState();
-            if (s && s.isSignedIn && s.user) pollPresence();
-        });
-
-        window.addEventListener('usertypo:friends-changed', function () {
-            var s = window.usertypoAuth && window.usertypoAuth.getState();
-            if (s && s.isSignedIn && s.user) pollPresence();
-        });
     }
 
     if (document.readyState === 'loading') {
@@ -235,6 +127,5 @@
     window.usertypoFriendOnlineNotify = {
         start: start,
         formatOnlineTitle: formatOnlineTitle,
-        poll: pollPresence,
     };
 })();
