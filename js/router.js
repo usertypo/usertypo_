@@ -45,14 +45,14 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=71'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=72'));
         }
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
             if (dualParams.get('local') === 'bot') {
                 jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=4'));
             }
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=111'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=112'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -364,6 +364,9 @@
         });
         document.body.classList.remove('hide-mouse-cursor');
         document.documentElement.classList.remove('hide-mouse-cursor');
+        if (window.usertypoTypingCursor && typeof window.usertypoTypingCursor.show === 'function') {
+            try { window.usertypoTypingCursor.show(); } catch (_) { /* ignore */ }
+        }
     }
 
     function resetShellHeaderChrome() {
