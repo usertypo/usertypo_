@@ -1,22 +1,27 @@
 /**
  * Typing mouse-cursor hide — shared by home / dual / room.
- * Lives in the SPA shell (not page-fragments) so a stale home fragment
- * cannot strand users without cursor-hide, and so we can fight
- * extension CSS that overrides page styles.
+ *
+ * Chrome often keeps the old pointer glyph until a real mouse move or a
+ * visibility change when only CSS cursor:none is toggled. A full-viewport
+ * shield under the pointer forces an immediate cursor refresh on first key.
  */
 (function (global) {
     'use strict';
 
     var STYLE_ATTR = 'data-usertypo-typing-cursor';
+    var SHIELD_ID = 'usertypo-cursor-shield';
     var CLASS_NAME = 'hide-mouse-cursor';
     var MOUSE_REVEAL_MIN_PX = 8;
     var MOUSE_REVEAL_IDLE_MS = 650;
 
     var styleEl = null;
+    var shieldEl = null;
     var hidden = false;
     var lastTypingActivityAt = 0;
     var lastMouseX = null;
     var lastMouseY = null;
+    var revealOriginX = null;
+    var revealOriginY = null;
     var touched = [];
     var autoWired = false;
 
@@ -28,8 +33,16 @@
             'html.' + CLASS_NAME + ',',
             'html.' + CLASS_NAME + ' *,',
             'body.' + CLASS_NAME + ',',
-            'body.' + CLASS_NAME + ' * {',
+            'body.' + CLASS_NAME + ' *,',
+            '#' + SHIELD_ID + ' {',
             '  cursor: none !important;',
+            '}',
+            '#' + SHIELD_ID + ' {',
+            '  position: fixed;',
+            '  inset: 0;',
+            '  z-index: 2147483646;',
+            '  background: transparent;',
+            '  pointer-events: auto;',
             '}',
         ].join('\n');
         return styleEl;
@@ -39,12 +52,49 @@
         var el = ensureStyleEl();
         var parent = document.body || document.documentElement;
         if (!parent) return;
-        // Re-append so this rule wins over earlier extension/page stylesheets.
         parent.appendChild(el);
+    }
+
+    function ensureShield() {
+        if (shieldEl && shieldEl.isConnected) return shieldEl;
+        shieldEl = document.getElementById(SHIELD_ID);
+        if (shieldEl) return shieldEl;
+        shieldEl = document.createElement('div');
+        shieldEl.id = SHIELD_ID;
+        shieldEl.setAttribute('aria-hidden', 'true');
+        shieldEl.style.cssText = [
+            'position:fixed',
+            'inset:0',
+            'z-index:2147483646',
+            'background:transparent',
+            'pointer-events:auto',
+            'cursor:none',
+        ].join(';');
+        return shieldEl;
+    }
+
+    function mountShield() {
+        if (!document.body) return;
+        var el = ensureShield();
+        // Re-append so it sits on top and Chrome re-evaluates the cursor target.
+        document.body.appendChild(el);
+        el.style.setProperty('cursor', 'none', 'important');
+        // Force a layout pass so the pointer glyph refreshes on first hide.
+        void el.offsetWidth;
+    }
+
+    function removeShield() {
+        if (shieldEl && shieldEl.parentNode) {
+            shieldEl.parentNode.removeChild(shieldEl);
+        }
+        var orphan = document.getElementById(SHIELD_ID);
+        if (orphan && orphan.parentNode) orphan.parentNode.removeChild(orphan);
+        shieldEl = null;
     }
 
     function forceTargetCursor(el) {
         if (!el || !el.style || typeof el.style.setProperty !== 'function') return;
+        if (el.id === SHIELD_ID) return;
         el.style.setProperty('cursor', 'none', 'important');
         touched.push(el);
         if (touched.length > 250) {
@@ -72,12 +122,19 @@
         if (document.body) document.body.classList.add(CLASS_NAME);
         document.documentElement.style.setProperty('cursor', 'none', 'important');
         if (document.body) document.body.style.setProperty('cursor', 'none', 'important');
+        mountShield();
+        revealOriginX = lastMouseX;
+        revealOriginY = lastMouseY;
     }
 
     function show() {
-        if (!hidden && !document.documentElement.classList.contains(CLASS_NAME)) return;
+        if (!hidden && !document.documentElement.classList.contains(CLASS_NAME)) {
+            removeShield();
+            return;
+        }
         hidden = false;
         lastTypingActivityAt = 0;
+        removeShield();
         document.documentElement.classList.remove(CLASS_NAME);
         if (document.body) document.body.classList.remove(CLASS_NAME);
         document.documentElement.style.removeProperty('cursor');
@@ -88,7 +145,10 @@
     function noteTypingActivity() {
         lastTypingActivityAt = performance.now();
         if (!hidden) hide();
-        else mountStyleLast();
+        else {
+            mountStyleLast();
+            mountShield();
+        }
     }
 
     function shouldRevealFromMouseMove(e) {
@@ -98,19 +158,31 @@
             lastMouseY = e.clientY;
             return false;
         }
-        if (lastMouseX == null || lastMouseY == null) {
+        var originX = revealOriginX != null ? revealOriginX : lastMouseX;
+        var originY = revealOriginY != null ? revealOriginY : lastMouseY;
+        if (originX == null || originY == null) {
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
+            revealOriginX = e.clientX;
+            revealOriginY = e.clientY;
             return false;
         }
-        var dx = e.clientX - lastMouseX;
-        var dy = e.clientY - lastMouseY;
+        var dx = e.clientX - originX;
+        var dy = e.clientY - originY;
         if ((dx * dx + dy * dy) < (MOUSE_REVEAL_MIN_PX * MOUSE_REVEAL_MIN_PX)) {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
             return false;
         }
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
         return true;
+    }
+
+    function trackMouse(e) {
+        if (!e) return;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
     }
 
     function onMouseOver(e) {
@@ -119,11 +191,11 @@
     }
 
     function onMouseMove(e) {
+        trackMouse(e);
         if (!hidden) return;
         forceTargetCursor(e.target);
         if (!shouldRevealFromMouseMove(e)) return;
         show();
-        // Let page zen handlers re-show chrome if they want.
         try {
             global.dispatchEvent(new CustomEvent('usertypo:typing-cursor-revealed'));
         } catch (_) { /* ignore */ }
@@ -158,12 +230,20 @@
         noteTypingActivity();
     }
 
+    function onVisibilityChange() {
+        if (document.hidden || !hidden) return;
+        // Tab focus refreshes the cursor; remount shield so first-load state stays hidden.
+        mountStyleLast();
+        mountShield();
+    }
+
     function installGlobalListeners() {
         if (autoWired) return;
         autoWired = true;
         document.addEventListener('keydown', onKeyDownCapture, true);
         document.addEventListener('mousemove', onMouseMove, true);
         document.addEventListener('mouseover', onMouseOver, true);
+        document.addEventListener('visibilitychange', onVisibilityChange);
     }
 
     installGlobalListeners();
