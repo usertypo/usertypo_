@@ -333,9 +333,23 @@
             text-underline-offset: 3px;
             text-decoration-skip-ink: none;
         }
-        /* --- Error character glow (glow-intensity aware) --- */
+        /* --- Typed letter glow (glow-intensity aware via --gi-*) ---
+           Use text-shadow instead of filter:drop-shadow so hundreds of
+           typed letters do not force per-glyph filter layers (major lag on
+           mid/low GPUs and Chrome battery saver). Slider still drives --gi-*. */
+        #text-container .char.text-primary {
+            text-shadow: 0 0 5px rgba(var(--theme-primary-rgb), var(--gi-40, 0.4));
+        }
         .error-glow {
-            filter: drop-shadow(0 0 7px rgba(255, 80, 80, var(--gi-75, 0.75)));
+            text-shadow: 0 0 7px rgba(255, 80, 80, var(--gi-75, 0.75));
+        }
+
+        /* Isolate typing paint from the rest of the page */
+        #typing-area {
+            contain: layout style;
+        }
+        #text-container {
+            contain: layout style;
         }
 
         /* --- MODIFIER COLLAPSE LOGIC --- */
@@ -1208,6 +1222,10 @@ window.setTimeout = function(handler, timeout) {
         // scoring still uses a full DOM pass. Telemetry arrays are unchanged.
         let liveCompletedValidChars = 0;
         let liveCurrentCorrectChars = 0;
+        // Skip redundant scroll work when the active line/word has not changed.
+        let lastScrollWordIndex = -1;
+        let lastScrollLine = -1;
+        let liveStatsRaf = 0;
 
         // --- GRAPH DATA COLLECTORS ---
         let wpmHistory = [];   // average WPM per second
@@ -2125,6 +2143,12 @@ window.setTimeout = function(handler, timeout) {
                 currentCharIndex = 0;
                 liveCompletedValidChars = 0;
                 liveCurrentCorrectChars = 0;
+                lastScrollWordIndex = -1;
+                lastScrollLine = -1;
+                if (liveStatsRaf) {
+                    cancelAnimationFrame(liveStatsRaf);
+                    liveStatsRaf = 0;
+                }
                 // Clear graph data
                 wpmHistory = [];
                 rawHistory = [];
@@ -2238,7 +2262,7 @@ window.setTimeout = function(handler, timeout) {
                 const charEl = document.createElement('span');
                 charEl.innerText = char;
                 charEl.id = `char-${wIdx}-${cIdx}`;
-                charEl.className = 'char text-slate-500 transition-colors duration-75';
+                charEl.className = 'char text-slate-500';
                 wordEl.appendChild(charEl);
             });
             textContainer.appendChild(wordEl);
@@ -2419,14 +2443,46 @@ window.setTimeout = function(handler, timeout) {
 
         /**
          * After a keystroke: scroll/caret/live stats.
-         * Full line remapping (updateLineLayout) only when wrapping can change
-         * (extra letters) or the caller forces it — not on every key.
+         * Full line remapping only when wrapping can change (extras).
+         * Vertical / word-tape scroll only when the active word/line changes;
+         * letter-tape still scrolls every key.
          */
+        function scheduleLiveStats() {
+            if (liveStatsRaf) return;
+            liveStatsRaf = requestAnimationFrame(function () {
+                liveStatsRaf = 0;
+                updateStats();
+            });
+        }
+
         function refreshTypingChrome(relayout) {
-            if (relayout) updateLineLayout();
-            else handleScroll();
+            if (relayout) {
+                updateLineLayout();
+                lastScrollWordIndex = currentWordIndex;
+                const w = document.getElementById('word-' + currentWordIndex);
+                lastScrollLine = w ? (parseInt(w.dataset.line, 10) || 0) : 0;
+            } else {
+                const tapeMode = document.body.dataset.tapeMode || 'off';
+                if (tapeMode === 'letter') {
+                    handleScroll();
+                    lastScrollWordIndex = currentWordIndex;
+                } else if (tapeMode === 'word') {
+                    if (currentWordIndex !== lastScrollWordIndex) {
+                        handleScroll();
+                        lastScrollWordIndex = currentWordIndex;
+                    }
+                } else {
+                    const wordEl = document.getElementById('word-' + currentWordIndex);
+                    const line = wordEl ? (parseInt(wordEl.dataset.line, 10) || 0) : 0;
+                    if (currentWordIndex !== lastScrollWordIndex || line !== lastScrollLine) {
+                        handleScroll();
+                        lastScrollWordIndex = currentWordIndex;
+                        lastScrollLine = line;
+                    }
+                }
+            }
             updateCaretPosition();
-            updateStats();
+            scheduleLiveStats();
         }
 
         document.addEventListener('keydown', (e) => {
@@ -2586,7 +2642,7 @@ window.setTimeout = function(handler, timeout) {
                         if (charEl.classList.contains('text-primary')) {
                             liveCurrentCorrectChars = Math.max(0, liveCurrentCorrectChars - 1);
                         }
-                        charEl.className = 'char text-slate-500 transition-colors duration-75';
+                        charEl.className = 'char text-slate-500';
                         // Reset Indicate Typos
                         const origChar = generatedWords[currentWordIndex][currentCharIndex];
                         charEl.innerText = origChar;
@@ -2826,11 +2882,11 @@ window.setTimeout = function(handler, timeout) {
                     const compareKey = lazyMode ? normalizeLazy(e.key) : e.key;
                     const compareExpected = lazyMode ? normalizeLazy(expectedChar) : expectedChar;
 
-                    charEl.className = 'char transition-colors duration-75';
+                    charEl.className = 'char';
 
                     if (compareKey === compareExpected) {
                         if (window.playKeystrokeSound) window.playKeystrokeSound(e.key);
-                        charEl.classList.add('text-primary', 'drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                        charEl.classList.add('text-primary');
                         liveCurrentCorrectChars++;
                         // Hesitation detection: long pause before a correct key
                         if (keystrokeTimes.length > 5 && ksInterval > avgInterKeyInterval * 2.5) {
@@ -2887,7 +2943,7 @@ window.setTimeout = function(handler, timeout) {
                         // â”€â”€ Stop on Error: Letter â”€â”€ don't advance, user must backspace and retype
                         if (getTestRule('stopOnError') === 'Letter') {
                             // Reset the char to untyped (don't advance)
-                            charEl.className = 'char text-slate-500 transition-colors duration-75';
+                            charEl.className = 'char text-slate-500';
                             refreshTypingChrome(false);
                             return;
                         }
@@ -2898,7 +2954,7 @@ window.setTimeout = function(handler, timeout) {
                     const extraCharEl = document.createElement('span');
                     extraCharEl.innerText = e.key;
                     extraCharEl.id = `char-${currentWordIndex}-${currentCharIndex}`;
-                    extraCharEl.className = 'char extra text-error error-glow transition-colors duration-75';
+                    extraCharEl.className = 'char extra text-error error-glow';
                     const beforeWidth = wordEl ? wordEl.offsetWidth : 0;
                     wordEl.appendChild(extraCharEl);
                     const afterWidth = wordEl.offsetWidth;
@@ -3496,20 +3552,24 @@ window.setTimeout = function(handler, timeout) {
                     }
                 });
             } else if (kl.keymapMode === 'Next') {
-                // Next mode: highlight the expected character
+                // Next mode: highlight the expected character (diff only)
                 if (!generatedWords[currentWordIndex]) return;
                 const expectedChar = generatedWords[currentWordIndex][currentCharIndex] || ' ';
+                let nextKey = null;
                 keys.forEach(k => {
                     const chars = k.dataset.chars || '';
                     const special = k.dataset.special || '';
-                    if (chars.includes(expectedChar) || (expectedChar === ' ' && special === 'Space')) {
-                        k.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
-                        k.classList.remove('bg-primary/10');
-                    } else {
+                    const isMatch = chars.includes(expectedChar) || (expectedChar === ' ' && special === 'Space');
+                    if (isMatch) nextKey = k;
+                    if (!isMatch && k.classList.contains('bg-primary/40')) {
                         k.classList.remove('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
                         k.classList.add('bg-primary/10');
                     }
                 });
+                if (nextKey) {
+                    nextKey.classList.add('bg-primary/40', 'scale-95', 'ring-2', 'ring-primary/50');
+                    nextKey.classList.remove('bg-primary/10');
+                }
             }
         }
 
@@ -4263,6 +4323,12 @@ window.setTimeout = function(handler, timeout) {
             currentCharIndex = 0;
             liveCompletedValidChars = 0;
             liveCurrentCorrectChars = 0;
+            lastScrollWordIndex = -1;
+            lastScrollLine = -1;
+            if (liveStatsRaf) {
+                cancelAnimationFrame(liveStatsRaf);
+                liveStatsRaf = 0;
+            }
             isRestarting = false;
             const cursorSettings = getCursorSettings();
             isPaceRepeat = !shouldRestart && (cursorSettings.repeatedPace !== false);
@@ -4587,10 +4653,14 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function hideZenElements() {
-            zenElements.forEach(el => el.classList.add('zen-hidden'));
             lastTypingActivityAt = performance.now();
+            // Avoid class thrash + cursor refresh on every key once already zen.
+            var alreadyZen = zenElements.length > 0 && zenElements[0].classList.contains('zen-hidden');
+            if (!alreadyZen) {
+                zenElements.forEach(el => el.classList.add('zen-hidden'));
+            }
             if (window.usertypoTypingCursor) window.usertypoTypingCursor.hide();
-            else {
+            else if (!alreadyZen) {
                 document.documentElement.classList.add('hide-mouse-cursor');
                 document.body.classList.add('hide-mouse-cursor');
             }
