@@ -139,8 +139,22 @@
     }
 
     function hide() {
-        hidden = true;
         lastTypingActivityAt = performance.now();
+        // Already hidden: never re-run the Chromium refresh (forced reflows).
+        // Re-running it on every keystroke is a major typing-lag source on
+        // weaker laptops / battery saver.
+        if (
+            hidden
+            && shieldEl
+            && shieldEl.isConnected
+            && document.documentElement.classList.contains(CLASS_NAME)
+        ) {
+            revealOriginX = lastMouseX;
+            revealOriginY = lastMouseY;
+            return;
+        }
+
+        hidden = true;
         mountStyleLast();
 
         // Overlay first (with default cursor), then flip styles — order matters.
@@ -170,12 +184,8 @@
     function noteTypingActivity() {
         lastTypingActivityAt = performance.now();
         if (!hidden) hide();
-        else {
-            mountStyleLast();
-            // Re-run the Chrome refresh sequence while still hidden.
-            if (shieldEl && shieldEl.isConnected) forceChromeCursorRefresh(shieldEl);
-            else mountShieldAndRefresh();
-        }
+        // While already hidden, only bump the activity clock — do not re-run
+        // forceChromeCursorRefresh (that was thrashing layout every key).
     }
 
     function shouldRevealFromMouseMove(e) {
