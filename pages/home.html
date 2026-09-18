@@ -1203,6 +1203,12 @@ window.setTimeout = function(handler, timeout) {
         let totalKeystrokes = 0;
         let errorsMade = 0;
 
+        // Live WPM counters — updated incrementally on each key so updateStats()
+        // does not re-scan the whole prompt DOM every keystroke. Final endTest()
+        // scoring still uses a full DOM pass. Telemetry arrays are unchanged.
+        let liveCompletedValidChars = 0;
+        let liveCurrentCorrectChars = 0;
+
         // --- GRAPH DATA COLLECTORS ---
         let wpmHistory = [];   // average WPM per second
         let rawHistory = [];   // raw WPM per second
@@ -2117,6 +2123,8 @@ window.setTimeout = function(handler, timeout) {
                 errorsMade = 0;
                 currentWordIndex = 0;
                 currentCharIndex = 0;
+                liveCompletedValidChars = 0;
+                liveCurrentCorrectChars = 0;
                 // Clear graph data
                 wpmHistory = [];
                 rawHistory = [];
@@ -2259,7 +2267,7 @@ window.setTimeout = function(handler, timeout) {
             const tapeMode = document.body.dataset.tapeMode || 'off';
 
             if (tapeMode === 'word' || tapeMode === 'letter') {
-                wordEls.forEach(el => el.dataset.line = 0);
+                // Tape mode is a single horizontal strip — no per-word line map needed.
                 const firstWord = wordEls[0];
                 lineHeight = firstWord.offsetHeight + parseFloat(getComputedStyle(textContainer).rowGap || 0);
                 if (lineHeight === firstWord.offsetHeight) {
@@ -2372,6 +2380,53 @@ window.setTimeout = function(handler, timeout) {
                 const scrollLines = Math.max(0, currentLine - 1);
                 textContainer.style.transform = `translateY(-${scrollLines * lineHeight}px)`;
             }
+        }
+
+        /** Count correct letters in one word (used rarely: live counter repair / last-word burst). */
+        function countCorrectCharsInWord(wordIndex) {
+            const wordText = generatedWords[wordIndex];
+            if (!wordText) return 0;
+            let n = 0;
+            for (let i = 0; i < wordText.length; i++) {
+                const cEl = document.getElementById(`char-${wordIndex}-${i}`);
+                if (cEl && cEl.classList.contains('text-primary')) n++;
+            }
+            return n;
+        }
+
+        function isWordFullyCorrect(wordIndex) {
+            const wordText = generatedWords[wordIndex];
+            const wordEl = document.getElementById(`word-${wordIndex}`);
+            if (!wordText || !wordEl) return false;
+            if (wordEl.querySelector('.extra')) return false;
+            for (let i = 0; i < wordText.length; i++) {
+                const cEl = document.getElementById(`char-${wordIndex}-${i}`);
+                if (!cEl || !cEl.classList.contains('text-primary')) return false;
+            }
+            return true;
+        }
+
+        /** Rebuild live WPM counters after jumping back to a previous word (freedom / error undo). */
+        function recomputeLiveValidCounters() {
+            liveCompletedValidChars = 0;
+            for (let i = 0; i < currentWordIndex; i++) {
+                if (isWordFullyCorrect(i)) {
+                    liveCompletedValidChars += generatedWords[i].length + 1;
+                }
+            }
+            liveCurrentCorrectChars = countCorrectCharsInWord(currentWordIndex);
+        }
+
+        /**
+         * After a keystroke: scroll/caret/live stats.
+         * Full line remapping (updateLineLayout) only when wrapping can change
+         * (extra letters) or the caller forces it — not on every key.
+         */
+        function refreshTypingChrome(relayout) {
+            if (relayout) updateLineLayout();
+            else handleScroll();
+            updateCaretPosition();
+            updateStats();
         }
 
         document.addEventListener('keydown', (e) => {
@@ -2493,6 +2548,8 @@ window.setTimeout = function(handler, timeout) {
 
             const currentWord = generatedWords[currentWordIndex];
             const wordEl = document.getElementById(`word-${currentWordIndex}`);
+            // Full line remapping only when extras change wrap width.
+            let needsRelayout = false;
 
             if (e.key === 'Backspace') {
                 if (window.playKeystrokeSound) window.playKeystrokeSound('Backspace');
@@ -2524,7 +2581,11 @@ window.setTimeout = function(handler, timeout) {
                         if (wordEl && typeof window.compensateLetterTapeWidthDelta === 'function') {
                             window.compensateLetterTapeWidthDelta(textContainer, wordEl.offsetWidth - beforeWidth);
                         }
+                        needsRelayout = true;
                     } else {
+                        if (charEl.classList.contains('text-primary')) {
+                            liveCurrentCorrectChars = Math.max(0, liveCurrentCorrectChars - 1);
+                        }
                         charEl.className = 'char text-slate-500 transition-colors duration-75';
                         // Reset Indicate Typos
                         const origChar = generatedWords[currentWordIndex][currentCharIndex];
@@ -2583,9 +2644,9 @@ window.setTimeout = function(handler, timeout) {
                     } else {
                         currentCharIndex = prevWordEl.children.length;
                     }
-                }
 
-                handleScroll();
+                    recomputeLiveValidCounters();
+                }
 
             }
             else if (e.key === ' ' && !(getTestRule('strictSpace') && currentCharIndex > 0 && currentCharIndex < currentWord.length)) {
@@ -2657,9 +2718,10 @@ window.setTimeout = function(handler, timeout) {
                 lastKeystrokeTime = spaceNow;
 
                 const currentWordText = generatedWords[currentWordIndex];
+                const wordWasCorrect = isCurrentWordCorrectForPace();
 
                 if (paceCaretSettings) {
-                    handlePaceCaretSpace(isCurrentWordCorrectForPace(), currentWordText);
+                    handlePaceCaretSpace(wordWasCorrect, currentWordText);
                 }
 
                 // â”€â”€ Indicate Typos: show what user actually typed â”€â”€
@@ -2686,6 +2748,11 @@ window.setTimeout = function(handler, timeout) {
                     }
                 }
 
+                if (wordWasCorrect) {
+                    liveCompletedValidChars += currentWordText.length + 1;
+                }
+                liveCurrentCorrectChars = 0;
+
                 currentWordIndex++;
                 currentCharIndex = 0;
 
@@ -2694,8 +2761,6 @@ window.setTimeout = function(handler, timeout) {
                     setTimeout(() => { if (testComplete && !isRestarting) endTest(); });
                     return;
                 }
-
-                handleScroll();
             }
             else if (e.key.length === 1) {
                 e.preventDefault();
@@ -2724,9 +2789,7 @@ window.setTimeout = function(handler, timeout) {
                             word: currentWord
                         });
                         // Don't advance â€” block the character
-                        updateLineLayout();
-                        updateCaretPosition();
-                        updateStats();
+                        refreshTypingChrome(false);
                         return;
                     }
                 }
@@ -2768,6 +2831,7 @@ window.setTimeout = function(handler, timeout) {
                     if (compareKey === compareExpected) {
                         if (window.playKeystrokeSound) window.playKeystrokeSound(e.key);
                         charEl.classList.add('text-primary', 'drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                        liveCurrentCorrectChars++;
                         // Hesitation detection: long pause before a correct key
                         if (keystrokeTimes.length > 5 && ksInterval > avgInterKeyInterval * 2.5) {
                             const hSec = startTime ? (ksNow - startTime) / 1000 : 0;
@@ -2812,8 +2876,7 @@ window.setTimeout = function(handler, timeout) {
                         // â”€â”€ Master difficulty: any incorrect letter fails the test â”€â”€
                         if (getTestRule('difficulty') === 'Master') {
                             currentCharIndex++;
-                            updateLineLayout();
-                            updateCaretPosition();
+                            refreshTypingChrome(false);
                             failTest(
                                 'Master Mode Failed',
                                 'Incorrect letter typed. In Master mode, every keystroke must be correct.'
@@ -2825,9 +2888,7 @@ window.setTimeout = function(handler, timeout) {
                         if (getTestRule('stopOnError') === 'Letter') {
                             // Reset the char to untyped (don't advance)
                             charEl.className = 'char text-slate-500 transition-colors duration-75';
-                            updateLineLayout();
-                            updateCaretPosition();
-                            updateStats();
+                            refreshTypingChrome(false);
                             return;
                         }
                     }
@@ -2844,6 +2905,7 @@ window.setTimeout = function(handler, timeout) {
                     if (typeof window.compensateLetterTapeWidthDelta === 'function') {
                         window.compensateLetterTapeWidthDelta(textContainer, afterWidth - beforeWidth);
                     }
+                    needsRelayout = true;
                     errorsMade++;
                     const errSec = startTime ? (ksNow - startTime) / 1000 : 0;
                     errorMarkers.push({
@@ -2859,8 +2921,7 @@ window.setTimeout = function(handler, timeout) {
                     // â”€â”€ Master difficulty: extra characters also fail â”€â”€
                     if (getTestRule('difficulty') === 'Master') {
                         currentCharIndex++;
-                        updateLineLayout();
-                        updateCaretPosition();
+                        refreshTypingChrome(true);
                         failTest(
                             'Master Mode Failed',
                             'Incorrect letter typed. In Master mode, every keystroke must be correct.'
@@ -2885,9 +2946,7 @@ window.setTimeout = function(handler, timeout) {
                         if (wordEl && wordEl.querySelectorAll('.extra').length > 0) lastWordCorrect = false;
                         if (!lastWordCorrect) {
                             // Don't end the test â€” user must fix errors
-                            updateLineLayout();
-                            updateCaretPosition();
-                            updateStats();
+                            refreshTypingChrome(needsRelayout);
                             return;
                         }
                     }
@@ -2912,9 +2971,7 @@ window.setTimeout = function(handler, timeout) {
                 }
             }
 
-            updateLineLayout();
-            updateCaretPosition();
-            updateStats();
+            refreshTypingChrome(needsRelayout);
 
             if (testMode === 'words') {
                 wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${testAmount}`;
@@ -4204,6 +4261,8 @@ window.setTimeout = function(handler, timeout) {
             errorsMade = 0;
             currentWordIndex = 0;
             currentCharIndex = 0;
+            liveCompletedValidChars = 0;
+            liveCurrentCorrectChars = 0;
             isRestarting = false;
             const cursorSettings = getCursorSettings();
             isPaceRepeat = !shouldRestart && (cursorSettings.repeatedPace !== false);
@@ -4335,18 +4394,7 @@ window.setTimeout = function(handler, timeout) {
         function updateStats() {
             if (!startTime) return;
 
-            let validChars = 0;
-            const allWords = textContainer.querySelectorAll('.word');
-            allWords.forEach((wordEl, idx) => {
-                if (idx < currentWordIndex) {
-                    const hasError = wordEl.querySelectorAll('.text-error, .error-underline, .extra').length > 0;
-                    if (!hasError) {
-                        validChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
-                    }
-                } else if (idx === currentWordIndex) {
-                    validChars += wordEl.querySelectorAll('.text-primary').length;
-                }
-            });
+            const validChars = liveCompletedValidChars + liveCurrentCorrectChars;
 
             const currentTime = Date.now();
             const elapsedMinutes = (currentTime - startTime) / 60000;
@@ -4371,18 +4419,11 @@ window.setTimeout = function(handler, timeout) {
             if (lastKeystrokeTime && (currentTime - lastKeystrokeTime) > 1000) {
                 burst = 0; // Decay to 0 after 1 second of inactivity
             } else if (currentWordStartTime) {
-                const currentWordEl = textContainer.querySelectorAll('.word')[currentWordIndex];
-                if (currentWordEl) {
-                    const correctInCurrentWord = currentWordEl.querySelectorAll('.text-primary').length;
-                    burst = computeWordBurstWpm(correctInCurrentWord, currentWordStartTime, currentTime);
-                }
+                burst = computeWordBurstWpm(liveCurrentCorrectChars, currentWordStartTime, currentTime);
             } else if (typeof wordTimestamps !== 'undefined' && wordTimestamps.length > 0) {
                 const lastWord = wordTimestamps[wordTimestamps.length - 1];
-                const lastWordEl = textContainer.querySelectorAll('.word')[lastWord.wordIndex];
-                if (lastWordEl) {
-                    const correctInLastWord = lastWordEl.querySelectorAll('.text-primary').length;
-                    burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime);
-                }
+                const correctInLastWord = countCorrectCharsInWord(lastWord.wordIndex);
+                burst = computeWordBurstWpm(correctInLastWord, lastWord.startTime, lastWord.endTime);
             }
 
             const progressBar = document.getElementById('word-progress-bar');
