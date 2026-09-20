@@ -2532,6 +2532,7 @@ function applyThemeSettings(settings) {
          */
         .usertypo-menu-pill-tip,
         .score-distribution-column::after,
+        .about-score-col::after,
         .testActivity .activity div[aria-label]:hover::after,
         #expanding-bubble.is-open,
         .pot-filter-bubble.is-open,
@@ -2556,6 +2557,7 @@ function applyThemeSettings(settings) {
         }
         .usertypo-menu-pill-tip,
         .score-distribution-column::after,
+        .about-score-col::after,
         .testActivity .activity div[aria-label]:hover::after,
         #global-settings-search-overlay .quick-btn-tooltip,
         .coming-soon-setting[data-coming-soon]:hover::after,
