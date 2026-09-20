@@ -102,7 +102,7 @@
         #lb-country-search {
             width: 100%;
             border-radius: var(--theme-box-radius, 1.375rem);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(var(--theme-primary-rgb), 0.28);
             background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
             background-image: none;
             backdrop-filter: blur(4px);
@@ -111,9 +111,26 @@
             font-size: 0.8rem;
             padding: 0.55rem 0.75rem;
             outline: none;
+            box-shadow: none;
+            accent-color: var(--theme-primary, #00d0ff);
+            caret-color: var(--theme-primary, #00d0ff);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
-        #lb-country-search:focus {
-            border-color: rgba(var(--theme-primary-rgb), 0.55);
+        #lb-country-search:hover {
+            border-color: rgba(var(--theme-primary-rgb), 0.42);
+        }
+        #lb-country-search:focus,
+        #lb-country-search:focus-visible {
+            border-color: rgba(var(--theme-primary-rgb), 0.7);
+            outline: none;
+            box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb), 0.35),
+                0 0 12px rgba(var(--theme-primary-rgb), 0.2);
+        }
+        #lb-country-search::-webkit-search-decoration,
+        #lb-country-search::-webkit-search-cancel-button,
+        #lb-country-search::-webkit-search-results-button,
+        #lb-country-search::-webkit-search-results-decoration {
+            -webkit-appearance: none;
         }
         #lb-country-list {
             overflow-y: auto;
@@ -299,28 +316,48 @@
 
                 <div class="cfg-divider w-full h-px bg-white/5 my-2 shrink-0 transition-all duration-500"></div>
 
-                <!-- Duration -->
+                <!-- Mode: time / words -->
                 <div class="flex flex-col w-full transition-all duration-500 shrink-0">
-                    <button id="cfg-15"
-                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
-                        onclick="setDur('15',this)">
-                        <span class="w-5 text-center shrink-0">15</span>
+                    <button id="cfg-mode-time"
+                        class="cfg-btn is-mode flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[0.373rem] rounded cursor-pointer w-full shrink-0"
+                        onclick="setMode('time',this)">
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">schedule</span>
                         <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">seconds</span>
+                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">time</span>
                     </button>
-                    <button id="cfg-30"
+                    <button id="cfg-mode-words"
+                        class="cfg-btn is-mode flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        onclick="setMode('words',this)">
+                        <span class="material-symbols-outlined text-[0.959rem] shrink-0">text_fields</span>
+                        <span
+                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">words</span>
+                    </button>
+                </div>
+
+                <div class="cfg-divider w-full h-px bg-white/5 my-2 shrink-0 transition-all duration-500"></div>
+
+                <!-- Amount (seconds or word counts) -->
+                <div class="flex flex-col w-full transition-all duration-500 shrink-0" id="cfg-amount-section">
+                    <button id="cfg-amt-0"
+                        class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                        onclick="setDurIndex(0,this)">
+                        <span class="w-5 text-center shrink-0 amt-val">15</span>
+                        <span
+                            class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">seconds</span>
+                    </button>
+                    <button id="cfg-amt-1"
                         class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-primary font-bold h-8 px-[0.32rem] rounded cursor-pointer w-full shrink-0"
-                        onclick="setDur('30',this)">
-                        <span class="w-5 text-center shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]">30</span>
+                        onclick="setDurIndex(1,this)">
+                        <span class="w-5 text-center shrink-0 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] amt-val">30</span>
                         <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] duration-300 delay-75">seconds</span>
+                            class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] duration-300 delay-75">seconds</span>
                     </button>
-                    <button id="cfg-60"
+                    <button id="cfg-amt-2"
                         class="cfg-btn is-dur flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
-                        onclick="setDur('60',this)">
-                        <span class="w-5 text-center shrink-0">60</span>
+                        onclick="setDurIndex(2,this)">
+                        <span class="w-5 text-center shrink-0 amt-val">60</span>
                         <span
-                            class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">seconds</span>
+                            class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">seconds</span>
                     </button>
                 </div>
 
@@ -453,15 +490,66 @@ window.setTimeout = function(handler, timeout) {
 };
 
 window.__spaPageInit = function() {
+            var TIME_AMOUNTS = [15, 30, 60];
+            var WORD_AMOUNTS = [10, 25, 50];
             var lbState = {
                 scope: 'global',
                 timeframe: 'alltime',
+                mode: 'time',
                 amount: 30,
                 countryCode: null,
             };
             var lbRequestId = 0;
             var countryCache = null;
             var countryModalOpen = false;
+
+            function amountsForMode(mode) {
+                return mode === 'words' ? WORD_AMOUNTS : TIME_AMOUNTS;
+            }
+
+            function defaultAmountForMode(mode) {
+                return mode === 'words' ? 25 : 30;
+            }
+
+            function amountUnitLabel(mode) {
+                return mode === 'words' ? 'words' : 'seconds';
+            }
+
+            function formatBoardFilterLabel(mode, amount) {
+                if (mode === 'words') return amount + ' words';
+                return 'timed ' + amount + 's';
+            }
+
+            function syncAmountButtons() {
+                var amounts = amountsForMode(lbState.mode);
+                var unit = amountUnitLabel(lbState.mode);
+                var selectedIndex = amounts.indexOf(lbState.amount);
+                if (selectedIndex < 0) {
+                    lbState.amount = defaultAmountForMode(lbState.mode);
+                    selectedIndex = amounts.indexOf(lbState.amount);
+                }
+                amounts.forEach(function (amt, index) {
+                    var btn = document.getElementById('cfg-amt-' + index);
+                    if (!btn) return;
+                    var valEl = btn.querySelector('.amt-val');
+                    var labelEl = btn.querySelector('.opt-label');
+                    if (valEl) valEl.textContent = String(amt);
+                    if (labelEl) labelEl.textContent = unit;
+                    btn.classList.remove('text-primary', 'font-bold', 'text-slate-400');
+                    btn.querySelectorAll('.drop-shadow-\\[0_0_5px_rgba\\(0\\,208\\,255\\,0\\.4\\)\\]').forEach(function (s) {
+                        s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                    });
+                    if (index === selectedIndex) {
+                        btn.classList.add('text-primary', 'font-bold');
+                        if (valEl) valEl.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                        if (labelEl) labelEl.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                    } else {
+                        btn.classList.add('text-slate-400');
+                        if (valEl) valEl.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                        if (labelEl) labelEl.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]');
+                    }
+                });
+            }
 
             function getCurrentUserId() {
                 if (!window.usertypoAuth) return null;
@@ -503,13 +591,15 @@ window.__spaPageInit = function() {
                 clickedEl.classList.remove('text-slate-400');
             }
 
-            function forceAlltime30() {
+            function forceAlltimeTime30() {
                 lbState.timeframe = 'alltime';
+                lbState.mode = 'time';
                 lbState.amount = 30;
                 var alltimeBtn = document.getElementById('cfg-alltime');
-                var dur30 = document.getElementById('cfg-30');
+                var modeTimeBtn = document.getElementById('cfg-mode-time');
                 if (alltimeBtn) setActive('.is-time', alltimeBtn);
-                if (dur30) setActive('.is-dur', dur30);
+                if (modeTimeBtn) setActive('.is-mode', modeTimeBtn);
+                syncAmountButtons();
             }
 
             function renderAvatar(entry, colorClass, isMe) {
@@ -564,7 +654,7 @@ window.__spaPageInit = function() {
                 if (!tbody || !lb) return;
 
                 if (!entries.length) {
-                    renderMessage('No scores yet for this filter. Complete a timed test to appear here.');
+                    renderMessage('No scores yet for this filter. Complete an English test to appear here.');
                     return;
                 }
 
@@ -724,7 +814,7 @@ window.__spaPageInit = function() {
 
                     var result;
                     if (lbState.scope === 'country') {
-                        forceAlltime30();
+                        forceAlltimeTime30();
                         if (!lbState.countryCode) {
                             lbState.countryCode = await resolveDefaultCountry();
                         }
@@ -750,7 +840,7 @@ window.__spaPageInit = function() {
                     }
 
                     if (lbState.scope === 'friends') {
-                        forceAlltime30();
+                        forceAlltimeTime30();
                         if (!getCurrentUserId()) {
                             if (reqId !== lbRequestId) return;
                             setStatus('Sign in to see friends leaderboards.');
@@ -775,14 +865,19 @@ window.__spaPageInit = function() {
                     }
 
                     result = await window.usertypoLeaderboards.getLeaderboard({
-                        mode: 'time',
+                        mode: lbState.mode,
                         amount: lbState.amount,
                         timeframe: lbState.timeframe,
                         limit: 50,
                     });
                     if (reqId !== lbRequestId) return;
                     var labels = { daily: 'Daily', weekly: 'Weekly', alltime: 'All-time' };
-                    setStatus((labels[lbState.timeframe] || 'All-time') + ' timed ' + lbState.amount + 's leaderboard');
+                    setStatus(
+                        (labels[lbState.timeframe] || 'All-time') +
+                        ' ' +
+                        formatBoardFilterLabel(lbState.mode, lbState.amount) +
+                        ' leaderboard'
+                    );
                     renderTable(result.entries, getCurrentUserId());
                 } catch (err) {
                     if (reqId !== lbRequestId) return;
@@ -802,36 +897,51 @@ window.__spaPageInit = function() {
                 setActive('.is-scope', el);
                 lbState.scope = v;
                 if (v === 'country') {
-                    forceAlltime30();
+                    forceAlltimeTime30();
                     loadLeaderboard().then(function () { openCountryModal(); });
                     return;
                 }
-                if (v === 'friends') forceAlltime30();
+                if (v === 'friends') forceAlltimeTime30();
                 closeCountryModal();
                 loadLeaderboard();
             }
             function setTime(v, el) {
                 if (lbState.scope === 'country' || lbState.scope === 'friends') {
-                    forceAlltime30();
+                    forceAlltimeTime30();
                     return;
                 }
                 setActive('.is-time', el);
                 lbState.timeframe = v;
                 loadLeaderboard();
             }
-            function setDur(v, el) {
+            function setMode(v, el) {
                 if (lbState.scope === 'country' || lbState.scope === 'friends') {
-                    forceAlltime30();
+                    forceAlltimeTime30();
                     return;
                 }
-                setActive('.is-dur', el);
-                lbState.amount = Number(v) || 30;
+                setActive('.is-mode', el);
+                lbState.mode = v === 'words' ? 'words' : 'time';
+                lbState.amount = defaultAmountForMode(lbState.mode);
+                syncAmountButtons();
+                loadLeaderboard();
+            }
+            function setDurIndex(index, el) {
+                if (lbState.scope === 'country' || lbState.scope === 'friends') {
+                    forceAlltimeTime30();
+                    return;
+                }
+                var amounts = amountsForMode(lbState.mode);
+                var idx = Math.max(0, Math.min(amounts.length - 1, Number(index) || 0));
+                lbState.amount = amounts[idx];
+                if (el) setActive('.is-dur', el);
+                else syncAmountButtons();
                 loadLeaderboard();
             }
 
             window.setScope = setScope;
             window.setTime = setTime;
-            window.setDur = setDur;
+            window.setMode = setMode;
+            window.setDurIndex = setDurIndex;
 
             try {
                 var params = new URLSearchParams(window.location.search || '');
@@ -849,6 +959,7 @@ window.__spaPageInit = function() {
                 }
             } catch (e) { /* ignore */ }
 
+            syncAmountButtons();
             loadLeaderboard();
             if (lbState.scope === 'country') openCountryModal();
 
