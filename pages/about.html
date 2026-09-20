@@ -959,8 +959,9 @@ function initAboutCommunityStats() {
         if (center && countries) animateCount(center, topPct, 'percent', 900);
         else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
 
-        // Equal gaps with butt caps so spacing stays visually even.
-        var gap = items.length > 1 ? 2 : 0;
+        // Round caps (~2 path units/end at stroke 4). Geometric gap keeps visible
+        // spacing even while ends look like curved pills.
+        var gap = items.length > 1 ? 6 : 0;
         var scale = items.length > 1 ? (100 - items.length * gap) / 100 : 1;
         var rings = '';
         var offset = 0;
@@ -969,7 +970,7 @@ function initAboutCommunityStats() {
             var arc = Math.max(pct * scale, 0);
             rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                 + palette[index % palette.length]
-                + '" stroke-linecap="butt" stroke-dasharray="0 100'
+                + '" stroke-linecap="round" stroke-dasharray="0 100'
                 + '" stroke-dashoffset="' + (-offset)
                 + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
             offset += arc + gap;
