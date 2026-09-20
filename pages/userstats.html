@@ -152,8 +152,8 @@
             appearance: none;
             -webkit-appearance: none;
             position: absolute;
-            top: -1px;
-            right: -1px;
+            top: 0;
+            right: 0;
             z-index: 3;
             width: 2.131rem;
             height: 2.131rem;
@@ -170,6 +170,11 @@
             outline: none;
             -webkit-tap-highlight-color: transparent;
             color: var(--theme-primary, #00d0ff);
+        }
+        .pot-filter-bubble:not(.is-open) .pot-filter-bubble-toggle {
+            inset: 0;
+            width: auto;
+            height: auto;
         }
         .pot-filter-bubble-toggle:focus,
         .pot-filter-bubble-toggle:active {
@@ -1242,10 +1247,7 @@
                         <h3 class="text-[0.533rem] uppercase tracking-widest text-slate-500 font-headline mb-6 self-start">
                             Error Anatomy</h3>
                         <div class="relative w-32 h-32 mb-6">
-                            <svg id="diag-anatomy-svg" class="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                <circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100"
-                                    stroke-width="4"></circle>
-                            </svg>
+                            <svg id="diag-anatomy-svg" class="w-full h-full -rotate-90" viewBox="0 0 36 36"></svg>
                             <div class="absolute inset-0 flex items-center justify-center flex-col">
                                 <span id="diag-anatomy-total" class="font-headline text-sm text-slate-100">—</span>
                                 <span class="text-[0.48rem] font-headline text-slate-500">TOTAL</span>
@@ -2290,24 +2292,23 @@ if ('scrollRestoration' in history) {
                 var svg = document.getElementById('diag-anatomy-svg');
                 var legend = document.getElementById('diag-anatomy-legend');
                 if (svg) {
-                    var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+                    var rings = '';
                     var offset = 0;
-                    // Round caps extend ~strokeWidth/2 past each dash end; keep a larger gap so rounded ends stay separated.
-                    var gap = 5.2;
                     var visibleSlices = isBlank
                         ? []
                         : (data.anatomy || []).filter(function (slice) { return slice.count; });
-                    var sliceGap = visibleSlices.length > 1 ? gap : 0;
+                    var gap = visibleSlices.length > 1 ? 3.2 : 0;
+                    var scale = visibleSlices.length > 1 ? (100 - visibleSlices.length * gap) / 100 : 1;
                     visibleSlices.forEach(function (slice, index) {
                         var colorIndex = (data.anatomy || []).indexOf(slice);
                         var pct = Math.max(0, Math.min(100, slice.percent));
-                        var arc = Math.max(0.5, pct - sliceGap);
-                        rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+                        var arc = Math.max(pct * scale, 0);
+                        rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                             + anatomyColors[colorIndex >= 0 ? colorIndex : index]
                             + '" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + (100 - arc)
                             + '" stroke-dashoffset="' + (-offset)
                             + '" stroke-width="4"></circle>';
-                        offset += pct;
+                        offset += arc + gap;
                     });
                     svg.innerHTML = rings;
                 }

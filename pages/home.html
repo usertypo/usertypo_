@@ -486,8 +486,8 @@
             appearance: none;
             -webkit-appearance: none;
             position: absolute;
-            top: -1px;
-            left: -1px;
+            top: 0;
+            left: 0;
             z-index: 2;
             width: 2.131rem;
             height: 2.131rem;
@@ -503,6 +503,13 @@
             cursor: pointer;
             outline: none;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Closed bubble: fill the pad box so the icon stays optically centered at any rem scale */
+        .expanding-bubble:not(.is-open) #bubble-toggle {
+            inset: 0;
+            width: auto;
+            height: auto;
         }
 
         #bubble-toggle:focus,
