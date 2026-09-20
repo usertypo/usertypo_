@@ -959,26 +959,54 @@ function initAboutCommunityStats() {
         if (center && countries) animateCount(center, topPct, 'percent', 900);
         else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
 
-        // Round caps extend ~CAP past each dash end. Inset the dash so caps stay
-        // inside each slice's %-wedge, and leave GAP clear between visual pills.
+        // Equal visual gaps: reserve n*GAP, allocate remaining length by share,
+        // enforce a min pill width (2*CAP) so tiny slices don't fill their wedge
+        // and collide. Cursor advances by visual+GAP so every seam matches GAP.
         var CAP = (2 / (2 * Math.PI * 16)) * 100;
-        var GAP = items.length > 1 ? 1.5 : 0;
-        var rings = '';
-        var offset = 0;
-        items.forEach(function (item, index) {
-            var pct = (Number(item.users) / total) * 100;
-            var arc = pct - GAP - 2 * CAP;
-            var start = offset + CAP;
-            if (arc < 0.05) {
-                arc = 0.05;
-                start = offset + Math.max((pct - arc) / 2, 0);
+        var GAP = items.length > 1 ? 1.15 : 0;
+        var n = items.length;
+        var pcts = items.map(function (item) {
+            return (Number(item.users) / total) * 100;
+        });
+        var available = 100 - n * GAP;
+        var visuals = pcts.map(function (pct) { return (pct / 100) * available; });
+        var minVisual = 2 * CAP + 0.05;
+        var deficit = 0;
+        for (var vi = 0; vi < visuals.length; vi++) {
+            if (pcts[vi] > 0 && visuals[vi] < minVisual) {
+                deficit += minVisual - visuals[vi];
+                visuals[vi] = minVisual;
             }
+        }
+        if (deficit > 0) {
+            var flexible = [];
+            var flexTotal = 0;
+            for (var fi = 0; fi < visuals.length; fi++) {
+                var excess = visuals[fi] - minVisual;
+                if (excess > 0.01) {
+                    flexible.push(fi);
+                    flexTotal += excess;
+                }
+            }
+            if (flexTotal > 0) {
+                flexible.forEach(function (fi) {
+                    var excess = visuals[fi] - minVisual;
+                    visuals[fi] -= deficit * (excess / flexTotal);
+                });
+            }
+        }
+        var rings = '';
+        var cursor = 0;
+        items.forEach(function (item, index) {
+            var visual = visuals[index];
+            var arc = Math.max(visual - 2 * CAP, 0.05);
+            var start = cursor + CAP;
             rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                 + palette[index % palette.length]
                 + '" stroke-linecap="round" stroke-dasharray="0 100'
                 + '" stroke-dashoffset="' + (-start)
                 + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
-            offset += pct;
+            cursor += visual + GAP;
         });
         svg.innerHTML = rings;
         requestAnimationFrame(function () {
