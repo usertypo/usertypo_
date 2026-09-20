@@ -12,6 +12,12 @@ begin
     return new;
   end if;
 
+  -- Adapt & Refine uses a personalized word pool — not comparable for PBs.
+  if coalesce(new.adapt_refine, false) then
+    new.is_pb := false;
+    return new;
+  end if;
+
   new.is_pb := not exists (
     select 1
     from public.typing_sessions ts
@@ -19,6 +25,7 @@ begin
       and ts.mode = new.mode
       and ts.amount = new.amount
       and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
       and ts.wpm > new.wpm
   );
 

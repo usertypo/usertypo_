@@ -4138,6 +4138,7 @@ window.setTimeout = function(handler, timeout) {
                     language: window.usertypoSessions.currentLanguage(),
                     punctuation: usePunctuation,
                     numbers: useNumbers,
+                    adapt_refine: useAdaptRefine,
                     wpm: failedReason ? 0 : exactWpm,
                     raw_wpm: failedReason ? 0 : exactRawWpm,
                     accuracy: failedReason ? 0 : acc,
@@ -4164,6 +4165,7 @@ window.setTimeout = function(handler, timeout) {
                     // and we only celebrate strict beats / first scores.
                     if (
                         !failedReason &&
+                        !useAdaptRefine &&
                         saveResult &&
                         saveResult.session &&
                         window.usertypoSessions &&
