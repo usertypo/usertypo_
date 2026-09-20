@@ -376,7 +376,7 @@
                 class="flex flex-col relative opacity-0 animate-fade-in-up [animation-delay:200ms] px-1 py-2">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-100 mb-1">Leaderboards</h1>
-                    <p id="lb-status" class="text-slate-400 text-sm">See where you stand and climb the ranks.</p>
+                    <p id="lb-status" class="text-slate-400 text-sm">English · See where you stand and climb the ranks.</p>
                 </div>
             </div>
 
@@ -834,7 +834,7 @@ window.__spaPageInit = function() {
                             limit: 50,
                         });
                         if (reqId !== lbRequestId) return;
-                        setStatus('All-time timed 30s · ' + countryLabel(lbState.countryCode));
+                        setStatus('All-time English timed 30s · ' + countryLabel(lbState.countryCode));
                         renderTable(result.entries, getCurrentUserId());
                         return;
                     }
@@ -855,7 +855,7 @@ window.__spaPageInit = function() {
                             limit: 50,
                         });
                         if (reqId !== lbRequestId) return;
-                        setStatus('All-time timed 30s · Friends');
+                        setStatus('All-time English timed 30s · Friends');
                         if (!result.entries.length) {
                             renderMessage('No friend scores yet. Add friends and complete all-time qualifying 30s tests.');
                             return;
@@ -874,7 +874,7 @@ window.__spaPageInit = function() {
                     var labels = { daily: 'Daily', weekly: 'Weekly', alltime: 'All-time' };
                     setStatus(
                         (labels[lbState.timeframe] || 'All-time') +
-                        ' ' +
+                        ' English ' +
                         formatBoardFilterLabel(lbState.mode, lbState.amount) +
                         ' leaderboard'
                     );
