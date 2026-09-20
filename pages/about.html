@@ -959,20 +959,24 @@ function initAboutCommunityStats() {
         if (center && countries) animateCount(center, topPct, 'percent', 900);
         else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
 
-        // Keep slice lengths ≈ true % (offset by full pct). Trim a small equal
-        // gap from each arc for round-cap pills — do NOT scale the whole ring
-        // down (that made 92% look like ~75%).
-        var gap = items.length > 1 ? 2.5 : 0;
+        // Round caps extend ~CAP past each dash end. Inset the dash so caps stay
+        // inside each slice's %-wedge, and leave GAP clear between visual pills.
+        var CAP = (2 / (2 * Math.PI * 16)) * 100;
+        var GAP = items.length > 1 ? 1.5 : 0;
         var rings = '';
         var offset = 0;
         items.forEach(function (item, index) {
             var pct = (Number(item.users) / total) * 100;
-            var arc = Math.max(pct - gap, 0);
-            if (pct > 0 && arc < 1.15) arc = Math.min(pct, 1.15);
+            var arc = pct - GAP - 2 * CAP;
+            var start = offset + CAP;
+            if (arc < 0.05) {
+                arc = 0.05;
+                start = offset + Math.max((pct - arc) / 2, 0);
+            }
             rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                 + palette[index % palette.length]
                 + '" stroke-linecap="round" stroke-dasharray="0 100'
-                + '" stroke-dashoffset="' + (-offset)
+                + '" stroke-dashoffset="' + (-start)
                 + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
             offset += pct;
         });
