@@ -144,10 +144,16 @@
             background: color-mix(in srgb, var(--theme-primary) var(--bar-strength, 40%), #1e293b);
             transform-origin: bottom;
             transform: scaleY(0);
-            transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), filter 160ms ease;
         }
         .about-score-bar.is-animated {
             transform: scaleY(1);
+        }
+        .about-score-col:hover .about-score-bar.is-animated,
+        .about-score-col:focus-visible .about-score-bar.is-animated {
+            filter: brightness(1.2);
+            transform: scaleY(1.025);
+            transition: transform 160ms ease, filter 160ms ease;
         }
         .about-score-col.is-empty .about-score-bar {
             opacity: 0.22;
@@ -353,9 +359,7 @@
                     </div>
                     <div class="flex flex-col sm:flex-row items-center gap-5">
                         <div class="relative w-36 h-36 shrink-0">
-                            <svg id="about-country-svg" class="about-country-ring w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
-                                <circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>
-                            </svg>
+                            <svg id="about-country-svg" class="about-country-ring w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true"></svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
                                 <span id="about-country-center" class="text-lg font-bold text-slate-100 font-[Space_Grotesk]">—</span>
                                 <span class="text-[0.6rem] uppercase tracking-wider text-slate-500">top share</span>
@@ -898,7 +902,7 @@ function initAboutCommunityStats() {
 
         if (!total) {
             if (center) center.textContent = '—';
-            svg.innerHTML = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+            svg.innerHTML = '';
             legend.innerHTML = '<div class="text-xs text-slate-500 leading-relaxed">Country chart fills in as signed-in typists visit from around the world.</div>';
             return;
         }
@@ -907,18 +911,21 @@ function initAboutCommunityStats() {
         if (center && countries) animateCount(center, topPct, 'percent', 900);
         else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
 
-        var rings = '<circle cx="18" cy="18" fill="none" r="16" stroke="#46484c" stroke-dasharray="100 100" stroke-width="4"></circle>';
+        // pathLength=100: equal gaps, slices scaled into the remainder so small
+        // shares stay short arcs instead of round-cap beads.
+        var gap = items.length > 1 ? 3.2 : 0;
+        var scale = items.length > 1 ? (100 - items.length * gap) / 100 : 1;
+        var rings = '';
         var offset = 0;
-        var gap = items.length > 1 ? 5.2 : 0;
         items.forEach(function (item, index) {
             var pct = (Number(item.users) / total) * 100;
-            var arc = Math.max(0.5, pct - gap);
-            rings += '<circle cx="18" cy="18" fill="none" r="16" stroke="'
+            var arc = Math.max(pct * scale, 0);
+            rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                 + palette[index % palette.length]
                 + '" stroke-linecap="round" stroke-dasharray="0 100'
                 + '" stroke-dashoffset="' + (-offset)
                 + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
-            offset += pct;
+            offset += arc + gap;
         });
         svg.innerHTML = rings;
         requestAnimationFrame(function () {
