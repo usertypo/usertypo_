@@ -2297,7 +2297,7 @@ if ('scrollRestoration' in history) {
                     var visibleSlices = isBlank
                         ? []
                         : (data.anatomy || []).filter(function (slice) { return slice.count; });
-                    var gap = visibleSlices.length > 1 ? 2 : 0;
+                    var gap = visibleSlices.length > 1 ? 6 : 0;
                     var scale = visibleSlices.length > 1 ? (100 - visibleSlices.length * gap) / 100 : 1;
                     visibleSlices.forEach(function (slice, index) {
                         var colorIndex = (data.anatomy || []).indexOf(slice);
@@ -2305,7 +2305,7 @@ if ('scrollRestoration' in history) {
                         var arc = Math.max(pct * scale, 0);
                         rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
                             + anatomyColors[colorIndex >= 0 ? colorIndex : index]
-                            + '" stroke-linecap="butt" stroke-dasharray="' + arc + ' ' + (100 - arc)
+                            + '" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + (100 - arc)
                             + '" stroke-dashoffset="' + (-offset)
                             + '" stroke-width="4"></circle>';
                         offset += arc + gap;
