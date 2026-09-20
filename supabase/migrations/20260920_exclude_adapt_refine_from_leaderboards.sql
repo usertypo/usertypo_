@@ -1,15 +1,13 @@
--- Leaderboards foundation for usertypo_
--- Monthly removed. All-time requires >= 50 completed tests and wpm >= 30.
--- Country + friends scopes reuse profiles.country_code and friendships (no new tables).
--- Adapt & refine sessions and non-english tests are excluded from rankings.
--- Daily/weekly use rolling 24h / 7d windows.
+-- Exclude adapt & refine + non-english tests from leaderboard rankings.
+-- Also persist adapt_refine on typing_sessions so future scores can be filtered.
 
-alter table public.profiles
-  add column if not exists show_on_leaderboard boolean not null default true;
+alter table public.typing_sessions
+  add column if not exists adapt_refine boolean not null default false;
 
-create index if not exists profiles_country_code_idx
-  on public.profiles (country_code)
-  where country_code is not null;
+comment on column public.typing_sessions.adapt_refine is
+  'True when the test used Adapt & Refine word targeting; excluded from leaderboards.';
+
+-- Daily leaderboards: rolling 24-hour window instead of calendar UTC day.
 
 drop function if exists public.get_leaderboard(text, integer, text, integer);
 
@@ -122,7 +120,6 @@ as $$
   limit least(greatest(coalesce(p_limit, 50), 1), 100);
 $$;
 
--- Full-board rank for the signed-in caller (not capped at top 100).
 create or replace function public.get_my_leaderboard_rank(
   p_mode text default 'time',
   p_amount integer default 30,
@@ -209,48 +206,6 @@ as $$
   from ranked r
   cross join totals t
   inner join me on me.user_id is not null and me.user_id = r.user_id;
-$$;
-
-create or replace function public.list_leaderboard_countries()
-returns table (
-  code text,
-  users integer
-)
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  with user_test_counts as (
-    select
-      ts.user_id,
-      count(*)::integer as completed_tests
-    from public.typing_sessions ts
-    where ts.failed = false
-    group by ts.user_id
-  ),
-  eligible_users as (
-    select distinct ts.user_id
-    from public.typing_sessions ts
-    inner join public.profiles p on p.user_id = ts.user_id
-    left join user_test_counts utc on utc.user_id = ts.user_id
-    where ts.failed = false
-      and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
-      and ts.accuracy >= 75
-      and ts.wpm >= 30
-      and p.show_on_leaderboard = true
-      and p.country_code is not null
-      and p.country_code ~ '^[A-Z]{2}$'
-      and coalesce(utc.completed_tests, 0) >= 50
-  )
-  select
-    p.country_code as code,
-    count(*)::integer as users
-  from eligible_users eu
-  inner join public.profiles p on p.user_id = eu.user_id
-  group by p.country_code
-  order by count(*) desc, p.country_code asc;
 $$;
 
 create or replace function public.get_country_leaderboard(
@@ -502,36 +457,88 @@ begin
 end;
 $$;
 
-revoke all on function public.get_leaderboard(text, integer, text, integer) from public;
-revoke all on function public.get_my_leaderboard_rank(text, integer, text) from public;
-revoke all on function public.list_leaderboard_countries() from public;
-revoke all on function public.get_country_leaderboard(text, text, integer, text, integer) from public;
-revoke all on function public.get_friends_leaderboard(text, integer, text, integer) from public;
-
-grant execute on function public.get_leaderboard(text, integer, text, integer) to anon, authenticated;
-grant execute on function public.get_my_leaderboard_rank(text, integer, text) to authenticated;
-grant execute on function public.list_leaderboard_countries() to anon, authenticated;
-grant execute on function public.get_country_leaderboard(text, text, integer, text, integer) to anon, authenticated;
-grant execute on function public.get_friends_leaderboard(text, integer, text, integer) to authenticated;
-
-create or replace function public.get_profile_country_codes(p_ids text[])
+create or replace function public.list_leaderboard_countries()
 returns table (
-  user_id text,
-  country_code text
+  code text,
+  users integer
 )
 language sql
 stable
 security definer
 set search_path = public
 as $$
+  with user_test_counts as (
+    select
+      ts.user_id,
+      count(*)::integer as completed_tests
+    from public.typing_sessions ts
+    where ts.failed = false
+    group by ts.user_id
+  ),
+  eligible_users as (
+    select distinct ts.user_id
+    from public.typing_sessions ts
+    inner join public.profiles p on p.user_id = ts.user_id
+    left join user_test_counts utc on utc.user_id = ts.user_id
+    where ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and ts.accuracy >= 75
+      and ts.wpm >= 30
+      and p.show_on_leaderboard = true
+      and p.country_code is not null
+      and p.country_code ~ '^[A-Z]{2}$'
+      and coalesce(utc.completed_tests, 0) >= 50
+  )
   select
-    p.user_id,
-    p.country_code
-  from public.profiles p
-  where p.user_id = any(coalesce(p_ids, array[]::text[]))
-    and p.country_code is not null
-    and p.country_code ~ '^[A-Z]{2}$';
+    p.country_code as code,
+    count(*)::integer as users
+  from eligible_users eu
+  inner join public.profiles p on p.user_id = eu.user_id
+  group by p.country_code
+  order by count(*) desc, p.country_code asc;
 $$;
 
-revoke all on function public.get_profile_country_codes(text[]) from public;
-grant execute on function public.get_profile_country_codes(text[]) to anon, authenticated;
+
+-- Compute is_pb on insert server-side (removes extra client read before save).
+
+create or replace function public.set_typing_session_is_pb()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.failed then
+    new.is_pb := false;
+    return new;
+  end if;
+
+  -- Adapt & Refine uses a personalized word pool — not comparable for PBs.
+  if coalesce(new.adapt_refine, false) then
+    new.is_pb := false;
+    return new;
+  end if;
+
+  new.is_pb := not exists (
+    select 1
+    from public.typing_sessions ts
+    where ts.user_id = new.user_id
+      and ts.mode = new.mode
+      and ts.amount = new.amount
+      and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and ts.wpm > new.wpm
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists typing_sessions_set_is_pb on public.typing_sessions;
+
+create trigger typing_sessions_set_is_pb
+  before insert on public.typing_sessions
+  for each row
+  execute function public.set_typing_session_is_pb();
+

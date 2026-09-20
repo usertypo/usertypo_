@@ -671,6 +671,8 @@
                 .eq('mode', mode)
                 .eq('amount', amount)
                 .eq('failed', false)
+                .eq('adapt_refine', false)
+                .or('language.is.null,language.eq.english')
                 .gt('wpm', 0)
                 .order('wpm', { ascending: false })
                 .limit(1);
@@ -806,6 +808,13 @@
         }
         if (!(Number(session.wpm) > 0)) {
             return { skipped: true, reason: 'invalid_wpm' };
+        }
+        if (session.adapt_refine) {
+            return { skipped: true, reason: 'adapt_refine' };
+        }
+        var lang = String(session.language || 'english').trim().toLowerCase() || 'english';
+        if (lang !== 'english') {
+            return { skipped: true, reason: 'non_english' };
         }
 
         try {

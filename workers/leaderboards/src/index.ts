@@ -307,8 +307,10 @@ async function handleIngest(env: Env, body: Record<string, unknown>, authHeader:
     consistency: number | null;
     created_at: string;
     failed: boolean;
+    adapt_refine?: boolean | null;
+    language?: string | null;
   }>(env, 'typing_sessions', new URLSearchParams({
-    select: 'id,user_id,mode,amount,wpm,raw_wpm,accuracy,consistency,created_at,failed',
+    select: 'id,user_id,mode,amount,wpm,raw_wpm,accuracy,consistency,created_at,failed,adapt_refine,language',
     id: `eq.${sessionId}`,
     limit: '1',
   }).toString());
@@ -321,6 +323,13 @@ async function handleIngest(env: Env, body: Record<string, unknown>, authHeader:
   }
   if (session.failed) {
     return json(env, 200, { source: 'postgres', skipped: true, reason: 'failed_test' }, request);
+  }
+  if (session.adapt_refine) {
+    return json(env, 200, { source: 'postgres', skipped: true, reason: 'adapt_refine' }, request);
+  }
+  const language = String(session.language || 'english').trim().toLowerCase() || 'english';
+  if (language !== 'english') {
+    return json(env, 200, { source: 'postgres', skipped: true, reason: 'non_english' }, request);
   }
 
   const mode = normalizeMode(session.mode);
