@@ -25,8 +25,19 @@
 /js/favicon-theme.js
   Cache-Control: public, max-age=0, must-revalidate
 
-# Large SPA page bundle — always revalidate so home typing fixes are not stuck
-# behind a year-long immutable cache in a long-lived Chrome profile.
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/logo-assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/lang/*
+  Cache-Control: public, max-age=86400
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Last matching rule wins on Pages — keep these AFTER the /js/* immutable rule.
 /js/page-fragments.js
   Cache-Control: public, max-age=0, must-revalidate
 
@@ -47,18 +58,6 @@
 
 /logo-assets/apple-touch-paper.png
   Cache-Control: public, max-age=0, must-revalidate
-
-/js/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/logo-assets/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/lang/*
-  Cache-Control: public, max-age=86400
-
-/*.js
-  Cache-Control: public, max-age=31536000, immutable
 
 /og-image.png
   Cache-Control: public, max-age=86400
