@@ -1,6 +1,6 @@
 /**
  * Adapt & Refine — weakness-targeted word selection from diagnostics.
- * Uses most-errored bigrams + words only. No DB schema changes.
+ * Persists adapt_refine on typing_sessions (excluded from leaderboards).
  * Public API: window.usertypoAdaptRefine
  */
 (function () {

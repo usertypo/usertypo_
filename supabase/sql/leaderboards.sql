@@ -1,6 +1,8 @@
 -- Leaderboards foundation for usertypo_
 -- Monthly removed. All-time requires >= 50 completed tests and wpm >= 30.
 -- Country + friends scopes reuse profiles.country_code and friendships (no new tables).
+-- Adapt & refine sessions and non-english tests are excluded from rankings.
+-- Daily/weekly use rolling 24h / 7d windows.
 
 alter table public.profiles
   add column if not exists show_on_leaderboard boolean not null default true;
@@ -58,6 +60,8 @@ as $$
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -66,8 +70,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
-        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
+        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
+        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
       )
   ),
   best_per_user as (
@@ -161,6 +165,8 @@ as $$
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -169,8 +175,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
-        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
+        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
+        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
       )
   ),
   best_per_user as (
@@ -229,6 +235,8 @@ as $$
     inner join public.profiles p on p.user_id = ts.user_id
     left join user_test_counts utc on utc.user_id = ts.user_id
     where ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
       and ts.accuracy >= 75
       and ts.wpm >= 30
       and p.show_on_leaderboard = true
@@ -299,6 +307,8 @@ as $$
       and ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -307,8 +317,8 @@ as $$
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
-        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
+        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
+        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
       )
   ),
   best_per_user as (
@@ -426,6 +436,8 @@ begin
     where ts.mode = p_mode
       and ts.amount = p_amount
       and ts.failed = false
+      and coalesce(ts.adapt_refine, false) = false
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
       and ts.accuracy >= 75
       and (
         p.show_on_leaderboard = true
@@ -437,8 +449,8 @@ begin
           and ts.wpm >= 30
           and coalesce(utc.completed_tests, 0) >= 50
         )
-        or (p_timeframe = 'daily' and ts.created_at >= date_trunc('day', timezone('utc', now())))
-        or (p_timeframe = 'weekly' and ts.created_at >= date_trunc('week', timezone('utc', now())))
+        or (p_timeframe = 'daily' and ts.created_at >= timezone('utc', now()) - interval '24 hours')
+        or (p_timeframe = 'weekly' and ts.created_at >= timezone('utc', now()) - interval '7 days')
       )
   ),
   best_per_user as (

@@ -51,6 +51,7 @@
             language: String(input.language || currentLanguage()),
             punctuation: !!input.punctuation,
             numbers: !!input.numbers,
+            adapt_refine: !!input.adapt_refine,
             wpm: round2(input.wpm),
             raw_wpm: round2(input.raw_wpm),
             accuracy: round2(input.accuracy),
@@ -71,6 +72,24 @@
             .select('*')
             .single();
 
+        // Older DBs may lack adapt_refine until the migration is applied.
+        if (
+            inserted.error &&
+            payload.adapt_refine != null &&
+            /adapt_refine/i.test(String(inserted.error.message || inserted.error.code || ''))
+        ) {
+            delete payload.adapt_refine;
+            inserted = await client
+                .from('typing_sessions')
+                .insert(payload)
+                .select('*')
+                .single();
+            if (!inserted.error && input.adapt_refine) {
+                // Column missing — still keep adapt tests off boards client-side.
+                inserted.data = Object.assign({}, inserted.data, { adapt_refine: true });
+            }
+        }
+
         if (inserted.error) throw inserted.error;
 
         console.info(
@@ -89,6 +108,8 @@
         if (
             leaderboardsEnabled &&
             !payload.failed &&
+            !payload.adapt_refine &&
+            String(payload.language || 'english').trim().toLowerCase() === 'english' &&
             Number(payload.wpm) > 0 &&
             window.usertypoLeaderboards &&
             typeof window.usertypoLeaderboards.ingestScore === 'function'
