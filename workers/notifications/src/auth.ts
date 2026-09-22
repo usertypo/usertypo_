@@ -82,11 +82,18 @@ function serviceHeaders(env: Env): Record<string, string> | null {
   const key = String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   if (!key) return null;
   return {
-    apikey: key,
+    // Prefer anon as apikey (PostgREST convention) with service role as Bearer —
+    // same pattern as the multiplayer worker.
+    apikey: String(env.SUPABASE_ANON_KEY || '').trim() || key,
     Authorization: `Bearer ${key}`,
     'Content-Type': 'application/json',
     Prefer: 'return=representation',
   };
+}
+
+/** Prefer service role for trusted server lookups; fall back to the caller's Clerk JWT. */
+function supabaseHeaders(env: Env, userToken?: string): Record<string, string> | null {
+  return serviceHeaders(env) || (userToken ? userSupabaseHeaders(env, userToken) : null);
 }
 
 export type FriendRequestRow = {
@@ -96,24 +103,47 @@ export type FriendRequestRow = {
   status: string;
 };
 
+async function fetchJsonRows(
+  env: Env,
+  pathAndQuery: string,
+  userToken: string,
+): Promise<Record<string, unknown>[]> {
+  const base = supabaseBase(env);
+  const preferred = supabaseHeaders(env, userToken);
+  if (!base || !preferred) throw new Error('supabase_not_configured');
+
+  const url = `${base}/rest/v1/${pathAndQuery}`;
+  let res = await fetch(url, { headers: preferred });
+
+  // Service role preferred; if it fails and a user JWT is available, retry once.
+  if (!res.ok && serviceHeaders(env) && userToken) {
+    const userHeaders = userSupabaseHeaders(env, userToken);
+    if (userHeaders) {
+      console.warn('[notifications] supabase fetch failed with service role', res.status, '— retrying with user JWT');
+      res = await fetch(url, { headers: userHeaders });
+    }
+  }
+
+  if (!res.ok) {
+    console.warn('[notifications] supabase fetch failed', pathAndQuery, res.status);
+    throw new Error('supabase_lookup_failed');
+  }
+  const rows = await res.json().catch(() => null);
+  return Array.isArray(rows) ? rows as Record<string, unknown>[] : [];
+}
+
 export async function fetchFriendRequest(
   env: Env,
   requestId: string,
   userToken: string,
 ): Promise<FriendRequestRow | null> {
-  const base = supabaseBase(env);
-  const headers = userSupabaseHeaders(env, userToken) || serviceHeaders(env);
-  if (!base || !headers) throw new Error('supabase_not_configured');
-
-  const url = `${base}/rest/v1/friend_requests?id=eq.${encodeURIComponent(requestId)}&select=id,from_user_id,to_user_id,status&limit=1`;
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    console.warn('[notifications] friend_request fetch failed', res.status);
-    throw new Error('friend_request_lookup_failed');
-  }
-  const rows = await res.json().catch(() => null);
-  if (!Array.isArray(rows) || !rows[0]) return null;
-  const row = rows[0] as Record<string, unknown>;
+  const rows = await fetchJsonRows(
+    env,
+    `friend_requests?id=eq.${encodeURIComponent(requestId)}&select=id,from_user_id,to_user_id,status&limit=1`,
+    userToken,
+  );
+  if (!rows[0]) return null;
+  const row = rows[0];
   return {
     id: String(row.id),
     from_user_id: String(row.from_user_id),
@@ -122,26 +152,38 @@ export async function fetchFriendRequest(
   };
 }
 
+export async function fetchPendingIncomingFriendRequests(
+  env: Env,
+  userId: string,
+  userToken: string,
+): Promise<FriendRequestRow[]> {
+  const rows = await fetchJsonRows(
+    env,
+    `friend_requests?to_user_id=eq.${encodeURIComponent(userId)}`
+      + `&status=eq.pending&select=id,from_user_id,to_user_id,status&order=created_at.desc&limit=50`,
+    userToken,
+  );
+  return rows.map((row) => ({
+    id: String(row.id),
+    from_user_id: String(row.from_user_id),
+    to_user_id: String(row.to_user_id),
+    status: String(row.status || 'pending'),
+  }));
+}
+
 export async function friendshipExists(
   env: Env,
   userA: string,
   userB: string,
   userToken: string,
 ): Promise<boolean> {
-  const base = supabaseBase(env);
-  const headers = userSupabaseHeaders(env, userToken) || serviceHeaders(env);
-  if (!base || !headers) throw new Error('supabase_not_configured');
-
-  const url =
-    `${base}/rest/v1/friendships?user_id=eq.${encodeURIComponent(userA)}`
-    + `&friend_id=eq.${encodeURIComponent(userB)}&select=user_id&limit=1`;
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    console.warn('[notifications] friendship fetch failed', res.status);
-    throw new Error('friendship_lookup_failed');
-  }
-  const rows = await res.json().catch(() => null);
-  return Array.isArray(rows) && rows.length > 0;
+  const rows = await fetchJsonRows(
+    env,
+    `friendships?user_id=eq.${encodeURIComponent(userA)}`
+      + `&friend_id=eq.${encodeURIComponent(userB)}&select=user_id&limit=1`,
+    userToken,
+  );
+  return rows.length > 0;
 }
 
 export async function profileDisplayLabel(
@@ -149,21 +191,21 @@ export async function profileDisplayLabel(
   userId: string,
   userToken: string,
 ): Promise<string> {
-  const base = supabaseBase(env);
-  const headers = userSupabaseHeaders(env, userToken) || serviceHeaders(env);
-  if (!base || !headers) return userId;
-
-  const url =
-    `${base}/rest/v1/profiles?user_id=eq.${encodeURIComponent(userId)}`
-    + `&select=username,display_name,user_id&limit=1`;
-  const res = await fetch(url, { headers });
-  if (!res.ok) return userId;
-  const rows = await res.json().catch(() => null);
-  if (!Array.isArray(rows) || !rows[0]) return userId;
-  const row = rows[0] as Record<string, unknown>;
-  const username = String(row.username || '').trim();
-  const display = String(row.display_name || '').trim();
-  return username || display || String(row.user_id || userId);
+  try {
+    const rows = await fetchJsonRows(
+      env,
+      `profiles?user_id=eq.${encodeURIComponent(userId)}`
+        + `&select=username,display_name,user_id&limit=1`,
+      userToken,
+    );
+    if (!rows[0]) return userId;
+    const row = rows[0];
+    const username = String(row.username || '').trim();
+    const display = String(row.display_name || '').trim();
+    return username || display || String(row.user_id || userId);
+  } catch {
+    return userId;
+  }
 }
 
 export { bearerToken };
