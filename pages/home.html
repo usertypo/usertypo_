@@ -447,12 +447,19 @@
             width: 1rem;
             height: 1rem;
             /* Optical center vs neighboring text_fields / schedule icons */
-            transform: translateY(1px);
+            transform: translateY(2px);
         }
         #word-progress {
             display: inline-flex;
             align-items: center;
             gap: 0.05em;
+        }
+        /* ID display rules must not defeat Tailwind .hidden */
+        #word-progress.hidden {
+            display: none !important;
+        }
+        #word-progress-bar-container.hidden {
+            display: none !important;
         }
         #word-progress .inf-amt-icon {
             font-size: 0.95em;
@@ -462,8 +469,7 @@
             align-items: center;
             justify-content: center;
             line-height: 1;
-            /* Optical lift — Material all_inclusive sits a hair low in mono progress text */
-            transform: translateY(-0.06em);
+            transform: translateY(0.5px);
         }
         #btn-amt-inf .amt-inf-icon {
             width: 1.05rem;
@@ -848,8 +854,9 @@
                     <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[1.705rem] mb-[0.853rem]">
                         <div class="typing-stat opacity-0 transition-opacity duration-300 text-white font-mono text-[1.279rem] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                             id="word-progress"></div>
-                        <div class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[0.107rem] bg-white/10 rounded-full overflow-hidden hidden"
-                            id="word-progress-bar-container">
+                        <div class="absolute left-0 bottom-2 w-full h-[0.107rem] bg-white/10 rounded-full overflow-hidden hidden"
+                            id="word-progress-bar-container"
+                            aria-hidden="true">
                             <div id="word-progress-bar"
                                 class="h-full bg-primary transition-all duration-300 ease-linear"
                                 style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-80, 0.8));"></div>
@@ -1318,6 +1325,54 @@ window.setTimeout = function(handler, timeout) {
             return String(amount);
         }
 
+        /**
+         * Apply timer/progress chrome for the home test.
+         * Infinite tests cannot fill a % bar, so they always use Number digits
+         * even if liveFeed.timerStyle is Bar.
+         */
+        function syncHomeTimerProgressChrome() {
+            const wrap = document.getElementById('timer-progress-wrapper');
+            const text = document.getElementById('word-progress');
+            const bar = document.getElementById('word-progress-bar-container');
+            if (!wrap) return;
+
+            const lf = (window.usertypo_settings && window.usertypo_settings.liveFeed) || {};
+            const savedStyle = lf.timerStyle || 'Number';
+            // Unbounded tests: digits only (bar has no meaningful 0–100 target)
+            const style = isInfiniteTest ? 'Number' : savedStyle;
+            const showBar = style === 'Bar';
+            const showText = style !== 'Off' && style !== 'Bar';
+
+            if (style === 'Off') {
+                wrap.style.visibility = 'hidden';
+            } else {
+                wrap.style.visibility = 'visible';
+            }
+
+            if (text) {
+                if (showText || isInfiniteTest) {
+                    text.classList.remove('hidden');
+                    text.style.removeProperty('display');
+                } else {
+                    text.classList.add('hidden');
+                    text.style.display = 'none';
+                }
+            }
+
+            if (bar) {
+                if (showBar) {
+                    bar.classList.remove('hidden', 'opacity-0');
+                    bar.style.removeProperty('display');
+                    bar.setAttribute('aria-hidden', 'false');
+                } else {
+                    bar.classList.add('hidden', 'opacity-0');
+                    bar.style.display = 'none';
+                    bar.setAttribute('aria-hidden', 'true');
+                }
+            }
+        }
+        window.syncHomeTimerProgressChrome = syncHomeTimerProgressChrome;
+
         function wordsStillNeeded() {
             if (testMode === 'words' && Number.isFinite(testAmount)) {
                 return (wordsPrunedCount + generatedWords.length) < testAmount;
@@ -1331,6 +1386,7 @@ window.setTimeout = function(handler, timeout) {
 
         window.usertypo_testRuntime = {
             isActive() { return isTyping && !testComplete; },
+            isInfinite() { return !!isInfiniteTest; },
             isTyping() { return isTyping; },
         };
 
@@ -2131,6 +2187,7 @@ window.setTimeout = function(handler, timeout) {
 
             saveConfig();
             restartTest();
+            syncHomeTimerProgressChrome();
         }
 
         function setInfiniteTestAmount(options) {
@@ -2167,11 +2224,11 @@ window.setTimeout = function(handler, timeout) {
             if (!opts.skipNotify) {
                 notifyAdaptRefine('Infinity selected. Submit anytime with Shift + Enter', 'info');
             }
-            // Allow re-selecting infinity even mid-restart animation
             if (isRestarting) {
                 isRestarting = false;
             }
             restartTest();
+            syncHomeTimerProgressChrome();
         }
         window.setInfiniteTestAmount = setInfiniteTestAmount;
 
@@ -3931,7 +3988,14 @@ window.setTimeout = function(handler, timeout) {
                 applyLiveFeedSettings(window.usertypo_settings);
             }
 
-            document.querySelectorAll('.typing-stat').forEach(el => el.classList.remove('opacity-0'));
+            document.querySelectorAll('.typing-stat').forEach(el => {
+                if (el.id === 'word-progress-bar-container') return;
+                el.classList.remove('opacity-0');
+            });
+            if (typeof applyLiveFeedSettings === 'function') {
+                applyLiveFeedSettings(window.usertypo_settings);
+            }
+            syncHomeTimerProgressChrome();
 
             hideZenElements();
             caret.classList.remove('animate-breath');
