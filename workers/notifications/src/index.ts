@@ -6,6 +6,7 @@ import {
   type Env,
   bearerToken,
   fetchFriendRequest,
+  fetchPendingIncomingFriendRequests,
   friendshipExists,
   profileDisplayLabel,
   requireUserId,
@@ -191,6 +192,60 @@ async function clearAllForUser(env: Env, userId: string) {
   return { ok: true, deleted: result.meta.changes || 0 };
 }
 
+async function existingFriendRequestIds(env: Env, userId: string): Promise<Set<string>> {
+  const rows = await env.DB.prepare(
+    `SELECT data FROM notifications
+     WHERE user_id = ?
+       AND type = 'friend_request'
+       AND created_at >= ?`,
+  )
+    .bind(userId, cutoffIso())
+    .all<{ data: string }>();
+
+  const ids = new Set<string>();
+  for (const row of rows.results || []) {
+    const data = parseData(row.data);
+    const requestId = String(data.request_id || '').trim();
+    if (requestId) ids.add(requestId);
+  }
+  return ids;
+}
+
+/** Backfill D1 inbox from pending Postgres friend_requests (self-heals missed emits). */
+async function syncIncomingFriendRequests(
+  env: Env,
+  userId: string,
+  userToken: string,
+): Promise<{ ok: true; created: ReturnType<typeof toClientRow>[]; kind: string }> {
+  const pending = await fetchPendingIncomingFriendRequests(env, userId, userToken);
+  if (!pending.length) {
+    return { ok: true, created: [], kind: 'sync' };
+  }
+
+  const existing = await existingFriendRequestIds(env, userId);
+  const created: ReturnType<typeof toClientRow>[] = [];
+
+  for (const fr of pending) {
+    if (existing.has(fr.id)) continue;
+    const label = await profileDisplayLabel(env, fr.from_user_id, userToken);
+    const row = await insertNotification(env, {
+      userId,
+      type: 'friend_request',
+      title: `${label} sent you a friend request`,
+      body: 'Accept or decline below.',
+      data: {
+        request_id: fr.id,
+        from_user_id: fr.from_user_id,
+        from_username: label,
+      },
+    });
+    created.push(toClientRow(row));
+    existing.add(fr.id);
+  }
+
+  return { ok: true, created, kind: 'sync' };
+}
+
 async function emitFriendOnlineNotification(
   env: Env,
   actorId: string,
@@ -327,6 +382,7 @@ function statusForAuthError(err: unknown): number {
     || msg === 'title_too_long'
   ) return 400;
   if (msg === 'supabase_not_configured') return 500;
+  if (msg === 'supabase_lookup_failed' || msg === 'friend_request_lookup_failed') return 502;
   return 400;
 }
 
@@ -377,6 +433,13 @@ export default {
 
       if (url.pathname === '/notifications/clear' && request.method === 'POST') {
         const result = await clearAllForUser(env, userId);
+        return json(env, 200, result, request);
+      }
+
+      if (url.pathname === '/notifications/sync' && request.method === 'POST') {
+        const token = bearerToken(request);
+        if (!token) return json(env, 401, { ok: false, error: 'missing_token' }, request);
+        const result = await syncIncomingFriendRequests(env, userId, token);
         return json(env, 200, result, request);
       }
 

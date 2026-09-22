@@ -19,9 +19,11 @@
     var pendingCollapseTimer = null;
     var pendingIndicatorId = null;
     var lastExpiryPurgeAt = 0;
-    var POLL_MS = 2000;
+    var POLL_MS = 1500;
     var TOAST_MS = 5000;
     var RETENTION_MS = 24 * 60 * 60 * 1000;
+    var lastFriendSyncAt = 0;
+    var FRIEND_SYNC_MIN_MS = 1500;
 
     function notificationsWorkerUrl() {
         var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.notifications) || {};
@@ -69,15 +71,24 @@
 
     async function emitFriendNotification(payload) {
         if (!useNotificationsWorker()) return { skipped: true, reason: 'not_configured' };
-        try {
-            return await workerFetch('/notifications/emit', {
-                method: 'POST',
-                body: JSON.stringify(payload || {}),
-            });
-        } catch (err) {
-            console.warn('[usertypo notifications] emit failed', err);
-            return { skipped: true, reason: 'emit_failed', error: err };
+        var lastErr = null;
+        for (var attempt = 0; attempt < 3; attempt++) {
+            try {
+                return await workerFetch('/notifications/emit', {
+                    method: 'POST',
+                    body: JSON.stringify(payload || {}),
+                });
+            } catch (err) {
+                lastErr = err;
+                console.warn('[usertypo notifications] emit failed (attempt ' + (attempt + 1) + ')', err);
+                if (attempt < 2) {
+                    await new Promise(function (resolve) {
+                        nativeSetTimeout(resolve, 250 * (attempt + 1));
+                    });
+                }
+            }
         }
+        return { skipped: true, reason: 'emit_failed', error: lastErr };
     }
 
     /** Persist a friend-online notice for the current user and toast it immediately. */
@@ -481,6 +492,91 @@
         return data.request_id || null;
     }
 
+    function hasFriendRequestNotification(requestId) {
+        if (!requestId) return false;
+        var needle = String(requestId);
+        for (var i = 0; i < cached.length; i++) {
+            var n = cached[i];
+            if (!n || n.type !== 'friend_request') continue;
+            if (String(requestIdFromNotification(n) || '') === needle) return true;
+        }
+        return false;
+    }
+
+    function profileLabelFromRow(row) {
+        if (!row || typeof row !== 'object') return 'Someone';
+        var username = String(row.username || '').trim();
+        var display = String(row.display_name || '').trim();
+        return username || display || 'Someone';
+    }
+
+    /** Self-heal: pull pending Postgres friend requests into the local inbox. */
+    async function backfillIncomingFriendRequests(opts) {
+        opts = opts || {};
+        if (!window.usertypoFriends || typeof window.usertypoFriends.loadDashboard !== 'function') {
+            return [];
+        }
+        var dash;
+        try {
+            dash = await window.usertypoFriends.loadDashboard();
+        } catch (err) {
+            console.warn('[usertypo notifications] friend dashboard backfill failed', err);
+            return [];
+        }
+        var incoming = (dash && Array.isArray(dash.incoming)) ? dash.incoming : [];
+        var created = [];
+        for (var i = 0; i < incoming.length; i++) {
+            var row = incoming[i];
+            if (!row) continue;
+            var requestId = row.request_id || row.id;
+            if (!requestId || hasFriendRequestNotification(requestId)) continue;
+            var label = profileLabelFromRow(row);
+            var synthetic = {
+                id: 'sync:friend_request:' + requestId,
+                type: 'friend_request',
+                title: label + ' sent you a friend request',
+                body: 'Accept or decline below.',
+                data: {
+                    request_id: requestId,
+                    from_user_id: row.user_id || null,
+                    from_username: label,
+                },
+                created_at: row.created_at || new Date().toISOString(),
+                read_at: null,
+                _ephemeral: true,
+            };
+            ingestNotification(synthetic, { toast: !!opts.toastNew });
+            created.push(synthetic);
+        }
+        return created;
+    }
+
+    /** Persist missing friend_request rows on the Worker (when deploy supports /sync). */
+    async function syncFriendRequestsViaWorker(opts) {
+        opts = opts || {};
+        if (!useNotificationsWorker()) return [];
+        var now = Date.now();
+        if (!opts.force && now - lastFriendSyncAt < FRIEND_SYNC_MIN_MS) return [];
+        lastFriendSyncAt = now;
+        try {
+            var result = await workerFetch('/notifications/sync', {
+                method: 'POST',
+                body: '{}',
+            });
+            var created = (result && Array.isArray(result.created)) ? result.created : [];
+            created.forEach(function (row) {
+                ingestNotification(row, { toast: !!opts.toastNew });
+            });
+            return created;
+        } catch (err) {
+            // Older workers may not have /sync yet — client backfill still covers UX.
+            if (!(err && err.status === 404)) {
+                console.warn('[usertypo notifications] worker friend sync failed', err);
+            }
+            return [];
+        }
+    }
+
     function isActionableFriendRequest(n) {
         if (!n || n.type !== 'friend_request') return false;
         return !!requestIdFromNotification(n);
@@ -643,9 +739,17 @@
     async function refresh(opts) {
         opts = opts || {};
         await requireAuth();
-        var rows = (await fetchNotifications()).filter(function (n) {
-            return n && !dismissedIds[n.id] && isRecent(n);
-        });
+
+        var rows = [];
+        try {
+            rows = (await fetchNotifications()).filter(function (n) {
+                return n && !dismissedIds[n.id] && isRecent(n);
+            });
+        } catch (err) {
+            console.warn('[usertypo notifications] fetch failed — continuing with backfill', err);
+            rows = [];
+        }
+
         var ephemeralRows = cached.filter(function (n) {
             return n && n._ephemeral && !dismissedIds[n.id] && isRecent(n);
         });
@@ -668,6 +772,19 @@
             });
         }
 
+        // Drop ephemeral friend_request rows when a persisted copy exists for the same request.
+        var persistedRequestIds = {};
+        rows.forEach(function (n) {
+            if (!n || n.type !== 'friend_request') return;
+            var rid = requestIdFromNotification(n);
+            if (rid) persistedRequestIds[String(rid)] = true;
+        });
+        ephemeralRows = ephemeralRows.filter(function (n) {
+            if (!n || n.type !== 'friend_request') return true;
+            var rid = requestIdFromNotification(n);
+            return !(rid && persistedRequestIds[String(rid)]);
+        });
+
         cached = ephemeralRows.concat(rows.map(function (n) {
             return Object.assign({}, n, { _resolved: !!(n && n.id && resolvedMap[n.id]) });
         }));
@@ -676,6 +793,14 @@
         unreadCount = cached.filter(function (n) { return !n.read_at; }).length;
         updateBadges();
         renderNotificationsPanel();
+
+        // Self-heal missed emits even when the Worker list/sync path fails.
+        try {
+            await syncFriendRequestsViaWorker({ toastNew: !!opts.toastNew, force: !!opts.forceSync });
+        } catch (_) { /* ignore */ }
+        try {
+            await backfillIncomingFriendRequests({ toastNew: !!opts.toastNew });
+        } catch (_) { /* ignore */ }
 
         return { notifications: cached, unreadCount: unreadCount };
     }

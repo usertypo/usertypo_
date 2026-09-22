@@ -93,7 +93,11 @@
             return;
         }
         try {
-            await window.usertypoNotifications.emitFriendNotification(payload);
+            var result = await window.usertypoNotifications.emitFriendNotification(payload);
+            if (result && result.skipped && result.reason === 'emit_failed') {
+                console.warn('[usertypo friends] notification emit failed', result.error);
+            }
+            return result;
         } catch (err) {
             console.warn('[usertypo friends] notification emit failed', err);
         }
