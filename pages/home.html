@@ -422,41 +422,45 @@
             margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
         }
 
-        /* Optical centering for ∞ glyphs (unicode sits high in most fonts) */
-        .inf-amt-glyph {
+        /* Infinity amount icons — Material all_inclusive (rounder than unicode ∞) */
+        .inf-amt-icon {
+            font-family: 'Material Symbols Outlined', sans-serif;
+            font-weight: normal;
+            font-style: normal;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             line-height: 1;
-            font-weight: 700;
-            transform: translateY(0.12em);
+            speak: never;
+            -webkit-font-smoothing: antialiased;
         }
         #aci-mode-amt {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 1.066rem;
+            height: 1.066rem;
+            line-height: 1;
         }
-        #aci-mode-amt .inf-amt-glyph {
-            font-size: 1.35em;
-            transform: translateY(0.06em);
+        #aci-mode-amt .inf-amt-icon {
+            font-size: 1.2rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            /* Optical center vs neighboring text_fields / schedule icons */
+            transform: translateY(0.5px);
         }
-        #word-progress .inf-amt-glyph {
-            font-size: 1.35em;
-            transform: translateY(0.08em);
+        #word-progress .inf-amt-icon {
+            font-size: 1.55em;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.12em;
+            transform: none;
         }
         #btn-amt-inf .amt-inf-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
             width: 1.25rem;
-            font-size: 1.15em;
-            line-height: 1;
-            transform: translateY(0.08em);
-        }
-        aside:hover .adapt-btn:not(:last-child),
-        aside.is-open .adapt-btn:not(:last-child) {
-            margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
+            height: 1.25rem;
+            font-size: 1.25rem;
+            flex-shrink: 0;
         }
 
         /* --- PROPORTIONAL DESKTOP SCALING ---
@@ -763,7 +767,7 @@
                                 <div id="btn-amt-inf"
                                     class="amt-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
                                     onclick="setInfiniteTestAmount()">
-                                    <span class="amt-inf-icon shrink-0" aria-hidden="true">∞</span>
+                                    <span class="material-symbols-outlined amt-inf-icon inf-amt-icon" aria-hidden="true">all_inclusive</span>
                                     <span
                                         class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">infinity</span>
                                 </div>
@@ -1295,7 +1299,7 @@ window.setTimeout = function(handler, timeout) {
 
         function formatAmountGlyph(amount) {
             if (isInfiniteTest || amount === Infinity || amount == null) {
-                return '<span class="inf-amt-glyph" aria-hidden="true">∞</span>';
+                return '<span class="material-symbols-outlined inf-amt-icon" aria-hidden="true">all_inclusive</span>';
             }
             return String(amount);
         }
@@ -1366,11 +1370,12 @@ window.setTimeout = function(handler, timeout) {
         let updateInterval;
 
         function saveConfig() {
+            const savedCustom = (customAmount === 'inf' || customAmount == null) ? null : customAmount;
             localStorage.setItem('usertypo_config', JSON.stringify({
                 testMode,
-                activeAmtIndex,
+                activeAmtIndex: isInfiniteTest ? 'inf' : activeAmtIndex,
                 testAmount: isInfiniteTest ? null : testAmount,
-                customAmount: isInfiniteTest ? 'inf' : customAmount,
+                customAmount: savedCustom,
                 isInfiniteTest: !!isInfiniteTest,
                 usePunctuation,
                 useNumbers,
@@ -1706,14 +1711,20 @@ window.setTimeout = function(handler, timeout) {
                     const config = JSON.parse(savedConfig);
                     testMode = config.testMode || 'words';
                     activeAmtIndex = config.activeAmtIndex !== undefined ? config.activeAmtIndex : 0;
-                    isInfiniteTest = !!config.isInfiniteTest || config.customAmount === 'inf' || config.activeAmtIndex === 'inf';
+                    // Trust explicit infinity flags only — never sticky customAmount:'inf'
+                    isInfiniteTest = config.activeAmtIndex === 'inf' || !!config.isInfiniteTest;
                     if (isInfiniteTest) {
                         testAmount = Infinity;
-                        customAmount = 'inf';
                         activeAmtIndex = 'inf';
+                        customAmount = (config.customAmount && config.customAmount !== 'inf')
+                            ? config.customAmount
+                            : null;
                     } else {
                         testAmount = config.testAmount || 10;
-                        customAmount = config.customAmount || null;
+                        customAmount = (config.customAmount && config.customAmount !== 'inf')
+                            ? config.customAmount
+                            : null;
+                        if (activeAmtIndex === 'inf') activeAmtIndex = 1;
                     }
                     usePunctuation = !!config.usePunctuation;
                     useNumbers = !!config.useNumbers;
@@ -1991,7 +2002,7 @@ window.setTimeout = function(handler, timeout) {
             if (modeIcon) {
                 elModeIcon.innerText = modeIcon;
                 if (isInfiniteTest || testAmount === Infinity) {
-                    elModeAmt.innerHTML = '<span class="inf-amt-glyph" aria-hidden="true">∞</span>';
+                    elModeAmt.innerHTML = '<span class="material-symbols-outlined inf-amt-icon" aria-hidden="true">all_inclusive</span>';
                 } else {
                     elModeAmt.textContent = String(testAmount);
                 }
@@ -2065,12 +2076,13 @@ window.setTimeout = function(handler, timeout) {
                 btn.onclick = () => setTestAmount(amtValues[i], i);
             }
 
-            if (isInfiniteTest || activeAmtIndex === 'inf' || customAmount === 'inf') {
+            if (isInfiniteTest || activeAmtIndex === 'inf') {
                 setInfiniteTestAmount({ skipNotify: true });
-            } else if (activeAmtIndex === 'custom' && customAmount !== null) {
+            } else if (activeAmtIndex === 'custom' && customAmount !== null && customAmount !== 'inf') {
                 setTestAmount(customAmount, 'custom');
             } else {
-                let idx = activeAmtIndex === 'custom' || activeAmtIndex === 'inf' ? 1 : activeAmtIndex;
+                let idx = (activeAmtIndex === 'custom' || activeAmtIndex === 'inf') ? 1 : activeAmtIndex;
+                if (typeof idx !== 'number' || idx < 0 || idx > 3) idx = 1;
                 setTestAmount(amtValues[idx], idx);
             }
         }
@@ -2087,6 +2099,8 @@ window.setTimeout = function(handler, timeout) {
             activeAmtIndex = index;
             if (index === 'custom') {
                 customAmount = amount;
+            } else if (customAmount === 'inf') {
+                customAmount = null;
             }
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
@@ -2111,11 +2125,14 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function setInfiniteTestAmount(options) {
-            const opts = options && typeof options === 'object' ? options : {};
+            // Ignore browser Event objects from inline handlers
+            const opts = (options && typeof options === 'object' && !('isTrusted' in options))
+                ? options
+                : {};
             isInfiniteTest = true;
             testAmount = Infinity;
-            customAmount = 'inf';
             activeAmtIndex = 'inf';
+            if (customAmount === 'inf') customAmount = null;
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
@@ -2130,7 +2147,6 @@ window.setTimeout = function(handler, timeout) {
                 activeBtn.querySelectorAll('span').forEach(s => s.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
             }
 
-            // Keep custom button on the wrench icon
             const customIcon = document.querySelector('#btn-amt-custom .amt-custom-icon');
             if (customIcon) customIcon.textContent = 'build';
 
@@ -2142,8 +2158,13 @@ window.setTimeout = function(handler, timeout) {
             if (!opts.skipNotify) {
                 notifyAdaptRefine('Submit anytime with Shift + Enter', 'info');
             }
+            // Allow re-selecting infinity even mid-restart animation
+            if (isRestarting) {
+                isRestarting = false;
+            }
             restartTest();
         }
+        window.setInfiniteTestAmount = setInfiniteTestAmount;
 
         function openCustomPrompt() {
             const modal = document.getElementById('custom-prompt-modal');
