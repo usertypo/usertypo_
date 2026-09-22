@@ -449,16 +449,21 @@
             /* Optical center vs neighboring text_fields / schedule icons */
             transform: translateY(1px);
         }
+        #word-progress {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.05em;
+        }
         #word-progress .inf-amt-icon {
-            font-size: 1em;
-            width: 1em;
-            height: 1em;
+            font-size: 0.95em;
+            width: 0.95em;
+            height: 0.95em;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            vertical-align: middle;
-            /* Material all_inclusive sits slightly high — light nudge for mono digits */
-            transform: translateY(0.09em);
+            line-height: 1;
+            /* Optical lift — Material all_inclusive sits a hair low in mono progress text */
+            transform: translateY(-0.06em);
         }
         #btn-amt-inf .amt-inf-icon {
             width: 1.05rem;
