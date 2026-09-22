@@ -422,6 +422,43 @@
             margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
         }
 
+        /* Optical centering for ∞ glyphs (unicode sits high in most fonts) */
+        .inf-amt-glyph {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            font-weight: 700;
+            transform: translateY(0.12em);
+        }
+        #aci-mode-amt {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 1.066rem;
+        }
+        #aci-mode-amt .inf-amt-glyph {
+            font-size: 1.35em;
+            transform: translateY(0.06em);
+        }
+        #word-progress .inf-amt-glyph {
+            font-size: 1.35em;
+            transform: translateY(0.08em);
+        }
+        #btn-amt-inf .amt-inf-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            font-size: 1.15em;
+            line-height: 1;
+            transform: translateY(0.08em);
+        }
+        aside:hover .adapt-btn:not(:last-child),
+        aside.is-open .adapt-btn:not(:last-child) {
+            margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
+        }
+
         /* --- PROPORTIONAL DESKTOP SCALING ---
            Scales the two main visual elements (box width + type size)
            proportionally with viewport width, without touching any JS.
@@ -722,6 +759,13 @@
                                     <span class="w-5 text-center shrink-0 amt-val">100</span>
                                     <span
                                         class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">words</span>
+                                </div>
+                                <div id="btn-amt-inf"
+                                    class="amt-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.32rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                                    onclick="setInfiniteTestAmount()">
+                                    <span class="amt-inf-icon shrink-0" aria-hidden="true">∞</span>
+                                    <span
+                                        class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap -ml-1 duration-300 delay-75">infinity</span>
                                 </div>
                                 <div id="btn-amt-custom"
                                     class="amt-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
@@ -1250,14 +1294,15 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function formatAmountGlyph(amount) {
-            if (isInfiniteTest || amount === Infinity || amount == null) return '∞';
+            if (isInfiniteTest || amount === Infinity || amount == null) {
+                return '<span class="inf-amt-glyph" aria-hidden="true">∞</span>';
+            }
             return String(amount);
         }
 
-        function updateCustomAmountButtonIcon() {
-            const icon = document.querySelector('#btn-amt-custom .amt-custom-icon');
-            if (!icon) return;
-            icon.textContent = isInfiniteTest ? 'all_inclusive' : 'build';
+        function formatAmountPlain(amount) {
+            if (isInfiniteTest || amount === Infinity || amount == null) return '∞';
+            return String(amount);
         }
 
         function wordsStillNeeded() {
@@ -1661,11 +1706,11 @@ window.setTimeout = function(handler, timeout) {
                     const config = JSON.parse(savedConfig);
                     testMode = config.testMode || 'words';
                     activeAmtIndex = config.activeAmtIndex !== undefined ? config.activeAmtIndex : 0;
-                    isInfiniteTest = !!config.isInfiniteTest || config.customAmount === 'inf';
+                    isInfiniteTest = !!config.isInfiniteTest || config.customAmount === 'inf' || config.activeAmtIndex === 'inf';
                     if (isInfiniteTest) {
                         testAmount = Infinity;
                         customAmount = 'inf';
-                        activeAmtIndex = 'custom';
+                        activeAmtIndex = 'inf';
                     } else {
                         testAmount = config.testAmount || 10;
                         customAmount = config.customAmount || null;
@@ -1946,12 +1991,11 @@ window.setTimeout = function(handler, timeout) {
             if (modeIcon) {
                 elModeIcon.innerText = modeIcon;
                 if (isInfiniteTest || testAmount === Infinity) {
-                    elModeAmt.innerHTML = '<span class="material-symbols-outlined text-[1.066rem] leading-none">all_inclusive</span>';
+                    elModeAmt.innerHTML = '<span class="inf-amt-glyph" aria-hidden="true">∞</span>';
                 } else {
                     elModeAmt.textContent = String(testAmount);
                 }
             }
-            updateCustomAmountButtonIcon();
         }
 
         function updateModifierUI() {
@@ -2008,9 +2052,9 @@ window.setTimeout = function(handler, timeout) {
 
             const labels = document.querySelectorAll('.opt-label');
             labels.forEach(el => {
-                if (el.parentElement.id !== 'btn-amt-custom') {
-                    el.innerText = mode === 'time' ? 'seconds' : 'words';
-                }
+                const parentId = el.parentElement && el.parentElement.id;
+                if (parentId === 'btn-amt-custom' || parentId === 'btn-amt-inf') return;
+                el.innerText = mode === 'time' ? 'seconds' : 'words';
             });
 
             const amtValues = mode === 'time' ? [15, 30, 60, 120] : [10, 25, 50, 100];
@@ -2021,14 +2065,12 @@ window.setTimeout = function(handler, timeout) {
                 btn.onclick = () => setTestAmount(amtValues[i], i);
             }
 
-            if (activeAmtIndex === 'custom' && customAmount !== null) {
-                if (isInfiniteTest || customAmount === 'inf') {
-                    setInfiniteTestAmount({ skipNotify: true });
-                } else {
-                    setTestAmount(customAmount, 'custom');
-                }
+            if (isInfiniteTest || activeAmtIndex === 'inf' || customAmount === 'inf') {
+                setInfiniteTestAmount({ skipNotify: true });
+            } else if (activeAmtIndex === 'custom' && customAmount !== null) {
+                setTestAmount(customAmount, 'custom');
             } else {
-                let idx = activeAmtIndex === 'custom' ? 1 : activeAmtIndex;
+                let idx = activeAmtIndex === 'custom' || activeAmtIndex === 'inf' ? 1 : activeAmtIndex;
                 setTestAmount(amtValues[idx], idx);
             }
         }
@@ -2073,7 +2115,7 @@ window.setTimeout = function(handler, timeout) {
             isInfiniteTest = true;
             testAmount = Infinity;
             customAmount = 'inf';
-            activeAmtIndex = 'custom';
+            activeAmtIndex = 'inf';
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
@@ -2081,12 +2123,16 @@ window.setTimeout = function(handler, timeout) {
                 btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
             });
 
-            const activeBtn = document.getElementById('btn-amt-custom');
+            const activeBtn = document.getElementById('btn-amt-inf');
             if (activeBtn) {
                 activeBtn.classList.remove('text-slate-400');
                 activeBtn.classList.add('is-active', 'text-primary', 'font-bold', 'group/btn');
                 activeBtn.querySelectorAll('span').forEach(s => s.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
             }
+
+            // Keep custom button on the wrench icon
+            const customIcon = document.querySelector('#btn-amt-custom .amt-custom-icon');
+            if (customIcon) customIcon.textContent = 'build';
 
             if (typeof updateActiveConfigIconsDisplay === 'function') {
                 updateActiveConfigIconsDisplay();
@@ -2094,7 +2140,7 @@ window.setTimeout = function(handler, timeout) {
 
             saveConfig();
             if (!opts.skipNotify) {
-                notifyAdaptRefine('Submit anytime with Shift + Enter', 'keyboard_return');
+                notifyAdaptRefine('Submit anytime with Shift + Enter', 'info');
             }
             restartTest();
         }
@@ -2316,7 +2362,9 @@ window.setTimeout = function(handler, timeout) {
                 }
 
                 if (testMode === 'time') {
-                    wordProgressDisplay.innerHTML = formatAmountGlyph(testAmount);
+                    wordProgressDisplay.innerHTML = (isInfiniteTest || !Number.isFinite(testAmount))
+                        ? '0'
+                        : formatAmountPlain(testAmount);
                 } else {
                     wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
                 }
@@ -4665,7 +4713,9 @@ window.setTimeout = function(handler, timeout) {
             }
 
             if (testMode === 'time') {
-                wordProgressDisplay.innerHTML = formatAmountGlyph(testAmount);
+                wordProgressDisplay.innerHTML = (isInfiniteTest || !Number.isFinite(testAmount))
+                    ? '0'
+                    : formatAmountPlain(testAmount);
             } else {
                 wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
             }
@@ -4775,7 +4825,7 @@ window.setTimeout = function(handler, timeout) {
                 progressPercent = 100;
             } else if (testMode === 'time') {
                 if (isInfiniteTest || !Number.isFinite(testAmount)) {
-                    wordProgressDisplay.innerText = '∞';
+                    wordProgressDisplay.textContent = String(Math.max(0, elapsedSeconds));
                     progressPercent = 0;
                 } else {
                     let remaining = testAmount - elapsedSeconds;
