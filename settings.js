@@ -4210,7 +4210,11 @@ function applyLiveFeedSettings(settings) {
 
     const liveWpmWrapper = document.getElementById('live-wpm-wrapper');
     if (liveWpmWrapper) {
-        const timerStyle = lf.timerStyle || 'Number';
+        // Infinite home tests have no 0–100 target — always digits, never the track
+        const forceNumber =
+            typeof window.usertypo_testRuntime?.isInfinite === 'function' &&
+            window.usertypo_testRuntime.isInfinite();
+        const timerStyle = forceNumber ? 'Number' : (lf.timerStyle || 'Number');
         const timerOpacity = parseFloat(lf.timerOpacity || '0.5');
         const timerProgressWrapper = document.getElementById('timer-progress-wrapper');
         const wordProgressText = document.getElementById('word-progress');
@@ -4220,14 +4224,30 @@ function applyLiveFeedSettings(settings) {
         if (timerProgressWrapper) {
             if (timerStyle === 'Off') {
                 timerProgressWrapper.style.visibility = 'hidden';
+                if (wordProgressBarContainer) {
+                    wordProgressBarContainer.classList.add('hidden', 'opacity-0');
+                    wordProgressBarContainer.style.display = 'none';
+                    wordProgressBarContainer.setAttribute('aria-hidden', 'true');
+                }
             } else {
                 timerProgressWrapper.style.visibility = 'visible';
                 if (timerStyle === 'Bar') {
                     wordProgressText?.classList.add('hidden');
-                    wordProgressBarContainer?.classList.remove('hidden');
+                    if (wordProgressText) wordProgressText.style.display = 'none';
+                    if (wordProgressBarContainer) {
+                        wordProgressBarContainer.classList.remove('hidden', 'opacity-0');
+                        wordProgressBarContainer.style.removeProperty('display');
+                        wordProgressBarContainer.setAttribute('aria-hidden', 'false');
+                    }
                 } else {
+                    // Number (or Mini/other): digits only — never show the bar track
                     wordProgressText?.classList.remove('hidden');
-                    wordProgressBarContainer?.classList.add('hidden');
+                    if (wordProgressText) wordProgressText.style.removeProperty('display');
+                    if (wordProgressBarContainer) {
+                        wordProgressBarContainer.classList.add('hidden', 'opacity-0');
+                        wordProgressBarContainer.style.display = 'none';
+                        wordProgressBarContainer.setAttribute('aria-hidden', 'true');
+                    }
                 }
             }
             // Only paint live opacity while typing — never override .opacity-0 pre-test
@@ -4262,6 +4282,11 @@ function applyLiveFeedSettings(settings) {
 
     if (typeof window.applyDualLiveFeedSettings === 'function') {
         window.applyDualLiveFeedSettings();
+    }
+
+    // Home infinite / Number chrome — re-assert after any live-feed apply
+    if (typeof window.syncHomeTimerProgressChrome === 'function') {
+        window.syncHomeTimerProgressChrome();
     }
 }
 
