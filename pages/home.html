@@ -443,21 +443,22 @@
             line-height: 1;
         }
         #aci-mode-amt .inf-amt-icon {
-            font-size: 1.2rem;
-            width: 1.2rem;
-            height: 1.2rem;
+            font-size: 1rem;
+            width: 1rem;
+            height: 1rem;
             /* Optical center vs neighboring text_fields / schedule icons */
-            transform: translateY(0.5px);
+            transform: translateY(1px);
         }
         #word-progress .inf-amt-icon {
-            font-size: 1.05em;
+            font-size: 1em;
             width: 1em;
             height: 1em;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            vertical-align: -0.05em;
-            transform: translateY(0.06em);
+            vertical-align: middle;
+            /* Material all_inclusive sits optically high — nudge down to match mono digits */
+            transform: translateY(0.14em);
         }
         #btn-amt-inf .amt-inf-icon {
             width: 1.25rem;
