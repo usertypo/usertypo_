@@ -1195,6 +1195,18 @@ window.setTimeout = function(handler, timeout) {
         let testAmount = 10;
         let activeAmtIndex = 0;
         let customAmount = null;
+        let isInfiniteTest = false;
+
+        // Sliding word buffer for long / infinite tests (keeps the DOM light).
+        const INFINITE_WORDS_THRESHOLD = 10000;
+        const INFINITE_TIME_THRESHOLD = 7200;
+        const WORD_BUFFER_CHUNK = 500;
+        const WORD_BUFFER_EXTEND_AT = 400;
+        const WORD_BUFFER_PRUNE = 300;
+        let wordsPrunedCount = 0;
+        let prunedValidChars = 0;
+        let prunedRawChars = 0;
+        let promptWordsArchive = [];
 
         let usePunctuation = false;
         let useNumbers = false;
@@ -1204,6 +1216,56 @@ window.setTimeout = function(handler, timeout) {
         let currentWordIndex = 0;
         let currentCharIndex = 0;
         let lineHeight = 0;
+
+        function getAbsoluteWordIndex() {
+            return wordsPrunedCount + currentWordIndex;
+        }
+
+        function resetWordBufferState() {
+            wordsPrunedCount = 0;
+            prunedValidChars = 0;
+            prunedRawChars = 0;
+        }
+
+        function clearPromptArchive() {
+            promptWordsArchive = [];
+        }
+
+        function takeNextWord() {
+            const absIdx = wordsPrunedCount + generatedWords.length;
+            if (absIdx < promptWordsArchive.length) {
+                return promptWordsArchive[absIdx];
+            }
+            const word = generateRandomWord();
+            promptWordsArchive.push(word);
+            return word;
+        }
+
+        function getInitialWordGenCount() {
+            if (testMode === 'time') {
+                return (isInfiniteTest || testAmount > WORD_BUFFER_CHUNK) ? WORD_BUFFER_CHUNK : 60;
+            }
+            if (isInfiniteTest || !Number.isFinite(testAmount)) return WORD_BUFFER_CHUNK;
+            return Math.min(Math.max(1, testAmount), WORD_BUFFER_CHUNK);
+        }
+
+        function formatAmountGlyph(amount) {
+            if (isInfiniteTest || amount === Infinity || amount == null) return '∞';
+            return String(amount);
+        }
+
+        function updateCustomAmountButtonIcon() {
+            const icon = document.querySelector('#btn-amt-custom .amt-custom-icon');
+            if (!icon) return;
+            icon.textContent = isInfiniteTest ? 'all_inclusive' : 'build';
+        }
+
+        function wordsStillNeeded() {
+            if (testMode === 'words' && Number.isFinite(testAmount)) {
+                return (wordsPrunedCount + generatedWords.length) < testAmount;
+            }
+            return true;
+        }
 
         let isTyping = false;
         let isRestarting = false;
@@ -1262,8 +1324,9 @@ window.setTimeout = function(handler, timeout) {
             localStorage.setItem('usertypo_config', JSON.stringify({
                 testMode,
                 activeAmtIndex,
-                testAmount,
-                customAmount,
+                testAmount: isInfiniteTest ? null : testAmount,
+                customAmount: isInfiniteTest ? 'inf' : customAmount,
+                isInfiniteTest: !!isInfiniteTest,
                 usePunctuation,
                 useNumbers,
                 useAdaptRefine
@@ -1598,8 +1661,15 @@ window.setTimeout = function(handler, timeout) {
                     const config = JSON.parse(savedConfig);
                     testMode = config.testMode || 'words';
                     activeAmtIndex = config.activeAmtIndex !== undefined ? config.activeAmtIndex : 0;
-                    testAmount = config.testAmount || 10;
-                    customAmount = config.customAmount || null;
+                    isInfiniteTest = !!config.isInfiniteTest || config.customAmount === 'inf';
+                    if (isInfiniteTest) {
+                        testAmount = Infinity;
+                        customAmount = 'inf';
+                        activeAmtIndex = 'custom';
+                    } else {
+                        testAmount = config.testAmount || 10;
+                        customAmount = config.customAmount || null;
+                    }
                     usePunctuation = !!config.usePunctuation;
                     useNumbers = !!config.useNumbers;
                     useAdaptRefine = !!config.useAdaptRefine;
@@ -1875,8 +1945,13 @@ window.setTimeout = function(handler, timeout) {
 
             if (modeIcon) {
                 elModeIcon.innerText = modeIcon;
-                elModeAmt.innerText = testAmount;
+                if (isInfiniteTest || testAmount === Infinity) {
+                    elModeAmt.innerHTML = '<span class="material-symbols-outlined text-[1.066rem] leading-none">all_inclusive</span>';
+                } else {
+                    elModeAmt.textContent = String(testAmount);
+                }
             }
+            updateCustomAmountButtonIcon();
         }
 
         function updateModifierUI() {
@@ -1947,7 +2022,11 @@ window.setTimeout = function(handler, timeout) {
             }
 
             if (activeAmtIndex === 'custom' && customAmount !== null) {
-                setTestAmount(customAmount, 'custom');
+                if (isInfiniteTest || customAmount === 'inf') {
+                    setInfiniteTestAmount({ skipNotify: true });
+                } else {
+                    setTestAmount(customAmount, 'custom');
+                }
             } else {
                 let idx = activeAmtIndex === 'custom' ? 1 : activeAmtIndex;
                 setTestAmount(amtValues[idx], idx);
@@ -1961,8 +2040,12 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function setTestAmount(amount, index) {
+            isInfiniteTest = false;
             testAmount = amount;
             activeAmtIndex = index;
+            if (index === 'custom') {
+                customAmount = amount;
+            }
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
@@ -1982,6 +2065,37 @@ window.setTimeout = function(handler, timeout) {
             }
 
             saveConfig();
+            restartTest();
+        }
+
+        function setInfiniteTestAmount(options) {
+            const opts = options && typeof options === 'object' ? options : {};
+            isInfiniteTest = true;
+            testAmount = Infinity;
+            customAmount = 'inf';
+            activeAmtIndex = 'custom';
+
+            document.querySelectorAll('.amt-btn').forEach(btn => {
+                btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
+                btn.classList.add('text-slate-400');
+                btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
+            });
+
+            const activeBtn = document.getElementById('btn-amt-custom');
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('is-active', 'text-primary', 'font-bold', 'group/btn');
+                activeBtn.querySelectorAll('span').forEach(s => s.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
+            }
+
+            if (typeof updateActiveConfigIconsDisplay === 'function') {
+                updateActiveConfigIconsDisplay();
+            }
+
+            saveConfig();
+            if (!opts.skipNotify) {
+                notifyAdaptRefine('Submit anytime with Shift + Enter', 'keyboard_return');
+            }
             restartTest();
         }
 
@@ -2035,8 +2149,15 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function applyCustomPrompt() {
-            const val = parseInt(document.getElementById('custom-prompt-input').value);
+            const val = parseInt(document.getElementById('custom-prompt-input').value, 10);
             if (!isNaN(val) && val > 0) {
+                const infiniteThreshold = testMode === 'time' ? INFINITE_TIME_THRESHOLD : INFINITE_WORDS_THRESHOLD;
+                if (val > infiniteThreshold) {
+                    setInfiniteTestAmount();
+                    closeCustomPrompt();
+                    return;
+                }
+
                 const amtValues = testMode === 'time' ? [15, 30, 60, 120] : [10, 25, 50, 100];
                 const existingIndex = amtValues.indexOf(val);
 
@@ -2195,19 +2316,21 @@ window.setTimeout = function(handler, timeout) {
                 }
 
                 if (testMode === 'time') {
-                    wordProgressDisplay.innerHTML = testAmount.toString();
+                    wordProgressDisplay.innerHTML = formatAmountGlyph(testAmount);
                 } else {
-                    wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${testAmount}`;
+                    wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
                 }
 
                 showZenElements();
                 caret.classList.add('animate-breath');
 
+                resetWordBufferState();
+                clearPromptArchive();
                 generatedWords = [];
-                const initialGenCount = testMode === 'time' ? 60 : testAmount;
+                const initialGenCount = getInitialWordGenCount();
 
                 for (let i = 0; i < initialGenCount; i++) {
-                    generatedWords.push(generateRandomWord());
+                    generatedWords.push(takeNextWord());
                 }
 
                 renderText();
@@ -2273,6 +2396,118 @@ window.setTimeout = function(handler, timeout) {
                 wordEl.appendChild(charEl);
             });
             textContainer.appendChild(wordEl);
+        }
+
+        function pruneTypedWords(count) {
+            const removeCount = Math.min(count, currentWordIndex);
+            if (removeCount <= 0) return false;
+
+            for (let i = 0; i < removeCount; i++) {
+                const wordEl = document.getElementById('word-' + i);
+                if (!wordEl) continue;
+                const hasError = wordEl.querySelectorAll('.text-error, .error-underline, .extra').length > 0;
+                if (!hasError) {
+                    prunedValidChars += wordEl.querySelectorAll('.char:not(.extra)').length + 1;
+                }
+                prunedRawChars += wordEl.querySelectorAll('.char:not(.text-slate-500)').length + 1;
+            }
+
+            for (let i = 0; i < removeCount; i++) {
+                const wordEl = document.getElementById('word-' + i);
+                if (wordEl) wordEl.remove();
+            }
+
+            generatedWords.splice(0, removeCount);
+
+            const newTypedMap = {};
+            Object.keys(typedCharsMap || {}).forEach((key) => {
+                const ki = parseInt(key, 10);
+                if (ki >= removeCount) newTypedMap[ki - removeCount] = typedCharsMap[key];
+            });
+            typedCharsMap = newTypedMap;
+
+            wordTimestamps = (wordTimestamps || []).map((wt) => {
+                if (wt && typeof wt.absoluteIndex !== 'number' && wt.wordIndex != null) {
+                    wt.absoluteIndex = wordsPrunedCount + wt.wordIndex;
+                }
+                if (wt && wt.wordIndex != null) wt.wordIndex -= removeCount;
+                return wt;
+            });
+
+            (errorMarkers || []).forEach((em) => {
+                if (em && typeof em.absoluteIndex !== 'number' && em.wordIndex != null) {
+                    em.absoluteIndex = wordsPrunedCount + em.wordIndex;
+                }
+                if (em && em.wordIndex != null) em.wordIndex -= removeCount;
+            });
+
+            if (paceCaretSettings) {
+                paceCaretSettings.currentWordIndex = Math.max(0, paceCaretSettings.currentWordIndex - removeCount);
+                const newStatus = {};
+                Object.keys(paceCaretSettings.wordsStatus || {}).forEach((key) => {
+                    const ki = parseInt(key, 10);
+                    if (ki >= removeCount) newStatus[ki - removeCount] = paceCaretSettings.wordsStatus[key];
+                });
+                paceCaretSettings.wordsStatus = newStatus;
+            }
+
+            textContainer.querySelectorAll('.word').forEach((wordEl, newIdx) => {
+                wordEl.id = 'word-' + newIdx;
+                wordEl.querySelectorAll('.char').forEach((charEl) => {
+                    const parts = String(charEl.id || '').split('-');
+                    if (parts[0] === 'char' && parts.length >= 3) {
+                        charEl.id = 'char-' + newIdx + '-' + parts.slice(2).join('-');
+                    }
+                });
+            });
+
+            currentWordIndex -= removeCount;
+            wordsPrunedCount += removeCount;
+            lastScrollWordIndex = -1;
+            lastScrollLine = -1;
+            return true;
+        }
+
+        function ensureWordBuffer() {
+            if (testComplete || isRestarting) return false;
+            let changed = false;
+
+            const nearEnd = currentWordIndex > generatedWords.length - 20;
+            const atExtendPoint = currentWordIndex >= WORD_BUFFER_EXTEND_AT;
+            const canAddMore = wordsStillNeeded();
+
+            if ((atExtendPoint || nearEnd) && canAddMore) {
+                let toAdd = 0;
+                if (testMode === 'words' && Number.isFinite(testAmount)) {
+                    const remaining = testAmount - (wordsPrunedCount + generatedWords.length);
+                    toAdd = Math.min(WORD_BUFFER_CHUNK, Math.max(0, remaining));
+                } else if (atExtendPoint) {
+                    toAdd = WORD_BUFFER_CHUNK;
+                } else {
+                    toAdd = 15;
+                }
+
+                for (let i = 0; i < toAdd; i++) {
+                    if (!wordsStillNeeded()) break;
+                    const newWord = takeNextWord();
+                    generatedWords.push(newWord);
+                    appendWordToDOM(newWord, generatedWords.length - 1);
+                    changed = true;
+                }
+            }
+
+            if (
+                currentWordIndex >= WORD_BUFFER_EXTEND_AT
+                && generatedWords.length > WORD_BUFFER_CHUNK
+            ) {
+                if (pruneTypedWords(WORD_BUFFER_PRUNE)) changed = true;
+            }
+
+            if (changed) {
+                updateLineLayout();
+                return true;
+            }
+            return false;
         }
 
         function renderText() {
@@ -2350,15 +2585,9 @@ window.setTimeout = function(handler, timeout) {
 
             const currentLine = parseInt(currentWordEl.dataset.line) || 0;
 
-            // Generate more text continuously in time mode
-            if (testMode === 'time' && currentWordIndex > generatedWords.length - 20) {
-                for (let i = 0; i < 15; i++) {
-                    const newWord = generateRandomWord();
-                    generatedWords.push(newWord);
-                    appendWordToDOM(newWord, generatedWords.length - 1);
-                }
-                updateLineLayout();
-                return; // updateLineLayout calls handleScroll, prevent duplicate execution
+            // Generate more text continuously for time / long / infinite tests
+            if (ensureWordBuffer()) {
+                return; // updateLineLayout already ran inside ensureWordBuffer
             }
 
             const tapeMode = document.body.dataset.tapeMode || 'off';
@@ -2538,9 +2767,19 @@ window.setTimeout = function(handler, timeout) {
                 return;
             }
 
-            // â”€â”€ Stats View Enter to Next Test â”€â”€
+            // â”€â”€ Stats View Enter to Next Test / Infinite submit â”€â”€
             if (e.key === 'Enter') {
                 e.preventDefault();
+                if (
+                    e.shiftKey
+                    && isInfiniteTest
+                    && !testComplete
+                    && startTime
+                    && !(document.getElementById('stats-view') && !document.getElementById('stats-view').classList.contains('hidden'))
+                ) {
+                    endTest();
+                    return;
+                }
                 const statsView = document.getElementById('stats-view');
                 if (statsView && !statsView.classList.contains('hidden') && canSkipStats) {
                     showTestView(true);
@@ -2819,11 +3058,13 @@ window.setTimeout = function(handler, timeout) {
                 currentWordIndex++;
                 currentCharIndex = 0;
 
-                if (testMode === 'words' && currentWordIndex >= testAmount) {
+                if (testMode === 'words' && Number.isFinite(testAmount) && getAbsoluteWordIndex() >= testAmount) {
                     testComplete = true;
                     setTimeout(() => { if (testComplete && !isRestarting) endTest(); });
                     return;
                 }
+
+                ensureWordBuffer();
             }
             else if (e.key.length === 1) {
                 e.preventDefault();
@@ -2995,7 +3236,12 @@ window.setTimeout = function(handler, timeout) {
                 currentCharIndex++;
 
                 // â”€â”€ Required Correct End + Difficulty checks at test completion â”€â”€
-                if (testMode === 'words' && currentWordIndex === testAmount - 1 && currentCharIndex === currentWord.length) {
+                if (
+                    testMode === 'words'
+                    && Number.isFinite(testAmount)
+                    && getAbsoluteWordIndex() === testAmount - 1
+                    && currentCharIndex === currentWord.length
+                ) {
                     // Check Required Correct End
                     if (getTestRule('requiredCorrectEnd')) {
                         let lastWordCorrect = true;
@@ -3037,7 +3283,7 @@ window.setTimeout = function(handler, timeout) {
             refreshTypingChrome(needsRelayout);
 
             if (testMode === 'words') {
-                wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${testAmount}`;
+                wordProgressDisplay.innerHTML = `${getAbsoluteWordIndex()}<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
             }
         });
 
@@ -3115,6 +3361,16 @@ window.setTimeout = function(handler, timeout) {
             return mode !== 'off' || (repeatedPace && isPaceRepeat);
         }
 
+        function getSessionAmount(elapsedSeconds) {
+            if (isInfiniteTest || !Number.isFinite(testAmount)) {
+                if (testMode === 'time') {
+                    return Math.max(1, Math.round(Number(elapsedSeconds) || 0) || 1);
+                }
+                return Math.max(1, getAbsoluteWordIndex() || 1);
+            }
+            return testAmount;
+        }
+
         function getCurrentPaceConfig() {
             var language = 'english';
             if (window.usertypoSessions && typeof window.usertypoSessions.currentLanguage === 'function') {
@@ -3122,7 +3378,7 @@ window.setTimeout = function(handler, timeout) {
             }
             return {
                 mode: testMode,
-                amount: testAmount,
+                amount: getSessionAmount(0),
                 punctuation: !!usePunctuation,
                 numbers: !!useNumbers,
                 language: language,
@@ -3618,12 +3874,8 @@ window.setTimeout = function(handler, timeout) {
                 if (elapsedSec > lastTickSecond) {
                     lastTickSecond = elapsedSec;
 
-                    // Average WPM so far
-                    let validChars = 0;
-                    textContainer.querySelectorAll('.word').forEach((wordEl, idx) => {
-                        validChars += wordEl.querySelectorAll('.text-primary').length;
-                        if (idx < currentWordIndex) validChars += 1;
-                    });
+                    // Average WPM so far (include pruned words via live counters)
+                    const validChars = liveCompletedValidChars + liveCurrentCorrectChars;
                     const elapsedMin = Math.max((Date.now() - startTime) / 60000, 1 / 60);
                     const avgWpm = Math.max(0, Math.round((validChars / 5) / elapsedMin));
                     wpmHistory.push(avgWpm);
@@ -3663,8 +3915,8 @@ window.setTimeout = function(handler, timeout) {
             }
 
             // Calculate final exact stats
-            let validChars = 0;
-            let rawChars = 0;
+            let validChars = prunedValidChars;
+            let rawChars = prunedRawChars;
             const allWords = textContainer.querySelectorAll('.word');
             allWords.forEach((wordEl, idx) => {
                 if (idx < currentWordIndex) {
@@ -3831,8 +4083,13 @@ window.setTimeout = function(handler, timeout) {
             var statsTestConfigEl = document.getElementById('stats-test-config');
             if (statsTestConfigEl) {
                 var configParts = [];
-                if (testMode === 'time') configParts.push(String(testAmount) + ' seconds');
-                else configParts.push(String(testAmount) + ' words');
+                if (isInfiniteTest || testAmount === Infinity) {
+                    configParts.push(testMode === 'time' ? '∞ seconds' : '∞ words');
+                } else if (testMode === 'time') {
+                    configParts.push(String(testAmount) + ' seconds');
+                } else {
+                    configParts.push(String(testAmount) + ' words');
+                }
                 if (usePunctuation) configParts.push('punctuation');
                 if (useNumbers) configParts.push('numbers');
                 if (useAdaptRefine) configParts.push('adapt & refine');
@@ -4036,7 +4293,7 @@ window.setTimeout = function(handler, timeout) {
                 rankEl.textContent = '...';
                 window.usertypoLeaderboards.getMyRank({
                     mode: testMode,
-                    amount: testAmount,
+                    amount: getSessionAmount(elapsedSeconds),
                     timeframe: 'alltime',
                 }).then(function (result) {
                     rankEl.textContent = window.usertypoLeaderboards.formatGlobalRankLabel(result.rank);
@@ -4102,7 +4359,7 @@ window.setTimeout = function(handler, timeout) {
                     diagnosticsSummary = window.usertypoDiagnostics.buildSummary({
                         errorMarkers: errorMarkers,
                         wordTimestamps: wordTimestamps,
-                        generatedWords: generatedWords,
+                        generatedWords: promptWordsArchive.length ? promptWordsArchive : generatedWords,
                     });
                 }
 
@@ -4127,14 +4384,14 @@ window.setTimeout = function(handler, timeout) {
                         words: guestWords,
                         wpm: exactWpm,
                         mode: testMode,
-                        amount: testAmount,
+                        amount: getSessionAmount(elapsedSeconds),
                         failed: false,
                     }).catch(function () { /* ignore */ });
                 }
 
                 window.usertypoSessions.saveSession({
                     mode: testMode,
-                    amount: testAmount,
+                    amount: getSessionAmount(elapsedSeconds),
                     language: window.usertypoSessions.currentLanguage(),
                     punctuation: usePunctuation,
                     numbers: useNumbers,
@@ -4408,9 +4665,9 @@ window.setTimeout = function(handler, timeout) {
             }
 
             if (testMode === 'time') {
-                wordProgressDisplay.innerHTML = testAmount.toString();
+                wordProgressDisplay.innerHTML = formatAmountGlyph(testAmount);
             } else {
-                wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${testAmount}`;
+                wordProgressDisplay.innerHTML = `0<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
             }
 
             showZenElements();
@@ -4421,13 +4678,23 @@ window.setTimeout = function(handler, timeout) {
                 try {
                     window.usertypo_settingsApi?.maybeRandomizeTheme?.();
                 } catch (_) { /* ignore */ }
+                resetWordBufferState();
+                clearPromptArchive();
                 generatedWords = [];
-                const initialGenCount = testMode === 'time' ? 60 : testAmount;
+                const initialGenCount = getInitialWordGenCount();
                 for (let i = 0; i < initialGenCount; i++) {
-                    generatedWords.push(generateRandomWord());
+                    generatedWords.push(takeNextWord());
+                }
+            } else {
+                // Replay: rebuild from the archived prompt with a fresh sliding window
+                resetWordBufferState();
+                generatedWords = [];
+                const initialGenCount = getInitialWordGenCount();
+                for (let i = 0; i < initialGenCount; i++) {
+                    if (i >= promptWordsArchive.length && !(testMode === 'time' || isInfiniteTest || !Number.isFinite(testAmount))) break;
+                    generatedWords.push(takeNextWord());
                 }
             }
-            // Replay (shouldRestart=false): keep the same generatedWords array
 
             // Re-render text (fresh un-typed state)
             renderText();
@@ -4507,25 +4774,35 @@ window.setTimeout = function(handler, timeout) {
             if (testComplete) {
                 progressPercent = 100;
             } else if (testMode === 'time') {
-                let remaining = testAmount - elapsedSeconds;
-                if (remaining <= 0) {
-                    remaining = 0;
-                    wordProgressDisplay.innerText = remaining;
-                    if (!testComplete) {
-                        testComplete = true;
-                        setTimeout(() => { if (testComplete && !isRestarting) endTest(); }, 60);
-                    }
+                if (isInfiniteTest || !Number.isFinite(testAmount)) {
+                    wordProgressDisplay.innerText = '∞';
+                    progressPercent = 0;
                 } else {
-                    wordProgressDisplay.innerText = remaining;
+                    let remaining = testAmount - elapsedSeconds;
+                    if (remaining <= 0) {
+                        remaining = 0;
+                        wordProgressDisplay.innerText = remaining;
+                        if (!testComplete) {
+                            testComplete = true;
+                            setTimeout(() => { if (testComplete && !isRestarting) endTest(); }, 60);
+                        }
+                    } else {
+                        wordProgressDisplay.innerText = remaining;
+                    }
+                    progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / testAmount) * 100));
                 }
-                progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / testAmount) * 100));
             } else if (testMode === 'words') {
-                wordProgressDisplay.innerHTML = `${currentWordIndex}<span class="text-slate-500">/</span>${testAmount}`;
+                const absWord = getAbsoluteWordIndex();
+                wordProgressDisplay.innerHTML = `${absWord}<span class="text-slate-500">/</span>${formatAmountGlyph(testAmount)}`;
                 let currentWordProgress = 0;
                 if (typeof generatedWords !== 'undefined' && generatedWords[currentWordIndex]) {
                     currentWordProgress = Math.min(1, Math.max(0, currentCharIndex / generatedWords[currentWordIndex].length));
                 }
-                progressPercent = Math.min(100, Math.max(0, ((currentWordIndex + currentWordProgress) / testAmount) * 100));
+                if (isInfiniteTest || !Number.isFinite(testAmount)) {
+                    progressPercent = 0;
+                } else {
+                    progressPercent = Math.min(100, Math.max(0, ((absWord + currentWordProgress) / testAmount) * 100));
+                }
             }
 
             if (progressBar) {
@@ -4548,7 +4825,7 @@ window.setTimeout = function(handler, timeout) {
 
                 if (resSettings.minAccuracy && resSettings.minAccuracy !== 'Off') {
                     // 5-word grace period for accuracy
-                    if (currentWordIndex >= 5) {
+                    if (getAbsoluteWordIndex() >= 5) {
                         let minAccVal = parseFloat(String(resSettings.minAccuracy).replace('%', ''));
                         if (!isNaN(minAccVal) && acc < minAccVal) {
                             liveFailedReason = `Test failed accuracy less than ${minAccVal}`;
@@ -4558,7 +4835,7 @@ window.setTimeout = function(handler, timeout) {
 
                 if (resSettings.minWPM && resSettings.minWPM !== 'Off') {
                     // 5-word grace period
-                    if (currentWordIndex >= 5) {
+                    if (getAbsoluteWordIndex() >= 5) {
                         let minWpmVal = parseFloat(resSettings.minWPM);
                         if (!isNaN(minWpmVal) && wpm < minWpmVal) {
                             liveFailedReason = `Test failed wpm less than ${minWpmVal}`;
@@ -5537,14 +5814,19 @@ window.setTimeout = function(handler, timeout) {
             // contributes exactly one graph section in test order.
             const firstRecordByIndex = new Map();
             wordTimestamps.forEach(wt => {
-                const index = Number(wt.wordIndex);
+                const index = Number(
+                    wt.absoluteIndex != null ? wt.absoluteIndex : wt.wordIndex
+                );
                 if (!Number.isInteger(index) || index < 0 || firstRecordByIndex.has(index)) return;
                 firstRecordByIndex.set(index, wt);
             });
 
             const highestRecordedIndex = Math.max(-1, ...firstRecordByIndex.keys());
+            const archiveLen = (typeof promptWordsArchive !== 'undefined' && promptWordsArchive.length)
+                ? promptWordsArchive.length
+                : generatedWords.length;
             const requestedCount = testMode === 'words' && testComplete
-                ? Math.min(testAmount, generatedWords.length)
+                ? Math.min(Number.isFinite(testAmount) ? testAmount : archiveLen, archiveLen)
                 : highestRecordedIndex + 1;
             if (requestedCount <= 0) return [];
 
