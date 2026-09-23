@@ -5,10 +5,14 @@
  * Choice model:
  * - Accept all → analytics + advertising on
  * - Essential only → analytics off (GA4 not loaded); advertising still on
+ *
+ * Custom theme presets are mirrored to a Domain=.usertypo.com cookie so
+ * usertypo.com and learn.usertypo.com share the same saved customs.
  */
 (function () {
     var CONSENT_KEY = 'usertypo_consent';
     var THEME_BOOT_KEY = 'usertypo_theme_boot';
+    var CUSTOM_THEMES_KEY = 'usertypo_custom_themes';
     var MAX_AGE_YEAR = 60 * 60 * 24 * 365;
     var listeners = [];
 
@@ -18,6 +22,15 @@
         } catch (e) {
             return false;
         }
+    }
+
+    /** Share cookies across usertypo.com ↔ learn.usertypo.com (not localhost). */
+    function resolveCookieDomain() {
+        try {
+            var h = String(location.hostname || '');
+            if (h === 'usertypo.com' || h.endsWith('.usertypo.com')) return '.usertypo.com';
+        } catch (e) { /* ignore */ }
+        return null;
     }
 
     function get(name) {
@@ -49,8 +62,19 @@
             'Max-Age=' + String(maxAge),
             'SameSite=' + (options.sameSite || 'Lax'),
         ];
+        var domain = options.domain;
+        if (domain === undefined) domain = resolveCookieDomain();
+        if (domain) parts.push('Domain=' + domain);
         if (options.secure !== false && isSecureContext()) parts.push('Secure');
         try {
+            // Drop a host-only duplicate so Domain=.usertypo.com is the one we read.
+            if (domain) {
+                try {
+                    document.cookie = encodeURIComponent(name) + '=; Path=/; Max-Age=0'
+                        + (isSecureContext() ? '; Secure' : '')
+                        + '; SameSite=' + (options.sameSite || 'Lax');
+                } catch (e) { /* ignore */ }
+            }
             document.cookie = parts.join('; ');
             return true;
         } catch (e) {
@@ -58,8 +82,15 @@
         }
     }
 
-    function remove(name) {
-        return set(name, '', { maxAge: 0 });
+    function remove(name, options) {
+        options = options || {};
+        return set(name, '', {
+            maxAge: 0,
+            domain: options.domain,
+            path: options.path,
+            sameSite: options.sameSite,
+            secure: options.secure,
+        });
     }
 
     function normalizeConsent(raw) {
@@ -172,14 +203,55 @@
         }
     }
 
+    function normalizeSharedCustomThemes(raw) {
+        if (!raw || typeof raw !== 'object') return null;
+        var presets = Array.isArray(raw.presets) ? raw.presets : [];
+        var customTheme = raw.customTheme && typeof raw.customTheme === 'object'
+            ? raw.customTheme
+            : null;
+        var updatedAt = Number(raw.updatedAt);
+        if (!Number.isFinite(updatedAt) || updatedAt < 0) updatedAt = 0;
+        return {
+            v: 1,
+            updatedAt: updatedAt,
+            presets: presets.slice(0, 3),
+            customTheme: customTheme,
+        };
+    }
+
+    function writeSharedCustomThemes(payload) {
+        var normalized = normalizeSharedCustomThemes(payload || {});
+        if (!normalized) return false;
+        if (!normalized.updatedAt) normalized.updatedAt = Date.now();
+        try {
+            return set(CUSTOM_THEMES_KEY, JSON.stringify(normalized));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function readSharedCustomThemes() {
+        var raw = get(CUSTOM_THEMES_KEY);
+        if (!raw) return null;
+        try {
+            return normalizeSharedCustomThemes(JSON.parse(raw));
+        } catch (e) {
+            return null;
+        }
+    }
+
     window.usertypoCookies = {
         get: get,
         set: set,
         remove: remove,
+        resolveCookieDomain: resolveCookieDomain,
         THEME_BOOT_KEY: THEME_BOOT_KEY,
         CONSENT_KEY: CONSENT_KEY,
+        CUSTOM_THEMES_KEY: CUSTOM_THEMES_KEY,
         writeThemeBoot: writeThemeBoot,
         readThemeBoot: readThemeBoot,
+        writeSharedCustomThemes: writeSharedCustomThemes,
+        readSharedCustomThemes: readSharedCustomThemes,
     };
 
     window.usertypoConsent = {
