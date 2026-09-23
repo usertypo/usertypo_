@@ -30,7 +30,7 @@ for (const f of walk('.')) {
   'login','logout','person','volume_off','volume_up','download','warning','error',
   'check_circle','info','close','refresh','progress_activity','swords','group',
   'notifications','settings','keyboard','emoji_events','palette','mail','build',
-  'photo_camera','search','search_off','filter_alt','workspace_premium','view_list',
+  'school','photo_camera','search','search_off','filter_alt','workspace_premium','view_list',
   'text_fields','schedule','alternate_email','tag','speed','my_location','show_chart',
   'drag_indicator','ads_click','group_off','person_add_disabled','smart_toy',
   'keyboard_arrow_up','keyboard_arrow_down','keyboard_arrow_left','keyboard_arrow_right',
