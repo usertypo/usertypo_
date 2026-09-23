@@ -64,10 +64,7 @@ window.USERTYPO_CONFIG = {
         ga4MeasurementId: 'G-J3Z3XM22WQ',
     },
     ads: {
-        // Ezoic Incubator / JS connection (sa.min.js loaded from index.html).
-        // AdSense is managed by Ezoic; no separate AdSense script needed.
-        ezoicEnabled: true,
-        ezoicAdsTxtUrl: 'https://srv.adstxtmanager.com/19390/usertypo.com',
+        // No ad network wired yet. Keep the slot for a future provider.
     },
 };
 
@@ -114,9 +111,6 @@ window.USERTYPO_CONFIG = {
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;
         if (cfg.analytics) cfg.analytics.ga4MeasurementId = '';
-        if (cfg.ads) {
-            cfg.ads.ezoicEnabled = false;
-        }
         cfg.environment = 'staging';
     }
 

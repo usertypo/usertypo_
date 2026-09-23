@@ -232,7 +232,8 @@
         }
         .about-country-ring circle {
             transition: stroke-dasharray 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+                stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                stroke 0.35s ease;
         }
         @media (max-width: 640px) {
             .about-toc ol {
@@ -817,22 +818,31 @@ function initAboutCommunityStats() {
         ];
     }
 
-    /** Theme-aware donut palette — first slice follows --theme-primary. */
+    /** Theme-aware donut palette — first slice follows --theme-primary; no fixed green/amber. */
     function countryColors() {
         var styles = getComputedStyle(document.documentElement);
         var primary = parseRgbCss(styles.getPropertyValue('--theme-primary-rgb'))
             || parseHex(styles.getPropertyValue('--theme-primary'))
             || [0, 208, 255];
-        var white = [255, 255, 255];
-        var black = [0, 0, 0];
-        var muted = [148, 163, 184];
+        var muted = parseHex(styles.getPropertyValue('--theme-text-muted')) || [148, 163, 184];
+        var text = parseHex(styles.getPropertyValue('--theme-text')) || [203, 213, 225];
+        var bgSec = parseRgbCss(styles.getPropertyValue('--theme-bg-secondary-rgb'))
+            || parseHex(styles.getPropertyValue('--theme-bg-secondary'))
+            || [68, 68, 68];
+        var isLight = String(styles.getPropertyValue('--theme-is-light')).trim() === '1'
+            || document.documentElement.getAttribute('data-theme-light') === '1';
+        // Light themes blend toward black/slate so slices don't stay white.
+        // Dark themes blend toward muted/bg for separable segments without a green tint.
+        var blendA = isLight ? [0, 0, 0] : muted;
+        var blendB = isLight ? muted : bgSec;
+        var blendC = isLight ? bgSec : text;
         return [
             rgbToHex(primary),
-            rgbToHex(mixRgb(primary, white, 0.28)),
-            rgbToHex(mixRgb(primary, black, 0.18)),
-            rgbToHex(mixRgb(primary, [52, 211, 153], 0.45)),
-            rgbToHex(mixRgb(primary, [251, 191, 36], 0.5)),
-            rgbToHex(mixRgb(primary, muted, 0.55)),
+            rgbToHex(mixRgb(primary, blendA, isLight ? 0.18 : 0.32)),
+            rgbToHex(mixRgb(primary, blendB, 0.45)),
+            rgbToHex(mixRgb(primary, blendC, 0.55)),
+            rgbToHex(mixRgb(primary, muted, 0.65)),
+            rgbToHex(mixRgb(primary, blendB, 0.78)),
         ];
     }
 

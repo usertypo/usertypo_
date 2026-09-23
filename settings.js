@@ -2105,8 +2105,11 @@ function applyThemeSettings(settings) {
         }
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined' !important;
-            font-feature-settings: 'liga' !important;
-            -webkit-font-feature-settings: 'liga' !important;
+            font-weight: normal !important;
+            letter-spacing: normal !important;
+            font-feature-settings: 'liga' 1, 'rlig' 1 !important;
+            -webkit-font-feature-settings: 'liga' 1, 'rlig' 1 !important;
+            font-variant-ligatures: common-ligatures discretionary-ligatures !important;
         }
         /* ── Tailwind color class overrides ── */
         /* Primary / Accent */
@@ -3470,6 +3473,12 @@ function applyThemeSettings(settings) {
             window.usertypoUpdateFavicon(p.bgMain, p.accentPrimary);
         }
     } catch { /* ignore */ }
+
+    try {
+        window.dispatchEvent(new CustomEvent('usertypo:theme-applied', {
+            detail: { theme: themeName, accentPrimary: p.accentPrimary, isLight: themeIsLight },
+        }));
+    } catch (e) { /* ignore */ }
 }
 
 
@@ -3996,11 +4005,6 @@ function applyCursorSettings(settings) {
         document.body.setAttribute('data-pace-caret-style', settings.cursor.paceCaretStyle);
     }
 
-    try {
-        window.dispatchEvent(new CustomEvent('usertypo:theme-applied', {
-            detail: { theme: themeName, accentPrimary: p.accentPrimary },
-        }));
-    } catch (e) { /* ignore */ }
 }
 
 
