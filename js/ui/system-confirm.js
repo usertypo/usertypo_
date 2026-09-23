@@ -121,7 +121,7 @@
 
         if (mode === MODE.DELETE_ACCOUNT) {
             if (title) title.textContent = 'Delete Account';
-            if (message) message.textContent = 'This permanently deletes your usertypo_ account and all associated data. You will need to verify your identity. This cannot be undone.';
+            if (message) message.textContent = 'This permanently deletes your usertypo_ account on BOTH usertypo.com and learn.usertypo.com — including all data on both sites. You will need to verify your identity. This cannot be undone.';
             if (icon) icon.textContent = 'person_remove';
             if (ok) {
                 ok.textContent = 'Delete';

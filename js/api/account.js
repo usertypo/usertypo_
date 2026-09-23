@@ -369,6 +369,49 @@
         await user.delete();
     }
 
+    async function wipeLearnProgressRemote() {
+        try {
+            if (!window.usertypoAuth || typeof window.usertypoAuth.getToken !== 'function') return { ok: false, skipped: true };
+            var token = await window.usertypoAuth.getToken();
+            if (!token) return { ok: false, skipped: true };
+            var learnOrigin = 'https://learn.usertypo.com';
+            try {
+                if (window.USERTYPO_PUBLIC && window.USERTYPO_PUBLIC.learnSiteUrl) {
+                    learnOrigin = String(window.USERTYPO_PUBLIC.learnSiteUrl).replace(/\/+$/, '');
+                }
+            } catch (e) { /* ignore */ }
+            var res = await fetch(learnOrigin + '/api/progress', {
+                method: 'DELETE',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    Accept: 'application/json',
+                },
+                credentials: 'omit',
+            });
+            if (!res.ok) {
+                // Fallback for older deploys without DELETE
+                res = await fetch(learnOrigin + '/api/progress', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer ' + token,
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'omit',
+                    body: JSON.stringify({ action: 'reset' }),
+                });
+            }
+            if (!res.ok) {
+                console.warn('[usertypo account] learn progress wipe failed', res.status);
+                return { ok: false, status: res.status };
+            }
+            return { ok: true };
+        } catch (err) {
+            console.warn('[usertypo account] learn progress wipe error', err);
+            return { ok: false, error: err };
+        }
+    }
+
     async function deleteAccount() {
         var state = await requireAuth();
         var user = state.user;
@@ -391,6 +434,9 @@
 
         // Visibility sync needs a live profile JWT path before the row is deleted.
         await purgeLeaderboards({ required: true });
+
+        // Wipe learn.usertypo.com progress while the Clerk session is still valid.
+        await wipeLearnProgressRemote();
 
         var result = await client.rpc('delete_my_account_data');
         if (result.error) throw result.error;
