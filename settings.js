@@ -113,6 +113,115 @@ const CUSTOM_THEME_DEFAULT = {
 };
 const MAX_CUSTOM_PRESETS = 3;
 
+/**
+ * Mirror custom theme presets to a Domain=.usertypo.com cookie so main + learn share them.
+ * Returns true when local settings were updated from the shared cookie.
+ */
+function pullSharedCustomThemes(settings) {
+    if (!settings || !settings.lookFeel) return false;
+    if (!window.usertypoCookies || typeof window.usertypoCookies.readSharedCustomThemes !== 'function') {
+        return false;
+    }
+    let shared = null;
+    try {
+        shared = window.usertypoCookies.readSharedCustomThemes();
+    } catch (e) {
+        return false;
+    }
+
+    const localPresets = Array.isArray(settings.lookFeel.customPresets)
+        ? settings.lookFeel.customPresets
+        : [];
+    const localAt = Number(settings.lookFeel._customThemesSharedAt) || 0;
+
+    if (!shared) {
+        // Seed shared cookie from this site's existing presets (one-time migrate).
+        if (localPresets.length > 0) {
+            pushSharedCustomThemes(settings);
+        }
+        return false;
+    }
+
+    const sharedAt = Number(shared.updatedAt) || 0;
+    const sharedPresets = Array.isArray(shared.presets) ? shared.presets : [];
+    const shouldPull = sharedAt > localAt
+        || (localPresets.length === 0 && sharedPresets.length > 0);
+    if (!shouldPull) return false;
+
+    settings.lookFeel.customPresets = sharedPresets
+        .slice(0, MAX_CUSTOM_PRESETS)
+        .map((p, i) => {
+            const mode = isLightModeValue(p?.mode) ? 'Light' : 'Dark';
+            const bgColor = normalizeHexColor(
+                p?.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+                CUSTOM_THEME_DEFAULT.bgColor
+            );
+            return {
+                name: (p && p.name) || `Custom ${i + 1}`,
+                mode,
+                mainColor: normalizeHexColor(p?.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+                secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
+                bgColor,
+                bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+            };
+        });
+
+    if (shared.customTheme && typeof shared.customTheme === 'object') {
+        const mode = isLightModeValue(shared.customTheme.mode) ? 'Light' : 'Dark';
+        const bgColor = normalizeHexColor(
+            shared.customTheme.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
+            CUSTOM_THEME_DEFAULT.bgColor
+        );
+        settings.lookFeel.customTheme = {
+            mode,
+            mainColor: normalizeHexColor(shared.customTheme.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
+            secondaryColor: normalizeHexColor(
+                shared.customTheme.secondaryColor,
+                CUSTOM_THEME_DEFAULT.secondaryColor
+            ),
+            bgColor,
+            bgSpectrumPos: resolveSpectrumPos(mode, bgColor, shared.customTheme.bgSpectrumPos),
+        };
+    }
+
+    settings.lookFeel._customThemesSharedAt = sharedAt || Date.now();
+    return true;
+}
+
+function pushSharedCustomThemes(settings) {
+    if (!settings || !settings.lookFeel) return false;
+    if (!window.usertypoCookies || typeof window.usertypoCookies.writeSharedCustomThemes !== 'function') {
+        return false;
+    }
+    const updatedAt = Date.now();
+    const presets = Array.isArray(settings.lookFeel.customPresets)
+        ? settings.lookFeel.customPresets.slice(0, MAX_CUSTOM_PRESETS)
+        : [];
+    const customTheme = settings.lookFeel.customTheme && typeof settings.lookFeel.customTheme === 'object'
+        ? settings.lookFeel.customTheme
+        : null;
+    let ok = false;
+    try {
+        ok = !!window.usertypoCookies.writeSharedCustomThemes({
+            v: 1,
+            updatedAt,
+            presets,
+            customTheme,
+        });
+    } catch (e) {
+        return false;
+    }
+    if (ok) {
+        settings.lookFeel._customThemesSharedAt = updatedAt;
+        // Persist the shared timestamp so the next load does not re-pull stale remote data.
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            window.usertypo_settings = settings;
+        } catch (e) { /* ignore */ }
+    }
+    return ok;
+}
+
 /** Abyss on dark OS theme, Paper on light — used for fresh defaults / reset. */
 function getPreferredDefaultTheme() {
     try {
@@ -301,6 +410,13 @@ function loadSettings() {
         }
         settings.lookFeel.glowIntensity = normalizeGlowIntensity(settings.lookFeel.glowIntensity);
     }
+
+    // Cross-site custom themes (usertypo.com ↔ learn.usertypo.com via shared cookie)
+    try {
+        if (pullSharedCustomThemes(settings)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        }
+    } catch (e) { /* ignore */ }
 
     window.usertypo_settings = settings;
     return settings;
@@ -1097,6 +1213,7 @@ function commitCustomTheme(partial, options = {}) {
     settings.lookFeel.customTheme = next;
     settings.lookFeel.colorTheme = 'custom';
     saveSettings(settings);
+    pushSharedCustomThemes(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
@@ -1127,6 +1244,7 @@ function saveCustomThemePreset() {
     });
     settings.lookFeel.colorTheme = `custom:${index}`;
     saveSettings(settings);
+    pushSharedCustomThemes(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
@@ -1156,6 +1274,7 @@ function applyCustomThemePreset(index) {
     };
     settings.lookFeel.colorTheme = `custom:${idx}`;
     saveSettings(settings);
+    pushSharedCustomThemes(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
@@ -1189,6 +1308,7 @@ function deleteCustomThemePreset(index) {
     }));
 
     saveSettings(settings);
+    pushSharedCustomThemes(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
