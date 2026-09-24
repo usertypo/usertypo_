@@ -153,32 +153,53 @@
 
     async function endImpersonation() {
         var meta = getImpersonationMeta() || {};
-        var ticket = null;
+        var ticket = meta.return_token || null;
         var lastErr = null;
 
-        // Prefer a fresh Worker token (works even if stored one-time ticket is missing/expired).
+        // Prefer a fresh Worker ticket when the impersonated Clerk session is still alive.
+        // If the session already expired, getClerkToken() is null → skip Worker and use
+        // the stored return ticket (or hard-escape below).
         try {
-            var data = await workerFetch('/impersonate/end', {
-                method: 'POST',
-                body: JSON.stringify({
-                    admin_user_id: meta.admin_user_id || null,
-                    admin_public_id: meta.admin_public_id || null,
-                }),
-            });
-            ticket = data && data.token;
+            var hasSession = !!(window.Clerk && window.Clerk.session);
+            if (hasSession) {
+                var data = await workerFetch('/impersonate/end', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        admin_user_id: meta.admin_user_id || null,
+                        admin_public_id: meta.admin_public_id || null,
+                    }),
+                });
+                if (data && data.token) ticket = data.token;
+            }
         } catch (err) {
             lastErr = err;
-            ticket = meta.return_token || null;
         }
 
-        if (!ticket) {
-            throw lastErr || new Error('return_token_missing');
+        if (ticket) {
+            try {
+                await signInWithTicket(ticket);
+                setImpersonationMeta(null);
+                clearLocalUserCaches();
+                return { ok: true, redirect: '/admin' };
+            } catch (err) {
+                lastErr = err;
+            }
         }
 
-        await signInWithTicket(ticket);
+        // Hard escape: expired impersonation / missing tokens — clear banner and re-login.
         setImpersonationMeta(null);
         clearLocalUserCaches();
-        return { ok: true };
+        try {
+            if (window.Clerk && typeof window.Clerk.signOut === 'function') {
+                await window.Clerk.signOut();
+            }
+        } catch (e) { /* ignore */ }
+        return {
+            ok: true,
+            escaped: true,
+            redirect: '/signin',
+            reason: (lastErr && lastErr.message) || 'session_expired',
+        };
     }
 
     async function me() {
@@ -348,19 +369,16 @@
                 returnBtn.dataset.busy = '1';
                 returnBtn.disabled = true;
                 window.usertypoAdmin.endImpersonation()
-                    .then(function () {
-                        window.location.assign('/admin');
+                    .then(function (result) {
+                        window.location.assign((result && result.redirect) || '/admin');
                     })
                     .catch(function (err) {
                         console.error('[usertypo admin] return failed', err);
+                        // Last resort if something unexpected throws: drop banner and re-auth.
+                        try { sessionStorage.removeItem(IMPERSONATE_KEY); } catch (e) { /* ignore */ }
                         returnBtn.dataset.busy = '0';
                         returnBtn.disabled = false;
-                        if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
-                            window.usertypoNotifications.showToast(
-                                (err && err.message) || 'Could not return to admin',
-                                'error'
-                            );
-                        }
+                        window.location.assign('/signin');
                     });
             });
         }
