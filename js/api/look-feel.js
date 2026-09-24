@@ -51,6 +51,21 @@
         } catch (e) { /* ignore */ }
     }
 
+    function normalizeBgImage(raw) {
+        if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function') {
+            return window.usertypoThemeBgEditor.normalizeBgImage(raw);
+        }
+        if (!raw || typeof raw !== 'object' || !raw.url) return null;
+        return {
+            id: String(raw.id || 'custom'),
+            url: String(raw.url),
+            opacity: Math.max(0.05, Math.min(1, Number(raw.opacity) || 0.75)),
+            zoom: Math.max(1, Math.min(3, Number(raw.zoom) || 1)),
+            offsetX: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetX)) ? Number(raw.offsetX) : 0.5)),
+            offsetY: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetY)) ? Number(raw.offsetY) : 0.5)),
+        };
+    }
+
     function normalizeCustomTheme(raw) {
         if (!raw || typeof raw !== 'object') {
             return {
@@ -59,6 +74,7 @@
                 secondaryColor: '#cccccc',
                 bgColor: '#000000',
                 bgSpectrumPos: 0,
+                bgImage: null,
             };
         }
         var mode = String(raw.mode || 'Dark').toLowerCase() === 'light' ? 'Light' : 'Dark';
@@ -70,6 +86,7 @@
             bgSpectrumPos: Number.isFinite(Number(raw.bgSpectrumPos))
                 ? Number(raw.bgSpectrumPos)
                 : 0,
+            bgImage: normalizeBgImage(raw.bgImage),
         };
     }
 
@@ -84,6 +101,7 @@
                 secondaryColor: theme.secondaryColor,
                 bgColor: theme.bgColor,
                 bgSpectrumPos: theme.bgSpectrumPos,
+                bgImage: theme.bgImage,
             };
         });
     }

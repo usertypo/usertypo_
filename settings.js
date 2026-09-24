@@ -96,6 +96,7 @@ const DEFAULTS = {
             secondaryColor: '#cccccc',
             bgColor: '#000000',
             bgSpectrumPos: 0,
+            bgImage: null,
         },
         customPresets: [],
     },
@@ -110,6 +111,7 @@ const CUSTOM_THEME_DEFAULT = {
     secondaryColor: '#cccccc',
     bgColor: '#000000',
     bgSpectrumPos: 0,
+    bgImage: null,
 };
 const MAX_CUSTOM_PRESETS = 3;
 
@@ -181,6 +183,13 @@ function pullSharedCustomThemes(settings) {
             ),
             bgColor,
             bgSpectrumPos: resolveSpectrumPos(mode, bgColor, shared.customTheme.bgSpectrumPos),
+            bgImage: (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(shared.customTheme.bgImage)
+                    : (shared.customTheme.bgImage && shared.customTheme.bgImage.url
+                        ? shared.customTheme.bgImage
+                        : null)
+            ),
         };
     }
 
@@ -375,6 +384,13 @@ function loadSettings() {
                 bgSpectrumPos: normalizeSpectrumPos(
                     settings.lookFeel.customTheme.bgSpectrumPos,
                     null
+                ),
+                bgImage: (
+                    window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                        ? window.usertypoThemeBgEditor.normalizeBgImage(settings.lookFeel.customTheme.bgImage)
+                        : (settings.lookFeel.customTheme.bgImage && settings.lookFeel.customTheme.bgImage.url
+                            ? settings.lookFeel.customTheme.bgImage
+                            : null)
                 ),
             };
             if (settings.lookFeel.customTheme.bgSpectrumPos == null) {
@@ -693,6 +709,20 @@ function isLightModeValue(mode) {
 function getCustomThemeConfig(settings, themeName) {
     const lf = settings?.lookFeel || {};
     const name = themeName || lf.colorTheme || 'custom';
+    const normalizeBg = (raw) => {
+        if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function') {
+            return window.usertypoThemeBgEditor.normalizeBgImage(raw);
+        }
+        if (!raw || typeof raw !== 'object' || !raw.url) return null;
+        return {
+            id: String(raw.id || 'custom'),
+            url: String(raw.url),
+            opacity: Math.max(0.05, Math.min(1, Number(raw.opacity) || 0.75)),
+            zoom: Math.max(1, Math.min(3, Number(raw.zoom) || 1)),
+            offsetX: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetX)) ? Number(raw.offsetX) : 0.5)),
+            offsetY: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetY)) ? Number(raw.offsetY) : 0.5)),
+        };
+    };
     if (typeof name === 'string' && name.startsWith('custom:')) {
         const idx = parseInt(name.slice(7), 10);
         const preset = Array.isArray(lf.customPresets) ? lf.customPresets[idx] : null;
@@ -708,6 +738,7 @@ function getCustomThemeConfig(settings, themeName) {
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+                bgImage: normalizeBg(preset.bgImage),
                 name: preset.name || `Custom ${idx + 1}`,
                 presetIndex: idx,
             };
@@ -725,6 +756,7 @@ function getCustomThemeConfig(settings, themeName) {
         secondaryColor: normalizeHexColor(live.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
         bgColor,
         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, live.bgSpectrumPos),
+        bgImage: normalizeBg(live.bgImage),
         name: 'Custom',
         presetIndex: null,
     };
@@ -930,6 +962,8 @@ function isCustomThemeName(themeName) {
  */
 function findMatchingBuiltInThemeName(config) {
     if (!config || typeof config !== 'object') return null;
+    // Background images make the theme custom even when colors match a built-in.
+    if (config.bgImage && config.bgImage.url) return null;
     const main = normalizeHexColor(config.mainColor, '');
     const secondary = normalizeHexColor(config.secondaryColor, '');
     const bg = normalizeHexColor(config.bgColor, '');
@@ -1117,6 +1151,9 @@ function syncCustomThemeEditor(settings) {
     } finally {
         endCustomThemeSync();
     }
+    if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.syncButton === 'function') {
+        try { window.usertypoThemeBgEditor.syncButton(); } catch (e) { /* ignore */ }
+    }
 }
 
 function renderCustomThemePresets(settings) {
@@ -1190,6 +1227,7 @@ function readCustomThemeFromEditor(editor) {
             secondaryColor: fallback.secondaryColor,
             bgColor: fallback.bgColor,
             bgSpectrumPos: fallback.bgSpectrumPos,
+            bgImage: fallback.bgImage || null,
         };
     }
     const modeBtn = root.querySelector('[data-custom-theme-mode] .opt-btn.active');
@@ -1222,6 +1260,7 @@ function readCustomThemeFromEditor(editor) {
         secondaryColor,
         bgColor,
         bgSpectrumPos,
+        bgImage: fallback.bgImage || null,
     };
 }
 
@@ -1247,11 +1286,19 @@ function commitCustomTheme(partial, options = {}) {
             partial?.bgColor ?? current.bgColor ?? CUSTOM_THEME_DEFAULT.bgColor,
             CUSTOM_THEME_DEFAULT.bgColor
         ),
+        bgImage: Object.prototype.hasOwnProperty.call(partial || {}, 'bgImage')
+            ? (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(partial.bgImage)
+                    : (partial.bgImage && partial.bgImage.url ? partial.bgImage : null)
+            )
+            : (current.bgImage && current.bgImage.url ? current.bgImage : null),
     };
 
     // Switching Light/Dark reseeds from Paper / Abyss defaults
     if (options.seedFromMode) {
-        next = getModeDefaults(next.mode);
+        const seeded = getModeDefaults(next.mode);
+        next = { ...seeded, bgImage: next.bgImage };
     } else if (partial && Object.prototype.hasOwnProperty.call(partial, 'bgSpectrumPos')) {
         next.bgSpectrumPos = normalizeSpectrumPos(partial.bgSpectrumPos, 0);
     } else if (
@@ -1313,6 +1360,7 @@ function saveCustomThemePreset() {
         secondaryColor: cfg.secondaryColor,
         bgColor: cfg.bgColor,
         bgSpectrumPos: normalizeSpectrumPos(cfg.bgSpectrumPos, spectrumPosFromBgColor(cfg.mode, cfg.bgColor)),
+        bgImage: cfg.bgImage || null,
     });
     settings.lookFeel.colorTheme = `custom:${index}`;
     saveSettings(settings);
@@ -1344,6 +1392,11 @@ function applyCustomThemePreset(index) {
         secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
         bgColor,
         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+        bgImage: (
+            window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                ? window.usertypoThemeBgEditor.normalizeBgImage(preset.bgImage)
+                : (preset.bgImage && preset.bgImage.url ? preset.bgImage : null)
+        ),
     };
     const builtInMatch = findMatchingBuiltInThemeName(settings.lookFeel.customTheme);
     settings.lookFeel.colorTheme = builtInMatch || `custom:${idx}`;
@@ -2009,6 +2062,98 @@ function embedGlowIntensityInCss(css) {
     return out;
 }
 
+/**
+ * Layer a theme background image over #app-backdrop (behind page content).
+ * Only active for custom themes that carry a bgImage payload.
+ */
+function applyThemeBackgroundImage(settings, themeName, bgMain) {
+    let layer = document.getElementById('app-bg-image');
+    if (!layer) {
+        const backdrop = document.getElementById('app-backdrop');
+        if (!backdrop || !backdrop.parentNode) return;
+        layer = document.createElement('div');
+        layer.id = 'app-bg-image';
+        layer.setAttribute('aria-hidden', 'true');
+        backdrop.insertAdjacentElement('afterend', layer);
+    }
+
+    const name = themeName || settings?.lookFeel?.colorTheme || '';
+    const cfg = isCustomThemeName(name)
+        ? getCustomThemeConfig(settings, name)
+        : null;
+    const bgImage = cfg && cfg.bgImage && cfg.bgImage.url ? cfg.bgImage : null;
+
+    if (!bgImage) {
+        layer.classList.remove('is-active');
+        layer.style.backgroundImage = 'none';
+        layer.style.opacity = '0';
+        layer.replaceChildren();
+        document.body.classList.remove('has-theme-bg-image');
+        return;
+    }
+
+    const zoom = Math.max(1, Math.min(3, Number(bgImage.zoom) || 1));
+    const opacity = Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75));
+    const ox = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5));
+    const oy = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5));
+
+    let img = layer.querySelector('img');
+    if (!img) {
+        img = document.createElement('img');
+        img.alt = '';
+        img.draggable = false;
+        layer.appendChild(img);
+    }
+
+    const layout = () => {
+        const vw = window.innerWidth || 1;
+        const vh = window.innerHeight || 1;
+        const nw = img.naturalWidth || 1;
+        const nh = img.naturalHeight || 1;
+        const cover = Math.max(vw / nw, vh / nh);
+        const dw = nw * cover * zoom;
+        const dh = nh * cover * zoom;
+        const maxX = Math.max(0, (dw - vw) / 2);
+        const maxY = Math.max(0, (dh - vh) / 2);
+        const x = maxX <= 0 ? (vw - dw) / 2 : (vw - dw) / 2 + ((ox * 2 * maxX) - maxX);
+        const y = maxY <= 0 ? (vh - dh) / 2 : (vh - dh) / 2 + ((oy * 2 * maxY) - maxY);
+        layer.style.backgroundColor = bgMain || 'var(--theme-bg, #000)';
+        img.style.width = `${dw}px`;
+        img.style.height = `${dh}px`;
+        img.style.left = `${x}px`;
+        img.style.top = `${y}px`;
+        img.style.opacity = String(opacity);
+    };
+
+    layer.classList.add('is-active');
+    layer.style.opacity = '1';
+    document.body.classList.add('has-theme-bg-image');
+
+    // Keep solid canvas color on the backdrop; content sheet goes transparent.
+    const spaContent = document.getElementById('spa-content');
+    if (spaContent) spaContent.style.backgroundColor = 'transparent';
+
+    if (img.dataset.src !== bgImage.url) {
+        img.dataset.src = bgImage.url;
+        img.onload = () => layout();
+        img.src = bgImage.url;
+    } else if (img.complete && img.naturalWidth) {
+        layout();
+    } else {
+        img.onload = () => layout();
+    }
+
+    if (!window.__usertypoBgImageResizeBound) {
+        window.__usertypoBgImageResizeBound = true;
+        window.addEventListener('resize', () => {
+            try {
+                const s = loadSettings();
+                applyThemeBackgroundImage(s, s.lookFeel?.colorTheme, null);
+            } catch (e) { /* ignore */ }
+        });
+    }
+}
+
 function applyThemeSettings(settings) {
     if (!settings) settings = loadSettings();
     const themeName = settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
@@ -2653,6 +2798,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         #graph-tooltip,
         .pot-graph-tooltip,
@@ -2740,6 +2887,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         #graph-tooltip,
         .pot-graph-tooltip,
@@ -2843,6 +2992,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         .contact-problem-option,
         .contact-pill-input,
@@ -3521,6 +3672,7 @@ function applyThemeSettings(settings) {
         if (backdrop) backdrop.style.backgroundColor = p.bgMain;
         const spaContent = document.getElementById('spa-content');
         if (spaContent) spaContent.style.backgroundColor = p.bgMain;
+        applyThemeBackgroundImage(settings, themeName, p.bgMain);
     } catch { /* ignore */ }
 
     // Expose live accent for page scripts (copy flash, widgets, etc.)
@@ -4200,6 +4352,11 @@ function selectColorTheme(themeName) {
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+                bgImage: (
+                    window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                        ? window.usertypoThemeBgEditor.normalizeBgImage(preset.bgImage)
+                        : (preset.bgImage && preset.bgImage.url ? preset.bgImage : null)
+                ),
             };
         }
     }
