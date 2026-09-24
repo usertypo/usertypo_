@@ -2109,42 +2109,41 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
         layer.classList.remove('is-active');
         layer.style.backgroundImage = 'none';
         layer.style.opacity = '0';
+        delete layer.dataset.pendingSrc;
         layer.replaceChildren();
         document.body.classList.remove('has-theme-bg-image');
         return;
     }
 
-    const zoom = Math.max(1, Math.min(3, Number(bgImage.zoom) || 1));
-    const opacity = Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75));
-    const ox = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5));
-    const oy = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5));
+    const url = String(bgImage.url);
+    layer._bgParams = {
+        zoom: Math.max(1, Math.min(3, Number(bgImage.zoom) || 1)),
+        opacity: Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75)),
+        ox: Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5)),
+        oy: Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5)),
+        bgMain: bgMain || layer._bgParams?.bgMain || null,
+    };
 
-    let img = layer.querySelector('img');
-    if (!img) {
-        img = document.createElement('img');
-        img.alt = '';
-        img.draggable = false;
-        layer.appendChild(img);
-    }
-
-    const layout = () => {
-        const vw = window.innerWidth || 1;
-        const vh = window.innerHeight || 1;
-        const nw = img.naturalWidth || 1;
-        const nh = img.naturalHeight || 1;
+    const layoutImg = (el) => {
+        const prm = layer._bgParams;
+        const vw = layer.clientWidth || window.innerWidth || 1;
+        const vh = layer.clientHeight || window.innerHeight || 1;
+        const nw = el.naturalWidth || 1;
+        const nh = el.naturalHeight || 1;
         const cover = Math.max(vw / nw, vh / nh);
-        const dw = nw * cover * zoom;
-        const dh = nh * cover * zoom;
+        const dw = nw * cover * prm.zoom;
+        const dh = nh * cover * prm.zoom;
         const maxX = Math.max(0, (dw - vw) / 2);
         const maxY = Math.max(0, (dh - vh) / 2);
-        const x = maxX <= 0 ? (vw - dw) / 2 : (vw - dw) / 2 + ((ox * 2 * maxX) - maxX);
-        const y = maxY <= 0 ? (vh - dh) / 2 : (vh - dh) / 2 + ((oy * 2 * maxY) - maxY);
-        layer.style.backgroundColor = bgMain || 'var(--theme-bg, #000)';
-        img.style.width = `${dw}px`;
-        img.style.height = `${dh}px`;
-        img.style.left = `${x}px`;
-        img.style.top = `${y}px`;
-        img.style.opacity = String(opacity);
+        const x = maxX <= 0 ? (vw - dw) / 2 : (vw - dw) / 2 + ((prm.ox * 2 * maxX) - maxX);
+        const y = maxY <= 0 ? (vh - dh) / 2 : (vh - dh) / 2 + ((prm.oy * 2 * maxY) - maxY);
+        layer.style.backgroundColor = prm.bgMain || 'var(--theme-bg, #000)';
+        el.style.width = `${dw}px`;
+        el.style.height = `${dh}px`;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.style.opacity = String(prm.opacity);
+        el.dataset.laidOut = el.dataset.src || '';
     };
 
     layer.classList.add('is-active');
@@ -2155,30 +2154,35 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
     const spaContent = document.getElementById('spa-content');
     if (spaContent) spaContent.style.backgroundColor = 'transparent';
 
-    const applySrc = (url) => {
-        img.dataset.src = url;
-        img.onload = () => layout();
-        if (img.src !== url) img.src = url;
-        else if (img.complete && img.naturalWidth) layout();
-    };
-
-    if (img.dataset.src !== bgImage.url) {
-        // Preload so we never blank the visible layer when swapping URLs (data → R2).
-        const prevSrc = img.dataset.src || img.src || '';
-        if (prevSrc && img.complete && img.naturalWidth) {
-            const pre = new Image();
-            pre.onload = () => applySrc(bgImage.url);
-            pre.onerror = () => applySrc(bgImage.url);
-            pre.src = bgImage.url;
-            // Keep current pixels visible with updated opacity/zoom until swap.
-            layout();
-        } else {
-            applySrc(bgImage.url);
-        }
-    } else if (img.complete && img.naturalWidth) {
-        layout();
-    } else {
-        img.onload = () => layout();
+    const current = layer.querySelector('img');
+    if (current && current.dataset.src === url && current.complete && current.naturalWidth) {
+        layoutImg(current);
+    } else if (layer.dataset.pendingSrc !== url) {
+        // Decode + lay out off-DOM, then swap in, so no frame ever paints the
+        // new image at its natural size or full opacity.
+        layer.dataset.pendingSrc = url;
+        const next = document.createElement('img');
+        next.alt = '';
+        next.draggable = false;
+        next.dataset.src = url;
+        next.style.opacity = '0';
+        let done = false;
+        const commit = () => {
+            if (done) return;
+            done = true;
+            if (layer.dataset.pendingSrc !== url) return;
+            delete layer.dataset.pendingSrc;
+            if (!next.naturalWidth) return;
+            layoutImg(next);
+            layer.replaceChildren(next);
+        };
+        next.onload = commit;
+        next.onerror = () => {
+            done = true;
+            if (layer.dataset.pendingSrc === url) delete layer.dataset.pendingSrc;
+        };
+        next.src = url;
+        if (next.complete && next.naturalWidth) commit();
     }
 
     if (!window.__usertypoBgImageResizeBound) {
@@ -2205,6 +2209,7 @@ function whenThemeBackgroundReady(url, timeoutMs) {
                 && layer.classList.contains('is-active')
                 && img
                 && img.dataset.src === url
+                && img.dataset.laidOut === url
                 && img.complete
                 && img.naturalWidth > 0
             ) {
