@@ -266,7 +266,7 @@
         </section>
 
         <section class="admin-panel" data-admin-panel="support">
-            <p class="admin-muted mb-3">Open a user from the Users tab to ban, purge scores, clear username, create a one-time sign-in token, or log in as that account.</p>
+            <p class="admin-muted mb-3">Open a user from the Users tab to ban, purge or delete scores, change username, create a one-time sign-in token, or log in as that account.</p>
             <p class="admin-muted">Leaderboard country flags are visible to allowlisted admins only.</p>
         </section>
     </div>
@@ -444,11 +444,19 @@
     function renderSessions(sessions) {
         if (!sessions || !sessions.length) return '<p class="admin-muted">No recent typing sessions.</p>';
         var rows = sessions.map(function (s) {
-            return '<tr><td>' + esc(s.created_at || '').slice(0, 19).replace('T', ' ') +
-                '</td><td>' + esc(s.wpm) + ' wpm</td><td>' + esc(s.accuracy) +
-                '%</td><td>' + esc(s.mode) + ' ' + esc(s.amount) + '</td></tr>';
+            var id = esc(s.id || '');
+            return '<tr data-session-id="' + id + '">' +
+                '<td>' + esc(s.created_at || '').slice(0, 19).replace('T', ' ') + '</td>' +
+                '<td>' + esc(s.wpm) + ' wpm</td>' +
+                '<td>' + esc(s.accuracy) + '%</td>' +
+                '<td>' + esc(s.mode) + ' ' + esc(s.amount) + '</td>' +
+                '<td style="width:2.5rem;text-align:right;">' +
+                '<button type="button" class="admin-btn ghost" data-action="delete-session" data-session-id="' + id + '" ' +
+                'title="Delete this test" aria-label="Delete this test" style="padding:0.25rem 0.4rem;">' +
+                '<span class="material-symbols-outlined text-[1rem]" style="color:#f87171;">delete</span>' +
+                '</button></td></tr>';
         }).join('');
-        return '<div class="admin-sessions"><table><thead><tr><th>When</th><th>WPM</th><th>Acc</th><th>Mode</th></tr></thead><tbody>' +
+        return '<div class="admin-sessions"><table><thead><tr><th>When</th><th>WPM</th><th>Acc</th><th>Mode</th><th></th></tr></thead><tbody>' +
             rows + '</tbody></table></div>';
     }
 
@@ -482,7 +490,7 @@
                     ? '<button type="button" class="admin-btn" data-action="unban">Unban</button>'
                     : '<button type="button" class="admin-btn danger" data-action="ban">Ban</button>') +
                 '<button type="button" class="admin-btn danger" data-action="purge">Purge scores</button>' +
-                '<button type="button" class="admin-btn" data-action="clear-username">Clear username</button>' +
+                '<button type="button" class="admin-btn" data-action="set-username">Change username</button>' +
                 '<button type="button" class="admin-btn" data-action="reset-token">One-time sign-in</button>' +
                 '<button type="button" class="admin-btn" data-action="impersonate"><span class="material-symbols-outlined text-[1rem]">switch_account</span> Log in as user</button>' +
                 '</div>' +
@@ -497,7 +505,7 @@
         }
     }
 
-    async function runUserAction(action) {
+    async function runUserAction(action, el) {
         if (!selectedPublicId || !api) return;
         var err = $('admin-user-error');
         try {
@@ -510,9 +518,24 @@
             } else if (action === 'purge') {
                 if (!window.confirm('Delete all typing sessions for this user? This cannot be undone.')) return;
                 await api.purgeScores(selectedPublicId);
-            } else if (action === 'clear-username') {
-                if (!window.confirm('Clear this user\'s username?')) return;
-                await api.clearUsername(selectedPublicId);
+            } else if (action === 'delete-session') {
+                var sessionId = el && el.getAttribute('data-session-id');
+                if (!sessionId) return;
+                if (!window.confirm('Delete this typing test? This cannot be undone.')) return;
+                await api.deleteSession(selectedPublicId, sessionId);
+            } else if (action === 'set-username') {
+                var currentName = '';
+                try {
+                    var titleEl = $('admin-user-detail') && $('admin-user-detail').querySelector('.admin-row-title');
+                    currentName = titleEl ? String(titleEl.textContent || '').replace(/\s*banned\s*$/i, '').trim() : '';
+                } catch (e) { /* ignore */ }
+                var next = window.prompt('New username (3–32 characters):', currentName || '');
+                if (next == null) return;
+                next = String(next).trim();
+                if (next.length < 3 || next.length > 32) {
+                    throw new Error('Username must be 3–32 characters');
+                }
+                await api.setUsername(selectedPublicId, next);
             } else if (action === 'reset-token') {
                 var tok = await api.passwordResetToken(selectedPublicId);
                 window.prompt('One-time sign-in URL / token (share securely):', tok.url || tok.token || '');
@@ -620,7 +643,7 @@
             detail.addEventListener('click', function (e) {
                 var btn = e.target.closest('[data-action]');
                 if (!btn) return;
-                runUserAction(btn.getAttribute('data-action'));
+                runUserAction(btn.getAttribute('data-action'), btn);
             });
         }
 

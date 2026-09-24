@@ -576,6 +576,35 @@ export default {
         return json(env, 200, { ok: true }, request);
       }
 
+      const deleteSessionMatch = path.match(
+        /^\/users\/([A-Za-z0-9]{8})\/scores\/([0-9a-fA-F-]{36})$/,
+      );
+      if (deleteSessionMatch && request.method === 'DELETE') {
+        const profile = await fetchProfileByPublicId(env, deleteSessionMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        const sessionId = deleteSessionMatch[2];
+        const existing = await supabaseRest<Record<string, unknown>[]>(
+          env,
+          `typing_sessions?id=eq.${encodeURIComponent(sessionId)}`
+            + `&user_id=eq.${encodeURIComponent(profile.user_id)}`
+            + `&select=id&limit=1`,
+        );
+        if (!Array.isArray(existing) || !existing[0]) {
+          return json(env, 404, { error: 'session_not_found' }, request);
+        }
+        await supabaseRest(
+          env,
+          `typing_sessions?id=eq.${encodeURIComponent(sessionId)}`
+            + `&user_id=eq.${encodeURIComponent(profile.user_id)}`,
+          { method: 'DELETE', headers: { Prefer: 'return=minimal' } },
+        );
+        await writeAudit(env, effectiveAdminId, 'delete_session', profile.user_id, {
+          public_id: profile.public_id,
+          session_id: sessionId,
+        });
+        return json(env, 200, { ok: true }, request);
+      }
+
       const impersonateMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/impersonate$/);
       if (impersonateMatch && request.method === 'POST') {
         // Must be a real admin session (not already impersonating).
@@ -702,6 +731,47 @@ export default {
         });
         await writeAudit(env, effectiveAdminId, 'clear_username', profile.user_id, {
           public_id: profile.public_id,
+        });
+        const updated = await fetchProfileByUserId(env, profile.user_id);
+        return json(env, 200, { ok: true, user: updated }, request);
+      }
+
+      const setUsernameMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/username$/);
+      if (setUsernameMatch && request.method === 'POST') {
+        const profile = await fetchProfileByPublicId(env, setUsernameMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        if (adminPublicIds(env).has(profile.public_id)) {
+          return json(env, 400, { error: 'cannot_modify_admin' }, request);
+        }
+        const body = await readJson(request);
+        let name = String(body.username || '').trim().replace(/\s+/g, ' ');
+        if (name.length > 32) name = name.slice(0, 32).trim();
+        if (name.length < 3 || name.length > 32) {
+          return json(env, 400, { error: 'invalid_username' }, request);
+        }
+        if (/^u\d{8,10}$/i.test(name)) {
+          return json(env, 400, { error: 'invalid_username' }, request);
+        }
+        const taken = await supabaseRest<Record<string, unknown>[]>(
+          env,
+          `profiles?username=eq.${encodeURIComponent(name)}`
+            + `&user_id=neq.${encodeURIComponent(profile.user_id)}`
+            + `&select=user_id&limit=1`,
+        );
+        if (Array.isArray(taken) && taken[0]) {
+          return json(env, 409, { error: 'username_taken' }, request);
+        }
+        await supabaseRest(env, `profiles?user_id=eq.${encodeURIComponent(profile.user_id)}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            username: name,
+            display_name: name,
+          }),
+        });
+        await writeAudit(env, effectiveAdminId, 'set_username', profile.user_id, {
+          public_id: profile.public_id,
+          username: name,
         });
         const updated = await fetchProfileByUserId(env, profile.user_id);
         return json(env, 200, { ok: true, user: updated }, request);

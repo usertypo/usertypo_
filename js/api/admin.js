@@ -327,10 +327,25 @@
         });
     }
 
+    async function deleteSession(publicId, sessionId) {
+        return workerFetch(
+            '/users/' + encodeURIComponent(normalizePublicId(publicId))
+                + '/scores/' + encodeURIComponent(String(sessionId || '')),
+            { method: 'DELETE' },
+        );
+    }
+
     async function clearUsername(publicId) {
         return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/clear-username', {
             method: 'POST',
             body: '{}',
+        });
+    }
+
+    async function setUsername(publicId, username) {
+        return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/username', {
+            method: 'POST',
+            body: JSON.stringify({ username: username || '' }),
         });
     }
 
@@ -461,7 +476,9 @@
         banUser: banUser,
         unbanUser: unbanUser,
         purgeScores: purgeScores,
+        deleteSession: deleteSession,
         clearUsername: clearUsername,
+        setUsername: setUsername,
         passwordResetToken: passwordResetToken,
         listReports: listReports,
         updateReport: updateReport,
