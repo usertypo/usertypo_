@@ -2905,8 +2905,11 @@ function applyThemeSettings(settings) {
         .graph-info-section-title { color: ${p.accentPrimary} !important; }
         .graph-info-tip { background: rgba(${accentRGB}, 0.06) !important; border-color: rgba(${accentRGB}, 0.15) !important; }
         .graph-info-tip .tip-label { color: ${p.accentPrimary} !important; }
-        #graph-info-btn.info-active,
         #header-chill-btn.info-active {
+            box-shadow: 0 0 20px rgba(${accentRGB}, 0.4) !important;
+            border-color: rgba(${accentRGB}, 0.5) !important;
+        }
+        #graph-info-btn.info-active {
             box-shadow: 0 0 20px rgba(${accentRGB}, 0.4) !important;
             border-color: rgba(${accentRGB}, 0.5) !important;
         }
