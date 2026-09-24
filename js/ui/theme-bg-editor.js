@@ -12,6 +12,20 @@
     var COMPRESS_MAX_EDGE = 1600;
     var COMPRESS_QUALITY = 0.72;
 
+    // Setup/save choreography — each step runs after the previous one finishes.
+    var FLOW = {
+        ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        scrollMinMs: 650,
+        scrollMaxMs: 1400,
+        scrollMsPerPx: 0.6,
+        contentFadeMs: 700,
+        layerFadeMs: 750,
+        imageFadeMs: 850,
+        controlsFadeMs: 550,
+        stepGapMs: 180,
+        searchOffsetPx: 24,
+    };
+
     var DEFAULT_IMAGES = [
         { id: 'aurora', name: 'Aurora', url: '/assets/theme-bgs/aurora.png' },
         { id: 'dusk', name: 'Dusk', url: '/assets/theme-bgs/dusk.png' },
@@ -36,6 +50,8 @@
     var originY = 0;
     var objectUrl = null;
     var resizeObserver = null;
+    var busy = false;
+    var imageRevealed = false;
 
     function toast(message, icon) {
         if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
@@ -134,11 +150,11 @@
                     '<input id="theme-bg-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />' +
                 '</div>' +
             '</div>' +
-            '<div id="theme-bg-edit-layer" class="fixed inset-0 pointer-events-none opacity-0 invisible transition-opacity duration-300" aria-hidden="true" style="z-index:9990">' +
+            '<div id="theme-bg-edit-layer" class="fixed inset-0 pointer-events-none invisible" aria-hidden="true" style="z-index:9990;opacity:0;">' +
                 '<div id="theme-bg-edit-stage" class="absolute overflow-hidden cursor-grab touch-none select-none" style="left:0;right:0;bottom:0;top:0;background:var(--theme-bg,#000)">' +
-                    '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" style="opacity:0;transition:opacity 0.3s ease;" />' +
+                    '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" style="opacity:0;" />' +
                 '</div>' +
-                '<div id="theme-bg-edit-controls" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-none opacity-0 transition-opacity duration-300" style="position:absolute;left:50%;bottom:1.5rem;transform:translateX(-50%);width:min(92vw,28rem);z-index:2;box-sizing:border-box;">' +
+                '<div id="theme-bg-edit-controls" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-none" style="position:absolute;left:50%;bottom:1.5rem;transform:translateX(-50%);width:min(92vw,28rem);z-index:2;box-sizing:border-box;opacity:0;">' +
                     '<p class="text-xs text-slate-400 text-center">Drag to move · adjust opacity and zoom</p>' +
                     '<label class="flex items-center gap-3 text-xs font-bold text-slate-300">' +
                         '<span class="material-symbols-outlined text-[0.959rem] text-primary shrink-0">opacity</span>' +
@@ -359,99 +375,175 @@
         return hex || getComputedStyle(document.documentElement).getPropertyValue('--theme-bg').trim() || '#000000';
     }
 
-    function setEditingChrome(on) {
-        document.body.classList.toggle('theme-bg-editing', !!on);
-        var content = document.getElementById('spa-content');
-        var footer = document.getElementById('spa-shell-footer');
-        var boot = document.getElementById('spa-boot-overlay');
-        [content, footer, boot].forEach(function (el) {
-            if (!el) return;
-            if (on) {
-                // Idempotent: only stash previous styles once so a second call
-                // cannot lock pointer-events permanently to "none".
-                if (el.dataset.themeBgEditing !== '1') {
-                    el.dataset.themeBgEditing = '1';
-                    el.dataset.themeBgPrevOpacity = el.style.opacity || '';
-                    el.dataset.themeBgPrevPe = el.style.pointerEvents || '';
-                }
-                el.style.transition = 'opacity 0.3s ease';
-                el.style.opacity = '0';
-                el.style.pointerEvents = 'none';
-            } else {
-                el.style.transition = 'opacity 0.3s ease';
-                if (el.dataset.themeBgEditing === '1') {
-                    el.style.opacity = el.dataset.themeBgPrevOpacity || '';
-                    el.style.pointerEvents = el.dataset.themeBgPrevPe || '';
-                } else {
-                    el.style.opacity = '';
-                    el.style.pointerEvents = '';
-                }
-                delete el.dataset.themeBgPrevOpacity;
-                delete el.dataset.themeBgPrevPe;
-                delete el.dataset.themeBgEditing;
-                window.setTimeout(function () {
-                    if (el.dataset.themeBgEditing === '1') return;
-                    el.style.transition = '';
-                }, 340);
-            }
-        });
-    }
-
     function delay(ms) {
         return new Promise(function (resolve) {
             window.setTimeout(resolve, Math.max(0, Number(ms) || 0));
         });
     }
 
-    function scrollPageToTop() {
-        var bodyEl = document.getElementById('app-body');
+    function prefersReducedMotion() {
         try {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         } catch (_) {
-            window.scrollTo(0, 0);
+            return false;
         }
-        if (bodyEl) {
-            try {
-                bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (_) {
-                bodyEl.scrollTop = 0;
-            }
-        }
-        try { document.documentElement.scrollTop = 0; } catch (_) { /* ignore */ }
     }
 
-    function waitForScrollTop(maxMs) {
-        var limit = Math.max(120, Number(maxMs) || 450);
+    function cancelFade(el) {
+        if (el && el._themeBgFade) {
+            try { el._themeBgFade.cancel(); } catch (_) { /* ignore */ }
+            el._themeBgFade = null;
+        }
+    }
+
+    /**
+     * Script-driven opacity fade. CSS transitions on #spa-content don't fire
+     * reliably, so every step of the flow uses the Web Animations API.
+     * Callers set the final inline opacity afterwards and call cancelFade().
+     */
+    function fade(el, from, to, ms) {
         return new Promise(function (resolve) {
-            var started = Date.now();
-            var bodyEl = document.getElementById('app-body');
-            var tick = function () {
-                var y = Math.max(
-                    window.scrollY || 0,
-                    document.documentElement.scrollTop || 0,
-                    bodyEl ? (bodyEl.scrollTop || 0) : 0
-                );
-                if (y <= 2 || Date.now() - started >= limit) {
-                    resolve();
-                    return;
-                }
-                requestAnimationFrame(tick);
+            if (!el) { resolve(); return; }
+            cancelFade(el);
+            if (typeof el.animate !== 'function' || prefersReducedMotion() || !(ms > 0)) {
+                el.style.opacity = String(to);
+                resolve();
+                return;
+            }
+            var anim = el.animate(
+                [{ opacity: Number(from) }, { opacity: Number(to) }],
+                { duration: ms, easing: FLOW.ease, fill: 'forwards' }
+            );
+            el._themeBgFade = anim;
+            anim.onfinish = function () { resolve(); };
+            anim.oncancel = function () { resolve(); };
+        });
+    }
+
+    function fadeAll(list, from, to, ms) {
+        return Promise.all(list.map(function (el) { return fade(el, from, to, ms); }));
+    }
+
+    function chromeTargets() {
+        return ['spa-content', 'spa-shell-footer', 'spa-boot-overlay']
+            .map(function (id) { return document.getElementById(id); })
+            .filter(function (el) {
+                if (!el) return false;
+                var cs = getComputedStyle(el);
+                return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01;
+            });
+    }
+
+    var hiddenChrome = [];
+
+    async function hideSettingsContent() {
+        var targets = chromeTargets();
+        hiddenChrome = targets;
+        targets.forEach(function (el) {
+            el.dataset.themeBgPrevPe = el.style.pointerEvents || '';
+            el.style.pointerEvents = 'none';
+        });
+        await fadeAll(targets, 1, 0, FLOW.contentFadeMs);
+        targets.forEach(function (el) {
+            el.style.opacity = '0';
+            cancelFade(el);
+        });
+        document.body.classList.add('theme-bg-editing');
+    }
+
+    async function showSettingsContent() {
+        if (!hiddenChrome.length && !document.body.classList.contains('theme-bg-editing')) return;
+        var targets = hiddenChrome;
+        hiddenChrome = [];
+        // Start each animation at 0 in the same frame the !important hide rule is removed.
+        targets.forEach(function (el) {
+            el.style.opacity = '';
+            fade(el, 0, 1, FLOW.contentFadeMs);
+        });
+        document.body.classList.remove('theme-bg-editing');
+        await Promise.all(targets.map(function (el) {
+            return el._themeBgFade ? el._themeBgFade.finished.catch(function () {}) : null;
+        }));
+        targets.forEach(function (el) {
+            cancelFade(el);
+            el.style.pointerEvents = el.dataset.themeBgPrevPe || '';
+            delete el.dataset.themeBgPrevPe;
+        });
+    }
+
+    function pageScroller() {
+        var body = document.body;
+        if (body) {
+            var cs = getComputedStyle(body);
+            if (/(auto|scroll)/.test(cs.overflowY) && body.scrollHeight > body.clientHeight + 1) return body;
+        }
+        return null;
+    }
+
+    function currentScrollY() {
+        var sc = pageScroller();
+        return sc ? sc.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
+    }
+
+    function maxScrollY() {
+        var sc = pageScroller();
+        if (sc) return Math.max(0, sc.scrollHeight - sc.clientHeight);
+        var doc = document.documentElement;
+        return Math.max(0, Math.max(doc.scrollHeight, document.body ? document.body.scrollHeight : 0) - window.innerHeight);
+    }
+
+    function setScrollY(y) {
+        var sc = pageScroller();
+        if (sc) {
+            sc.scrollTop = y;
+            return;
+        }
+        try {
+            window.scrollTo({ top: y, behavior: 'instant' });
+        } catch (_) {
+            window.scrollTo(0, y);
+        }
+    }
+
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    /**
+     * Eased scroll with a duration that grows with distance, so short hops
+     * are still visible. Resolves when the scroll finishes.
+     */
+    function smoothScrollTo(y) {
+        var target = Math.max(0, Math.min(maxScrollY(), Math.round(y)));
+        var start = currentScrollY();
+        var distance = target - start;
+        if (Math.abs(distance) < 1) return Promise.resolve();
+        if (prefersReducedMotion()) {
+            setScrollY(target);
+            return Promise.resolve();
+        }
+        var duration = Math.max(
+            FLOW.scrollMinMs,
+            Math.min(FLOW.scrollMaxMs, FLOW.scrollMinMs + Math.abs(distance) * FLOW.scrollMsPerPx)
+        );
+        return new Promise(function (resolve) {
+            var t0 = performance.now();
+            var step = function (now) {
+                var t = Math.min(1, (now - t0) / duration);
+                setScrollY(start + distance * easeInOutCubic(t));
+                if (t < 1) requestAnimationFrame(step);
+                else resolve();
             };
-            tick();
+            requestAnimationFrame(step);
         });
     }
 
     function scrollToSettingsSearch() {
-        var el = document.getElementById('settings-search');
-        if (!el) return;
-        try {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch (_) {
-            try {
-                var top = el.getBoundingClientRect().top + (window.scrollY || 0) - 80;
-                window.scrollTo(0, Math.max(0, top));
-            } catch (err) { /* ignore */ }
-        }
+        var input = document.getElementById('settings-search');
+        if (!input) return Promise.resolve();
+        var anchor = input.closest('.search-area') || input;
+        var top = anchor.getBoundingClientRect().top + currentScrollY();
+        return smoothScrollTo(top - FLOW.searchOffsetPx);
     }
 
     function whenAppBgReady(url, timeoutMs) {
@@ -461,44 +553,55 @@
         return Promise.resolve(false);
     }
 
-    function setControlsVisible(on) {
-        if (!els || !els.controls) return;
-        if (on) {
-            els.controls.classList.remove('opacity-0', 'pointer-events-none');
-            els.controls.classList.add('opacity-100', 'pointer-events-auto');
-        } else {
-            els.controls.classList.add('opacity-0', 'pointer-events-none');
-            els.controls.classList.remove('opacity-100', 'pointer-events-auto');
-        }
+    async function showControls() {
+        els.controls.classList.remove('pointer-events-none');
+        els.controls.classList.add('pointer-events-auto');
+        await fade(els.controls, 0, 1, FLOW.controlsFadeMs);
+        els.controls.style.opacity = '1';
+        cancelFade(els.controls);
     }
 
-    function setEditLayerOpen(on, opts) {
-        ensureDom();
-        var instant = opts && opts.instant;
-        if (instant) {
-            els.editLayer.style.transition = 'none';
-            els.imgEl.style.transition = 'none';
-            if (els.controls) els.controls.style.transition = 'none';
-        }
-        if (on) {
-            els.editLayer.classList.remove('pointer-events-none', 'opacity-0', 'invisible');
-            els.editLayer.classList.add('pointer-events-auto', 'opacity-100');
-            els.editLayer.setAttribute('aria-hidden', 'false');
-        } else {
-            els.editLayer.classList.add('pointer-events-none', 'opacity-0', 'invisible');
-            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
-            els.editLayer.setAttribute('aria-hidden', 'true');
-            setControlsVisible(false);
-            if (els.imgEl) {
-                els.imgEl.style.opacity = '0';
-            }
-        }
-        if (instant) {
-            void els.editLayer.offsetHeight;
-            els.editLayer.style.transition = '';
-            els.imgEl.style.transition = '';
-            if (els.controls) els.controls.style.transition = '';
-        }
+    function currentOpacity(el) {
+        var n = Number(getComputedStyle(el).opacity);
+        return Number.isFinite(n) ? n : 1;
+    }
+
+    async function hideControls() {
+        els.controls.classList.add('pointer-events-none');
+        els.controls.classList.remove('pointer-events-auto');
+        var from = currentOpacity(els.controls);
+        await fade(els.controls, from, 0, from > 0.01 ? FLOW.controlsFadeMs : 0);
+        els.controls.style.opacity = '0';
+        cancelFade(els.controls);
+    }
+
+    async function showEditLayer() {
+        els.editLayer.classList.remove('invisible', 'pointer-events-none');
+        els.editLayer.classList.add('pointer-events-auto');
+        els.editLayer.setAttribute('aria-hidden', 'false');
+        await fade(els.editLayer, 0, 1, FLOW.layerFadeMs);
+        els.editLayer.style.opacity = '1';
+        cancelFade(els.editLayer);
+    }
+
+    async function hideEditLayer() {
+        els.editLayer.classList.add('pointer-events-none');
+        els.editLayer.classList.remove('pointer-events-auto');
+        var from = currentOpacity(els.editLayer);
+        await fade(els.editLayer, from, 0, from > 0.01 ? FLOW.layerFadeMs : 0);
+        resetEditLayer();
+    }
+
+    function resetEditLayer() {
+        [els.editLayer, els.imgEl, els.controls].forEach(cancelFade);
+        els.editLayer.style.opacity = '0';
+        els.editLayer.classList.add('invisible', 'pointer-events-none');
+        els.editLayer.classList.remove('pointer-events-auto');
+        els.editLayer.setAttribute('aria-hidden', 'true');
+        els.controls.style.opacity = '0';
+        els.controls.classList.add('pointer-events-none');
+        els.controls.classList.remove('pointer-events-auto');
+        els.imgEl.style.opacity = '0';
     }
 
     function stageSize() {
@@ -531,9 +634,8 @@
         els.imgEl.style.height = dh + 'px';
         els.imgEl.style.left = x + 'px';
         els.imgEl.style.top = y + 'px';
-        // Keep transform opacity on the element via style; visibility fade uses class.
-        els.imgEl.style.opacity = String(opacity);
-        els.imgEl.src = imgUrl;
+        if (imageRevealed) els.imgEl.style.opacity = String(opacity);
+        if (els.imgEl.getAttribute('src') !== imgUrl) els.imgEl.src = imgUrl;
     }
 
     function offsetsToNormalized() {
@@ -623,55 +725,72 @@
                 src = window.usertypoThemeAssets.normalizeDurableUrl(src);
             }
         }
+        if (busy || mode === 'edit') return;
+        busy = true;
         imgId = String((source && source.id) || 'custom');
+        imageRevealed = false;
+        resetEditLayer();
 
-        // 1) Scroll to top
-        scrollPageToTop();
-        await waitForScrollTop(550);
+        clearObjectUrl();
+        var isBlob = src.indexOf('blob:') === 0 || src.indexOf('data:') === 0;
+        // Decode in parallel with the scroll/fade so the reveal never waits on the network.
+        var loading = loadImage(src, isBlob);
+        loading.catch(function () { /* handled below */ });
 
-        // 2) Fade settings content away (header stays)
-        mode = 'edit';
-        setControlsVisible(false);
-        els.imgEl.style.opacity = '0';
-        setEditingChrome(true);
-        await delay(320);
-
-        // 3) Show edit stage + image
-        setEditLayerOpen(true);
         try {
-            clearObjectUrl();
-            var isBlob = src.indexOf('blob:') === 0 || src.indexOf('data:') === 0;
-            await loadImage(src, isBlob);
-            resetTransform(options && options.restore ? source : null);
-            // Keep image hidden until the next frame, then fade to theme opacity.
-            els.imgEl.style.opacity = '0';
-            await delay(30);
-            els.imgEl.style.transition = 'opacity 0.3s ease';
-            els.imgEl.style.opacity = String(opacity);
-            await delay(280);
+            // 1) Scroll to the top of the page
+            await smoothScrollTo(0);
+            await delay(FLOW.stepGapMs);
 
-            // 4) Then show opacity/zoom controls
-            setControlsVisible(true);
+            // 2) Settings content fades away (header stays)
+            mode = 'edit';
+            await hideSettingsContent();
+            await delay(FLOW.stepGapMs);
+
+            // 3) Editing stage fades in, then the image
+            await showEditLayer();
+            await loading;
+            resetTransform(options && options.restore ? source : null);
+            await fade(els.imgEl, 0, opacity, FLOW.imageFadeMs);
+            imageRevealed = true;
+            els.imgEl.style.opacity = String(opacity);
+            cancelFade(els.imgEl);
+            await delay(FLOW.stepGapMs);
+
+            // 4) Opacity / zoom controls
+            await showControls();
         } catch (err) {
             toast('Could not load this image.', 'error');
-            cancelEdit();
+            busy = false;
+            await cancelEdit();
+            return;
         }
+        busy = false;
     }
 
-    function exitEditLayer(opts) {
-        ensureDom();
-        setEditLayerOpen(false, opts);
-        setEditingChrome(false);
+    async function closeEditFlow() {
+        await hideControls();
+        await delay(FLOW.stepGapMs);
+        await hideEditLayer();
         img = null;
         imgUrl = '';
+        imageRevealed = false;
+        await delay(FLOW.stepGapMs);
+        await showSettingsContent();
     }
 
-    function cancelEdit() {
-        exitEditLayer();
-        mode = 'closed';
-        clearObjectUrl();
-        setModalOpen(false);
-        syncSettingsButton();
+    async function cancelEdit() {
+        if (busy) return;
+        busy = true;
+        try {
+            await closeEditFlow();
+        } finally {
+            mode = 'closed';
+            clearObjectUrl();
+            setModalOpen(false);
+            syncSettingsButton();
+            busy = false;
+        }
     }
 
     function compressFileToDataUrl(file) {
@@ -745,10 +864,14 @@
     }
 
     async function onSave() {
+        if (busy) return;
         if (!img || !imgUrl) {
             toast('Nothing to save.', 'error');
             return;
         }
+        busy = true;
+        var saveLabel = els.saveBtn.textContent;
+        els.saveBtn.textContent = 'Saving…';
         var prev = currentBgImage();
         var norm = offsetsToNormalized();
         var payload = normalizeBgImage({
@@ -791,29 +914,32 @@
                 }
             } catch (_) { /* ignore */ }
 
-            await whenAppBgReady(payload && payload.url, 900);
+            // The live layer sits under the editor showing the same framing, so the
+            // editor can cross-fade out over it without any visible jump.
+            await whenAppBgReady(payload && payload.url, 2500);
 
-            // Instant handoff: live bg is already painted; drop the edit overlay without fading.
-            exitEditLayer({ instant: true });
+            // Controls fade → editor fades over the live bg → settings content returns.
+            await closeEditFlow();
             mode = 'closed';
             clearObjectUrl();
             setModalOpen(false);
             syncSettingsButton();
-            toast('Background image saved.', 'check');
             try {
                 if (window.usertypo_settingsApi && window.usertypo_settingsApi.syncCustomThemeEditor) {
                     window.usertypo_settingsApi.syncCustomThemeEditor(loadSettings());
                 }
             } catch (_) { /* ignore */ }
 
-            // Content fades back in, then scroll to the settings search bar.
-            await delay(320);
-            scrollToSettingsSearch();
+            await delay(FLOW.stepGapMs);
+            await scrollToSettingsSearch();
+            toast('Background image saved.', 'check');
         } catch (err) {
             console.warn('[theme-bg] save/upload failed', err);
             toast('Could not upload background. Try again while signed in.', 'error');
         } finally {
             els.saveBtn.disabled = false;
+            els.saveBtn.textContent = saveLabel;
+            busy = false;
         }
     }
 
