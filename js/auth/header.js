@@ -69,21 +69,25 @@
     function syncChillBtn(isSignedIn) {
         var btn = document.getElementById('header-chill-btn');
         if (!btn) return;
+        var tip = document.getElementById('header-chill-tip');
         var show = !!isSignedIn;
         btn.classList.toggle('hidden', !show);
         btn.setAttribute('aria-hidden', show ? 'false' : 'true');
         if (!show) {
             btn.classList.remove('info-active');
             btn.setAttribute('aria-pressed', 'false');
+            btn.removeAttribute('title');
             return;
         }
         var chill = isChillMode();
-        btn.classList.toggle('info-active', chill);
-        btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
-        btn.title = chill
+        var label = chill
             ? 'Chill on — tests are not being saved'
             : 'Chill — pause saving tests';
+        btn.classList.toggle('info-active', chill);
+        btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
+        btn.removeAttribute('title');
         btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
+        if (tip) tip.textContent = label;
     }
 
     function wireChillBtn() {
@@ -94,6 +98,19 @@
             e.preventDefault();
             e.stopPropagation();
             setChillMode(!isChillMode());
+            try { btn.blur(); } catch (err) { /* ignore */ }
+        });
+    }
+
+    function wireAccountFocus() {
+        var accountBtn = document.getElementById('header-account-btn');
+        if (!accountBtn || accountBtn.dataset.focusWired === '1') return;
+        accountBtn.dataset.focusWired = '1';
+        // Click-then-type keeps :focus-visible on the link; drop it after the click.
+        accountBtn.addEventListener('mouseup', function () {
+            setTimeout(function () {
+                try { accountBtn.blur(); } catch (err) { /* ignore */ }
+            }, 0);
         });
     }
 
@@ -386,6 +403,7 @@
             showLevel: false,
         });
         wireChillBtn();
+        wireAccountFocus();
         syncChillBtn(false);
 
         if (!window.usertypoAuth) {
