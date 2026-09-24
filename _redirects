@@ -10,3 +10,6 @@
 
 # Invite links (same behavior as Express /join/:code)
 /join/:code       /room?code=:code       302
+
+# One-time support sign-in links
+/go/:code         /go?c=:code            302
