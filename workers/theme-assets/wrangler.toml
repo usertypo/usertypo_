@@ -1,0 +1,33 @@
+# usertypo_ Theme Assets Worker — custom theme backgrounds on R2.
+# Deploy: npm run worker:theme-assets:deploy:dev
+
+name = "usertypo-theme-assets-dev"
+main = "src/index.ts"
+compatibility_date = "2026-07-27"
+
+[[r2_buckets]]
+binding = "THEME_BGS"
+bucket_name = "usertypo-theme-bgs-dev"
+
+[vars]
+ENVIRONMENT = "dev"
+PUBLIC_SITE_URL = "https://dev.usertypo.com"
+ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
+CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev"
+
+[env.production]
+name = "usertypo-theme-assets"
+vars = { ENVIRONMENT = "production", PUBLIC_SITE_URL = "https://usertypo.com", ALLOWED_ORIGINS = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://usertypo.com,https://www.usertypo.com,https://usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "clerk.usertypo.com" }
+
+[[env.production.r2_buckets]]
+binding = "THEME_BGS"
+bucket_name = "usertypo-theme-bgs"
+
+[env.dev]
+name = "usertypo-theme-assets-dev"
+vars = { ENVIRONMENT = "dev", PUBLIC_SITE_URL = "https://dev.usertypo.com", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev" }
+
+[[env.dev.r2_buckets]]
+binding = "THEME_BGS"
+bucket_name = "usertypo-theme-bgs-dev"

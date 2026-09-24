@@ -51,6 +51,55 @@
         } catch (e) { /* ignore */ }
     }
 
+    function normalizeBgImage(raw) {
+        if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function') {
+            var normalized = window.usertypoThemeBgEditor.normalizeBgImage(raw);
+            if (!normalized) return null;
+            if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.normalizeDurableUrl === 'function') {
+                normalized = Object.assign({}, normalized, {
+                    url: window.usertypoThemeAssets.normalizeDurableUrl(normalized.url),
+                });
+            }
+            return normalized;
+        }
+        if (!raw || typeof raw !== 'object' || !raw.url) return null;
+        var url = String(raw.url);
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.normalizeDurableUrl === 'function') {
+            url = window.usertypoThemeAssets.normalizeDurableUrl(url);
+        }
+        return {
+            id: String(raw.id || 'custom'),
+            url: url,
+            opacity: Math.max(0.05, Math.min(1, Number(raw.opacity) || 0.75)),
+            zoom: Math.max(1, Math.min(3, Number(raw.zoom) || 1)),
+            offsetX: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetX)) ? Number(raw.offsetX) : 0.5)),
+            offsetY: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetY)) ? Number(raw.offsetY) : 0.5)),
+        };
+    }
+
+    /** Cloud must never store data:/blob: — those wipe other devices when truncated/rejected. */
+    function cloudSafeBgImage(raw) {
+        var bg = normalizeBgImage(raw);
+        if (!bg || !bg.url) return null;
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.isEphemeralUrl === 'function') {
+            if (window.usertypoThemeAssets.isEphemeralUrl(bg.url)) return null;
+        } else {
+            var u = String(bg.url);
+            if (u.indexOf('data:') === 0 || u.indexOf('blob:') === 0) return null;
+        }
+        return bg;
+    }
+
+    function themeHasEphemeralImage(theme) {
+        var bg = theme && theme.bgImage;
+        if (!bg || !bg.url) return false;
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.isEphemeralUrl === 'function') {
+            return window.usertypoThemeAssets.isEphemeralUrl(bg.url);
+        }
+        var u = String(bg.url);
+        return u.indexOf('data:') === 0 || u.indexOf('blob:') === 0;
+    }
+
     function normalizeCustomTheme(raw) {
         if (!raw || typeof raw !== 'object') {
             return {
@@ -59,6 +108,7 @@
                 secondaryColor: '#cccccc',
                 bgColor: '#000000',
                 bgSpectrumPos: 0,
+                bgImage: null,
             };
         }
         var mode = String(raw.mode || 'Dark').toLowerCase() === 'light' ? 'Light' : 'Dark';
@@ -70,6 +120,7 @@
             bgSpectrumPos: Number.isFinite(Number(raw.bgSpectrumPos))
                 ? Number(raw.bgSpectrumPos)
                 : 0,
+            bgImage: normalizeBgImage(raw.bgImage),
         };
     }
 
@@ -84,6 +135,7 @@
                 secondaryColor: theme.secondaryColor,
                 bgColor: theme.bgColor,
                 bgSpectrumPos: theme.bgSpectrumPos,
+                bgImage: theme.bgImage,
             };
         });
     }
@@ -96,6 +148,11 @@
 
     function buildPayloadFromLocal(settings, updatedAt) {
         var lf = (settings && settings.lookFeel) || {};
+        var customTheme = normalizeCustomTheme(lf.customTheme);
+        customTheme.bgImage = cloudSafeBgImage(customTheme.bgImage);
+        var presets = normalizePresets(lf.customPresets).map(function (p) {
+            return Object.assign({}, p, { bgImage: cloudSafeBgImage(p.bgImage) });
+        });
         return {
             v: LOOK_FEEL_VERSION,
             updatedAt: Number(updatedAt) || Date.now(),
@@ -103,8 +160,8 @@
             fontFamily: lf.fontFamily || 'JetBrains Mono',
             randomizeTheme: lf.randomizeTheme || 'Off',
             glowIntensity: glowFrom(lf.glowIntensity),
-            customTheme: normalizeCustomTheme(lf.customTheme),
-            customPresets: normalizePresets(lf.customPresets),
+            customTheme: customTheme,
+            customPresets: presets,
         };
     }
 
@@ -221,12 +278,85 @@
         return parseCloudPayload(updated.data.look_feel) || payload;
     }
 
+    async function ensureLocalImagesOnR2(settings) {
+        if (!settings || !settings.lookFeel) return settings;
+        if (!window.usertypoThemeAssets || typeof window.usertypoThemeAssets.persistBgImage !== 'function') {
+            return settings;
+        }
+        var changed = false;
+        try {
+            var ct = settings.lookFeel.customTheme;
+            if (ct && ct.bgImage && ct.bgImage.url) {
+                var nextLive = await window.usertypoThemeAssets.persistBgImage(ct.bgImage, null);
+                if (nextLive && nextLive.url && nextLive.url !== ct.bgImage.url) {
+                    settings.lookFeel.customTheme = Object.assign({}, ct, { bgImage: nextLive });
+                    changed = true;
+                } else if (nextLive && nextLive.url) {
+                    var normalizedLive = window.usertypoThemeAssets.normalizeDurableUrl
+                        ? window.usertypoThemeAssets.normalizeDurableUrl(nextLive.url)
+                        : nextLive.url;
+                    if (normalizedLive !== ct.bgImage.url) {
+                        settings.lookFeel.customTheme = Object.assign({}, ct, {
+                            bgImage: Object.assign({}, nextLive, { url: normalizedLive }),
+                        });
+                        changed = true;
+                    }
+                }
+            }
+            var presets = Array.isArray(settings.lookFeel.customPresets)
+                ? settings.lookFeel.customPresets.slice()
+                : [];
+            for (var i = 0; i < presets.length; i++) {
+                var p = presets[i];
+                if (!p || !p.bgImage || !p.bgImage.url) continue;
+                var nextPreset = await window.usertypoThemeAssets.persistBgImage(p.bgImage, null);
+                if (!nextPreset || !nextPreset.url) continue;
+                var normalizedPreset = window.usertypoThemeAssets.normalizeDurableUrl
+                    ? window.usertypoThemeAssets.normalizeDurableUrl(nextPreset.url)
+                    : nextPreset.url;
+                if (normalizedPreset !== p.bgImage.url) {
+                    presets[i] = Object.assign({}, p, {
+                        bgImage: Object.assign({}, nextPreset, { url: normalizedPreset }),
+                    });
+                    changed = true;
+                }
+            }
+            if (changed) {
+                settings.lookFeel.customPresets = presets;
+                saveLocalSettings(settings);
+            }
+        } catch (err) {
+            console.warn('[usertypo look-feel] R2 migrate failed', err);
+        }
+        return settings;
+    }
+
+    function localHasEphemeralImages(settings) {
+        if (!settings || !settings.lookFeel) return false;
+        if (themeHasEphemeralImage(settings.lookFeel.customTheme)) return true;
+        var presets = Array.isArray(settings.lookFeel.customPresets)
+            ? settings.lookFeel.customPresets
+            : [];
+        for (var i = 0; i < presets.length; i++) {
+            if (themeHasEphemeralImage(presets[i])) return true;
+        }
+        return false;
+    }
+
     async function pushNow(options) {
         if (applyingFromCloud) return null;
         if (!isSignedIn()) return null;
 
         var settings = loadLocalSettings();
         if (!settings) return null;
+        settings = await ensureLocalImagesOnR2(settings);
+
+        // Never push while local still has data:/blob: images — that would store null
+        // (or a huge payload) and wipe other devices on the next pull.
+        if (localHasEphemeralImages(settings)) {
+            console.warn('[usertypo look-feel] deferring push until background images are on R2');
+            return null;
+        }
 
         var force = !!(options && options.force);
         var at = localUpdatedAt(settings);
