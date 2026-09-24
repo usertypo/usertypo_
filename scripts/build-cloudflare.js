@@ -97,6 +97,7 @@ function main() {
         'multiplayer',
         'userstats',
         'settings',
+        'admin',
         'signin',
         'sso-callback',
         'room',

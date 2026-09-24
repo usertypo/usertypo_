@@ -197,7 +197,7 @@
             border-radius: 2px;
             flex-shrink: 0;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, var(--gi-18, 0.18));
-            /* Keep flag markup/data in the DOM; hide from view until we re-enable. */
+            /* Hidden for normal users; allowlisted admins reveal via html.lb-admin-flags */
             display: none;
             vertical-align: middle;
         }
@@ -208,8 +208,11 @@
             border-radius: 2px;
             flex-shrink: 0;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, var(--gi-12, 0.12));
-            /* Keep flag markup/data in the DOM; hide from view until we re-enable. */
             display: none;
+        }
+        html.lb-admin-flags .lb-user-flag,
+        html.lb-admin-flags .lb-country-flag {
+            display: inline-block;
         }
         /* --- Pill-row leaderboard --- */
         #lb-table-wrap {

@@ -146,6 +146,14 @@
             navId: 'nav-leaderboards',
             compact: false,
         },
+        '/admin': {
+            page: 'pages/admin.html',
+            title: 'Admin | usertypo_',
+            description: 'Admin tools for usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: false,
+        },
         '/userstats': {
             page: 'pages/userstats.html',
             title: 'User Stats | usertypo_',
@@ -204,6 +212,7 @@
         'room.html': '/room',
         'dual.html': '/dual',
         'leaderboards.html': '/leaderboards',
+        'admin.html': '/admin',
         'userstats.html': '/userstats',
         'privacy.html': '/privacy',
         'terms.html': '/terms',
