@@ -394,6 +394,185 @@
         return h + 'h ' + rm + 'm';
     }
 
+    function ensureAdminDialog() {
+        var existing = document.getElementById('admin-app-dialog');
+        if (existing) return existing;
+        var wrap = document.createElement('div');
+        wrap.id = 'admin-app-dialog';
+        wrap.className = 'opacity-0 pointer-events-none fixed inset-0 z-[280] flex items-center justify-center p-4';
+        wrap.setAttribute('aria-hidden', 'true');
+        wrap.setAttribute('role', 'dialog');
+        wrap.setAttribute('aria-modal', 'true');
+        wrap.innerHTML =
+            '<div id="admin-app-dialog-backdrop" class="absolute inset-0 bg-black/45 cursor-pointer" aria-hidden="true"></div>' +
+            '<div id="admin-app-dialog-box" class="relative z-10 w-full max-w-md rounded-2xl border border-white/10 p-5 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.45)]" ' +
+            'style="background:rgba(15,23,42,0.92);backdrop-filter:blur(12px);">' +
+            '<div class="text-sm font-bold tracking-wide flex items-center gap-2" style="color:var(--theme-primary,#67e8f9);">' +
+            '<span class="material-symbols-outlined text-[1.1rem]" id="admin-app-dialog-icon">info</span>' +
+            '<span id="admin-app-dialog-title">Admin</span></div>' +
+            '<p id="admin-app-dialog-message" class="text-sm text-slate-300 leading-relaxed"></p>' +
+            '<input id="admin-app-dialog-input" class="hidden w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white outline-none" ' +
+            'style="background:rgba(0,0,0,0.28);" type="text" autocomplete="off" />' +
+            '<div id="admin-app-dialog-result" class="hidden">' +
+            '<input id="admin-app-dialog-result-input" readonly class="w-full rounded-lg border border-white/10 px-3 py-2 text-xs font-mono text-slate-200 outline-none" ' +
+            'style="background:rgba(0,0,0,0.28);" />' +
+            '</div>' +
+            '<p id="admin-app-dialog-error" class="hidden text-xs text-red-400"></p>' +
+            '<div class="flex justify-end gap-2 mt-1">' +
+            '<button type="button" id="admin-app-dialog-cancel" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">Cancel</button>' +
+            '<button type="button" id="admin-app-dialog-ok" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-primary/30 bg-primary/15 text-primary hover:bg-primary/25">OK</button>' +
+            '</div></div>';
+        document.body.appendChild(wrap);
+        return wrap;
+    }
+
+    function openAdminDialog(opts) {
+        var options = opts || {};
+        var type = options.type || 'confirm'; // confirm | prompt | result
+        var wrap = ensureAdminDialog();
+        var box = document.getElementById('admin-app-dialog-box');
+        var title = document.getElementById('admin-app-dialog-title');
+        var icon = document.getElementById('admin-app-dialog-icon');
+        var message = document.getElementById('admin-app-dialog-message');
+        var input = document.getElementById('admin-app-dialog-input');
+        var resultWrap = document.getElementById('admin-app-dialog-result');
+        var resultInput = document.getElementById('admin-app-dialog-result-input');
+        var error = document.getElementById('admin-app-dialog-error');
+        var ok = document.getElementById('admin-app-dialog-ok');
+        var cancel = document.getElementById('admin-app-dialog-cancel');
+        var backdrop = document.getElementById('admin-app-dialog-backdrop');
+
+        if (title) title.textContent = options.title || 'Admin';
+        if (icon) icon.textContent = options.icon || (type === 'confirm' ? 'warning' : type === 'result' ? 'link' : 'edit');
+        if (message) message.textContent = options.message || '';
+        if (error) {
+            error.textContent = '';
+            error.classList.add('hidden');
+        }
+        if (input) {
+            input.classList.toggle('hidden', type !== 'prompt');
+            input.value = options.value != null ? String(options.value) : '';
+            input.placeholder = options.placeholder || '';
+            input.type = options.inputType || 'text';
+        }
+        if (resultWrap && resultInput) {
+            resultWrap.classList.toggle('hidden', type !== 'result');
+            resultInput.value = options.value != null ? String(options.value) : '';
+        }
+        if (ok) {
+            ok.textContent = options.okLabel || (type === 'result' ? 'Copy link' : type === 'confirm' ? 'Confirm' : 'Save');
+            ok.classList.toggle('hidden', false);
+        }
+        if (cancel) {
+            cancel.textContent = options.cancelLabel || (type === 'result' ? 'Close' : 'Cancel');
+            cancel.classList.toggle('hidden', !!options.hideCancel);
+        }
+
+        wrap.classList.remove('opacity-0', 'pointer-events-none');
+        wrap.classList.add('opacity-100', 'pointer-events-auto');
+        wrap.setAttribute('aria-hidden', 'false');
+        if (box) {
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+        }
+
+        return new Promise(function (resolve) {
+            var settled = false;
+            function close(value) {
+                if (settled) return;
+                settled = true;
+                wrap.classList.add('opacity-0', 'pointer-events-none');
+                wrap.classList.remove('opacity-100', 'pointer-events-auto');
+                wrap.setAttribute('aria-hidden', 'true');
+                ok.removeEventListener('click', onOk);
+                cancel.removeEventListener('click', onCancel);
+                backdrop.removeEventListener('click', onCancel);
+                if (input) input.removeEventListener('keydown', onKey);
+                resolve(value);
+            }
+            function onCancel() { close(null); }
+            function onOk() {
+                if (type === 'prompt') {
+                    var val = input ? String(input.value || '').trim() : '';
+                    if (options.required !== false && !val) {
+                        if (error) {
+                            error.textContent = options.requiredMessage || 'Please enter a value.';
+                            error.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                    close(val);
+                    return;
+                }
+                if (type === 'result') {
+                    var text = resultInput ? resultInput.value : '';
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(text).then(function () {
+                                if (ok) ok.textContent = 'Copied';
+                            }).catch(function () { /* ignore */ });
+                        } else if (resultInput) {
+                            resultInput.select();
+                            document.execCommand('copy');
+                            if (ok) ok.textContent = 'Copied';
+                        }
+                    } catch (e) { /* ignore */ }
+                    return;
+                }
+                close(true);
+            }
+            function onKey(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onOk();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onCancel();
+                }
+            }
+            ok.addEventListener('click', onOk);
+            cancel.addEventListener('click', onCancel);
+            backdrop.addEventListener('click', onCancel);
+            if (input && type === 'prompt') {
+                input.addEventListener('keydown', onKey);
+                setTimeout(function () { try { input.focus(); input.select(); } catch (e) { /* ignore */ } }, 30);
+            }
+        });
+    }
+
+    function adminConfirm(message, opts) {
+        return openAdminDialog(Object.assign({
+            type: 'confirm',
+            title: (opts && opts.title) || 'Confirm',
+            message: message,
+            icon: (opts && opts.icon) || 'warning',
+            okLabel: (opts && opts.okLabel) || 'Confirm',
+        }, opts || {}));
+    }
+
+    function adminPrompt(message, opts) {
+        return openAdminDialog(Object.assign({
+            type: 'prompt',
+            title: (opts && opts.title) || 'Enter value',
+            message: message,
+            icon: (opts && opts.icon) || 'edit',
+            okLabel: (opts && opts.okLabel) || 'Save',
+            value: (opts && opts.value) || '',
+        }, opts || {}));
+    }
+
+    function adminShowResult(message, value, opts) {
+        return openAdminDialog(Object.assign({
+            type: 'result',
+            title: (opts && opts.title) || 'One-time sign-in',
+            message: message,
+            icon: (opts && opts.icon) || 'link',
+            value: value,
+            okLabel: 'Copy link',
+            cancelLabel: 'Close',
+        }, opts || {}));
+    }
+
     function applyLeaderboardFlagVisibility() {
         var root = document.documentElement;
         if (!root) return;
@@ -488,6 +667,9 @@
         formatDuration: formatDuration,
         syncAdminUi: syncAdminUi,
         applyLeaderboardFlagVisibility: applyLeaderboardFlagVisibility,
+        confirm: adminConfirm,
+        prompt: adminPrompt,
+        showResult: adminShowResult,
         workerFetch: workerFetch,
     };
 

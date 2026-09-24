@@ -28,6 +28,22 @@ const DEFAULT_ORIGINS = [
 ];
 
 const HEARTBEAT_IDLE_MS = 3 * 60 * 1000;
+const OTL_TTL_SECONDS = 2 * 60 * 60;
+const OTL_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz';
+
+function randomOtlCode(length = 14): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    out += OTL_CODE_ALPHABET[bytes[i]! % OTL_CODE_ALPHABET.length];
+  }
+  return out;
+}
+
+function siteOrigin(env: Env): string {
+  return String(env.PUBLIC_SITE_URL || 'https://dev.usertypo.com').replace(/\/+$/, '');
+}
 
 function parseOrigins(env: Env): string[] {
   const fromEnv = String(env.ALLOWED_ORIGINS || '')
@@ -354,6 +370,40 @@ export default {
         return json(env, 201, { ok: true, report: Array.isArray(created) ? created[0] : created }, request);
       }
 
+      // ---- Public one-time sign-in redeem (must run before requireAdmin) ----
+      const goRedeemMatch = path.match(/^\/go\/([A-Za-z0-9]{8,32})\/redeem$/);
+      if (goRedeemMatch && request.method === 'POST') {
+        const code = goRedeemMatch[1];
+        const rows = await supabaseRest<Record<string, unknown>[]>(
+          env,
+          `admin_sign_in_links?code=eq.${encodeURIComponent(code)}`
+            + `&select=code,clerk_token,user_id,public_id,expires_at,used_at&limit=1`,
+        );
+        const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        if (!row) return json(env, 404, { error: 'link_not_found' }, request);
+        if (row.used_at) return json(env, 410, { error: 'link_used' }, request);
+        const expiresAt = new Date(String(row.expires_at || 0)).getTime();
+        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+          return json(env, 410, { error: 'link_expired' }, request);
+        }
+        const token = String(row.clerk_token || '');
+        if (!token) return json(env, 500, { error: 'token_missing' }, request);
+        await supabaseRest(
+          env,
+          `admin_sign_in_links?code=eq.${encodeURIComponent(code)}`,
+          {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ used_at: new Date().toISOString(), clerk_token: '' }),
+          },
+        );
+        return json(env, 200, {
+          ok: true,
+          token,
+          public_id: row.public_id || null,
+        }, request);
+      }
+
       // ---- End impersonation (signed-in as target; must run before requireAdmin) ----
       if (path === '/impersonate/end' && request.method === 'POST') {
         const session = await requireSignedIn(env, request);
@@ -675,42 +725,51 @@ export default {
         return json(env, 200, { ok: true, report: Array.isArray(updated) ? updated[0] : updated }, request);
       }
 
-      // Support: password reset email via Clerk
+      // Support: one-time sign-in link on this site (not Clerk localhost URL)
       const resetMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/password-reset$/);
       if (resetMatch && request.method === 'POST') {
         const profile = await fetchProfileByPublicId(env, resetMatch[1]);
         if (!profile) return json(env, 404, { error: 'not_found' }, request);
-        // Fetch primary email from Clerk
-        const userRes = await clerkApi(env, `/users/${encodeURIComponent(profile.user_id)}`);
-        const userData = await userRes.json().catch(() => null) as Record<string, unknown> | null;
-        if (!userRes.ok || !userData) {
-          return json(env, 502, { error: 'clerk_user_lookup_failed' }, request);
+
+        const tokenData = await createSignInToken(env, profile.user_id, OTL_TTL_SECONDS);
+        const clerkToken = String(tokenData?.token || '');
+        if (!clerkToken) return json(env, 502, { error: 'sign_in_token_failed' }, request);
+
+        let code = '';
+        for (let attempt = 0; attempt < 6; attempt++) {
+          code = randomOtlCode(14);
+          try {
+            await supabaseRest(env, 'admin_sign_in_links', {
+              method: 'POST',
+              headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({
+                code,
+                clerk_token: clerkToken,
+                user_id: profile.user_id,
+                public_id: profile.public_id,
+                created_by: effectiveAdminId,
+                expires_at: new Date(Date.now() + OTL_TTL_SECONDS * 1000).toISOString(),
+              }),
+            });
+            break;
+          } catch (err) {
+            if (attempt === 5) throw err;
+            code = '';
+          }
         }
-        const emails = Array.isArray(userData.email_addresses) ? userData.email_addresses as Record<string, unknown>[] : [];
-        const primaryId = userData.primary_email_address_id;
-        const primary = emails.find((e) => e.id === primaryId) || emails[0];
-        const email = primary && primary.email_address ? String(primary.email_address) : '';
-        if (!email) return json(env, 400, { error: 'no_email' }, request);
+        if (!code) return json(env, 500, { error: 'link_create_failed' }, request);
 
-        const resetRes = await clerkApi(env, '/email_addresses/prepare_verification', {
-          method: 'POST',
-          body: JSON.stringify({}),
-        }).catch(() => null);
-        void resetRes;
-
-        // Use Clerk create password reset / invitation pattern via backend sign-in token link instead:
-        // Create a sign-in token so support can share a one-time login, plus audit.
-        const tokenData = await createSignInToken(env, profile.user_id);
-        await writeAudit(env, effectiveAdminId, 'password_reset_token', profile.user_id, {
+        const url = `${siteOrigin(env)}/go/${code}`;
+        await writeAudit(env, effectiveAdminId, 'one_time_sign_in_link', profile.user_id, {
           public_id: profile.public_id,
-          email,
+          code,
         });
         return json(env, 200, {
           ok: true,
-          email,
-          token: tokenData?.token || null,
-          url: tokenData?.url || null,
-          note: 'One-time sign-in token created for support. Share securely with the user.',
+          url,
+          code,
+          expires_in_seconds: OTL_TTL_SECONDS,
+          note: 'One-time link on this site. Share securely; expires in 2 hours.',
         }, request);
       }
 

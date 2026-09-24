@@ -154,6 +154,14 @@
             navId: null,
             compact: false,
         },
+        '/go': {
+            page: 'pages/go.html',
+            title: 'Sign in | usertypo_',
+            description: 'One-time sign-in link for usertypo_.',
+            robots: 'noindex, nofollow',
+            navId: null,
+            compact: false,
+        },
         '/userstats': {
             page: 'pages/userstats.html',
             title: 'User Stats | usertypo_',
@@ -229,6 +237,8 @@
         let p = pathname || '/';
         const joinMatch = p.match(/^\/join\/(\d{4})$/);
         if (joinMatch) return '/room';
+        const goMatch = p.match(/^\/go\/([A-Za-z0-9]{8,32})\/?$/);
+        if (goMatch) return '/go';
         if (p.endsWith('/index.html')) p = p.replace(/\/index\.html$/, '/') || '/';
         if (p.endsWith('.html')) {
             const file = p.split('/').pop();
@@ -244,6 +254,12 @@
             const search = '?code=' + encodeURIComponent(joinMatch[1]);
             history.replaceState({ spa: true, path: '/room', search: search }, '', '/room' + search);
             return { path: '/room', route: routes['/room'] || null };
+        }
+        const goMatch = window.location.pathname.match(/^\/go\/([A-Za-z0-9]{8,32})\/?$/);
+        if (goMatch) {
+            const search = '?c=' + encodeURIComponent(goMatch[1]);
+            history.replaceState({ spa: true, path: '/go', search: search }, '', '/go' + search);
+            return { path: '/go', route: routes['/go'] || null };
         }
         const path = normalizePath(window.location.pathname);
         return { path, route: routes[path] || null };
