@@ -102,6 +102,7 @@ function main() {
         'sso-callback',
         'room',
         'dual',
+        'go',
     ];
     for (const route of spaShellRoutes) {
         fs.copyFileSync(indexHtml, path.join(DIST, route + '.html'));

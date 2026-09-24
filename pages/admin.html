@@ -510,18 +510,38 @@
         var err = $('admin-user-error');
         try {
             if (action === 'ban') {
-                var reason = window.prompt('Ban reason:', 'Banned by admin') || '';
-                if (!reason) return;
-                await api.banUser(selectedPublicId, reason);
+                var reason = await api.prompt('Ban reason for this account:', {
+                    title: 'Ban user',
+                    icon: 'block',
+                    value: 'Banned by admin',
+                    okLabel: 'Ban',
+                });
+                if (reason == null || !String(reason).trim()) return;
+                await api.banUser(selectedPublicId, String(reason).trim());
             } else if (action === 'unban') {
+                var unbanOk = await api.confirm('Unban this user?', {
+                    title: 'Unban user',
+                    icon: 'lock_open',
+                    okLabel: 'Unban',
+                });
+                if (!unbanOk) return;
                 await api.unbanUser(selectedPublicId);
             } else if (action === 'purge') {
-                if (!window.confirm('Delete all typing sessions for this user? This cannot be undone.')) return;
+                var purgeOk = await api.confirm(
+                    'Delete all typing sessions for this user? This cannot be undone.',
+                    { title: 'Purge scores', icon: 'delete', okLabel: 'Delete all' }
+                );
+                if (!purgeOk) return;
                 await api.purgeScores(selectedPublicId);
             } else if (action === 'delete-session') {
                 var sessionId = el && el.getAttribute('data-session-id');
                 if (!sessionId) return;
-                if (!window.confirm('Delete this typing test? This cannot be undone.')) return;
+                var delOk = await api.confirm('Delete this typing test? This cannot be undone.', {
+                    title: 'Delete test',
+                    icon: 'delete',
+                    okLabel: 'Delete',
+                });
+                if (!delOk) return;
                 await api.deleteSession(selectedPublicId, sessionId);
             } else if (action === 'set-username') {
                 var currentName = '';
@@ -529,7 +549,12 @@
                     var titleEl = $('admin-user-detail') && $('admin-user-detail').querySelector('.admin-row-title');
                     currentName = titleEl ? String(titleEl.textContent || '').replace(/\s*banned\s*$/i, '').trim() : '';
                 } catch (e) { /* ignore */ }
-                var next = window.prompt('New username (3–32 characters):', currentName || '');
+                var next = await api.prompt('New username (3–32 characters):', {
+                    title: 'Change username',
+                    icon: 'edit',
+                    value: currentName || '',
+                    okLabel: 'Save',
+                });
                 if (next == null) return;
                 next = String(next).trim();
                 if (next.length < 3 || next.length > 32) {
@@ -538,7 +563,14 @@
                 await api.setUsername(selectedPublicId, next);
             } else if (action === 'reset-token') {
                 var tok = await api.passwordResetToken(selectedPublicId);
-                window.prompt('One-time sign-in URL / token (share securely):', tok.url || tok.token || '');
+                var link = tok.url || '';
+                if (!link) throw new Error('link_missing');
+                await api.showResult(
+                    'Share this one-time link securely. It expires in 2 hours and works only once. Opening it signs into that account on this site.',
+                    link,
+                    { title: 'One-time sign-in link', icon: 'link' }
+                );
+                return;
             } else if (action === 'impersonate') {
                 await api.impersonate(selectedPublicId);
                 return;

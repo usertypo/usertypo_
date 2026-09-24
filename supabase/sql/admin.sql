@@ -128,3 +128,28 @@ $$;
 
 revoke all on function public.admin_avg_visit_seconds(text) from public;
 grant execute on function public.admin_avg_visit_seconds(text) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- One-time support sign-in links (same-domain /go/:code)
+-- ---------------------------------------------------------------------------
+create table if not exists public.admin_sign_in_links (
+  code text primary key,
+  clerk_token text not null,
+  user_id text not null,
+  public_id text,
+  created_by text,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists admin_sign_in_links_expires_idx
+  on public.admin_sign_in_links (expires_at);
+
+alter table public.admin_sign_in_links enable row level security;
+
+drop policy if exists admin_sign_in_links_no_direct on public.admin_sign_in_links;
+create policy admin_sign_in_links_no_direct on public.admin_sign_in_links
+  for all
+  using (false)
+  with check (false);
