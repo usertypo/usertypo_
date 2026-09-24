@@ -89,32 +89,50 @@
         btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
         if (tip) {
             tip.textContent = label;
-            if (btn.matches(':hover')) positionChillTip();
+            if (tip.classList.contains('is-visible')) positionChillTip();
         }
+    }
+
+    function hideChillTip() {
+        var tip = document.getElementById('header-chill-tip');
+        if (!tip) return;
+        tip.classList.remove('is-visible');
+        tip.setAttribute('aria-hidden', 'true');
     }
 
     function positionChillTip() {
         var btn = document.getElementById('header-chill-btn');
         var tip = document.getElementById('header-chill-tip');
-        if (!btn || !tip || btn.classList.contains('hidden')) return;
+        if (!btn || !tip || btn.classList.contains('hidden')) {
+            hideChillTip();
+            return;
+        }
 
-        // Start centered under the button, then shift if it would leave the viewport.
-        tip.style.left = '50%';
-        tip.style.right = 'auto';
-        tip.style.transform = 'translateX(-50%)';
+        // Fixed to the viewport (tip lives outside the button) so clamp isn't
+        // trapped by transforms / overflow-x-hidden ancestors.
+        tip.style.left = '0px';
+        tip.style.top = '0px';
 
-        var tipRect = tip.getBoundingClientRect();
+        var tipW = tip.offsetWidth || 0;
+        var tipH = tip.offsetHeight || 0;
+        var btnRect = btn.getBoundingClientRect();
         var pad = 8;
         var vw = window.innerWidth || document.documentElement.clientWidth || 0;
-        if (!vw || !tipRect.width) return;
+        var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        if (!vw || !tipW) return;
 
-        var shift = 0;
-        if (tipRect.right > vw - pad) shift = (vw - pad) - tipRect.right;
-        if (tipRect.left + shift < pad) shift = pad - tipRect.left;
+        var left = btnRect.left + (btnRect.width / 2) - (tipW / 2);
+        var top = btnRect.bottom + 8;
 
-        tip.style.transform = shift
-            ? ('translateX(calc(-50% + ' + Math.round(shift) + 'px))')
-            : 'translateX(-50%)';
+        left = Math.max(pad, Math.min(left, vw - pad - tipW));
+        if (top + tipH > vh - pad) {
+            top = Math.max(pad, btnRect.top - tipH - 8);
+        }
+
+        tip.style.left = Math.round(left) + 'px';
+        tip.style.top = Math.round(top) + 'px';
+        tip.classList.add('is-visible');
+        tip.setAttribute('aria-hidden', 'false');
     }
 
     function wireChillBtn() {
@@ -126,17 +144,24 @@
             e.stopPropagation();
             setChillMode(!isChillMode());
             try { btn.blur(); } catch (err) { /* ignore */ }
+            hideChillTip();
         });
         btn.addEventListener('mouseenter', function () {
-            // After paint so tip text/size is current
             requestAnimationFrame(positionChillTip);
         });
+        btn.addEventListener('mouseleave', hideChillTip);
         btn.addEventListener('focus', function () {
             requestAnimationFrame(positionChillTip);
         });
+        btn.addEventListener('blur', hideChillTip);
         window.addEventListener('resize', function () {
-            if (btn.matches(':hover') || document.activeElement === btn) positionChillTip();
+            var tip = document.getElementById('header-chill-tip');
+            if (tip && tip.classList.contains('is-visible')) positionChillTip();
         });
+        window.addEventListener('scroll', function () {
+            var tip = document.getElementById('header-chill-tip');
+            if (tip && tip.classList.contains('is-visible')) positionChillTip();
+        }, true);
     }
 
     function wireAccountFocus() {

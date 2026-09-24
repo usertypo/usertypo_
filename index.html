@@ -328,12 +328,36 @@
             margin-right: 4px;
             margin-bottom: 4px;
         }
-        /* Info / chill button forced-active state (mirrors hover) */
-        #graph-info-btn.info-active,
-        #header-chill-btn.info-active {
+        /* Info / chill button forced-active state (mirrors hover).
+           Apply to the icon — not the button — so a tip portal isn't trapped
+           by a transformed ancestor (fixed/absolute clamp would fail). */
+        #graph-info-btn.info-active {
             transform: scale(1.1) !important;
             box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1))) !important;
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
+        }
+        #header-chill-btn.info-active {
+            box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1))) !important;
+            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
+        }
+        #header-chill-btn.info-active > .material-symbols-outlined {
+            transform: scale(1.1);
+        }
+
+        #header-chill-tip {
+            position: fixed;
+            z-index: 400;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transform: none;
+        }
+        #header-chill-tip.is-visible {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Header chill + profile: never show browser focus rings after click-then-type */
@@ -1232,18 +1256,19 @@
                 <span class="material-symbols-outlined text-[1.25rem]">admin_panel_settings</span>
             </a>
             <button type="button" id="header-chill-btn"
-                class="hidden relative w-7 h-7 flex items-center justify-center rounded-full glass-panel transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50 group"
+                class="hidden relative w-7 h-7 flex items-center justify-center rounded-full glass-panel transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50"
                 aria-label="Chill mode" aria-pressed="false" aria-hidden="true">
                 <span class="material-symbols-outlined text-primary text-[0.85rem] transition-transform duration-300" aria-hidden="true">spa</span>
-                <span id="header-chill-tip"
-                    class="absolute top-full left-1/2 mt-2 px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[100]"
-                    style="transform: translateX(-50%)">Chill — pause saving tests</span>
             </button>
             <a href="/signin" data-spa-link id="header-account-btn"
                 class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group outline-none"
                 title="Sign in" aria-label="Sign in"></a>
         </div>
     </header>
+
+    <span id="header-chill-tip"
+        class="px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white whitespace-nowrap"
+        aria-hidden="true">Chill — pause saving tests</span>
 
     <div id="admin-impersonation-banner"
         class="hidden shrink-0 z-[60] flex items-center justify-center gap-3 px-4 py-2 text-sm font-semibold"
@@ -1653,7 +1678,7 @@
     <script src="screenshot.js?v=5"></script>
     <script src="js/config/public.js?v=11"></script>
     <script src="js/cookies.js?v=4"></script>
-    <script src="settings.js?v=95"></script>
+    <script src="settings.js?v=96"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=24"></script>
     <!-- Auth + data API (before router) -->
