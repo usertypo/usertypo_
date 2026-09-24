@@ -56,6 +56,19 @@
         } catch (e) { /* ignore */ }
     }
 
+    function clerkActorSession() {
+        try {
+            var session = window.Clerk && window.Clerk.session;
+            return session && session.actor ? session : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clerkIsImpersonating() {
+        return !!clerkActorSession();
+    }
+
     /**
      * Drop stale impersonation meta after the admin session returns (or user
      * re-signs in as admin while sessionStorage still says "Viewing as …").
@@ -64,6 +77,8 @@
     function reconcileImpersonationMeta() {
         var meta = getImpersonationMeta();
         if (!meta) return null;
+        // Live Clerk actor session wins — never clear meta while still impersonating.
+        if (clerkIsImpersonating()) return meta;
         var current = currentPublicId();
         if (!current) return meta;
         var target = normalizePublicId(meta.target_public_id);
@@ -76,6 +91,7 @@
     }
 
     function isImpersonating() {
+        if (clerkIsImpersonating()) return true;
         var meta = reconcileImpersonationMeta();
         if (!meta) return false;
         var current = currentPublicId();
@@ -372,23 +388,70 @@
 
     function syncAdminUi() {
         var meta = reconcileImpersonationMeta();
+        var impersonating = isImpersonating();
         applyLeaderboardFlagVisibility();
         var btn = document.getElementById('header-admin-btn');
         if (btn) {
-            var show = isAdmin() && !isImpersonating();
+            var show = isAdmin() && !impersonating;
             btn.classList.toggle('hidden', !show);
             btn.setAttribute('aria-hidden', show ? 'false' : 'true');
         }
         var banner = document.getElementById('admin-impersonation-banner');
         if (banner) {
-            var showBanner = !!meta && isImpersonating();
-            banner.classList.toggle('hidden', !showBanner);
-            banner.setAttribute('aria-hidden', showBanner ? 'false' : 'true');
+            banner.classList.toggle('hidden', !impersonating);
+            banner.setAttribute('aria-hidden', impersonating ? 'false' : 'true');
             var label = document.getElementById('admin-impersonation-label');
-            if (label && meta && showBanner) {
-                label.textContent = 'Viewing as ' + (meta.target_username || meta.target_public_id || 'user');
+            if (label && impersonating) {
+                var who = (meta && (meta.target_username || meta.target_public_id))
+                    || currentPublicId()
+                    || (window.Clerk && window.Clerk.user && (window.Clerk.user.username || window.Clerk.user.id))
+                    || 'user';
+                label.textContent = 'Viewing as ' + who;
             }
         }
+    }
+
+    function returnToAdminFromUi(triggerEl) {
+        if (!window.usertypoAdmin || typeof window.usertypoAdmin.endImpersonation !== 'function') {
+            return Promise.reject(new Error('admin_api_missing'));
+        }
+        if (triggerEl) {
+            if (triggerEl.dataset.busy === '1') return Promise.resolve();
+            triggerEl.dataset.busy = '1';
+            if ('disabled' in triggerEl) triggerEl.disabled = true;
+        }
+        return window.usertypoAdmin.endImpersonation()
+            .then(function (result) {
+                window.location.assign((result && result.redirect) || '/admin');
+            })
+            .catch(function (err) {
+                console.error('[usertypo admin] return failed', err);
+                try { sessionStorage.removeItem(IMPERSONATE_KEY); } catch (e) { /* ignore */ }
+                if (triggerEl) {
+                    triggerEl.dataset.busy = '0';
+                    if ('disabled' in triggerEl) triggerEl.disabled = false;
+                }
+                window.location.assign('/signin');
+            });
+    }
+
+    function wireClerkImpersonationFab() {
+        if (document.documentElement.dataset.clerkFabWired === '1') return;
+        document.documentElement.dataset.clerkFabWired = '1';
+        // Capture-phase: replace Clerk's default "sign out of impersonation" with return-to-admin.
+        document.addEventListener('click', function (e) {
+            if (!clerkIsImpersonating()) return;
+            var el = e.target && e.target.closest
+                ? e.target.closest(
+                    '.cl-impersonationFab, .cl-impersonationFabActionLink, .cl-impersonationFabIconContainer, .cl-impersonationFabIcon, .cl-impersonationFabTitle'
+                )
+                : null;
+            if (!el) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+            returnToAdminFromUi(el);
+        }, true);
     }
 
     window.usertypoAdmin = {
@@ -420,6 +483,7 @@
 
     function boot() {
         syncAdminUi();
+        wireClerkImpersonationFab();
         if (window.usertypoAuth && typeof window.usertypoAuth.onChange === 'function') {
             window.usertypoAuth.onChange(function () {
                 syncAdminUi();
@@ -436,22 +500,7 @@
         if (returnBtn && !returnBtn.dataset.wired) {
             returnBtn.dataset.wired = '1';
             returnBtn.addEventListener('click', function () {
-                if (!window.usertypoAdmin || typeof window.usertypoAdmin.endImpersonation !== 'function') return;
-                if (returnBtn.dataset.busy === '1') return;
-                returnBtn.dataset.busy = '1';
-                returnBtn.disabled = true;
-                window.usertypoAdmin.endImpersonation()
-                    .then(function (result) {
-                        window.location.assign((result && result.redirect) || '/admin');
-                    })
-                    .catch(function (err) {
-                        console.error('[usertypo admin] return failed', err);
-                        // Last resort if something unexpected throws: drop banner and re-auth.
-                        try { sessionStorage.removeItem(IMPERSONATE_KEY); } catch (e) { /* ignore */ }
-                        returnBtn.dataset.busy = '0';
-                        returnBtn.disabled = false;
-                        window.location.assign('/signin');
-                    });
+                returnToAdminFromUi(returnBtn);
             });
         }
     }

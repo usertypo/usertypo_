@@ -948,3 +948,23 @@ html {
         text-align: center;
     }
 }
+
+/* Clerk ImpersonationFab — smaller eye; click is intercepted to return-to-admin. */
+.cl-impersonationFab {
+    transform: scale(0.55);
+    transform-origin: bottom right;
+    bottom: 0.75rem !important;
+    right: 0.75rem !important;
+}
+.cl-impersonationFabIconContainer {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+}
+.cl-impersonationFabIcon {
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+}
+.cl-impersonationFabTitle,
+.cl-impersonationFabActionLink {
+    font-size: 0.7rem !important;
+}
