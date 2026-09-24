@@ -96,6 +96,7 @@ const DEFAULTS = {
             secondaryColor: '#cccccc',
             bgColor: '#000000',
             bgSpectrumPos: 0,
+            bgImage: null,
         },
         customPresets: [],
     },
@@ -110,6 +111,7 @@ const CUSTOM_THEME_DEFAULT = {
     secondaryColor: '#cccccc',
     bgColor: '#000000',
     bgSpectrumPos: 0,
+    bgImage: null,
 };
 const MAX_CUSTOM_PRESETS = 3;
 
@@ -156,6 +158,14 @@ function pullSharedCustomThemes(settings) {
                 p?.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
                 CUSTOM_THEME_DEFAULT.bgColor
             );
+            const normalizeBg = (raw) => (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(raw)
+                    : (raw && raw.url ? raw : null)
+            );
+            // Cookie may omit data:/blob: URLs — keep a durable local image if shared has none.
+            const sharedBg = normalizeBg(p?.bgImage);
+            const localBg = normalizeBg(localPresets[i] && localPresets[i].bgImage);
             return {
                 name: (p && p.name) || `Custom ${i + 1}`,
                 mode,
@@ -163,6 +173,7 @@ function pullSharedCustomThemes(settings) {
                 secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+                bgImage: sharedBg || localBg,
             };
         });
 
@@ -181,6 +192,13 @@ function pullSharedCustomThemes(settings) {
             ),
             bgColor,
             bgSpectrumPos: resolveSpectrumPos(mode, bgColor, shared.customTheme.bgSpectrumPos),
+            bgImage: (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(shared.customTheme.bgImage)
+                    : (shared.customTheme.bgImage && shared.customTheme.bgImage.url
+                        ? shared.customTheme.bgImage
+                        : null)
+            ),
         };
     }
 
@@ -194,11 +212,19 @@ function pushSharedCustomThemes(settings) {
         return false;
     }
     const updatedAt = Date.now();
-    const presets = Array.isArray(settings.lookFeel.customPresets)
+    // Cookie budget is tiny — never ship data:/blob: URLs (localStorage + cloud keep those).
+    const cookieSafeBg = (bg) => {
+        if (!bg || !bg.url) return null;
+        const url = String(bg.url);
+        if (url.indexOf('data:') === 0 || url.indexOf('blob:') === 0) return null;
+        return bg;
+    };
+    const presets = (Array.isArray(settings.lookFeel.customPresets)
         ? settings.lookFeel.customPresets.slice(0, MAX_CUSTOM_PRESETS)
-        : [];
+        : []
+    ).map((p) => (p ? { ...p, bgImage: cookieSafeBg(p.bgImage) } : p));
     const customTheme = settings.lookFeel.customTheme && typeof settings.lookFeel.customTheme === 'object'
-        ? settings.lookFeel.customTheme
+        ? { ...settings.lookFeel.customTheme, bgImage: cookieSafeBg(settings.lookFeel.customTheme.bgImage) }
         : null;
     let ok = false;
     try {
@@ -376,6 +402,13 @@ function loadSettings() {
                     settings.lookFeel.customTheme.bgSpectrumPos,
                     null
                 ),
+                bgImage: (
+                    window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                        ? window.usertypoThemeBgEditor.normalizeBgImage(settings.lookFeel.customTheme.bgImage)
+                        : (settings.lookFeel.customTheme.bgImage && settings.lookFeel.customTheme.bgImage.url
+                            ? settings.lookFeel.customTheme.bgImage
+                            : null)
+                ),
             };
             if (settings.lookFeel.customTheme.bgSpectrumPos == null) {
                 settings.lookFeel.customTheme.bgSpectrumPos = spectrumPosFromBgColor(
@@ -402,6 +435,11 @@ function loadSettings() {
                         secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                         bgColor,
                         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+                        bgImage: (
+                            window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                                ? window.usertypoThemeBgEditor.normalizeBgImage(p?.bgImage)
+                                : (p?.bgImage && p.bgImage.url ? p.bgImage : null)
+                        ),
                     };
                 });
         }
@@ -693,6 +731,20 @@ function isLightModeValue(mode) {
 function getCustomThemeConfig(settings, themeName) {
     const lf = settings?.lookFeel || {};
     const name = themeName || lf.colorTheme || 'custom';
+    const normalizeBg = (raw) => {
+        if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function') {
+            return window.usertypoThemeBgEditor.normalizeBgImage(raw);
+        }
+        if (!raw || typeof raw !== 'object' || !raw.url) return null;
+        return {
+            id: String(raw.id || 'custom'),
+            url: String(raw.url),
+            opacity: Math.max(0.05, Math.min(1, Number(raw.opacity) || 0.75)),
+            zoom: Math.max(1, Math.min(3, Number(raw.zoom) || 1)),
+            offsetX: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetX)) ? Number(raw.offsetX) : 0.5)),
+            offsetY: Math.max(0, Math.min(1, Number.isFinite(Number(raw.offsetY)) ? Number(raw.offsetY) : 0.5)),
+        };
+    };
     if (typeof name === 'string' && name.startsWith('custom:')) {
         const idx = parseInt(name.slice(7), 10);
         const preset = Array.isArray(lf.customPresets) ? lf.customPresets[idx] : null;
@@ -708,6 +760,7 @@ function getCustomThemeConfig(settings, themeName) {
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+                bgImage: normalizeBg(preset.bgImage),
                 name: preset.name || `Custom ${idx + 1}`,
                 presetIndex: idx,
             };
@@ -725,6 +778,7 @@ function getCustomThemeConfig(settings, themeName) {
         secondaryColor: normalizeHexColor(live.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
         bgColor,
         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, live.bgSpectrumPos),
+        bgImage: normalizeBg(live.bgImage),
         name: 'Custom',
         presetIndex: null,
     };
@@ -930,6 +984,8 @@ function isCustomThemeName(themeName) {
  */
 function findMatchingBuiltInThemeName(config) {
     if (!config || typeof config !== 'object') return null;
+    // Background images make the theme custom even when colors match a built-in.
+    if (config.bgImage && config.bgImage.url) return null;
     const main = normalizeHexColor(config.mainColor, '');
     const secondary = normalizeHexColor(config.secondaryColor, '');
     const bg = normalizeHexColor(config.bgColor, '');
@@ -1117,11 +1173,51 @@ function syncCustomThemeEditor(settings) {
     } finally {
         endCustomThemeSync();
     }
+    if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.syncButton === 'function') {
+        try { window.usertypoThemeBgEditor.syncButton(); } catch (e) { /* ignore */ }
+    }
 }
 
 function renderCustomThemePresets(settings) {
     if (!settings) settings = loadSettings();
     forEachCustomThemeEditor((editor) => renderCustomThemePresetsInto(editor, settings));
+}
+
+/**
+ * Mini "viewport" of a preset's background image using the saved crop.
+ * Mirrors applyThemeBackgroundImage: cover × zoom, offset 1 = left/top edge aligned.
+ */
+function renderPresetBgThumb(bgImage, bg, main, secondary) {
+    const zoom = Math.max(1, Math.min(3, Number(bgImage.zoom) || 1));
+    const opacity = Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75));
+    const ox = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5));
+    const oy = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5));
+    const px = (1 - ox) * 100;
+    const py = (1 - oy) * 100;
+    const url = String(bgImage.url)
+        .replace(/'/g, '%27')
+        .replace(/"/g, '%22')
+        .replace(/\)/g, '%29')
+        .replace(/\(/g, '%28');
+    const imgStyle = [
+        'position:absolute',
+        'display:block',
+        `width:${zoom * 100}%`,
+        `height:${zoom * 100}%`,
+        `left:${(px * (1 - zoom)).toFixed(3)}%`,
+        `top:${(py * (1 - zoom)).toFixed(3)}%`,
+        `background-image:url('${url}')`,
+        'background-size:cover',
+        `background-position:${px.toFixed(3)}% ${py.toFixed(3)}%`,
+        'background-repeat:no-repeat',
+        `opacity:${opacity}`,
+    ].join(';');
+    const dot = (color) => `<b style="display:block;width:0.4rem;height:0.4rem;border-radius:9999px;background:${color};box-shadow:0 0 0 1px rgba(0,0,0,0.45)"></b>`;
+    return `
+                <div class="custom-preset-swatches has-bg-image" aria-hidden="true" style="position:relative;display:block;background:${bg}">
+                    <i style="${imgStyle}"></i>
+                    <span style="position:absolute;right:0.2rem;bottom:0.2rem;display:flex;gap:0.15rem">${dot(main)}${dot(secondary)}</span>
+                </div>`;
 }
 
 function renderCustomThemePresetsInto(editor, settings) {
@@ -1155,13 +1251,16 @@ function renderCustomThemePresetsInto(editor, settings) {
         const name = preset.name || `Custom ${index + 1}`;
         const themeId = `custom:${index}`;
         const activeClass = active === themeId ? ' is-active' : '';
-        return `
-            <div class="custom-preset-card${activeClass}" data-preset-index="${index}">
+        const thumb = preset.bgImage && preset.bgImage.url
+            ? renderPresetBgThumb(preset.bgImage, bg, main, secondary)
+            : `
                 <div class="custom-preset-swatches" aria-hidden="true">
                     <i style="background:${bg}"></i>
                     <i style="background:${main}"></i>
                     <i style="background:${secondary}"></i>
-                </div>
+                </div>`;
+        return `
+            <div class="custom-preset-card${activeClass}" data-preset-index="${index}">${thumb}
                 <div class="custom-preset-meta">
                     <div class="name">${name}</div>
                     <div class="sub">${mode} · ${main}</div>
@@ -1190,6 +1289,7 @@ function readCustomThemeFromEditor(editor) {
             secondaryColor: fallback.secondaryColor,
             bgColor: fallback.bgColor,
             bgSpectrumPos: fallback.bgSpectrumPos,
+            bgImage: fallback.bgImage || null,
         };
     }
     const modeBtn = root.querySelector('[data-custom-theme-mode] .opt-btn.active');
@@ -1222,6 +1322,7 @@ function readCustomThemeFromEditor(editor) {
         secondaryColor,
         bgColor,
         bgSpectrumPos,
+        bgImage: fallback.bgImage || null,
     };
 }
 
@@ -1247,11 +1348,19 @@ function commitCustomTheme(partial, options = {}) {
             partial?.bgColor ?? current.bgColor ?? CUSTOM_THEME_DEFAULT.bgColor,
             CUSTOM_THEME_DEFAULT.bgColor
         ),
+        bgImage: Object.prototype.hasOwnProperty.call(partial || {}, 'bgImage')
+            ? (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(partial.bgImage)
+                    : (partial.bgImage && partial.bgImage.url ? partial.bgImage : null)
+            )
+            : (current.bgImage && current.bgImage.url ? current.bgImage : null),
     };
 
     // Switching Light/Dark reseeds from Paper / Abyss defaults
     if (options.seedFromMode) {
-        next = getModeDefaults(next.mode);
+        const seeded = getModeDefaults(next.mode);
+        next = { ...seeded, bgImage: next.bgImage };
     } else if (partial && Object.prototype.hasOwnProperty.call(partial, 'bgSpectrumPos')) {
         next.bgSpectrumPos = normalizeSpectrumPos(partial.bgSpectrumPos, 0);
     } else if (
@@ -1313,6 +1422,7 @@ function saveCustomThemePreset() {
         secondaryColor: cfg.secondaryColor,
         bgColor: cfg.bgColor,
         bgSpectrumPos: normalizeSpectrumPos(cfg.bgSpectrumPos, spectrumPosFromBgColor(cfg.mode, cfg.bgColor)),
+        bgImage: cfg.bgImage || null,
     });
     settings.lookFeel.colorTheme = `custom:${index}`;
     saveSettings(settings);
@@ -1344,6 +1454,11 @@ function applyCustomThemePreset(index) {
         secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
         bgColor,
         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+        bgImage: (
+            window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                ? window.usertypoThemeBgEditor.normalizeBgImage(preset.bgImage)
+                : (preset.bgImage && preset.bgImage.url ? preset.bgImage : null)
+        ),
     };
     const builtInMatch = findMatchingBuiltInThemeName(settings.lookFeel.customTheme);
     settings.lookFeel.colorTheme = builtInMatch || `custom:${idx}`;
@@ -1366,6 +1481,7 @@ function deleteCustomThemePreset(index) {
     if (!Array.isArray(presets) || !presets[index]) return;
 
     const current = settings.lookFeel.colorTheme;
+    const removedBgUrl = presets[index].bgImage && presets[index].bgImage.url;
     presets.splice(index, 1);
 
     if (current === `custom:${index}`) {
@@ -1389,6 +1505,9 @@ function deleteCustomThemePreset(index) {
     syncCustomThemeEditor(settings);
     notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
+    if (removedBgUrl && window.usertypoThemeAssets && typeof window.usertypoThemeAssets.deleteByUrl === 'function') {
+        window.usertypoThemeAssets.deleteByUrl(removedBgUrl).catch(() => { /* ignore */ });
+    }
 }
 
 function syncColorThemeSelectLabel(settings) {
@@ -2007,6 +2126,148 @@ function embedGlowIntensityInCss(css) {
     );
 
     return out;
+}
+
+/**
+ * Layer a theme background image over #app-backdrop (behind page content).
+ * Only active for custom themes that carry a bgImage payload.
+ */
+function applyThemeBackgroundImage(settings, themeName, bgMain) {
+    let layer = document.getElementById('app-bg-image');
+    if (!layer) {
+        const backdrop = document.getElementById('app-backdrop');
+        if (!backdrop || !backdrop.parentNode) return;
+        layer = document.createElement('div');
+        layer.id = 'app-bg-image';
+        layer.setAttribute('aria-hidden', 'true');
+        backdrop.insertAdjacentElement('afterend', layer);
+    }
+
+    const name = themeName || settings?.lookFeel?.colorTheme || '';
+    const cfg = isCustomThemeName(name)
+        ? getCustomThemeConfig(settings, name)
+        : null;
+    const bgImage = cfg && cfg.bgImage && cfg.bgImage.url ? cfg.bgImage : null;
+
+    if (!bgImage) {
+        layer.classList.remove('is-active');
+        layer.style.backgroundImage = 'none';
+        layer.style.opacity = '0';
+        delete layer.dataset.pendingSrc;
+        layer.replaceChildren();
+        document.body.classList.remove('has-theme-bg-image');
+        return;
+    }
+
+    const url = String(bgImage.url);
+    layer._bgParams = {
+        zoom: Math.max(1, Math.min(3, Number(bgImage.zoom) || 1)),
+        opacity: Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75)),
+        ox: Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5)),
+        oy: Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5)),
+        bgMain: bgMain || layer._bgParams?.bgMain || null,
+    };
+
+    const layoutImg = (el) => {
+        const prm = layer._bgParams;
+        const vw = layer.clientWidth || window.innerWidth || 1;
+        const vh = layer.clientHeight || window.innerHeight || 1;
+        const nw = el.naturalWidth || 1;
+        const nh = el.naturalHeight || 1;
+        const cover = Math.max(vw / nw, vh / nh);
+        const dw = nw * cover * prm.zoom;
+        const dh = nh * cover * prm.zoom;
+        const maxX = Math.max(0, (dw - vw) / 2);
+        const maxY = Math.max(0, (dh - vh) / 2);
+        const x = maxX <= 0 ? (vw - dw) / 2 : (vw - dw) / 2 + ((prm.ox * 2 * maxX) - maxX);
+        const y = maxY <= 0 ? (vh - dh) / 2 : (vh - dh) / 2 + ((prm.oy * 2 * maxY) - maxY);
+        layer.style.backgroundColor = prm.bgMain || 'var(--theme-bg, #000)';
+        el.style.width = `${dw}px`;
+        el.style.height = `${dh}px`;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.style.opacity = String(prm.opacity);
+        el.dataset.laidOut = el.dataset.src || '';
+    };
+
+    layer.classList.add('is-active');
+    layer.style.opacity = '1';
+    document.body.classList.add('has-theme-bg-image');
+
+    // Keep solid canvas color on the backdrop; content sheet goes transparent.
+    const spaContent = document.getElementById('spa-content');
+    if (spaContent) spaContent.style.backgroundColor = 'transparent';
+
+    const current = layer.querySelector('img');
+    if (current && current.dataset.src === url && current.complete && current.naturalWidth) {
+        layoutImg(current);
+    } else if (layer.dataset.pendingSrc !== url) {
+        // Decode + lay out off-DOM, then swap in, so no frame ever paints the
+        // new image at its natural size or full opacity.
+        layer.dataset.pendingSrc = url;
+        const next = document.createElement('img');
+        next.alt = '';
+        next.draggable = false;
+        next.dataset.src = url;
+        next.style.opacity = '0';
+        let done = false;
+        const commit = () => {
+            if (done) return;
+            done = true;
+            if (layer.dataset.pendingSrc !== url) return;
+            delete layer.dataset.pendingSrc;
+            if (!next.naturalWidth) return;
+            layoutImg(next);
+            layer.replaceChildren(next);
+        };
+        next.onload = commit;
+        next.onerror = () => {
+            done = true;
+            if (layer.dataset.pendingSrc === url) delete layer.dataset.pendingSrc;
+        };
+        next.src = url;
+        if (next.complete && next.naturalWidth) commit();
+    }
+
+    if (!window.__usertypoBgImageResizeBound) {
+        window.__usertypoBgImageResizeBound = true;
+        window.addEventListener('resize', () => {
+            try {
+                const s = loadSettings();
+                applyThemeBackgroundImage(s, s.lookFeel?.colorTheme, null);
+            } catch (e) { /* ignore */ }
+        });
+    }
+}
+
+/** Resolve when #app-bg-image has painted the given URL (or timeout). */
+function whenThemeBackgroundReady(url, timeoutMs) {
+    const limit = Math.max(200, Number(timeoutMs) || 1200);
+    return new Promise((resolve) => {
+        const started = Date.now();
+        const tick = () => {
+            const layer = document.getElementById('app-bg-image');
+            const img = layer && layer.querySelector('img');
+            if (
+                layer
+                && layer.classList.contains('is-active')
+                && img
+                && img.dataset.src === url
+                && img.dataset.laidOut === url
+                && img.complete
+                && img.naturalWidth > 0
+            ) {
+                resolve(true);
+                return;
+            }
+            if (Date.now() - started >= limit) {
+                resolve(false);
+                return;
+            }
+            requestAnimationFrame(tick);
+        };
+        tick();
+    });
 }
 
 function applyThemeSettings(settings) {
@@ -2653,6 +2914,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         #graph-tooltip,
         .pot-graph-tooltip,
@@ -2740,6 +3003,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         #graph-tooltip,
         .pot-graph-tooltip,
@@ -2843,6 +3108,8 @@ function applyThemeSettings(settings) {
         #custom-prompt-box,
         #player-profile-box,
         #avatar-editor-box,
+        #theme-bg-box,
+        #theme-bg-edit-controls,
         .contact-problem-menu,
         .contact-problem-option,
         .contact-pill-input,
@@ -3521,6 +3788,7 @@ function applyThemeSettings(settings) {
         if (backdrop) backdrop.style.backgroundColor = p.bgMain;
         const spaContent = document.getElementById('spa-content');
         if (spaContent) spaContent.style.backgroundColor = p.bgMain;
+        applyThemeBackgroundImage(settings, themeName, p.bgMain);
     } catch { /* ignore */ }
 
     // Expose live accent for page scripts (copy flash, widgets, etc.)
@@ -4200,6 +4468,11 @@ function selectColorTheme(themeName) {
                 secondaryColor: normalizeHexColor(preset.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
+                bgImage: (
+                    window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                        ? window.usertypoThemeBgEditor.normalizeBgImage(preset.bgImage)
+                        : (preset.bgImage && preset.bgImage.url ? preset.bgImage : null)
+                ),
             };
         }
     }
@@ -5363,4 +5636,6 @@ window.usertypo_settingsApi = {
     isDualPage,
     isRoomPage,
     getEffectiveTapeMode,
+    applyThemeBackgroundImage,
+    whenThemeBackgroundReady,
 };
