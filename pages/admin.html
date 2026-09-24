@@ -528,7 +528,7 @@
                 await api.unbanUser(selectedPublicId);
             } else if (action === 'purge') {
                 var purgeOk = await api.confirm(
-                    'Delete all typing sessions for this user? This cannot be undone.',
+                    'Delete all typing sessions for this user and reset them to level 1? This cannot be undone.',
                     { title: 'Purge scores', icon: 'delete', okLabel: 'Delete all' }
                 );
                 if (!purgeOk) return;

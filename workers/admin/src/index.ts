@@ -620,10 +620,58 @@ export default {
           `typing_sessions?user_id=eq.${encodeURIComponent(profile.user_id)}`,
           { method: 'DELETE', headers: { Prefer: 'return=minimal' } },
         );
+        // Wipe XP history and reset progression so the account is level 1 again.
+        await supabaseRest(
+          env,
+          `xp_events?user_id=eq.${encodeURIComponent(profile.user_id)}`,
+          { method: 'DELETE', headers: { Prefer: 'return=minimal' } },
+        ).catch((err) => {
+          console.warn('[admin] xp_events purge failed', err);
+        });
+        await supabaseRest(
+          env,
+          `user_progression?user_id=eq.${encodeURIComponent(profile.user_id)}`,
+          {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              total_xp: 0,
+              level: 1,
+              xp_into_level: 0,
+              current_streak: 0,
+              longest_streak: 0,
+              last_play_date: null,
+              daily_xp: 0,
+              daily_xp_date: null,
+              updated_at: new Date().toISOString(),
+            }),
+          },
+        ).catch(async (err) => {
+          console.warn('[admin] progression reset patch failed, upserting', err);
+          await supabaseRest(env, 'user_progression', {
+            method: 'POST',
+            headers: {
+              Prefer: 'resolution=merge-duplicates,return=minimal',
+            },
+            body: JSON.stringify({
+              user_id: profile.user_id,
+              total_xp: 0,
+              level: 1,
+              xp_into_level: 0,
+              current_streak: 0,
+              longest_streak: 0,
+              last_play_date: null,
+              daily_xp: 0,
+              daily_xp_date: null,
+              updated_at: new Date().toISOString(),
+            }),
+          });
+        });
         await writeAudit(env, effectiveAdminId, 'purge_scores', profile.user_id, {
           public_id: profile.public_id,
+          progression_reset: true,
         });
-        return json(env, 200, { ok: true }, request);
+        return json(env, 200, { ok: true, progression_reset: true }, request);
       }
 
       const deleteSessionMatch = path.match(
