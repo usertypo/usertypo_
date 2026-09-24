@@ -241,8 +241,15 @@
                 <button type="button" class="admin-btn" id="admin-user-search-btn">
                     <span class="material-symbols-outlined text-[1rem]">search</span> Search
                 </button>
+                <button type="button" class="admin-btn ghost" id="admin-user-clear-btn" title="Clear search and show all">
+                    All users
+                </button>
             </div>
             <div class="admin-list" id="admin-user-results"></div>
+            <div class="admin-search-row" id="admin-user-more-row" style="display:none;">
+                <button type="button" class="admin-btn ghost" id="admin-user-more-btn">Show next 20</button>
+                <span class="admin-muted" id="admin-user-page-meta"></span>
+            </div>
             <div id="admin-user-detail" class="admin-detail hidden"></div>
             <p class="admin-error hidden" id="admin-user-error"></p>
         </section>
@@ -280,6 +287,11 @@
 
     var selectedPublicId = null;
     var reportsStatus = 'open';
+    var USER_PAGE_SIZE = 20;
+    var userListOffset = 0;
+    var userListMode = 'browse'; // 'browse' | 'search'
+    var userListHasMore = false;
+    var userListBusy = false;
 
     function $(id) { return document.getElementById(id); }
 
@@ -331,14 +343,15 @@
         }
     }
 
-    function renderUserResults(users) {
+    function renderUserResults(users, opts) {
         var list = $('admin-user-results');
         if (!list) return;
+        var append = opts && opts.append;
         if (!users || !users.length) {
-            list.innerHTML = '<p class="admin-muted">No users found.</p>';
+            if (!append) list.innerHTML = '<p class="admin-muted">No users found.</p>';
             return;
         }
-        list.innerHTML = users.map(function (u) {
+        var html = users.map(function (u) {
             var name = esc(u.username || u.display_name || u.public_id);
             var ban = u.is_banned ? ' <span class="admin-badge">banned</span>' : '';
             return (
@@ -350,20 +363,81 @@
                 '</div></div></button>'
             );
         }).join('');
+        if (append) list.insertAdjacentHTML('beforeend', html);
+        else list.innerHTML = html;
+    }
+
+    function updateUserPager() {
+        var row = $('admin-user-more-row');
+        var btn = $('admin-user-more-btn');
+        var meta = $('admin-user-page-meta');
+        if (!row) return;
+        var show = userListMode === 'browse' && userListHasMore;
+        row.style.display = show ? 'flex' : 'none';
+        if (btn) btn.disabled = !!userListBusy;
+        if (meta) {
+            var list = $('admin-user-results');
+            var count = list ? list.querySelectorAll('[data-public-id]').length : 0;
+            meta.textContent = count
+                ? (count + ' loaded' + (userListHasMore ? ' · more available' : ''))
+                : '';
+        }
+    }
+
+    async function loadUserPage(opts) {
+        if (!api || userListBusy) return;
+        var reset = !opts || opts.reset !== false;
+        var err = $('admin-user-error');
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        userListBusy = true;
+        updateUserPager();
+        try {
+            if (reset) {
+                userListOffset = 0;
+                userListMode = 'browse';
+                var detail = $('admin-user-detail');
+                if (detail) { detail.classList.add('hidden'); detail.innerHTML = ''; }
+            }
+            var data = await api.listUsers(USER_PAGE_SIZE, userListOffset);
+            var users = data.users || [];
+            renderUserResults(users, { append: !reset && userListOffset > 0 });
+            userListHasMore = !!data.has_more;
+            userListOffset += users.length;
+        } catch (e) {
+            if (err) {
+                err.textContent = e.message || 'Could not load users';
+                err.classList.remove('hidden');
+            }
+        } finally {
+            userListBusy = false;
+            updateUserPager();
+        }
     }
 
     async function searchUsers() {
         var q = ($('admin-user-q') && $('admin-user-q').value) || '';
         var err = $('admin-user-error');
         if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        if (!String(q).trim()) {
+            await loadUserPage({ reset: true });
+            return;
+        }
+        userListBusy = true;
+        userListMode = 'search';
+        userListHasMore = false;
+        updateUserPager();
         try {
             var data = await api.searchUsers(q, 30);
+            userListOffset = 0;
             renderUserResults(data.users || []);
         } catch (e) {
             if (err) {
                 err.textContent = e.message || 'Search failed';
                 err.classList.remove('hidden');
             }
+        } finally {
+            userListBusy = false;
+            updateUserPager();
         }
     }
 
@@ -443,10 +517,8 @@
                 var tok = await api.passwordResetToken(selectedPublicId);
                 window.prompt('One-time sign-in URL / token (share securely):', tok.url || tok.token || '');
             } else if (action === 'impersonate') {
-                var imp = await api.impersonate(selectedPublicId);
-                if (!(imp && imp.redirecting)) {
-                    window.location.assign('/');
-                }
+                // Navigates away via Clerk actor-token URL; do not assign('/').
+                await api.impersonate(selectedPublicId);
                 return;
             }
             await openUser(selectedPublicId);
@@ -505,13 +577,27 @@
                 var name = tab.getAttribute('data-admin-tab');
                 setTab(name);
                 if (name === 'overview') loadOverview();
+                if (name === 'users') loadUserPage({ reset: true });
                 if (name === 'reports') loadReports();
             });
         });
 
         var searchBtn = $('admin-user-search-btn');
         var searchInput = $('admin-user-q');
+        var clearBtn = $('admin-user-clear-btn');
+        var moreBtn = $('admin-user-more-btn');
         if (searchBtn) searchBtn.addEventListener('click', searchUsers);
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                if (searchInput) searchInput.value = '';
+                loadUserPage({ reset: true });
+            });
+        }
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function () {
+                loadUserPage({ reset: false });
+            });
+        }
         if (searchInput) {
             searchInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {

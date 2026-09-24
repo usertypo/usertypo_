@@ -86,6 +86,25 @@ async function avgVisitSeconds(env: Env, userId?: string | null): Promise<number
   }
 }
 
+async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminProfile[]> {
+  return rows.map((row) => ({
+    user_id: String(row.user_id || ''),
+    public_id: String(row.public_id || '').toUpperCase(),
+    username: row.username != null ? String(row.username) : null,
+    display_name: row.display_name != null ? String(row.display_name) : null,
+    avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
+    country_code: row.country_code != null ? String(row.country_code) : null,
+    last_seen_at: row.last_seen_at != null ? String(row.last_seen_at) : null,
+    is_banned: row.is_banned === true,
+    banned_at: row.banned_at != null ? String(row.banned_at) : null,
+    banned_reason: row.banned_reason != null ? String(row.banned_reason) : null,
+    show_on_leaderboard: row.show_on_leaderboard == null ? null : row.show_on_leaderboard !== false,
+  }));
+}
+
+const PROFILE_LIST_SELECT =
+  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
+
 async function searchUsers(env: Env, q: string, limit: number): Promise<AdminProfile[]> {
   const query = q.trim();
   if (!query) return [];
@@ -103,23 +122,31 @@ async function searchUsers(env: Env, q: string, limit: number): Promise<AdminPro
   const rows = await supabaseRest<Record<string, unknown>[]>(
     env,
     `profiles?or=(username.ilike.${encoded},display_name.ilike.${encoded})`
-      + `&select=user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard`
+      + `&select=${PROFILE_LIST_SELECT}`
       + `&order=username.asc&limit=${limit}`,
   );
   if (!Array.isArray(rows)) return [];
-  return rows.map((row) => ({
-    user_id: String(row.user_id || ''),
-    public_id: String(row.public_id || '').toUpperCase(),
-    username: row.username != null ? String(row.username) : null,
-    display_name: row.display_name != null ? String(row.display_name) : null,
-    avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
-    country_code: row.country_code != null ? String(row.country_code) : null,
-    last_seen_at: row.last_seen_at != null ? String(row.last_seen_at) : null,
-    is_banned: row.is_banned === true,
-    banned_at: row.banned_at != null ? String(row.banned_at) : null,
-    banned_reason: row.banned_reason != null ? String(row.banned_reason) : null,
-    show_on_leaderboard: row.show_on_leaderboard == null ? null : row.show_on_leaderboard !== false,
-  }));
+  return mapProfileRows(rows);
+}
+
+async function listUsers(
+  env: Env,
+  limit: number,
+  offset: number,
+): Promise<{ users: AdminProfile[]; has_more: boolean }> {
+  const take = Math.min(50, Math.max(1, limit));
+  const from = Math.max(0, offset);
+  // Fetch one extra row to know whether another page exists.
+  const rows = await supabaseRest<Record<string, unknown>[]>(
+    env,
+    `profiles?select=${PROFILE_LIST_SELECT}`
+      + `&order=last_seen_at.desc.nullslast&order=username.asc`
+      + `&limit=${take + 1}&offset=${from}`,
+  );
+  const list = Array.isArray(rows) ? rows : [];
+  const hasMore = list.length > take;
+  const page = hasMore ? list.slice(0, take) : list;
+  return { users: await mapProfileRows(page), has_more: hasMore };
 }
 
 async function recentSessions(env: Env, userId: string, limit: number) {
@@ -458,10 +485,21 @@ export default {
       }
 
       if (path === '/users' && request.method === 'GET') {
-        const q = String(url.searchParams.get('q') || '');
+        const q = String(url.searchParams.get('q') || '').trim();
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit') || 20) || 20));
+        const offset = Math.max(0, Number(url.searchParams.get('offset') || 0) || 0);
+        if (!q) {
+          const page = await listUsers(env, limit, offset);
+          return json(env, 200, {
+            ok: true,
+            users: page.users,
+            limit,
+            offset,
+            has_more: page.has_more,
+          }, request);
+        }
         const users = await searchUsers(env, q, limit);
-        return json(env, 200, { ok: true, users }, request);
+        return json(env, 200, { ok: true, users, limit, offset: 0, has_more: false }, request);
       }
 
       const userMatch = path.match(/^\/users\/([A-Za-z0-9]{8})$/);
