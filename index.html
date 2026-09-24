@@ -277,6 +277,16 @@
         #theme-bg-edit-layer.pointer-events-auto {
             pointer-events: auto !important;
         }
+        /* Closed edit layer must never intercept clicks (controls used to keep pointer-events:auto). */
+        #theme-bg-edit-layer[aria-hidden="true"],
+        #theme-bg-edit-layer[aria-hidden="true"] * {
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
+        #theme-bg-edit-layer.invisible,
+        #theme-bg-edit-layer.invisible * {
+            pointer-events: none !important;
+        }
         #theme-bg-box,
         #theme-bg-edit-controls {
             border-radius: var(--theme-box-radius, 1.375rem) !important;
@@ -1781,7 +1791,7 @@
     <script src="screenshot.js?v=5"></script>
     <script src="js/config/public.js?v=12"></script>
     <script src="js/cookies.js?v=4"></script>
-    <script src="settings.js?v=100"></script>
+    <script src="settings.js?v=101"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=24"></script>
     <!-- Auth + data API (before router) -->
@@ -1790,9 +1800,9 @@
     <script src="js/auth/clerk.js?v=21"></script>
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js?v=14"></script>
-    <script src="js/api/look-feel.js?v=3"></script>
-    <script src="js/api/theme-assets.js?v=2"></script>
-    <script src="js/ui/theme-bg-editor.js?v=5"></script>
+    <script src="js/api/theme-assets.js?v=3"></script>
+    <script src="js/api/look-feel.js?v=4"></script>
+    <script src="js/ui/theme-bg-editor.js?v=6"></script>
     <script src="js/api/sessions.js?v=20"></script>
     <script src="js/api/account.js?v=15"></script>
     <script src="js/api/progression.js?v=8"></script>
