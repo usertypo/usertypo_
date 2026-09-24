@@ -8,6 +8,7 @@
 (function () {
     var xpToastTimer = null;
     var lastAccountOpts = null;
+    var chillBootToastShown = false;
 
     function displayName(user, profile) {
         if (window.usertypoProfiles && typeof window.usertypoProfiles.publicUsername === 'function') {
@@ -147,6 +148,21 @@
                 try { accountBtn.blur(); } catch (err) { /* ignore */ }
             }, 0);
         });
+    }
+
+    function maybeNotifyChillOnLoad(isSignedIn) {
+        if (chillBootToastShown || !isSignedIn || !isChillMode()) return;
+        chillBootToastShown = true;
+        // Wait for toast stack / boot overlay so the notice isn't missed.
+        setTimeout(function () {
+            if (!isChillMode()) return;
+            if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                window.usertypoNotifications.showToast(
+                    'Chill mode is on — tests are not being saved',
+                    'spa'
+                );
+            }
+        }, 700);
     }
 
     function sameAvatarSrc(a, b) {
@@ -465,9 +481,11 @@
         });
 
         window.usertypoAuth.ready().then(function () {
-            updateHeader(window.usertypoAuth.getState());
+            var state = window.usertypoAuth.getState();
+            updateHeader(state);
+            maybeNotifyChillOnLoad(!!(state && state.isSignedIn && state.user));
             if (
-                window.usertypoAuth.getState().isSignedIn &&
+                state.isSignedIn &&
                 window.usertypoProgression &&
                 typeof window.usertypoProgression.getMine === 'function'
             ) {
