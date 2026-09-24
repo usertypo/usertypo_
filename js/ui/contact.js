@@ -280,6 +280,18 @@
 
         try {
             await sendContact(payload);
+            if (payload.problem === 'Report a User' && window.usertypoAdmin && typeof window.usertypoAdmin.createReport === 'function') {
+                try {
+                    await window.usertypoAdmin.createReport({
+                        name: payload.name,
+                        email: payload.email,
+                        reason: payload.problem,
+                        details: payload.description,
+                    });
+                } catch (reportErr) {
+                    console.warn('[usertypo contact] in-app report queue failed', reportErr);
+                }
+            }
             incrementRateLimit();
             toast('Message sent. Thanks for reaching out!', 'check_circle');
             setOpen(false);
