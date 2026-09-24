@@ -399,7 +399,7 @@
                 '<div><div class="admin-kv-label">Country</div><div class="admin-kv-value">' + esc(u.country_code || '—') + '</div></div>' +
                 '<div><div class="admin-kv-label">Last active</div><div class="admin-kv-value">' + esc(relativeTime(u.last_seen_at)) + '</div></div>' +
                 '<div><div class="admin-kv-label">Avg site visit</div><div class="admin-kv-value">' + esc(api.formatDuration(data.avg_visit_seconds || 0)) + '</div></div>' +
-                '<div><div class="admin-kv-label">Level / XP</div><div class="admin-kv-value">' + esc(prog.level || '—') + ' · ' + esc(prog.xp != null ? prog.xp : '—') + '</div></div>' +
+                '<div><div class="admin-kv-label">Level / XP</div><div class="admin-kv-value">' + esc(prog.level || '—') + ' · ' + esc(prog.total_xp != null ? prog.total_xp : '—') + '</div></div>' +
                 '<div><div class="admin-kv-label">Leaderboard</div><div class="admin-kv-value">' + (u.show_on_leaderboard === false ? 'hidden' : 'visible') + '</div></div>' +
                 (u.is_banned ? '<div><div class="admin-kv-label">Ban reason</div><div class="admin-kv-value">' + esc(u.banned_reason || '—') + '</div></div>' : '') +
                 '</div>' +

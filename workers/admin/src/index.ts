@@ -135,7 +135,8 @@ async function recentSessions(env: Env, userId: string, limit: number) {
 async function progressionFor(env: Env, userId: string) {
   const rows = await supabaseRest<Record<string, unknown>[]>(
     env,
-    `user_progression?user_id=eq.${encodeURIComponent(userId)}&select=level,xp,title&limit=1`,
+    `user_progression?user_id=eq.${encodeURIComponent(userId)}`
+      + `&select=level,total_xp,xp_into_level&limit=1`,
   );
   return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
@@ -420,9 +421,15 @@ export default {
         const profile = await fetchProfileByPublicId(env, userMatch[1]);
         if (!profile) return json(env, 404, { error: 'not_found' }, request);
         const [sessions, progression, avgVisit] = await Promise.all([
-          recentSessions(env, profile.user_id, 25),
-          progressionFor(env, profile.user_id),
-          avgVisitSeconds(env, profile.user_id),
+          recentSessions(env, profile.user_id, 25).catch((err) => {
+            console.warn('[admin] recentSessions failed', err);
+            return [] as Record<string, unknown>[];
+          }),
+          progressionFor(env, profile.user_id).catch((err) => {
+            console.warn('[admin] progressionFor failed', err);
+            return null;
+          }),
+          avgVisitSeconds(env, profile.user_id).catch(() => 0),
         ]);
         return json(env, 200, {
           ok: true,
