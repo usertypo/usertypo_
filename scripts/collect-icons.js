@@ -72,6 +72,8 @@ for (const f of walk('.')) {
   'settings_suggest','shortcut','pace','graphic_eq','edit_square','all_inclusive',
   // Header admin control — missing glyph renders as raw ligature text
   'admin_panel_settings','switch_account',
+  // Header chill toggle (pause saving tests)
+  'spa',
 ].forEach(addIcon);
 
 const list = [...icons].filter(Boolean).sort();
