@@ -427,6 +427,15 @@ function saveSettings(settings) {
     window.usertypo_settings = settings;
 }
 
+/** Debounced account sync for Look & Feel (signed-in only). */
+function notifyLookFeelCloudSync() {
+    if (window.usertypoLookFeel && typeof window.usertypoLookFeel.notifyLocalChange === 'function') {
+        try {
+            window.usertypoLookFeel.notifyLocalChange();
+        } catch (e) { /* ignore */ }
+    }
+}
+
 function deepMerge(target, source) {
     for (const key of Object.keys(source)) {
         if (
@@ -1217,6 +1226,7 @@ function commitCustomTheme(partial, options = {}) {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
     return next;
 }
@@ -1248,6 +1258,7 @@ function saveCustomThemePreset() {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
     return true;
 }
@@ -1281,6 +1292,7 @@ function applyCustomThemePreset(index) {
     // Re-apply after sync so any suppressed editor noise cannot leave the site
     // on the previous palette. Sync lock prevents commits during the sync above.
     applyThemeSettings(settings);
+    notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
     return true;
 }
@@ -1312,6 +1324,7 @@ function deleteCustomThemePreset(index) {
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
+    notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
 }
 
@@ -4134,6 +4147,7 @@ function selectColorTheme(themeName) {
     syncColorThemeSelectLabel(settings);
     syncCustomThemeEditor(settings);
     applyThemeSettings(settings);
+    notifyLookFeelCloudSync();
 }
 
 
@@ -4565,6 +4579,10 @@ function persistFromOpt(btn) {
         syncCustomThemeEditor(settings);
     }
 
+    if (path.startsWith('lookFeel.')) {
+        notifyLookFeelCloudSync();
+    }
+
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         // slight delay to let the soundpack load if it changed
         setTimeout(() => window.playKeystrokeSound('a'), 100);
@@ -4579,6 +4597,10 @@ function persistFromToggle(track) {
     setByPath(settings, path, track.classList.contains('on'));
     saveSettings(settings);
     applyAllSettings(settings);
+
+    if (path.startsWith('lookFeel.')) {
+        notifyLookFeelCloudSync();
+    }
 
     if (path.startsWith('soundscape.') && typeof window.playKeystrokeSound === 'function') {
         if (path === 'soundscape.errorSounds') {
@@ -4708,6 +4730,7 @@ function initSettingsPage() {
                 applyGlowIntensityVar(sets);
                 if (!previewOnly) {
                     saveSettings(sets);
+                    notifyLookFeelCloudSync();
                     if (typeof window.triggerSave === 'function') window.triggerSave();
                 }
                 return;
@@ -4835,6 +4858,7 @@ function resetToDefaults() {
         } catch (e) { /* ignore */ }
     }
 
+    notifyLookFeelCloudSync();
     return settings;
 }
 
@@ -5260,6 +5284,8 @@ window.usertypo_settingsApi = {
     commitCustomTheme,
     applyCustomThemePreset,
     syncColorThemeSelectLabel,
+    pushSharedCustomThemes,
+    notifyLookFeelCloudSync,
     getLanguageDisplayName,
     isDualPage,
     isRoomPage,
