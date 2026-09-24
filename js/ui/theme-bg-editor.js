@@ -567,19 +567,24 @@
     }
 
     function onRemove() {
+        var prev = currentBgImage();
         if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
             window.usertypo_settingsApi.commitCustomTheme({ bgImage: null }, { force: true });
+        }
+        if (prev && window.usertypoThemeAssets && typeof window.usertypoThemeAssets.deleteByUrl === 'function') {
+            window.usertypoThemeAssets.deleteByUrl(prev.url).catch(function () { /* ignore */ });
         }
         closeModal();
         syncSettingsButton();
         toast('Background image removed.', 'delete');
     }
 
-    function onSave() {
+    async function onSave() {
         if (!img || !imgUrl) {
             toast('Nothing to save.', 'error');
             return;
         }
+        var prev = currentBgImage();
         var norm = offsetsToNormalized();
         var payload = normalizeBgImage({
             id: imgId || 'custom',
@@ -589,21 +594,32 @@
             offsetX: norm.offsetX,
             offsetY: norm.offsetY,
         });
-        if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
-            window.usertypo_settingsApi.commitCustomTheme({ bgImage: payload }, { force: true });
-        }
-        exitEditLayer();
-        mode = 'closed';
-        clearObjectUrl();
-        setModalOpen(false);
-        syncSettingsButton();
-        toast('Background image saved.', 'check');
-        // Ensure settings UI stays on custom theme editor.
+
+        els.saveBtn.disabled = true;
         try {
-            if (window.usertypo_settingsApi && window.usertypo_settingsApi.syncCustomThemeEditor) {
-                window.usertypo_settingsApi.syncCustomThemeEditor(loadSettings());
+            if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.persistBgImage === 'function') {
+                payload = await window.usertypoThemeAssets.persistBgImage(payload, prev);
             }
-        } catch (_) { /* ignore */ }
+            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
+                window.usertypo_settingsApi.commitCustomTheme({ bgImage: payload }, { force: true });
+            }
+            exitEditLayer();
+            mode = 'closed';
+            clearObjectUrl();
+            setModalOpen(false);
+            syncSettingsButton();
+            toast('Background image saved.', 'check');
+            try {
+                if (window.usertypo_settingsApi && window.usertypo_settingsApi.syncCustomThemeEditor) {
+                    window.usertypo_settingsApi.syncCustomThemeEditor(loadSettings());
+                }
+            } catch (_) { /* ignore */ }
+        } catch (err) {
+            console.warn('[theme-bg] save/upload failed', err);
+            toast('Could not upload background. Try again while signed in.', 'error');
+        } finally {
+            els.saveBtn.disabled = false;
+        }
     }
 
     function syncSettingsButton() {
