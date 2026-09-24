@@ -39,6 +39,116 @@
         if (el) el.textContent = text;
     }
 
+    function isChillMode() {
+        try {
+            var settings = window.usertypo_settings
+                || (typeof loadSettings === 'function' ? loadSettings() : null)
+                || {};
+            return !!(settings.systemData && settings.systemData.saveTestStats === false);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function setChillMode(on) {
+        var settings = (typeof loadSettings === 'function')
+            ? loadSettings()
+            : (window.usertypo_settings || {});
+        if (!settings.systemData) settings.systemData = {};
+        settings.systemData.saveTestStats = !on;
+        if (typeof saveSettings === 'function') saveSettings(settings);
+        else window.usertypo_settings = settings;
+        syncChillBtn(true);
+        try {
+            window.dispatchEvent(new CustomEvent('usertypo:chill-changed', {
+                detail: { chill: !!on, saveTestStats: !on },
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function syncChillBtn(isSignedIn) {
+        var btn = document.getElementById('header-chill-btn');
+        if (!btn) return;
+        var tip = document.getElementById('header-chill-tip');
+        var show = !!isSignedIn;
+        btn.classList.toggle('hidden', !show);
+        btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+        if (!show) {
+            btn.classList.remove('info-active');
+            btn.setAttribute('aria-pressed', 'false');
+            btn.removeAttribute('title');
+            return;
+        }
+        var chill = isChillMode();
+        var label = chill
+            ? 'Chill on — tests are not being saved'
+            : 'Chill — pause saving tests';
+        btn.classList.toggle('info-active', chill);
+        btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
+        btn.removeAttribute('title');
+        btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
+        if (tip) tip.textContent = label;
+        if (btn.matches(':hover')) alignChillTip();
+    }
+
+    function alignChillTip() {
+        var btn = document.getElementById('header-chill-btn');
+        var tip = document.getElementById('header-chill-tip');
+        if (!btn || !tip || btn.classList.contains('hidden')) return;
+
+        // Reset to centered, measure against the viewport, then pin to an edge if needed.
+        btn.classList.remove('tip-edge-start', 'tip-edge-end');
+
+        var tipRect = tip.getBoundingClientRect();
+        var tipW = tipRect.width || tip.offsetWidth || tip.scrollWidth || 0;
+        var pad = 8;
+        var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+        if (!vw || !tipW) return;
+
+        var btnRect = btn.getBoundingClientRect();
+        var centeredLeft = btnRect.left + (btnRect.width / 2) - (tipW / 2);
+        var centeredRight = centeredLeft + tipW;
+
+        if (centeredRight > vw - pad) {
+            btn.classList.add('tip-edge-end');
+        } else if (centeredLeft < pad) {
+            btn.classList.add('tip-edge-start');
+        }
+    }
+
+    function wireChillBtn() {
+        var btn = document.getElementById('header-chill-btn');
+        if (!btn || btn.dataset.wired === '1') return;
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setChillMode(!isChillMode());
+            try { btn.blur(); } catch (err) { /* ignore */ }
+        });
+        btn.addEventListener('mouseenter', function () {
+            requestAnimationFrame(alignChillTip);
+        });
+        btn.addEventListener('focus', function () {
+            requestAnimationFrame(alignChillTip);
+        });
+        window.addEventListener('resize', function () {
+            if (btn.matches(':hover') || document.activeElement === btn) alignChillTip();
+        });
+    }
+
+    function wireAccountFocus() {
+        var accountBtn = document.getElementById('header-account-btn');
+        if (!accountBtn || accountBtn.dataset.focusWired === '1') return;
+        accountBtn.dataset.focusWired = '1';
+        // Click-then-type keeps :focus-visible on the link; drop it after the click.
+        accountBtn.addEventListener('mouseup', function () {
+            setTimeout(function () {
+                try { accountBtn.blur(); } catch (err) { /* ignore */ }
+            }, 0);
+        });
+    }
+
     function sameAvatarSrc(a, b) {
         return String(a || '') === String(b || '');
     }
@@ -291,6 +401,7 @@
                 showLevel: true,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/userstats');
+            syncChillBtn(true);
         } else {
             if (authAction) {
                 authAction.setAttribute('href', '/signin');
@@ -313,6 +424,7 @@
                 showLevel: false,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/signin');
+            syncChillBtn(false);
         }
     }
 
@@ -325,6 +437,9 @@
             percentToNext: 0,
             showLevel: false,
         });
+        wireChillBtn();
+        wireAccountFocus();
+        syncChillBtn(false);
 
         if (!window.usertypoAuth) {
             updateHeader({ isSignedIn: false, user: null });
@@ -366,6 +481,18 @@
     window.usertypoHeader = {
         showXpGain: showXpGain,
         setXpRingPercent: setXpRingPercent,
+        isChillMode: isChillMode,
+        setChillMode: setChillMode,
+        syncChillBtn: function () {
+            var signedIn = false;
+            try {
+                var state = window.usertypoAuth && window.usertypoAuth.getState
+                    ? window.usertypoAuth.getState()
+                    : null;
+                signedIn = !!(state && state.isSignedIn && state.user);
+            } catch (e) { /* ignore */ }
+            syncChillBtn(signedIn);
+        },
         updateHeader: function () {
             if (!window.usertypoAuth) return;
             try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
