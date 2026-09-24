@@ -13,10 +13,10 @@
     var COMPRESS_QUALITY = 0.72;
 
     var DEFAULT_IMAGES = [
-        { id: 'aurora', name: 'Aurora', url: '/assets/theme-bgs/aurora.png' },
-        { id: 'dusk', name: 'Dusk', url: '/assets/theme-bgs/dusk.png' },
-        { id: 'ocean', name: 'Ocean', url: '/assets/theme-bgs/ocean.png' },
-        { id: 'geometry', name: 'Geometry', url: '/assets/theme-bgs/geometry.png' },
+        { id: 'aurora', name: 'Aurora', url: 'assets/theme-bgs/aurora.png' },
+        { id: 'dusk', name: 'Dusk', url: 'assets/theme-bgs/dusk.png' },
+        { id: 'ocean', name: 'Ocean', url: 'assets/theme-bgs/ocean.png' },
+        { id: 'geometry', name: 'Geometry', url: 'assets/theme-bgs/geometry.png' },
     ];
 
     var els = null;
@@ -121,7 +121,7 @@
                             '<span>Choose background</span>' +
                         '</div>' +
                         '<p class="text-xs text-slate-400 leading-relaxed">Pick a default or import an image from your computer.</p>' +
-                        '<div id="theme-bg-default-grid" class="grid grid-cols-2 gap-2.5 mt-1"></div>' +
+                        '<div id="theme-bg-default-grid" class="grid grid-cols-2 gap-2.5 mt-1" style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;"></div>' +
                         '<button type="button" id="theme-bg-import" class="w-full flex items-center justify-center gap-2 px-4 py-3 mt-1 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 text-sm font-bold transition-colors">' +
                             '<span class="material-symbols-outlined text-[1.066rem]">upload</span><span>Import image from PC</span>' +
                         '</button>' +
@@ -129,11 +129,11 @@
                     '<input id="theme-bg-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />' +
                 '</div>' +
             '</div>' +
-            '<div id="theme-bg-edit-layer" class="fixed inset-0 z-[9999] pointer-events-none opacity-0 transition-opacity duration-300" aria-hidden="true" style="z-index:9999">' +
-                '<div id="theme-bg-edit-stage" class="absolute inset-0 overflow-hidden cursor-grab touch-none select-none" style="background:var(--theme-bg,#000)">' +
+            '<div id="theme-bg-edit-layer" class="fixed inset-0 pointer-events-none opacity-0 transition-opacity duration-300" aria-hidden="true" style="z-index:9990">' +
+                '<div id="theme-bg-edit-stage" class="absolute overflow-hidden cursor-grab touch-none select-none" style="left:0;right:0;bottom:0;top:0;background:var(--theme-bg,#000)">' +
                     '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" />' +
                 '</div>' +
-                '<div id="theme-bg-edit-controls" class="absolute left-1/2 -translate-x-1/2 bottom-6 w-[min(92vw,28rem)] glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-auto">' +
+                '<div id="theme-bg-edit-controls" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-auto" style="position:absolute;left:50%;bottom:1.5rem;transform:translateX(-50%);width:min(92vw,28rem);z-index:2;box-sizing:border-box;">' +
                     '<p class="text-xs text-slate-400 text-center">Drag to move · adjust opacity and zoom</p>' +
                     '<label class="flex items-center gap-3 text-xs font-bold text-slate-300">' +
                         '<span class="material-symbols-outlined text-[0.959rem] text-primary shrink-0">opacity</span>' +
@@ -159,11 +159,29 @@
         DEFAULT_IMAGES.forEach(function (item) {
             var btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'theme-bg-default-card relative aspect-video overflow-hidden rounded-xl border border-white/10 hover:border-primary/50 transition-colors text-left group';
+            btn.className = 'theme-bg-default-card';
             btn.setAttribute('data-theme-bg-default', item.id);
+            btn.setAttribute('aria-label', item.name);
+            btn.style.cssText = [
+                'position:relative',
+                'display:block',
+                'width:100%',
+                'aspect-ratio:16/9',
+                'overflow:hidden',
+                'padding:0',
+                'margin:0',
+                'border-radius:var(--theme-box-radius, 0.75rem)',
+                'border:1px solid rgba(255,255,255,0.12)',
+                'background-color:rgba(0,0,0,0.35)',
+                'background-image:url("' + item.url + '")',
+                'background-size:cover',
+                'background-position:center',
+                'cursor:pointer',
+                'text-align:left',
+            ].join(';');
             btn.innerHTML =
-                '<img src="' + item.url + '" alt="" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />' +
-                '<span class="absolute inset-x-0 bottom-0 px-2 py-1.5 text-[0.65rem] font-bold tracking-wide text-white bg-gradient-to-t from-black/70 to-transparent">' +
+                '<img src="' + item.url + '" alt="" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" />' +
+                '<span style="position:absolute;left:0;right:0;bottom:0;padding:0.4rem 0.55rem;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:#fff;background:linear-gradient(to top,rgba(0,0,0,0.75),transparent);">' +
                 item.name +
                 '</span>';
             btn.addEventListener('click', function () {

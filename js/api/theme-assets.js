@@ -19,7 +19,7 @@
     }
 
     function isDefaultAssetUrl(url) {
-        return /^\/assets\/theme-bgs\//.test(String(url || ''));
+        return /(?:^|\/)assets\/theme-bgs\//.test(String(url || ''));
     }
 
     async function getClerkBearer() {

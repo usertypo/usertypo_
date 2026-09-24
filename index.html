@@ -253,9 +253,12 @@
         body.has-theme-bg-image #spa-boot-overlay {
             background-color: transparent !important;
         }
-        body.theme-bg-editing header {
+        body.theme-bg-editing > header {
             position: relative;
-            z-index: 270 !important;
+            z-index: 10050 !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
         body.theme-bg-editing #spa-content,
         body.theme-bg-editing #spa-shell-footer,
@@ -265,6 +268,7 @@
         body.theme-bg-editing #back-to-top-btn {
             opacity: 0 !important;
             pointer-events: none !important;
+            transition: opacity 0.3s ease !important;
         }
         #theme-bg-box,
         #theme-bg-edit-controls {
@@ -287,9 +291,29 @@
             font-variant-ligatures: common-ligatures discretionary-ligatures !important;
             line-height: 1 !important;
         }
-        #theme-bg-modal,
+        #theme-bg-modal {
+            z-index: 10040 !important;
+        }
         #theme-bg-edit-layer {
-            z-index: 9999 !important;
+            z-index: 9990 !important;
+        }
+        #theme-bg-edit-controls {
+            position: absolute !important;
+            left: 50% !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: 1.5rem !important;
+            transform: translateX(-50%) !important;
+            width: min(92vw, 28rem) !important;
+            z-index: 2 !important;
+        }
+        .theme-bg-default-card:hover {
+            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.55) !important;
+        }
+        .theme-bg-default-card img {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: none !important;
         }
     </style>
     <style id="shell-keymap-scroll">
@@ -1760,8 +1784,8 @@
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js?v=14"></script>
     <script src="js/api/look-feel.js?v=3"></script>
-    <script src="js/api/theme-assets.js?v=1"></script>
-    <script src="js/ui/theme-bg-editor.js?v=3"></script>
+    <script src="js/api/theme-assets.js?v=2"></script>
+    <script src="js/ui/theme-bg-editor.js?v=4"></script>
     <script src="js/api/sessions.js?v=20"></script>
     <script src="js/api/account.js?v=15"></script>
     <script src="js/api/progression.js?v=8"></script>
