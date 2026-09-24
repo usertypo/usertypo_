@@ -1183,6 +1183,43 @@ function renderCustomThemePresets(settings) {
     forEachCustomThemeEditor((editor) => renderCustomThemePresetsInto(editor, settings));
 }
 
+/**
+ * Mini "viewport" of a preset's background image using the saved crop.
+ * Mirrors applyThemeBackgroundImage: cover × zoom, offset 1 = left/top edge aligned.
+ */
+function renderPresetBgThumb(bgImage, bg, main, secondary) {
+    const zoom = Math.max(1, Math.min(3, Number(bgImage.zoom) || 1));
+    const opacity = Math.max(0.05, Math.min(1, Number(bgImage.opacity) || 0.75));
+    const ox = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetX)) ? Number(bgImage.offsetX) : 0.5));
+    const oy = Math.max(0, Math.min(1, Number.isFinite(Number(bgImage.offsetY)) ? Number(bgImage.offsetY) : 0.5));
+    const px = (1 - ox) * 100;
+    const py = (1 - oy) * 100;
+    const url = String(bgImage.url)
+        .replace(/'/g, '%27')
+        .replace(/"/g, '%22')
+        .replace(/\)/g, '%29')
+        .replace(/\(/g, '%28');
+    const imgStyle = [
+        'position:absolute',
+        'display:block',
+        `width:${zoom * 100}%`,
+        `height:${zoom * 100}%`,
+        `left:${(px * (1 - zoom)).toFixed(3)}%`,
+        `top:${(py * (1 - zoom)).toFixed(3)}%`,
+        `background-image:url('${url}')`,
+        'background-size:cover',
+        `background-position:${px.toFixed(3)}% ${py.toFixed(3)}%`,
+        'background-repeat:no-repeat',
+        `opacity:${opacity}`,
+    ].join(';');
+    const dot = (color) => `<b style="display:block;width:0.4rem;height:0.4rem;border-radius:9999px;background:${color};box-shadow:0 0 0 1px rgba(0,0,0,0.45)"></b>`;
+    return `
+                <div class="custom-preset-swatches has-bg-image" aria-hidden="true" style="position:relative;display:block;background:${bg}">
+                    <i style="${imgStyle}"></i>
+                    <span style="position:absolute;right:0.2rem;bottom:0.2rem;display:flex;gap:0.15rem">${dot(main)}${dot(secondary)}</span>
+                </div>`;
+}
+
 function renderCustomThemePresetsInto(editor, settings) {
     if (!editor) return;
     const list = editor.querySelector('[data-custom-theme-preset-list]');
@@ -1214,13 +1251,16 @@ function renderCustomThemePresetsInto(editor, settings) {
         const name = preset.name || `Custom ${index + 1}`;
         const themeId = `custom:${index}`;
         const activeClass = active === themeId ? ' is-active' : '';
-        return `
-            <div class="custom-preset-card${activeClass}" data-preset-index="${index}">
+        const thumb = preset.bgImage && preset.bgImage.url
+            ? renderPresetBgThumb(preset.bgImage, bg, main, secondary)
+            : `
                 <div class="custom-preset-swatches" aria-hidden="true">
                     <i style="background:${bg}"></i>
                     <i style="background:${main}"></i>
                     <i style="background:${secondary}"></i>
-                </div>
+                </div>`;
+        return `
+            <div class="custom-preset-card${activeClass}" data-preset-index="${index}">${thumb}
                 <div class="custom-preset-meta">
                     <div class="name">${name}</div>
                     <div class="sub">${mode} · ${main}</div>
