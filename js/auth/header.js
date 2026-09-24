@@ -87,7 +87,34 @@
         btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
         btn.removeAttribute('title');
         btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
-        if (tip) tip.textContent = label;
+        if (tip) {
+            tip.textContent = label;
+            if (btn.matches(':hover')) positionChillTip();
+        }
+    }
+
+    function positionChillTip() {
+        var btn = document.getElementById('header-chill-btn');
+        var tip = document.getElementById('header-chill-tip');
+        if (!btn || !tip || btn.classList.contains('hidden')) return;
+
+        // Start centered under the button, then shift if it would leave the viewport.
+        tip.style.left = '50%';
+        tip.style.right = 'auto';
+        tip.style.transform = 'translateX(-50%)';
+
+        var tipRect = tip.getBoundingClientRect();
+        var pad = 8;
+        var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+        if (!vw || !tipRect.width) return;
+
+        var shift = 0;
+        if (tipRect.right > vw - pad) shift = (vw - pad) - tipRect.right;
+        if (tipRect.left + shift < pad) shift = pad - tipRect.left;
+
+        tip.style.transform = shift
+            ? ('translateX(calc(-50% + ' + Math.round(shift) + 'px))')
+            : 'translateX(-50%)';
     }
 
     function wireChillBtn() {
@@ -99,6 +126,16 @@
             e.stopPropagation();
             setChillMode(!isChillMode());
             try { btn.blur(); } catch (err) { /* ignore */ }
+        });
+        btn.addEventListener('mouseenter', function () {
+            // After paint so tip text/size is current
+            requestAnimationFrame(positionChillTip);
+        });
+        btn.addEventListener('focus', function () {
+            requestAnimationFrame(positionChillTip);
+        });
+        window.addEventListener('resize', function () {
+            if (btn.matches(':hover') || document.activeElement === btn) positionChillTip();
         });
     }
 
