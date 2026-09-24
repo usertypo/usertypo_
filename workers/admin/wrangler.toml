@@ -12,7 +12,7 @@ PUBLIC_SITE_URL = "https://dev.usertypo.com"
 ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
 CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000"
 CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev"
-ADMIN_PUBLIC_IDS = "TE2CGW6Y,XRMXYTTF,D94QTBHG"
+ADMIN_PUBLIC_IDS = "I9000RBN,0KTJ6BFW,EW7MDS87"
 SUPABASE_URL = "https://dzpbkyqsshdruwhffwhw.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM"
 
@@ -22,4 +22,4 @@ vars = { ENVIRONMENT = "production", PUBLIC_SITE_URL = "https://usertypo.com", A
 
 [env.dev]
 name = "usertypo-admin-dev"
-vars = { ENVIRONMENT = "dev", PUBLIC_SITE_URL = "https://dev.usertypo.com", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev", ADMIN_PUBLIC_IDS = "TE2CGW6Y,XRMXYTTF,D94QTBHG", SUPABASE_URL = "https://dzpbkyqsshdruwhffwhw.supabase.co", SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM" }
+vars = { ENVIRONMENT = "dev", PUBLIC_SITE_URL = "https://dev.usertypo.com", ALLOWED_ORIGINS = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_AUTHORIZED_PARTIES = "https://dev.usertypo.com,https://dev.usertypo.pages.dev,http://localhost:3000,http://127.0.0.1:3000", CLERK_FRONTEND_API = "trusted-prawn-31.clerk.accounts.dev", ADMIN_PUBLIC_IDS = "I9000RBN,0KTJ6BFW,EW7MDS87", SUPABASE_URL = "https://dzpbkyqsshdruwhffwhw.supabase.co", SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cGJreXFzc2hkcnV3aGZmd2h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Nzg5NDMsImV4cCI6MjEwMzU1NDk0M30.xeBQz3lc7FukiptPcEl4cDsBD16aCatYytk7vWsWmEM" }
