@@ -1,4 +1,4 @@
-/* Material Symbols — base only; size comes from utility classes (text-[…]) */
+/* Material Symbols â base only; size comes from utility classes (text-[â¦]) */
 .material-symbols-outlined {
     font-family: 'Material Symbols Outlined', sans-serif;
     font-weight: normal;
@@ -23,7 +23,7 @@
     animation: none !important;
 }
 
-/* Header account uses shared .player-level-avatar — keep a tiny fallback if JS is late */
+/* Header account uses shared .player-level-avatar â keep a tiny fallback if JS is late */
 #header-account-btn .header-account-fallback {
     display: flex;
     align-items: center;
@@ -46,7 +46,7 @@ body::-webkit-scrollbar {
 }
 
 :root {
-    --theme-bg: #000000; /* Abyss — overridden by boot-theme.js / settings */
+    --theme-bg: #000000; /* Abyss â overridden by boot-theme.js / settings */
     --theme-bg-rgb: 0, 0, 0;
     --theme-primary: #ffffff;
     --theme-primary-rgb: 255, 255, 255;
@@ -148,7 +148,7 @@ body {
     background-color: var(--theme-bg) !important;
 }
 
-/* Smooth theme switches — color props only (never opacity/transform — breaks modals) */
+/* Smooth theme switches â color props only (never opacity/transform â breaks modals) */
 html.theme-animating,
 html.theme-animating body {
     transition:
@@ -249,8 +249,8 @@ html {
     background: rgba(0, 208, 255, 0.4);
 }
 
-/* Header Logo — rem so chrome tracks html { font-size: clamp(13px, 1.3032vw, 24px) }
-   Reference: ~1440px viewport (1rem ≈ 18.77px). */
+/* Header Logo â rem so chrome tracks html { font-size: clamp(13px, 1.3032vw, 24px) }
+   Reference: ~1440px viewport (1rem â 18.77px). */
 .header-logo-link {
     display: flex;
     align-items: center;
@@ -347,7 +347,7 @@ html {
     box-shadow: none !important;
 }
 
-/* Remap muted Tailwind slate colors to WCAG AA on black (≥4.5:1 at small footer sizes) */
+/* Remap muted Tailwind slate colors to WCAG AA on black (â¥4.5:1 at small footer sizes) */
 .text-slate-600,
 .text-slate-500 {
     color: #7c8591 !important;
@@ -371,7 +371,7 @@ html {
     color: #7c8591 !important;
 }
 
-/* Footer link weight — mono fonts only ship 400/700, so 700 is the visible bump; pill stays regular */
+/* Footer link weight â mono fonts only ship 400/700, so 700 is the visible bump; pill stays regular */
 .footer-nav-weight {
     font-weight: 700 !important;
 }
@@ -418,7 +418,7 @@ html {
     flex-shrink: 0;
 }
 
-/* ── Player level avatar (photo + XP ring + level badge) ── */
+/* ââ Player level avatar (photo + XP ring + level badge) ââ */
 .player-level-avatar {
     position: relative;
     display: inline-flex;
@@ -601,7 +601,7 @@ html {
     border-radius: 9999px;
 }
 
-/* Player profile box — transparent hit area, no dim/blur of the page behind */
+/* Player profile box â transparent hit area, no dim/blur of the page behind */
 #player-profile-overlay {
     position: fixed;
     inset: 0;
@@ -644,7 +644,7 @@ html {
     border-radius: 9999px;
 }
 
-/* System confirm — same menu-bubble glass, transparent hit area (no page dim) */
+/* System confirm â same menu-bubble glass, transparent hit area (no page dim) */
 #system-confirm-modal {
     position: fixed;
     inset: 0;
@@ -657,7 +657,7 @@ html {
     transition: opacity 0.2s ease;
 }
 
-/* Custom amount prompt — transparent hit area, no dim/blur of the page behind */
+/* Custom amount prompt â transparent hit area, no dim/blur of the page behind */
 #custom-prompt-modal {
     position: fixed;
     inset: 0;
@@ -692,7 +692,7 @@ html {
     background: rgba(255, 51, 51, 0.25) !important;
 }
 
-/* Contact modal — same menu-bubble glass, transparent hit area (no page dim) */
+/* Contact modal â same menu-bubble glass, transparent hit area (no page dim) */
 #contact-modal {
     position: fixed;
     inset: 0;
@@ -820,7 +820,7 @@ html {
                 }
             }
 
-/* ── Cookie consent banner (same glass as header menu bubble) ── */
+/* ââ Cookie consent banner (same glass as header menu bubble) ââ */
 .usertypo-cookie-banner {
     position: fixed;
     left: 0;
@@ -949,22 +949,43 @@ html {
     }
 }
 
-/* Clerk ImpersonationFab � smaller eye; click is intercepted to return-to-admin. */
+/* Clerk ImpersonationFab — circle eye only (no expanded white pill / title). */
 .cl-impersonationFab {
-    transform: scale(0.55);
-    transform-origin: bottom right;
-    bottom: 0.75rem !important;
-    right: 0.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    max-width: 2.75rem !important;
+    max-height: 2.75rem !important;
+    padding: 0 !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+    bottom: 1rem !important;
+    right: 1rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .cl-impersonationFabIconContainer {
-    width: 2.25rem !important;
-    height: 2.25rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 9999px !important;
+    margin: 0 !important;
 }
 .cl-impersonationFabIcon {
-    width: 1.1rem !important;
-    height: 1.1rem !important;
+    width: 1.35rem !important;
+    height: 1.35rem !important;
 }
 .cl-impersonationFabTitle,
 .cl-impersonationFabActionLink {
-    font-size: 0.7rem !important;
+    display: none !important;
+}
+
+/* Custom orange banner unused — Clerk eye is the only impersonation control. */
+#admin-impersonation-banner {
+    display: none !important;
 }

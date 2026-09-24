@@ -398,16 +398,9 @@
         }
         var banner = document.getElementById('admin-impersonation-banner');
         if (banner) {
-            banner.classList.toggle('hidden', !impersonating);
-            banner.setAttribute('aria-hidden', impersonating ? 'false' : 'true');
-            var label = document.getElementById('admin-impersonation-label');
-            if (label && impersonating) {
-                var who = (meta && (meta.target_username || meta.target_public_id))
-                    || currentPublicId()
-                    || (window.Clerk && window.Clerk.user && (window.Clerk.user.username || window.Clerk.user.id))
-                    || 'user';
-                label.textContent = 'Viewing as ' + who;
-            }
+            // Prefer Clerk's eye control only — keep our banner hidden.
+            banner.classList.add('hidden');
+            banner.setAttribute('aria-hidden', 'true');
         }
     }
 
