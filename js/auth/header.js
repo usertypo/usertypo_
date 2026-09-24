@@ -87,52 +87,33 @@
         btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
         btn.removeAttribute('title');
         btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
-        if (tip) {
-            tip.textContent = label;
-            if (tip.classList.contains('is-visible')) positionChillTip();
-        }
+        if (tip) tip.textContent = label;
+        if (btn.matches(':hover')) alignChillTip();
     }
 
-    function hideChillTip() {
-        var tip = document.getElementById('header-chill-tip');
-        if (!tip) return;
-        tip.classList.remove('is-visible');
-        tip.setAttribute('aria-hidden', 'true');
-    }
-
-    function positionChillTip() {
+    function alignChillTip() {
         var btn = document.getElementById('header-chill-btn');
         var tip = document.getElementById('header-chill-tip');
-        if (!btn || !tip || btn.classList.contains('hidden')) {
-            hideChillTip();
-            return;
-        }
+        if (!btn || !tip || btn.classList.contains('hidden')) return;
 
-        // Fixed to the viewport (tip lives outside the button) so clamp isn't
-        // trapped by transforms / overflow-x-hidden ancestors.
-        tip.style.left = '0px';
-        tip.style.top = '0px';
+        // Reset to centered, measure against the viewport, then pin to an edge if needed.
+        btn.classList.remove('tip-edge-start', 'tip-edge-end');
 
-        var tipW = tip.offsetWidth || 0;
-        var tipH = tip.offsetHeight || 0;
-        var btnRect = btn.getBoundingClientRect();
+        var tipRect = tip.getBoundingClientRect();
+        var tipW = tipRect.width || tip.offsetWidth || tip.scrollWidth || 0;
         var pad = 8;
         var vw = window.innerWidth || document.documentElement.clientWidth || 0;
-        var vh = window.innerHeight || document.documentElement.clientHeight || 0;
         if (!vw || !tipW) return;
 
-        var left = btnRect.left + (btnRect.width / 2) - (tipW / 2);
-        var top = btnRect.bottom + 8;
+        var btnRect = btn.getBoundingClientRect();
+        var centeredLeft = btnRect.left + (btnRect.width / 2) - (tipW / 2);
+        var centeredRight = centeredLeft + tipW;
 
-        left = Math.max(pad, Math.min(left, vw - pad - tipW));
-        if (top + tipH > vh - pad) {
-            top = Math.max(pad, btnRect.top - tipH - 8);
+        if (centeredRight > vw - pad) {
+            btn.classList.add('tip-edge-end');
+        } else if (centeredLeft < pad) {
+            btn.classList.add('tip-edge-start');
         }
-
-        tip.style.left = Math.round(left) + 'px';
-        tip.style.top = Math.round(top) + 'px';
-        tip.classList.add('is-visible');
-        tip.setAttribute('aria-hidden', 'false');
     }
 
     function wireChillBtn() {
@@ -144,24 +125,16 @@
             e.stopPropagation();
             setChillMode(!isChillMode());
             try { btn.blur(); } catch (err) { /* ignore */ }
-            hideChillTip();
         });
         btn.addEventListener('mouseenter', function () {
-            requestAnimationFrame(positionChillTip);
+            requestAnimationFrame(alignChillTip);
         });
-        btn.addEventListener('mouseleave', hideChillTip);
         btn.addEventListener('focus', function () {
-            requestAnimationFrame(positionChillTip);
+            requestAnimationFrame(alignChillTip);
         });
-        btn.addEventListener('blur', hideChillTip);
         window.addEventListener('resize', function () {
-            var tip = document.getElementById('header-chill-tip');
-            if (tip && tip.classList.contains('is-visible')) positionChillTip();
+            if (btn.matches(':hover') || document.activeElement === btn) alignChillTip();
         });
-        window.addEventListener('scroll', function () {
-            var tip = document.getElementById('header-chill-tip');
-            if (tip && tip.classList.contains('is-visible')) positionChillTip();
-        }, true);
     }
 
     function wireAccountFocus() {
