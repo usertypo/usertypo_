@@ -204,71 +204,41 @@
 
     <div id="admin-app" class="hidden">
         <h1>Admin</h1>
-        <p class="admin-muted mt-1">Moderation, reports, analytics, and support tools.</p>
+        <p class="admin-muted mt-1">Moderation and analytics.</p>
 
-        <div class="admin-tabs" role="tablist">
-            <button type="button" class="admin-tab is-active" data-admin-tab="overview">Overview</button>
-            <button type="button" class="admin-tab" data-admin-tab="users">Users</button>
-            <button type="button" class="admin-tab" data-admin-tab="reports">Reports</button>
-            <button type="button" class="admin-tab" data-admin-tab="support">Support</button>
+        <div class="admin-stat-row" id="admin-stats">
+            <div class="admin-stat">
+                <div class="admin-stat-label">Users</div>
+                <div class="admin-stat-value" id="admin-stat-users">—</div>
+            </div>
+            <div class="admin-stat">
+                <div class="admin-stat-label">Banned</div>
+                <div class="admin-stat-value" id="admin-stat-banned">—</div>
+            </div>
+            <div class="admin-stat">
+                <div class="admin-stat-label">Avg visit</div>
+                <div class="admin-stat-value" id="admin-stat-visit">—</div>
+            </div>
         </div>
+        <p class="admin-muted" id="admin-overview-status">Loading analytics…</p>
 
-        <section class="admin-panel is-active" data-admin-panel="overview">
-            <div class="admin-stat-row" id="admin-stats">
-                <div class="admin-stat">
-                    <div class="admin-stat-label">Users</div>
-                    <div class="admin-stat-value" id="admin-stat-users">—</div>
-                </div>
-                <div class="admin-stat">
-                    <div class="admin-stat-label">Open reports</div>
-                    <div class="admin-stat-value" id="admin-stat-reports">—</div>
-                </div>
-                <div class="admin-stat">
-                    <div class="admin-stat-label">Banned</div>
-                    <div class="admin-stat-value" id="admin-stat-banned">—</div>
-                </div>
-                <div class="admin-stat">
-                    <div class="admin-stat-label">Avg visit</div>
-                    <div class="admin-stat-value" id="admin-stat-visit">—</div>
-                </div>
-            </div>
-            <p class="admin-muted" id="admin-overview-status">Loading analytics…</p>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="users">
-            <div class="admin-search-row">
-                <input type="search" id="admin-user-q" class="admin-input" placeholder="Search username or public ID" autocomplete="off" />
-                <button type="button" class="admin-btn" id="admin-user-search-btn">
-                    <span class="material-symbols-outlined text-[1rem]">search</span> Search
-                </button>
-                <button type="button" class="admin-btn ghost" id="admin-user-clear-btn" title="Clear search and show all">
-                    All users
-                </button>
-            </div>
-            <div class="admin-list" id="admin-user-results"></div>
-            <div class="admin-search-row" id="admin-user-more-row" style="display:none;">
-                <button type="button" class="admin-btn ghost" id="admin-user-more-btn">Show next 20</button>
-                <span class="admin-muted" id="admin-user-page-meta"></span>
-            </div>
-            <div id="admin-user-detail" class="admin-detail hidden"></div>
-            <p class="admin-error hidden" id="admin-user-error"></p>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="reports">
-            <div class="admin-search-row">
-                <button type="button" class="admin-btn" data-reports-status="open">Open</button>
-                <button type="button" class="admin-btn ghost" data-reports-status="reviewed">Reviewed</button>
-                <button type="button" class="admin-btn ghost" data-reports-status="resolved">Resolved</button>
-                <button type="button" class="admin-btn ghost" data-reports-status="all">All</button>
-            </div>
-            <div class="admin-list" id="admin-reports-list"></div>
-            <p class="admin-muted" id="admin-reports-status">Loading…</p>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="support">
-            <p class="admin-muted mb-3">Open a user from the Users tab to ban, purge or delete scores, change username, create a one-time sign-in token, or log in as that account.</p>
-            <p class="admin-muted">Leaderboard country flags are visible to allowlisted admins only.</p>
-        </section>
+        <h2 class="admin-row-title text-base mt-6 mb-3">Users</h2>
+        <div class="admin-search-row">
+            <input type="search" id="admin-user-q" class="admin-input" placeholder="Search username or public ID" autocomplete="off" />
+            <button type="button" class="admin-btn" id="admin-user-search-btn">
+                <span class="material-symbols-outlined text-[1rem]">search</span> Search
+            </button>
+            <button type="button" class="admin-btn ghost" id="admin-user-clear-btn" title="Clear search and show all">
+                All users
+            </button>
+        </div>
+        <div class="admin-list" id="admin-user-results"></div>
+        <div class="admin-search-row" id="admin-user-more-row" style="display:none;">
+            <button type="button" class="admin-btn ghost" id="admin-user-more-btn">Show next 20</button>
+            <span class="admin-muted" id="admin-user-page-meta"></span>
+        </div>
+        <div id="admin-user-detail" class="admin-detail hidden"></div>
+        <p class="admin-error hidden" id="admin-user-error"></p>
     </div>
 </div>
 
@@ -286,7 +256,6 @@
         };
 
     var selectedPublicId = null;
-    var reportsStatus = 'open';
     var USER_PAGE_SIZE = 20;
     var userListOffset = 0;
     var userListMode = 'browse'; // 'browse' | 'search'
@@ -294,15 +263,6 @@
     var userListBusy = false;
 
     function $(id) { return document.getElementById(id); }
-
-    function setTab(name) {
-        document.querySelectorAll('.admin-tab').forEach(function (tab) {
-            tab.classList.toggle('is-active', tab.getAttribute('data-admin-tab') === name);
-        });
-        document.querySelectorAll('.admin-panel').forEach(function (panel) {
-            panel.classList.toggle('is-active', panel.getAttribute('data-admin-panel') === name);
-        });
-    }
 
     function showDenied() {
         var denied = $('admin-denied');
@@ -334,7 +294,6 @@
         try {
             var data = await api.analytics();
             $('admin-stat-users').textContent = String(data.total_users != null ? data.total_users : '—');
-            $('admin-stat-reports').textContent = String(data.open_reports != null ? data.open_reports : '—');
             $('admin-stat-banned').textContent = String(data.banned_users != null ? data.banned_users : '—');
             $('admin-stat-visit').textContent = api.formatDuration(data.avg_visit_seconds || 0);
             if (status) status.textContent = 'Updated just now.';
@@ -584,58 +543,7 @@
         }
     }
 
-    async function loadReports() {
-        var list = $('admin-reports-list');
-        var status = $('admin-reports-status');
-        if (status) status.textContent = 'Loading…';
-        try {
-            var data = await api.listReports(reportsStatus);
-            var reports = data.reports || [];
-            if (!reports.length) {
-                if (list) list.innerHTML = '';
-                if (status) status.textContent = 'No reports.';
-                return;
-            }
-            if (status) status.textContent = reports.length + ' report(s)';
-            if (!list) return;
-            list.innerHTML = reports.map(function (r) {
-                return (
-                    '<div class="admin-row" style="cursor:default;flex-direction:column;align-items:stretch;">' +
-                    '<div class="flex justify-between gap-2 flex-wrap">' +
-                    '<div class="admin-row-title">' + esc(r.reason) + '</div>' +
-                    '<div class="admin-row-meta">' + esc(r.status) + ' · ' + esc(relativeTime(r.created_at)) + '</div></div>' +
-                    '<div class="admin-muted mt-1">' + esc(r.details) + '</div>' +
-                    '<div class="admin-row-meta mt-1">Reporter: ' + esc(r.reporter_name || r.reporter_email || r.reporter_user_id || '—') +
-                    (r.reported_public_id ? ' · Target: ' + esc(r.reported_public_id) : '') + '</div>' +
-                    '<div class="admin-actions">' +
-                    (r.reported_public_id
-                        ? '<button type="button" class="admin-btn ghost" data-open-reported="' + esc(r.reported_public_id) + '">Open user</button>'
-                        : '') +
-                    (r.status !== 'reviewed'
-                        ? '<button type="button" class="admin-btn" data-report-id="' + esc(r.id) + '" data-report-status="reviewed">Mark reviewed</button>'
-                        : '') +
-                    (r.status !== 'resolved'
-                        ? '<button type="button" class="admin-btn" data-report-id="' + esc(r.id) + '" data-report-status="resolved">Resolve</button>'
-                        : '') +
-                    '</div></div>'
-                );
-            }).join('');
-        } catch (e) {
-            if (status) status.textContent = e.message || 'Failed to load reports';
-        }
-    }
-
     function wire() {
-        document.querySelectorAll('.admin-tab').forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                var name = tab.getAttribute('data-admin-tab');
-                setTab(name);
-                if (name === 'overview') loadOverview();
-                if (name === 'users') loadUserPage({ reset: true });
-                if (name === 'reports') loadReports();
-            });
-        });
-
         var searchBtn = $('admin-user-search-btn');
         var searchInput = $('admin-user-q');
         var clearBtn = $('admin-user-clear-btn');
@@ -678,34 +586,6 @@
                 runUserAction(btn.getAttribute('data-action'), btn);
             });
         }
-
-        document.querySelectorAll('[data-reports-status]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                reportsStatus = btn.getAttribute('data-reports-status') || 'open';
-                loadReports();
-            });
-        });
-
-        var reportsList = $('admin-reports-list');
-        if (reportsList) {
-            reportsList.addEventListener('click', function (e) {
-                var openUserBtn = e.target.closest('[data-open-reported]');
-                if (openUserBtn) {
-                    setTab('users');
-                    openUser(openUserBtn.getAttribute('data-open-reported'));
-                    return;
-                }
-                var statusBtn = e.target.closest('[data-report-id][data-report-status]');
-                if (!statusBtn) return;
-                api.updateReport(
-                    statusBtn.getAttribute('data-report-id'),
-                    statusBtn.getAttribute('data-report-status')
-                ).then(loadReports).catch(function (err) {
-                    var st = $('admin-reports-status');
-                    if (st) st.textContent = err.message || 'Update failed';
-                });
-            });
-        }
     }
 
     async function boot() {
@@ -735,6 +615,7 @@
         showApp();
         wire();
         loadOverview();
+        loadUserPage({ reset: true });
     }
 
     boot();
