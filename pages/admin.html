@@ -443,8 +443,10 @@
                 var tok = await api.passwordResetToken(selectedPublicId);
                 window.prompt('One-time sign-in URL / token (share securely):', tok.url || tok.token || '');
             } else if (action === 'impersonate') {
-                await api.impersonate(selectedPublicId);
-                window.location.assign('/');
+                var imp = await api.impersonate(selectedPublicId);
+                if (!(imp && imp.redirecting)) {
+                    window.location.assign('/');
+                }
                 return;
             }
             await openUser(selectedPublicId);

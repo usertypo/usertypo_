@@ -124,23 +124,35 @@
 
     async function signInWithTicket(ticket) {
         await window.usertypoAuth.ready();
-        if (!window.Clerk || !window.Clerk.client || !window.Clerk.client.signIn) {
+        var clerk = window.Clerk;
+        if (!clerk || !clerk.client || !clerk.client.signIn) {
             throw new Error('clerk_not_ready');
         }
-        // Replace session via ticket — sign out first so Clerk accepts the new ticket cleanly.
-        try {
-            await window.Clerk.signOut();
-        } catch (e) { /* ignore */ }
-        // Brief pause so Clerk finishes clearing the prior session.
-        await new Promise(function (resolve) { setTimeout(resolve, 150); });
-        var signIn = await window.Clerk.client.signIn.create({
+        if (!ticket) throw new Error('ticket_missing');
+
+        // Always clear the active session first WITHOUT navigating away.
+        // Default Clerk.signOut() can redirect to /signin and abort impersonation mid-flight
+        // (looks like "signed out, nothing happened"). Actor/sign-in tickets are one-time,
+        // so we must not attempt create() until the prior session is gone.
+        if (clerk.session) {
+            try {
+                await clerk.signOut({ redirectUrl: null });
+            } catch (e) {
+                try { await clerk.signOut(); } catch (e2) { /* ignore */ }
+            }
+            await new Promise(function (resolve) { setTimeout(resolve, 350); });
+        }
+
+        var signIn = await clerk.client.signIn.create({
             strategy: 'ticket',
             ticket: ticket,
         });
-        if (!signIn || !signIn.createdSessionId) {
-            throw new Error('ticket_sign_in_failed');
+        var sessionId = signIn && signIn.createdSessionId;
+        if (!sessionId) {
+            var status = signIn && signIn.status ? String(signIn.status) : 'unknown';
+            throw new Error('ticket_sign_in_failed:' + status);
         }
-        await window.Clerk.setActive({ session: signIn.createdSessionId });
+        await clerk.setActive({ session: sessionId });
         return true;
     }
 
@@ -170,9 +182,20 @@
             target_username: data.target && (data.target.username || data.target.display_name) || publicId,
             started_at: Date.now(),
         });
-        await signInWithTicket(data.token);
-        clearLocalUserCaches();
-        return data;
+        try {
+            await signInWithTicket(data.token);
+            clearLocalUserCaches();
+            return data;
+        } catch (err) {
+            // Last resort: Clerk's actor-token accept URL signs out + redirects back with __clerk_ticket.
+            if (data.url) {
+                window.location.assign(data.url);
+                return Object.assign({}, data, { redirecting: true });
+            }
+            // Roll back banner meta if we never switched sessions.
+            setImpersonationMeta(null);
+            throw err;
+        }
     }
 
     async function endImpersonation() {
