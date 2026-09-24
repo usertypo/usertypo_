@@ -239,12 +239,51 @@
         return parseCloudPayload(updated.data.look_feel) || payload;
     }
 
+    async function ensureLocalImagesOnR2(settings) {
+        if (!settings || !settings.lookFeel) return settings;
+        if (!window.usertypoThemeAssets || typeof window.usertypoThemeAssets.persistBgImage !== 'function') {
+            return settings;
+        }
+        var changed = false;
+        try {
+            var ct = settings.lookFeel.customTheme;
+            if (ct && ct.bgImage && ct.bgImage.url && String(ct.bgImage.url).indexOf('data:') === 0) {
+                var nextLive = await window.usertypoThemeAssets.persistBgImage(ct.bgImage, null);
+                if (nextLive && nextLive.url && nextLive.url !== ct.bgImage.url) {
+                    settings.lookFeel.customTheme = Object.assign({}, ct, { bgImage: nextLive });
+                    changed = true;
+                }
+            }
+            var presets = Array.isArray(settings.lookFeel.customPresets)
+                ? settings.lookFeel.customPresets
+                : [];
+            for (var i = 0; i < presets.length; i++) {
+                var p = presets[i];
+                if (!p || !p.bgImage || !p.bgImage.url) continue;
+                if (String(p.bgImage.url).indexOf('data:') !== 0) continue;
+                var nextPreset = await window.usertypoThemeAssets.persistBgImage(p.bgImage, null);
+                if (nextPreset && nextPreset.url && nextPreset.url !== p.bgImage.url) {
+                    presets[i] = Object.assign({}, p, { bgImage: nextPreset });
+                    changed = true;
+                }
+            }
+            if (changed) {
+                settings.lookFeel.customPresets = presets;
+                saveLocalSettings(settings);
+            }
+        } catch (err) {
+            console.warn('[usertypo look-feel] R2 migrate failed', err);
+        }
+        return settings;
+    }
+
     async function pushNow(options) {
         if (applyingFromCloud) return null;
         if (!isSignedIn()) return null;
 
         var settings = loadLocalSettings();
         if (!settings) return null;
+        settings = await ensureLocalImagesOnR2(settings);
 
         var force = !!(options && options.force);
         var at = localUpdatedAt(settings);

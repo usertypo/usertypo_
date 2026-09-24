@@ -56,6 +56,10 @@ window.USERTYPO_CONFIG = {
     notifications: {
         url: 'https://usertypo-notifications.usertypo2026.workers.dev',
     },
+    // Custom theme background images (R2 via Worker).
+    themeAssets: {
+        url: 'https://usertypo-theme-assets.usertypo2026.workers.dev',
+    },
     // Admin Worker (allowlisted public_ids only).
     admin: {
         url: 'https://usertypo-admin.usertypo2026.workers.dev',
@@ -112,6 +116,9 @@ window.USERTYPO_CONFIG = {
         };
         cfg.notifications = {
             url: 'https://usertypo-notifications-dev.usertypo2026.workers.dev',
+        };
+        cfg.themeAssets = {
+            url: 'https://usertypo-theme-assets-dev.usertypo2026.workers.dev',
         };
         cfg.admin = {
             url: 'https://usertypo-admin-dev.usertypo2026.workers.dev',

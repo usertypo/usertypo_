@@ -29,6 +29,9 @@
     "worker:notifications:dev": "npm run dev --prefix workers/notifications",
     "worker:notifications:deploy:dev": "npm run deploy:dev --prefix workers/notifications",
     "worker:notifications:deploy:prod": "npm run deploy:prod --prefix workers/notifications",
+    "worker:theme-assets:dev": "npm run dev --prefix workers/theme-assets",
+    "worker:theme-assets:deploy:dev": "npm run deploy:dev --prefix workers/theme-assets",
+    "worker:theme-assets:deploy:prod": "npm run deploy:prod --prefix workers/theme-assets",
     "worker:admin:dev": "npm run dev --prefix workers/admin",
     "worker:admin:deploy:dev": "npm run deploy:dev --prefix workers/admin",
     "worker:admin:deploy:prod": "npm run deploy:prod --prefix workers/admin"
