@@ -170,7 +170,12 @@
             state.user ? '(user id: ' + state.user.id + ')' : '',
             '| instance:', config.frontendApi
         );
-        return state;
+        try {
+            await consumeTicketFromUrl();
+        } catch (e) {
+            console.warn('[usertypo auth] ticket bootstrap failed', e);
+        }
+        return getState();
     }
 
     function markAuthWelcome(kind) {
@@ -889,12 +894,105 @@
         throw new Error('Could not finish creating your account. Try a different display name.');
     }
 
-    async function signOut() {
+    async function signOut(options) {
         await readyPromise;
         var clerk = getClerk();
         if (!clerk) return;
-        await clerk.signOut();
+        // Allow callers (e.g. impersonation) to clear the session without navigating away.
+        if (options && Object.prototype.hasOwnProperty.call(options, 'redirectUrl')) {
+            await clerk.signOut({ redirectUrl: options.redirectUrl });
+        } else {
+            await clerk.signOut();
+        }
         notify(getState());
+    }
+
+    /**
+     * Consume Clerk actor / sign-in tickets from the URL (__clerk_ticket)
+     * or a pending ticket stored before navigating to Clerk's accept URL.
+     */
+    async function consumeTicketFromUrl() {
+        var clerk = getClerk();
+        if (!clerk || !clerk.client || !clerk.client.signIn) return false;
+
+        var params;
+        try {
+            params = new URLSearchParams(window.location.search || '');
+        } catch (e) {
+            params = new URLSearchParams();
+        }
+
+        var ticket = params.get('__clerk_ticket');
+        if (!ticket) {
+            try {
+                var pendingAt = Number(sessionStorage.getItem('usertypo_pending_actor_at') || 0);
+                // Only accept a pending ticket for a few minutes.
+                if (pendingAt && Date.now() - pendingAt < 10 * 60 * 1000) {
+                    ticket = sessionStorage.getItem('usertypo_pending_actor_ticket') || '';
+                }
+            } catch (e) {
+                ticket = '';
+            }
+        }
+        if (!ticket) return false;
+
+        // Already signed in with an active session — don't burn the ticket.
+        if (clerk.session && clerk.user && !params.get('__clerk_ticket')) {
+            try {
+                sessionStorage.removeItem('usertypo_pending_actor_ticket');
+                sessionStorage.removeItem('usertypo_pending_actor_at');
+            } catch (e) { /* ignore */ }
+            return false;
+        }
+
+        try {
+            if (clerk.session) {
+                // Callback form skips navigate; redirectUrl:null still hits afterSignOutUrl.
+                try {
+                    if (typeof clerk.session.end === 'function') {
+                        await clerk.session.end();
+                    } else {
+                        await clerk.signOut(function () { /* stay */ });
+                    }
+                } catch (e) {
+                    try { await clerk.signOut(function () { /* stay */ }); } catch (e2) { /* ignore */ }
+                }
+                await new Promise(function (resolve) { setTimeout(resolve, 250); });
+            }
+            var signIn = await clerk.client.signIn.create({
+                strategy: 'ticket',
+                ticket: ticket,
+            });
+            if (!signIn || !signIn.createdSessionId) {
+                throw new Error('ticket_sign_in_failed');
+            }
+            await activateSession(signIn.createdSessionId);
+            try {
+                sessionStorage.removeItem('usertypo_pending_actor_ticket');
+                sessionStorage.removeItem('usertypo_pending_actor_at');
+            } catch (e) { /* ignore */ }
+        } catch (err) {
+            console.warn('[usertypo auth] ticket consume failed', err);
+            return false;
+        }
+
+        // Strip ticket params so a refresh does not re-consume.
+        try {
+            params.delete('__clerk_ticket');
+            params.delete('__clerk_status');
+            var next = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + (window.location.hash || '');
+            window.history.replaceState({}, '', next);
+        } catch (e) { /* ignore */ }
+
+        // Land on home after ticket accept (often arrives via /signin).
+        try {
+            var path = String(window.location.pathname || '');
+            if (path === '/signin' || path === '/sign-in' || path.indexOf('/signin') === 0 || path === '/admin') {
+                if (typeof window.navigateTo === 'function') window.navigateTo('/');
+                else window.location.assign('/');
+            }
+        } catch (e) { /* ignore */ }
+        return true;
     }
 
     function isReverificationError(err) {

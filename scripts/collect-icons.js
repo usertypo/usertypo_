@@ -70,6 +70,8 @@ for (const f of walk('.')) {
   // Confirm modal / settings — missing these causes partial ligatures (restart_alt → star)
   'restart_alt','library_music','font_download','bookmark','bookmark_add','color_lens',
   'settings_suggest','shortcut','pace','graphic_eq','edit_square','all_inclusive',
+  // Header admin control — missing glyph renders as raw ligature text
+  'admin_panel_settings','switch_account',
 ].forEach(addIcon);
 
 const list = [...icons].filter(Boolean).sort();

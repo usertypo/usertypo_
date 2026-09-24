@@ -142,6 +142,32 @@
         try {
             window.dispatchEvent(new CustomEvent('usertypo:profile-synced', { detail: { profile: profile } }));
         } catch (e) { /* ignore */ }
+        if (profile && profile.is_banned === true) {
+            enforceBanned(profile);
+        }
+    }
+
+    var banEnforced = false;
+    function enforceBanned(profile) {
+        if (banEnforced) return;
+        // Do not kick allowlisted admins if somehow flagged.
+        try {
+            if (window.usertypoAdmin && typeof window.usertypoAdmin.isAdminPublicId === 'function'
+                && window.usertypoAdmin.isAdminPublicId(profile.public_id)) {
+                return;
+            }
+        } catch (e) { /* ignore */ }
+        banEnforced = true;
+        var reason = (profile && profile.banned_reason) || 'This account has been suspended.';
+        try {
+            window.alert(reason);
+        } catch (e) { /* ignore */ }
+        if (window.usertypoAuth && typeof window.usertypoAuth.signOut === 'function') {
+            window.usertypoAuth.signOut().then(function () {
+                if (window.navigateTo) window.navigateTo('/signin');
+                else window.location.href = '/signin';
+            }).catch(function () { /* ignore */ });
+        }
     }
 
     async function detectCountryCode() {

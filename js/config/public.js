@@ -56,6 +56,11 @@ window.USERTYPO_CONFIG = {
     notifications: {
         url: 'https://usertypo-notifications.usertypo2026.workers.dev',
     },
+    // Admin Worker (allowlisted public_ids only).
+    admin: {
+        url: 'https://usertypo-admin.usertypo2026.workers.dev',
+        publicIds: ['TE2CGW6Y', 'XRMXYTTF', 'D94QTBHG'],
+    },
     features: {
         leaderboards: true,
     },
@@ -107,6 +112,11 @@ window.USERTYPO_CONFIG = {
         };
         cfg.notifications = {
             url: 'https://usertypo-notifications-dev.usertypo2026.workers.dev',
+        };
+        cfg.admin = {
+            url: 'https://usertypo-admin-dev.usertypo2026.workers.dev',
+            // Staging DB has different public_ids than production.
+            publicIds: ['I9000RBN', '0KTJ6BFW', 'EW7MDS87'],
         };
         if (!cfg.features) cfg.features = {};
         cfg.features.leaderboards = true;

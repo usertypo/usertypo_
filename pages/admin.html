@@ -1,0 +1,623 @@
+<style type="text/css">
+    .admin-page {
+        font-family: 'Inter', sans-serif;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1.25rem 1rem 3rem;
+        color: var(--theme-text, #e2e8f0);
+    }
+    .admin-page h1 {
+        font-family: 'Space Grotesk', 'Inter', sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    .admin-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin: 1.25rem 0 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 0.75rem;
+    }
+    .admin-tab {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--theme-text-muted, #94a3b8);
+        padding: 0.4rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .admin-tab:hover {
+        color: var(--theme-text, #fff);
+    }
+    .admin-tab.is-active {
+        color: var(--theme-text, #fff);
+        border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.45);
+        background: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.12);
+    }
+    .admin-panel { display: none; }
+    .admin-panel.is-active { display: block; }
+    .admin-stat-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .admin-stat {
+        padding: 1rem 1.1rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.18);
+    }
+    .admin-stat-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--theme-text-muted, #94a3b8);
+        margin-bottom: 0.35rem;
+    }
+    .admin-stat-value {
+        font-family: 'Space Grotesk', 'Inter', sans-serif;
+        font-size: 1.45rem;
+        font-weight: 700;
+    }
+    .admin-search-row {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    .admin-input {
+        flex: 1;
+        min-width: 12rem;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem;
+        padding: 0.55rem 0.85rem;
+        color: inherit;
+        font-size: 0.875rem;
+        outline: none;
+    }
+    .admin-input:focus {
+        border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.55);
+    }
+    .admin-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.15);
+        color: var(--theme-text, #fff);
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease, opacity 0.15s ease;
+    }
+    .admin-btn:hover { background: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.28); }
+    .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .admin-btn.danger {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.35);
+    }
+    .admin-btn.danger:hover { background: rgba(239, 68, 68, 0.28); }
+    .admin-btn.ghost {
+        background: transparent;
+    }
+    .admin-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+    .admin-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.7rem 0.9rem;
+        border-radius: 0.85rem;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        background: rgba(0, 0, 0, 0.16);
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        color: inherit;
+    }
+    .admin-row:hover {
+        border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.35);
+    }
+    .admin-row-title { font-weight: 600; font-size: 0.9rem; }
+    .admin-row-meta {
+        font-size: 0.72rem;
+        color: var(--theme-text-muted, #94a3b8);
+        font-family: ui-monospace, monospace;
+    }
+    .admin-detail {
+        margin-top: 1rem;
+        padding: 1.1rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.2);
+    }
+    .admin-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: 0.75rem 1.25rem;
+        margin: 1rem 0;
+    }
+    .admin-kv-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--theme-text-muted, #94a3b8);
+    }
+    .admin-kv-value { font-size: 0.9rem; margin-top: 0.15rem; word-break: break-word; }
+    .admin-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-top: 1rem;
+    }
+    .admin-muted { color: var(--theme-text-muted, #94a3b8); font-size: 0.85rem; }
+    .admin-error { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
+    .admin-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.15rem 0.45rem;
+        border-radius: 9999px;
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+    .admin-sessions {
+        margin-top: 1rem;
+        max-height: 14rem;
+        overflow: auto;
+        font-size: 0.75rem;
+        font-family: ui-monospace, monospace;
+    }
+    .admin-sessions table { width: 100%; border-collapse: collapse; }
+    .admin-sessions th, .admin-sessions td {
+        text-align: left;
+        padding: 0.35rem 0.4rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .admin-denied {
+        padding: 3rem 1rem;
+        text-align: center;
+        color: var(--theme-text-muted, #94a3b8);
+    }
+</style>
+
+<div class="admin-page" id="admin-root">
+    <div id="admin-denied" class="admin-denied hidden">
+        <span class="material-symbols-outlined text-[2rem] mb-2 block">lock</span>
+        <p>Admin access is limited to authorized accounts.</p>
+    </div>
+
+    <div id="admin-app" class="hidden">
+        <h1>Admin</h1>
+        <p class="admin-muted mt-1">Moderation and analytics.</p>
+
+        <div class="admin-stat-row" id="admin-stats">
+            <div class="admin-stat">
+                <div class="admin-stat-label">Users</div>
+                <div class="admin-stat-value" id="admin-stat-users">—</div>
+            </div>
+            <div class="admin-stat">
+                <div class="admin-stat-label">Banned</div>
+                <div class="admin-stat-value" id="admin-stat-banned">—</div>
+            </div>
+            <div class="admin-stat">
+                <div class="admin-stat-label">Avg visit</div>
+                <div class="admin-stat-value" id="admin-stat-visit">—</div>
+            </div>
+        </div>
+        <p class="admin-muted" id="admin-overview-status">Loading analytics…</p>
+
+        <h2 class="admin-row-title text-base mt-6 mb-3">Users</h2>
+        <div class="admin-search-row">
+            <input type="search" id="admin-user-q" class="admin-input" placeholder="Search username or public ID" autocomplete="off" />
+            <button type="button" class="admin-btn" id="admin-user-search-btn">
+                <span class="material-symbols-outlined text-[1rem]">search</span> Search
+            </button>
+            <button type="button" class="admin-btn ghost" id="admin-user-clear-btn" title="Clear search and show all">
+                All users
+            </button>
+        </div>
+        <div class="admin-list" id="admin-user-results"></div>
+        <div class="admin-search-row" id="admin-user-more-row" style="display:none;">
+            <button type="button" class="admin-btn ghost" id="admin-user-more-btn">Show next 20</button>
+            <span class="admin-muted" id="admin-user-page-meta"></span>
+        </div>
+        <div id="admin-user-detail" class="admin-detail hidden"></div>
+        <p class="admin-error hidden" id="admin-user-error"></p>
+    </div>
+</div>
+
+<script>
+(function () {
+    var api = window.usertypoAdmin;
+    var esc = (window.usertypoEscape && window.usertypoEscape.html)
+        ? window.usertypoEscape.html
+        : function (s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        };
+
+    var selectedPublicId = null;
+    var USER_PAGE_SIZE = 20;
+    var userListOffset = 0;
+    var userListMode = 'browse'; // 'browse' | 'search'
+    var userListHasMore = false;
+    var userListBusy = false;
+
+    function $(id) { return document.getElementById(id); }
+
+    function showDenied() {
+        var denied = $('admin-denied');
+        var app = $('admin-app');
+        if (denied) denied.classList.remove('hidden');
+        if (app) app.classList.add('hidden');
+    }
+
+    function showApp() {
+        var denied = $('admin-denied');
+        var app = $('admin-app');
+        if (denied) denied.classList.add('hidden');
+        if (app) app.classList.remove('hidden');
+    }
+
+    function relativeTime(iso) {
+        if (!iso) return '—';
+        var t = new Date(iso).getTime();
+        if (!Number.isFinite(t)) return '—';
+        var diff = Date.now() - t;
+        if (diff < 60000) return 'just now';
+        if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+        return Math.floor(diff / 86400000) + 'd ago';
+    }
+
+    async function loadOverview() {
+        var status = $('admin-overview-status');
+        try {
+            var data = await api.analytics();
+            $('admin-stat-users').textContent = String(data.total_users != null ? data.total_users : '—');
+            $('admin-stat-banned').textContent = String(data.banned_users != null ? data.banned_users : '—');
+            $('admin-stat-visit').textContent = api.formatDuration(data.avg_visit_seconds || 0);
+            if (status) status.textContent = 'Updated just now.';
+        } catch (err) {
+            if (status) status.textContent = 'Could not load analytics: ' + (err.message || err);
+        }
+    }
+
+    function renderUserResults(users, opts) {
+        var list = $('admin-user-results');
+        if (!list) return;
+        var append = opts && opts.append;
+        if (!users || !users.length) {
+            if (!append) list.innerHTML = '<p class="admin-muted">No users found.</p>';
+            return;
+        }
+        var html = users.map(function (u) {
+            var name = esc(u.username || u.display_name || u.public_id);
+            var ban = u.is_banned ? ' <span class="admin-badge">banned</span>' : '';
+            return (
+                '<button type="button" class="admin-row" data-public-id="' + esc(u.public_id) + '">' +
+                '<div><div class="admin-row-title">' + name + ban + '</div>' +
+                '<div class="admin-row-meta">' + esc(u.public_id) +
+                (u.country_code ? ' · ' + esc(u.country_code) : '') +
+                ' · last ' + esc(relativeTime(u.last_seen_at)) +
+                '</div></div></button>'
+            );
+        }).join('');
+        if (append) list.insertAdjacentHTML('beforeend', html);
+        else list.innerHTML = html;
+    }
+
+    function updateUserPager() {
+        var row = $('admin-user-more-row');
+        var btn = $('admin-user-more-btn');
+        var meta = $('admin-user-page-meta');
+        if (!row) return;
+        var show = userListMode === 'browse' && userListHasMore;
+        row.style.display = show ? 'flex' : 'none';
+        if (btn) btn.disabled = !!userListBusy;
+        if (meta) {
+            var list = $('admin-user-results');
+            var count = list ? list.querySelectorAll('[data-public-id]').length : 0;
+            meta.textContent = count
+                ? (count + ' loaded' + (userListHasMore ? ' · more available' : ''))
+                : '';
+        }
+    }
+
+    async function loadUserPage(opts) {
+        if (!api || userListBusy) return;
+        var reset = !opts || opts.reset !== false;
+        var err = $('admin-user-error');
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        userListBusy = true;
+        updateUserPager();
+        try {
+            if (reset) {
+                userListOffset = 0;
+                userListMode = 'browse';
+                var detail = $('admin-user-detail');
+                if (detail) { detail.classList.add('hidden'); detail.innerHTML = ''; }
+            }
+            var data = await api.listUsers(USER_PAGE_SIZE, userListOffset);
+            var users = data.users || [];
+            renderUserResults(users, { append: !reset && userListOffset > 0 });
+            userListHasMore = !!data.has_more;
+            userListOffset += users.length;
+        } catch (e) {
+            if (err) {
+                err.textContent = e.message || 'Could not load users';
+                err.classList.remove('hidden');
+            }
+        } finally {
+            userListBusy = false;
+            updateUserPager();
+        }
+    }
+
+    async function searchUsers() {
+        var q = ($('admin-user-q') && $('admin-user-q').value) || '';
+        var err = $('admin-user-error');
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        if (!String(q).trim()) {
+            await loadUserPage({ reset: true });
+            return;
+        }
+        userListBusy = true;
+        userListMode = 'search';
+        userListHasMore = false;
+        updateUserPager();
+        try {
+            var data = await api.searchUsers(q, 30);
+            userListOffset = 0;
+            renderUserResults(data.users || []);
+        } catch (e) {
+            if (err) {
+                err.textContent = e.message || 'Search failed';
+                err.classList.remove('hidden');
+            }
+        } finally {
+            userListBusy = false;
+            updateUserPager();
+        }
+    }
+
+    function renderSessions(sessions) {
+        if (!sessions || !sessions.length) return '<p class="admin-muted">No recent typing sessions.</p>';
+        var rows = sessions.map(function (s) {
+            var id = esc(s.id || '');
+            return '<tr data-session-id="' + id + '">' +
+                '<td>' + esc(s.created_at || '').slice(0, 19).replace('T', ' ') + '</td>' +
+                '<td>' + esc(s.wpm) + ' wpm</td>' +
+                '<td>' + esc(s.accuracy) + '%</td>' +
+                '<td>' + esc(s.mode) + ' ' + esc(s.amount) + '</td>' +
+                '<td style="width:2.5rem;text-align:right;">' +
+                '<button type="button" class="admin-btn ghost" data-action="delete-session" data-session-id="' + id + '" ' +
+                'title="Delete this test" aria-label="Delete this test" style="padding:0.25rem 0.4rem;">' +
+                '<span class="material-symbols-outlined text-[1rem]" style="color:#f87171;">delete</span>' +
+                '</button></td></tr>';
+        }).join('');
+        return '<div class="admin-sessions"><table><thead><tr><th>When</th><th>WPM</th><th>Acc</th><th>Mode</th><th></th></tr></thead><tbody>' +
+            rows + '</tbody></table></div>';
+    }
+
+    async function openUser(publicId) {
+        selectedPublicId = publicId;
+        var detail = $('admin-user-detail');
+        var err = $('admin-user-error');
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        if (!detail) return;
+        detail.classList.remove('hidden');
+        detail.innerHTML = '<p class="admin-muted">Loading…</p>';
+        try {
+            var data = await api.getUser(publicId);
+            var u = data.user || {};
+            var prog = data.progression || {};
+            var banBadge = u.is_banned ? ' <span class="admin-badge">banned</span>' : '';
+            detail.innerHTML =
+                '<div class="flex items-center justify-between gap-2 flex-wrap">' +
+                '<div><div class="admin-row-title text-lg">' + esc(u.username || u.display_name || u.public_id) + banBadge + '</div>' +
+                '<div class="admin-row-meta">' + esc(u.public_id) + '</div></div></div>' +
+                '<div class="admin-detail-grid">' +
+                '<div><div class="admin-kv-label">Country</div><div class="admin-kv-value">' + esc(u.country_code || '—') + '</div></div>' +
+                '<div><div class="admin-kv-label">Last active</div><div class="admin-kv-value">' + esc(relativeTime(u.last_seen_at)) + '</div></div>' +
+                '<div><div class="admin-kv-label">Avg site visit</div><div class="admin-kv-value">' + esc(api.formatDuration(data.avg_visit_seconds || 0)) + '</div></div>' +
+                '<div><div class="admin-kv-label">Level / XP</div><div class="admin-kv-value">' + esc(prog.level || '—') + ' · ' + esc(prog.total_xp != null ? prog.total_xp : '—') + '</div></div>' +
+                '<div><div class="admin-kv-label">Leaderboard</div><div class="admin-kv-value">' + (u.show_on_leaderboard === false ? 'hidden' : 'visible') + '</div></div>' +
+                (u.is_banned ? '<div><div class="admin-kv-label">Ban reason</div><div class="admin-kv-value">' + esc(u.banned_reason || '—') + '</div></div>' : '') +
+                '</div>' +
+                '<div class="admin-actions">' +
+                (u.is_banned
+                    ? '<button type="button" class="admin-btn" data-action="unban">Unban</button>'
+                    : '<button type="button" class="admin-btn danger" data-action="ban">Ban</button>') +
+                '<button type="button" class="admin-btn danger" data-action="purge">Purge scores</button>' +
+                '<button type="button" class="admin-btn" data-action="set-username">Change username</button>' +
+                '<button type="button" class="admin-btn" data-action="reset-token">One-time sign-in</button>' +
+                '<button type="button" class="admin-btn" data-action="impersonate"><span class="material-symbols-outlined text-[1rem]">switch_account</span> Log in as user</button>' +
+                '</div>' +
+                renderSessions(data.recent_sessions);
+        } catch (e) {
+            detail.innerHTML = '';
+            detail.classList.add('hidden');
+            if (err) {
+                err.textContent = e.message || 'Failed to load user';
+                err.classList.remove('hidden');
+            }
+        }
+    }
+
+    async function runUserAction(action, el) {
+        if (!selectedPublicId || !api) return;
+        var err = $('admin-user-error');
+        try {
+            if (action === 'ban') {
+                var reason = await api.prompt('Ban reason for this account:', {
+                    title: 'Ban user',
+                    icon: 'block',
+                    value: 'Banned by admin',
+                    okLabel: 'Ban',
+                });
+                if (reason == null || !String(reason).trim()) return;
+                await api.banUser(selectedPublicId, String(reason).trim());
+            } else if (action === 'unban') {
+                var unbanOk = await api.confirm('Unban this user?', {
+                    title: 'Unban user',
+                    icon: 'lock_open',
+                    okLabel: 'Unban',
+                });
+                if (!unbanOk) return;
+                await api.unbanUser(selectedPublicId);
+            } else if (action === 'purge') {
+                var purgeOk = await api.confirm(
+                    'Delete all typing sessions for this user and reset them to level 1? This cannot be undone.',
+                    { title: 'Purge scores', icon: 'delete', okLabel: 'Delete all' }
+                );
+                if (!purgeOk) return;
+                await api.purgeScores(selectedPublicId);
+            } else if (action === 'delete-session') {
+                var sessionId = el && el.getAttribute('data-session-id');
+                if (!sessionId) return;
+                var delOk = await api.confirm('Delete this typing test? This cannot be undone.', {
+                    title: 'Delete test',
+                    icon: 'delete',
+                    okLabel: 'Delete',
+                });
+                if (!delOk) return;
+                await api.deleteSession(selectedPublicId, sessionId);
+            } else if (action === 'set-username') {
+                var currentName = '';
+                try {
+                    var titleEl = $('admin-user-detail') && $('admin-user-detail').querySelector('.admin-row-title');
+                    currentName = titleEl ? String(titleEl.textContent || '').replace(/\s*banned\s*$/i, '').trim() : '';
+                } catch (e) { /* ignore */ }
+                var next = await api.prompt('New username (3–32 characters):', {
+                    title: 'Change username',
+                    icon: 'edit',
+                    value: currentName || '',
+                    okLabel: 'Save',
+                });
+                if (next == null) return;
+                next = String(next).trim();
+                if (next.length < 3 || next.length > 32) {
+                    throw new Error('Username must be 3–32 characters');
+                }
+                await api.setUsername(selectedPublicId, next);
+            } else if (action === 'reset-token') {
+                var tok = await api.passwordResetToken(selectedPublicId);
+                var link = tok.url || '';
+                if (!link) throw new Error('link_missing');
+                await api.showResult(
+                    'Share this one-time link securely. It expires in 2 hours and works only once. Opening it signs into that account on this site.',
+                    link,
+                    { title: 'One-time sign-in link', icon: 'link' }
+                );
+                return;
+            } else if (action === 'impersonate') {
+                await api.impersonate(selectedPublicId);
+                return;
+            }
+            await openUser(selectedPublicId);
+        } catch (e) {
+            if (err) {
+                err.textContent = e.message || 'Action failed';
+                err.classList.remove('hidden');
+            }
+        }
+    }
+
+    function wire() {
+        var searchBtn = $('admin-user-search-btn');
+        var searchInput = $('admin-user-q');
+        var clearBtn = $('admin-user-clear-btn');
+        var moreBtn = $('admin-user-more-btn');
+        if (searchBtn) searchBtn.addEventListener('click', searchUsers);
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                if (searchInput) searchInput.value = '';
+                loadUserPage({ reset: true });
+            });
+        }
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function () {
+                loadUserPage({ reset: false });
+            });
+        }
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchUsers();
+                }
+            });
+        }
+
+        var results = $('admin-user-results');
+        if (results) {
+            results.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-public-id]');
+                if (!btn) return;
+                openUser(btn.getAttribute('data-public-id'));
+            });
+        }
+
+        var detail = $('admin-user-detail');
+        if (detail) {
+            detail.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                runUserAction(btn.getAttribute('data-action'), btn);
+            });
+        }
+    }
+
+    async function boot() {
+        if (!api) {
+            showDenied();
+            return;
+        }
+        if (!window.usertypoAuth) {
+            showDenied();
+            return;
+        }
+        await window.usertypoAuth.ready();
+        var state = window.usertypoAuth.getState();
+        if (!state.isSignedIn) {
+            if (window.navigateTo) window.navigateTo('/signin');
+            else window.location.href = '/signin';
+            return;
+        }
+        // Wait briefly for profile cache
+        if (!window.__USERTYPO_PROFILE__ && window.usertypoProfiles && window.usertypoProfiles.ensureMyProfile) {
+            try { await window.usertypoProfiles.ensureMyProfile(); } catch (e) { /* ignore */ }
+        }
+        if (!api.isAdmin()) {
+            showDenied();
+            return;
+        }
+        showApp();
+        wire();
+        loadOverview();
+        loadUserPage({ reset: true });
+    }
+
+    boot();
+})();
+</script>
