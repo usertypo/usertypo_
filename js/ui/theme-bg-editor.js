@@ -92,7 +92,7 @@
         var root = document.createElement('div');
         root.id = 'theme-bg-editor-root';
         root.innerHTML =
-            '<div id="theme-bg-modal" class="fixed inset-0 z-[265] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200" aria-hidden="true">' +
+            '<div id="theme-bg-modal" class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200" aria-hidden="true" style="z-index:9999">' +
                 '<div id="theme-bg-box" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 opacity-0 transition-all duration-200 w-[min(94vw,32rem)] relative flex flex-col gap-4">' +
                     '<button type="button" id="theme-bg-close" class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close">' +
                         '<span class="material-symbols-outlined text-[1.066rem]">close</span>' +
@@ -129,7 +129,7 @@
                     '<input id="theme-bg-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />' +
                 '</div>' +
             '</div>' +
-            '<div id="theme-bg-edit-layer" class="fixed inset-0 z-[255] pointer-events-none opacity-0 transition-opacity duration-300" aria-hidden="true">' +
+            '<div id="theme-bg-edit-layer" class="fixed inset-0 z-[9999] pointer-events-none opacity-0 transition-opacity duration-300" aria-hidden="true" style="z-index:9999">' +
                 '<div id="theme-bg-edit-stage" class="absolute inset-0 overflow-hidden cursor-grab touch-none select-none" style="background:var(--theme-bg,#000)">' +
                     '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" />' +
                 '</div>' +

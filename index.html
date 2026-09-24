@@ -131,7 +131,7 @@
     <link rel="preload" href="/logo-assets/typ_.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/user.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/o.png" as="image" fetchpriority="high" />
-    <link rel="preload" href="/css/fonts/material-symbols.ttf?v=7" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/css/fonts/material-symbols.ttf?v=8" as="font" type="font/ttf" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -227,7 +227,7 @@
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
     <link href="css/global.css?v=35" rel="stylesheet" />
-    <link href="css/material-symbols.css?v=7" rel="stylesheet" />
+    <link href="css/material-symbols.css?v=8" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
     <style id="shell-surface-fix">
@@ -274,6 +274,22 @@
             color: var(--theme-primary, #fff);
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.35);
             background: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.12);
+        }
+        .theme-bg-trigger-btn .material-symbols-outlined,
+        #theme-bg-editor-root .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            letter-spacing: normal !important;
+            text-transform: none !important;
+            font-feature-settings: 'liga' 1, 'rlig' 1 !important;
+            -webkit-font-feature-settings: 'liga' 1, 'rlig' 1 !important;
+            font-variant-ligatures: common-ligatures discretionary-ligatures !important;
+            line-height: 1 !important;
+        }
+        #theme-bg-modal,
+        #theme-bg-edit-layer {
+            z-index: 9999 !important;
         }
     </style>
     <style id="shell-keymap-scroll">
@@ -1745,7 +1761,7 @@
     <script src="js/api/profiles.js?v=14"></script>
     <script src="js/api/look-feel.js?v=3"></script>
     <script src="js/api/theme-assets.js?v=1"></script>
-    <script src="js/ui/theme-bg-editor.js?v=2"></script>
+    <script src="js/ui/theme-bg-editor.js?v=3"></script>
     <script src="js/api/sessions.js?v=20"></script>
     <script src="js/api/account.js?v=15"></script>
     <script src="js/api/progression.js?v=8"></script>

@@ -74,6 +74,8 @@ for (const f of walk('.')) {
   'admin_panel_settings','switch_account',
   // Header chill toggle (pause saving tests)
   'spa',
+  // Custom theme background image editor
+  'wallpaper', 'upload', 'opacity', 'add_photo_alternate', 'image',
 ].forEach(addIcon);
 
 const list = [...icons].filter(Boolean).sort();
