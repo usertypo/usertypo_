@@ -103,14 +103,12 @@
         if (!window.Clerk || !window.Clerk.client || !window.Clerk.client.signIn) {
             throw new Error('clerk_not_ready');
         }
-        // Must clear the current session before consuming a ticket.
+        // Replace session via ticket — sign out first so Clerk accepts the new ticket cleanly.
         try {
-            if (window.Clerk.session) {
-                await window.Clerk.signOut({ redirectUrl: null });
-            }
-        } catch (e) {
-            try { await window.Clerk.signOut(); } catch (_) { /* ignore */ }
-        }
+            await window.Clerk.signOut();
+        } catch (e) { /* ignore */ }
+        // Brief pause so Clerk finishes clearing the prior session.
+        await new Promise(function (resolve) { setTimeout(resolve, 150); });
         var signIn = await window.Clerk.client.signIn.create({
             strategy: 'ticket',
             ticket: ticket,
@@ -139,6 +137,7 @@
         );
         if (!data || !data.token) throw new Error('actor_token_missing');
         if (!data.return_token) throw new Error('return_token_missing');
+        // Persist return info BEFORE switching sessions.
         setImpersonationMeta({
             admin_public_id: data.admin_public_id || currentPublicId(),
             admin_user_id: data.admin_user_id || null,
@@ -153,21 +152,31 @@
     }
 
     async function endImpersonation() {
-        var meta = getImpersonationMeta();
-        var ticket = meta && meta.return_token ? meta.return_token : null;
-        if (!ticket) {
-            // Fallback: ask Worker for a fresh admin sign-in token.
+        var meta = getImpersonationMeta() || {};
+        var ticket = null;
+        var lastErr = null;
+
+        // Prefer a fresh Worker token (works even if stored one-time ticket is missing/expired).
+        try {
             var data = await workerFetch('/impersonate/end', {
                 method: 'POST',
                 body: JSON.stringify({
-                    admin_user_id: meta && meta.admin_user_id || null,
+                    admin_user_id: meta.admin_user_id || null,
+                    admin_public_id: meta.admin_public_id || null,
                 }),
             });
             ticket = data && data.token;
+        } catch (err) {
+            lastErr = err;
+            ticket = meta.return_token || null;
         }
-        if (!ticket) throw new Error('return_token_missing');
-        setImpersonationMeta(null);
+
+        if (!ticket) {
+            throw lastErr || new Error('return_token_missing');
+        }
+
         await signInWithTicket(ticket);
+        setImpersonationMeta(null);
         clearLocalUserCaches();
         return { ok: true };
     }
