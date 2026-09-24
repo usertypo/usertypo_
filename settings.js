@@ -1481,6 +1481,7 @@ function deleteCustomThemePreset(index) {
     if (!Array.isArray(presets) || !presets[index]) return;
 
     const current = settings.lookFeel.colorTheme;
+    const removedBgUrl = presets[index].bgImage && presets[index].bgImage.url;
     presets.splice(index, 1);
 
     if (current === `custom:${index}`) {
@@ -1504,6 +1505,9 @@ function deleteCustomThemePreset(index) {
     syncCustomThemeEditor(settings);
     notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
+    if (removedBgUrl && window.usertypoThemeAssets && typeof window.usertypoThemeAssets.deleteByUrl === 'function') {
+        window.usertypoThemeAssets.deleteByUrl(removedBgUrl).catch(() => { /* ignore */ });
+    }
 }
 
 function syncColorThemeSelectLabel(settings) {

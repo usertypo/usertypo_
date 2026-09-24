@@ -123,11 +123,36 @@
         return data || { ok: true };
     }
 
-    async function deleteByUrl(url) {
+    /**
+     * Presets and the live custom theme can share one uploaded object, so an
+     * upload must survive until nothing local points at it. Unknown state → in use.
+     */
+    function isUrlInUse(url, opts) {
+        var target = normalizeDurableUrl(url);
+        var lf;
+        try {
+            var api = window.usertypo_settingsApi;
+            var settings = api && typeof api.loadSettings === 'function' ? api.loadSettings() : null;
+            lf = settings && settings.lookFeel;
+        } catch (_) {
+            return true;
+        }
+        if (!lf) return true;
+        var refs = [];
+        if (!(opts && opts.ignoreLive)) refs.push(lf.customTheme);
+        if (Array.isArray(lf.customPresets)) refs = refs.concat(lf.customPresets);
+        return refs.some(function (theme) {
+            var bg = theme && theme.bgImage;
+            return !!(bg && bg.url && normalizeDurableUrl(bg.url) === target);
+        });
+    }
+
+    async function deleteByUrl(url, opts) {
         var base = workerUrl();
         if (!base || !url || String(url).indexOf(base + '/bg/') !== 0) {
             return { skipped: true };
         }
+        if (isUrlInUse(url, opts)) return { skipped: true, reason: 'in_use' };
         var key = String(url).slice((base + '/bg/').length);
         try { key = decodeURIComponent(key); } catch (_) { /* keep */ }
         return deleteByKey(key);
@@ -157,7 +182,7 @@
         if (isDefaultAssetUrl(url) || /^https?:\/\//i.test(url) || (url.charAt(0) === '/' && !isEphemeralUrl(url))) {
             next.url = normalizeDurableUrl(url);
             if (previous && previous.url && previous.url !== next.url && isOurAssetUrl(previous.url)) {
-                try { await deleteByUrl(previous.url); } catch (_) { /* ignore */ }
+                try { await deleteByUrl(previous.url, { ignoreLive: true }); } catch (_) { /* ignore */ }
             }
             return next;
         }
@@ -179,7 +204,7 @@
             next.key = uploaded.key;
             next.id = 'upload:' + (uploaded.key || Date.now());
             if (previous && previous.url && previous.url !== next.url && isOurAssetUrl(previous.url)) {
-                try { await deleteByUrl(previous.url); } catch (_) { /* ignore */ }
+                try { await deleteByUrl(previous.url, { ignoreLive: true }); } catch (_) { /* ignore */ }
             }
             return next;
         }
