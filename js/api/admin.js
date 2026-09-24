@@ -122,6 +122,31 @@
         return data;
     }
 
+    /**
+     * End the active Clerk session without navigating away.
+     * clerk.signOut() / signOut({ redirectUrl: null }) still navigate (null is
+     * treated as missing and afterSignOutUrl wins — often "/" or localhost).
+     * The callback form skips navigation in clerk-js.
+     */
+    async function clearSessionStayPut(clerk) {
+        if (!clerk || !clerk.session) return;
+        if (typeof clerk.session.end === 'function') {
+            try {
+                await clerk.session.end();
+                return;
+            } catch (e) { /* fall through */ }
+        }
+        try {
+            await clerk.signOut(function () { /* stay on this page */ });
+        } catch (e) {
+            try {
+                if (clerk.session && typeof clerk.session.remove === 'function') {
+                    await clerk.session.remove();
+                }
+            } catch (e2) { /* ignore */ }
+        }
+    }
+
     async function signInWithTicket(ticket) {
         await window.usertypoAuth.ready();
         var clerk = window.Clerk;
@@ -130,18 +155,9 @@
         }
         if (!ticket) throw new Error('ticket_missing');
 
-        // Always clear the active session first WITHOUT navigating away.
-        // Default Clerk.signOut() can redirect to /signin and abort impersonation mid-flight
-        // (looks like "signed out, nothing happened"). Actor/sign-in tickets are one-time,
-        // so we must not attempt create() until the prior session is gone.
-        if (clerk.session) {
-            try {
-                await clerk.signOut({ redirectUrl: null });
-            } catch (e) {
-                try { await clerk.signOut(); } catch (e2) { /* ignore */ }
-            }
-            await new Promise(function (resolve) { setTimeout(resolve, 350); });
-        }
+        // Clear prior session in-place, then redeem the one-time ticket once.
+        await clearSessionStayPut(clerk);
+        await new Promise(function (resolve) { setTimeout(resolve, 300); });
 
         var signIn = await clerk.client.signIn.create({
             strategy: 'ticket',
@@ -153,6 +169,9 @@
             throw new Error('ticket_sign_in_failed:' + status);
         }
         await clerk.setActive({ session: sessionId });
+        if (!clerk.user) {
+            throw new Error('ticket_session_inactive');
+        }
         return true;
     }
 
@@ -173,9 +192,8 @@
         );
         if (!data || !data.token) throw new Error('actor_token_missing');
         if (!data.return_token) throw new Error('return_token_missing');
-        if (!data.url) throw new Error('actor_url_missing');
 
-        // Persist return info BEFORE leaving this page.
+        // Persist return info BEFORE switching sessions.
         setImpersonationMeta({
             admin_public_id: data.admin_public_id || currentPublicId(),
             admin_user_id: data.admin_user_id || null,
@@ -184,20 +202,19 @@
             target_username: data.target && (data.target.username || data.target.display_name) || publicId,
             started_at: Date.now(),
         });
-        // Keep a copy of the actor ticket for the bootstrap consumer if Clerk
-        // redirects without (or before) putting __clerk_ticket in the URL.
+
+        // Stay on this origin. Never open data.url — Clerk Dashboard paths still
+        // point at localhost for the staging instance and dump the admin there.
+        await signInWithTicket(data.token);
+        clearLocalUserCaches();
         try {
-            sessionStorage.setItem('usertypo_pending_actor_ticket', data.token);
-            sessionStorage.setItem('usertypo_pending_actor_at', String(Date.now()));
+            sessionStorage.removeItem('usertypo_pending_actor_ticket');
+            sessionStorage.removeItem('usertypo_pending_actor_at');
         } catch (e) { /* ignore */ }
 
-        // CRITICAL: do NOT call Clerk.signOut() or client.signIn.create here.
-        // signOut redirects to "/" in this Clerk setup and aborts the flow, leaving
-        // the admin signed out on the home page. Visit Clerk's actor-token accept
-        // URL instead — it signs out + prepares the ticket, then returns to /signin
-        // with __clerk_ticket for usertypoAuth to consume.
-        window.location.assign(data.url);
-        return Object.assign({}, data, { redirecting: true });
+        if (typeof window.navigateTo === 'function') window.navigateTo('/');
+        else window.location.assign('/');
+        return data;
     }
 
     async function endImpersonation() {
@@ -239,9 +256,7 @@
         setImpersonationMeta(null);
         clearLocalUserCaches();
         try {
-            if (window.Clerk && typeof window.Clerk.signOut === 'function') {
-                await window.Clerk.signOut();
-            }
+            await clearSessionStayPut(window.Clerk);
         } catch (e) { /* ignore */ }
         return {
             ok: true,

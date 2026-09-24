@@ -947,10 +947,15 @@
 
         try {
             if (clerk.session) {
+                // Callback form skips navigate; redirectUrl:null still hits afterSignOutUrl.
                 try {
-                    await clerk.signOut({ redirectUrl: null });
+                    if (typeof clerk.session.end === 'function') {
+                        await clerk.session.end();
+                    } else {
+                        await clerk.signOut(function () { /* stay */ });
+                    }
                 } catch (e) {
-                    try { await clerk.signOut(); } catch (e2) { /* ignore */ }
+                    try { await clerk.signOut(function () { /* stay */ }); } catch (e2) { /* ignore */ }
                 }
                 await new Promise(function (resolve) { setTimeout(resolve, 250); });
             }
