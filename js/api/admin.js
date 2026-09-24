@@ -173,7 +173,9 @@
         );
         if (!data || !data.token) throw new Error('actor_token_missing');
         if (!data.return_token) throw new Error('return_token_missing');
-        // Persist return info BEFORE switching sessions.
+        if (!data.url) throw new Error('actor_url_missing');
+
+        // Persist return info BEFORE leaving this page.
         setImpersonationMeta({
             admin_public_id: data.admin_public_id || currentPublicId(),
             admin_user_id: data.admin_user_id || null,
@@ -182,20 +184,20 @@
             target_username: data.target && (data.target.username || data.target.display_name) || publicId,
             started_at: Date.now(),
         });
+        // Keep a copy of the actor ticket for the bootstrap consumer if Clerk
+        // redirects without (or before) putting __clerk_ticket in the URL.
         try {
-            await signInWithTicket(data.token);
-            clearLocalUserCaches();
-            return data;
-        } catch (err) {
-            // Last resort: Clerk's actor-token accept URL signs out + redirects back with __clerk_ticket.
-            if (data.url) {
-                window.location.assign(data.url);
-                return Object.assign({}, data, { redirecting: true });
-            }
-            // Roll back banner meta if we never switched sessions.
-            setImpersonationMeta(null);
-            throw err;
-        }
+            sessionStorage.setItem('usertypo_pending_actor_ticket', data.token);
+            sessionStorage.setItem('usertypo_pending_actor_at', String(Date.now()));
+        } catch (e) { /* ignore */ }
+
+        // CRITICAL: do NOT call Clerk.signOut() or client.signIn.create here.
+        // signOut redirects to "/" in this Clerk setup and aborts the flow, leaving
+        // the admin signed out on the home page. Visit Clerk's actor-token accept
+        // URL instead — it signs out + prepares the ticket, then returns to /signin
+        // with __clerk_ticket for usertypoAuth to consume.
+        window.location.assign(data.url);
+        return Object.assign({}, data, { redirecting: true });
     }
 
     async function endImpersonation() {
@@ -257,10 +259,17 @@
         return workerFetch('/analytics');
     }
 
-    async function searchUsers(q, limit) {
+    async function searchUsers(q, limit, offset) {
         var query = encodeURIComponent(String(q || '').trim());
         var lim = limit || 20;
-        return workerFetch('/users?q=' + query + '&limit=' + lim);
+        var off = offset || 0;
+        return workerFetch('/users?q=' + query + '&limit=' + lim + '&offset=' + off);
+    }
+
+    async function listUsers(limit, offset) {
+        var lim = limit || 20;
+        var off = offset || 0;
+        return workerFetch('/users?limit=' + lim + '&offset=' + off);
     }
 
     async function getUser(publicId) {
@@ -376,6 +385,7 @@
         me: me,
         analytics: analytics,
         searchUsers: searchUsers,
+        listUsers: listUsers,
         getUser: getUser,
         banUser: banUser,
         unbanUser: unbanUser,
