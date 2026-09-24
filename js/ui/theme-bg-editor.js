@@ -13,10 +13,10 @@
     var COMPRESS_QUALITY = 0.72;
 
     var DEFAULT_IMAGES = [
-        { id: 'aurora', name: 'Aurora', url: 'assets/theme-bgs/aurora.png' },
-        { id: 'dusk', name: 'Dusk', url: 'assets/theme-bgs/dusk.png' },
-        { id: 'ocean', name: 'Ocean', url: 'assets/theme-bgs/ocean.png' },
-        { id: 'geometry', name: 'Geometry', url: 'assets/theme-bgs/geometry.png' },
+        { id: 'aurora', name: 'Aurora', url: '/assets/theme-bgs/aurora.png' },
+        { id: 'dusk', name: 'Dusk', url: '/assets/theme-bgs/dusk.png' },
+        { id: 'ocean', name: 'Ocean', url: '/assets/theme-bgs/ocean.png' },
+        { id: 'geometry', name: 'Geometry', url: '/assets/theme-bgs/geometry.png' },
     ];
 
     var els = null;
@@ -76,9 +76,13 @@
         if (!Number.isFinite(oy)) oy = 0.5;
         ox = Math.max(0, Math.min(1, ox));
         oy = Math.max(0, Math.min(1, oy));
+        var url = String(raw.url);
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.normalizeDurableUrl === 'function') {
+            url = window.usertypoThemeAssets.normalizeDurableUrl(url);
+        }
         return {
             id: String(raw.id || 'custom'),
-            url: String(raw.url),
+            url: url,
             opacity: op,
             zoom: zoom,
             offsetX: ox,
@@ -130,11 +134,11 @@
                     '<input id="theme-bg-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" />' +
                 '</div>' +
             '</div>' +
-            '<div id="theme-bg-edit-layer" class="fixed inset-0 pointer-events-none opacity-0 transition-opacity duration-300" aria-hidden="true" style="z-index:9990">' +
+            '<div id="theme-bg-edit-layer" class="fixed inset-0 pointer-events-none opacity-0 invisible transition-opacity duration-300" aria-hidden="true" style="z-index:9990">' +
                 '<div id="theme-bg-edit-stage" class="absolute overflow-hidden cursor-grab touch-none select-none" style="left:0;right:0;bottom:0;top:0;background:var(--theme-bg,#000)">' +
-                    '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" />' +
+                    '<img id="theme-bg-edit-img" alt="" draggable="false" class="absolute max-w-none pointer-events-none select-none" style="opacity:0;transition:opacity 0.3s ease;" />' +
                 '</div>' +
-                '<div id="theme-bg-edit-controls" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-auto" style="position:absolute;left:50%;bottom:1.5rem;transform:translateX(-50%);width:min(92vw,28rem);z-index:2;box-sizing:border-box;">' +
+                '<div id="theme-bg-edit-controls" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] flex flex-col gap-3 pointer-events-none opacity-0 transition-opacity duration-300" style="position:absolute;left:50%;bottom:1.5rem;transform:translateX(-50%);width:min(92vw,28rem);z-index:2;box-sizing:border-box;">' +
                     '<p class="text-xs text-slate-400 text-center">Drag to move · adjust opacity and zoom</p>' +
                     '<label class="flex items-center gap-3 text-xs font-bold text-slate-300">' +
                         '<span class="material-symbols-outlined text-[0.959rem] text-primary shrink-0">opacity</span>' +
@@ -205,6 +209,7 @@
             editLayer: root.querySelector('#theme-bg-edit-layer'),
             stage: root.querySelector('#theme-bg-edit-stage'),
             imgEl: root.querySelector('#theme-bg-edit-img'),
+            controls: root.querySelector('#theme-bg-edit-controls'),
             opacity: root.querySelector('#theme-bg-opacity'),
             opacityVal: root.querySelector('#theme-bg-opacity-val'),
             zoom: root.querySelector('#theme-bg-zoom'),
@@ -369,10 +374,11 @@
                     el.dataset.themeBgPrevOpacity = el.style.opacity || '';
                     el.dataset.themeBgPrevPe = el.style.pointerEvents || '';
                 }
+                el.style.transition = 'opacity 0.3s ease';
                 el.style.opacity = '0';
                 el.style.pointerEvents = 'none';
-                el.style.transition = 'opacity 0.3s ease';
             } else {
+                el.style.transition = 'opacity 0.3s ease';
                 if (el.dataset.themeBgEditing === '1') {
                     el.style.opacity = el.dataset.themeBgPrevOpacity || '';
                     el.style.pointerEvents = el.dataset.themeBgPrevPe || '';
@@ -383,9 +389,17 @@
                 delete el.dataset.themeBgPrevOpacity;
                 delete el.dataset.themeBgPrevPe;
                 delete el.dataset.themeBgEditing;
-                // Clear transition after restore so later SPA fades aren't sticky.
-                el.style.transition = '';
+                window.setTimeout(function () {
+                    if (el.dataset.themeBgEditing === '1') return;
+                    el.style.transition = '';
+                }, 340);
             }
+        });
+    }
+
+    function delay(ms) {
+        return new Promise(function (resolve) {
+            window.setTimeout(resolve, Math.max(0, Number(ms) || 0));
         });
     }
 
@@ -427,11 +441,64 @@
         });
     }
 
+    function scrollToSettingsSearch() {
+        var el = document.getElementById('settings-search');
+        if (!el) return;
+        try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (_) {
+            try {
+                var top = el.getBoundingClientRect().top + (window.scrollY || 0) - 80;
+                window.scrollTo(0, Math.max(0, top));
+            } catch (err) { /* ignore */ }
+        }
+    }
+
     function whenAppBgReady(url, timeoutMs) {
         if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.whenThemeBackgroundReady === 'function') {
             return window.usertypo_settingsApi.whenThemeBackgroundReady(url, timeoutMs);
         }
         return Promise.resolve(false);
+    }
+
+    function setControlsVisible(on) {
+        if (!els || !els.controls) return;
+        if (on) {
+            els.controls.classList.remove('opacity-0', 'pointer-events-none');
+            els.controls.classList.add('opacity-100', 'pointer-events-auto');
+        } else {
+            els.controls.classList.add('opacity-0', 'pointer-events-none');
+            els.controls.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+    }
+
+    function setEditLayerOpen(on, opts) {
+        ensureDom();
+        var instant = opts && opts.instant;
+        if (instant) {
+            els.editLayer.style.transition = 'none';
+            els.imgEl.style.transition = 'none';
+            if (els.controls) els.controls.style.transition = 'none';
+        }
+        if (on) {
+            els.editLayer.classList.remove('pointer-events-none', 'opacity-0', 'invisible');
+            els.editLayer.classList.add('pointer-events-auto', 'opacity-100');
+            els.editLayer.setAttribute('aria-hidden', 'false');
+        } else {
+            els.editLayer.classList.add('pointer-events-none', 'opacity-0', 'invisible');
+            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
+            els.editLayer.setAttribute('aria-hidden', 'true');
+            setControlsVisible(false);
+            if (els.imgEl) {
+                els.imgEl.style.opacity = '0';
+            }
+        }
+        if (instant) {
+            void els.editLayer.offsetHeight;
+            els.editLayer.style.transition = '';
+            els.imgEl.style.transition = '';
+            if (els.controls) els.controls.style.transition = '';
+        }
     }
 
     function stageSize() {
@@ -464,6 +531,7 @@
         els.imgEl.style.height = dh + 'px';
         els.imgEl.style.left = x + 'px';
         els.imgEl.style.top = y + 'px';
+        // Keep transform opacity on the element via style; visibility fade uses class.
         els.imgEl.style.opacity = String(opacity);
         els.imgEl.src = imgUrl;
     }
@@ -550,24 +618,40 @@
             toast('Could not open that image.', 'error');
             return;
         }
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.normalizeDurableUrl === 'function') {
+            if (src.indexOf('data:') !== 0 && src.indexOf('blob:') !== 0) {
+                src = window.usertypoThemeAssets.normalizeDurableUrl(src);
+            }
+        }
         imgId = String((source && source.id) || 'custom');
 
-        // Scroll settings out of the way before the fullscreen setup view.
+        // 1) Scroll to top
         scrollPageToTop();
-        await waitForScrollTop(500);
+        await waitForScrollTop(550);
 
+        // 2) Fade settings content away (header stays)
         mode = 'edit';
+        setControlsVisible(false);
+        els.imgEl.style.opacity = '0';
         setEditingChrome(true);
-        els.editLayer.classList.remove('pointer-events-none', 'opacity-0');
-        els.editLayer.classList.add('pointer-events-auto', 'opacity-100');
-        els.editLayer.style.transition = '';
-        els.editLayer.setAttribute('aria-hidden', 'false');
+        await delay(320);
 
+        // 3) Show edit stage + image
+        setEditLayerOpen(true);
         try {
             clearObjectUrl();
             var isBlob = src.indexOf('blob:') === 0 || src.indexOf('data:') === 0;
             await loadImage(src, isBlob);
             resetTransform(options && options.restore ? source : null);
+            // Keep image hidden until the next frame, then fade to theme opacity.
+            els.imgEl.style.opacity = '0';
+            await delay(30);
+            els.imgEl.style.transition = 'opacity 0.3s ease';
+            els.imgEl.style.opacity = String(opacity);
+            await delay(280);
+
+            // 4) Then show opacity/zoom controls
+            setControlsVisible(true);
         } catch (err) {
             toast('Could not load this image.', 'error');
             cancelEdit();
@@ -576,20 +660,7 @@
 
     function exitEditLayer(opts) {
         ensureDom();
-        var instant = opts && opts.instant;
-        if (instant) {
-            els.editLayer.style.transition = 'none';
-            els.editLayer.classList.add('pointer-events-none', 'opacity-0');
-            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
-            // Force reflow then restore transition for next open.
-            void els.editLayer.offsetHeight;
-            els.editLayer.style.transition = '';
-        } else {
-            els.editLayer.style.transition = '';
-            els.editLayer.classList.add('pointer-events-none', 'opacity-0');
-            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
-        }
-        els.editLayer.setAttribute('aria-hidden', 'true');
+        setEditLayerOpen(false, opts);
         setEditingChrome(false);
         img = null;
         imgUrl = '';
@@ -695,6 +766,7 @@
             if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.persistBgImage === 'function') {
                 payload = await window.usertypoThemeAssets.persistBgImage(payload, prev);
             }
+            payload = normalizeBgImage(payload);
 
             // Preload durable URL before commit so #app-bg-image never blanks.
             if (payload && payload.url && payload.url !== imgUrl) {
@@ -710,6 +782,15 @@
                 window.usertypo_settingsApi.commitCustomTheme({ bgImage: payload }, { force: true });
             }
 
+            // Force account sync now that the URL is durable (R2 / default asset).
+            try {
+                if (window.usertypoLookFeel && typeof window.usertypoLookFeel.pushNow === 'function') {
+                    window.usertypoLookFeel.pushNow({ force: true }).catch(function (err) {
+                        console.warn('[theme-bg] cloud push failed', err);
+                    });
+                }
+            } catch (_) { /* ignore */ }
+
             await whenAppBgReady(payload && payload.url, 900);
 
             // Instant handoff: live bg is already painted; drop the edit overlay without fading.
@@ -724,6 +805,10 @@
                     window.usertypo_settingsApi.syncCustomThemeEditor(loadSettings());
                 }
             } catch (_) { /* ignore */ }
+
+            // Content fades back in, then scroll to the settings search bar.
+            await delay(320);
+            scrollToSettingsSearch();
         } catch (err) {
             console.warn('[theme-bg] save/upload failed', err);
             toast('Could not upload background. Try again while signed in.', 'error');

@@ -22,6 +22,35 @@
         return /(?:^|\/)assets\/theme-bgs\//.test(String(url || ''));
     }
 
+    function isEphemeralUrl(url) {
+        var u = String(url || '');
+        return u.indexOf('data:') === 0 || u.indexOf('blob:') === 0;
+    }
+
+    /** Root-relative path for bundled defaults so any device/host can load them. */
+    function normalizeDurableUrl(url) {
+        var raw = String(url || '');
+        if (!raw) return raw;
+        if (/^https?:\/\//i.test(raw) || isEphemeralUrl(raw)) return raw;
+        var match = raw.match(/(?:^|\/)(assets\/theme-bgs\/[^/?#]+)/i);
+        if (match) return '/' + match[1].replace(/^\/+/, '');
+        if (raw.charAt(0) === '/') return raw;
+        try {
+            return new URL(raw, (location && location.origin ? location.origin : '') + '/').href;
+        } catch (e) {
+            return raw;
+        }
+    }
+
+    function isDurableUrl(url) {
+        var u = String(url || '');
+        if (!u || isEphemeralUrl(u)) return false;
+        if (isDefaultAssetUrl(u)) return true;
+        if (/^https?:\/\//i.test(u)) return true;
+        if (u.charAt(0) === '/') return true;
+        return false;
+    }
+
     async function getClerkBearer() {
         if (!window.usertypoDb || typeof window.usertypoDb.getClerkToken !== 'function') {
             throw new Error('auth_or_db_missing');
@@ -125,16 +154,17 @@
         var url = String(bgImage.url);
         var next = Object.assign({}, bgImage);
 
-        if (isDefaultAssetUrl(url) || /^https?:\/\//i.test(url)) {
-            if (previous && previous.url && previous.url !== url && isOurAssetUrl(previous.url)) {
+        if (isDefaultAssetUrl(url) || /^https?:\/\//i.test(url) || (url.charAt(0) === '/' && !isEphemeralUrl(url))) {
+            next.url = normalizeDurableUrl(url);
+            if (previous && previous.url && previous.url !== next.url && isOurAssetUrl(previous.url)) {
                 try { await deleteByUrl(previous.url); } catch (_) { /* ignore */ }
             }
             return next;
         }
 
-        if (url.indexOf('data:') === 0 || url.indexOf('blob:') === 0) {
+        if (isEphemeralUrl(url)) {
             if (!isConfigured() || !isSignedIn()) {
-                // Guest / no worker — keep local data URL
+                // Guest / no worker — keep local data URL (cannot sync cross-device yet)
                 return next;
             }
             var blob;
@@ -154,6 +184,7 @@
             return next;
         }
 
+        next.url = normalizeDurableUrl(url);
         return next;
     }
 
@@ -161,6 +192,9 @@
         isConfigured: isConfigured,
         isOurAssetUrl: isOurAssetUrl,
         isDefaultAssetUrl: isDefaultAssetUrl,
+        isEphemeralUrl: isEphemeralUrl,
+        isDurableUrl: isDurableUrl,
+        normalizeDurableUrl: normalizeDurableUrl,
         uploadBlob: uploadBlob,
         deleteByKey: deleteByKey,
         deleteByUrl: deleteByUrl,
