@@ -91,6 +91,7 @@
 
         var root = document.createElement('div');
         root.id = 'theme-bg-editor-root';
+        root.style.cssText = 'pointer-events:none;';
         root.innerHTML =
             '<div id="theme-bg-modal" class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-200" aria-hidden="true" style="z-index:9999">' +
                 '<div id="theme-bg-box" class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 opacity-0 transition-all duration-200 w-[min(94vw,32rem)] relative flex flex-col gap-4">' +
@@ -361,18 +362,76 @@
         [content, footer, boot].forEach(function (el) {
             if (!el) return;
             if (on) {
-                el.dataset.themeBgPrevOpacity = el.style.opacity || '';
-                el.dataset.themeBgPrevPe = el.style.pointerEvents || '';
+                // Idempotent: only stash previous styles once so a second call
+                // cannot lock pointer-events permanently to "none".
+                if (el.dataset.themeBgEditing !== '1') {
+                    el.dataset.themeBgEditing = '1';
+                    el.dataset.themeBgPrevOpacity = el.style.opacity || '';
+                    el.dataset.themeBgPrevPe = el.style.pointerEvents || '';
+                }
                 el.style.opacity = '0';
                 el.style.pointerEvents = 'none';
                 el.style.transition = 'opacity 0.3s ease';
             } else {
-                el.style.opacity = el.dataset.themeBgPrevOpacity || '';
-                el.style.pointerEvents = el.dataset.themeBgPrevPe || '';
+                if (el.dataset.themeBgEditing === '1') {
+                    el.style.opacity = el.dataset.themeBgPrevOpacity || '';
+                    el.style.pointerEvents = el.dataset.themeBgPrevPe || '';
+                } else {
+                    el.style.opacity = '';
+                    el.style.pointerEvents = '';
+                }
                 delete el.dataset.themeBgPrevOpacity;
                 delete el.dataset.themeBgPrevPe;
+                delete el.dataset.themeBgEditing;
+                // Clear transition after restore so later SPA fades aren't sticky.
+                el.style.transition = '';
             }
         });
+    }
+
+    function scrollPageToTop() {
+        var bodyEl = document.getElementById('app-body');
+        try {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (_) {
+            window.scrollTo(0, 0);
+        }
+        if (bodyEl) {
+            try {
+                bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (_) {
+                bodyEl.scrollTop = 0;
+            }
+        }
+        try { document.documentElement.scrollTop = 0; } catch (_) { /* ignore */ }
+    }
+
+    function waitForScrollTop(maxMs) {
+        var limit = Math.max(120, Number(maxMs) || 450);
+        return new Promise(function (resolve) {
+            var started = Date.now();
+            var bodyEl = document.getElementById('app-body');
+            var tick = function () {
+                var y = Math.max(
+                    window.scrollY || 0,
+                    document.documentElement.scrollTop || 0,
+                    bodyEl ? (bodyEl.scrollTop || 0) : 0
+                );
+                if (y <= 2 || Date.now() - started >= limit) {
+                    resolve();
+                    return;
+                }
+                requestAnimationFrame(tick);
+            };
+            tick();
+        });
+    }
+
+    function whenAppBgReady(url, timeoutMs) {
+        if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.whenThemeBackgroundReady === 'function') {
+            return window.usertypo_settingsApi.whenThemeBackgroundReady(url, timeoutMs);
+        }
+        return Promise.resolve(false);
     }
 
     function stageSize() {
@@ -492,10 +551,16 @@
             return;
         }
         imgId = String((source && source.id) || 'custom');
+
+        // Scroll settings out of the way before the fullscreen setup view.
+        scrollPageToTop();
+        await waitForScrollTop(500);
+
         mode = 'edit';
         setEditingChrome(true);
         els.editLayer.classList.remove('pointer-events-none', 'opacity-0');
         els.editLayer.classList.add('pointer-events-auto', 'opacity-100');
+        els.editLayer.style.transition = '';
         els.editLayer.setAttribute('aria-hidden', 'false');
 
         try {
@@ -509,10 +574,21 @@
         }
     }
 
-    function exitEditLayer() {
+    function exitEditLayer(opts) {
         ensureDom();
-        els.editLayer.classList.add('pointer-events-none', 'opacity-0');
-        els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
+        var instant = opts && opts.instant;
+        if (instant) {
+            els.editLayer.style.transition = 'none';
+            els.editLayer.classList.add('pointer-events-none', 'opacity-0');
+            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
+            // Force reflow then restore transition for next open.
+            void els.editLayer.offsetHeight;
+            els.editLayer.style.transition = '';
+        } else {
+            els.editLayer.style.transition = '';
+            els.editLayer.classList.add('pointer-events-none', 'opacity-0');
+            els.editLayer.classList.remove('pointer-events-auto', 'opacity-100');
+        }
         els.editLayer.setAttribute('aria-hidden', 'true');
         setEditingChrome(false);
         img = null;
@@ -615,13 +691,29 @@
 
         els.saveBtn.disabled = true;
         try {
+            // Persist while the edit layer still covers the screen (no flash).
             if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.persistBgImage === 'function') {
                 payload = await window.usertypoThemeAssets.persistBgImage(payload, prev);
             }
+
+            // Preload durable URL before commit so #app-bg-image never blanks.
+            if (payload && payload.url && payload.url !== imgUrl) {
+                await new Promise(function (resolve) {
+                    var pre = new Image();
+                    pre.onload = function () { resolve(); };
+                    pre.onerror = function () { resolve(); };
+                    pre.src = payload.url;
+                });
+            }
+
             if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
                 window.usertypo_settingsApi.commitCustomTheme({ bgImage: payload }, { force: true });
             }
-            exitEditLayer();
+
+            await whenAppBgReady(payload && payload.url, 900);
+
+            // Instant handoff: live bg is already painted; drop the edit overlay without fading.
+            exitEditLayer({ instant: true });
             mode = 'closed';
             clearObjectUrl();
             setModalOpen(false);
