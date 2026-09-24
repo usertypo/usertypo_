@@ -39,6 +39,64 @@
         if (el) el.textContent = text;
     }
 
+    function isChillMode() {
+        try {
+            var settings = window.usertypo_settings
+                || (typeof loadSettings === 'function' ? loadSettings() : null)
+                || {};
+            return !!(settings.systemData && settings.systemData.saveTestStats === false);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function setChillMode(on) {
+        var settings = (typeof loadSettings === 'function')
+            ? loadSettings()
+            : (window.usertypo_settings || {});
+        if (!settings.systemData) settings.systemData = {};
+        settings.systemData.saveTestStats = !on;
+        if (typeof saveSettings === 'function') saveSettings(settings);
+        else window.usertypo_settings = settings;
+        syncChillBtn(true);
+        try {
+            window.dispatchEvent(new CustomEvent('usertypo:chill-changed', {
+                detail: { chill: !!on, saveTestStats: !on },
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function syncChillBtn(isSignedIn) {
+        var btn = document.getElementById('header-chill-btn');
+        if (!btn) return;
+        var show = !!isSignedIn;
+        btn.classList.toggle('hidden', !show);
+        btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+        if (!show) {
+            btn.classList.remove('info-active');
+            btn.setAttribute('aria-pressed', 'false');
+            return;
+        }
+        var chill = isChillMode();
+        btn.classList.toggle('info-active', chill);
+        btn.setAttribute('aria-pressed', chill ? 'true' : 'false');
+        btn.title = chill
+            ? 'Chill on — tests are not being saved'
+            : 'Chill — pause saving tests';
+        btn.setAttribute('aria-label', chill ? 'Chill mode on' : 'Chill mode');
+    }
+
+    function wireChillBtn() {
+        var btn = document.getElementById('header-chill-btn');
+        if (!btn || btn.dataset.wired === '1') return;
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setChillMode(!isChillMode());
+        });
+    }
+
     function sameAvatarSrc(a, b) {
         return String(a || '') === String(b || '');
     }
@@ -291,6 +349,7 @@
                 showLevel: true,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/userstats');
+            syncChillBtn(true);
         } else {
             if (authAction) {
                 authAction.setAttribute('href', '/signin');
@@ -313,6 +372,7 @@
                 showLevel: false,
             });
             if (userStatsLink) userStatsLink.setAttribute('href', '/signin');
+            syncChillBtn(false);
         }
     }
 
@@ -325,6 +385,8 @@
             percentToNext: 0,
             showLevel: false,
         });
+        wireChillBtn();
+        syncChillBtn(false);
 
         if (!window.usertypoAuth) {
             updateHeader({ isSignedIn: false, user: null });
@@ -366,6 +428,18 @@
     window.usertypoHeader = {
         showXpGain: showXpGain,
         setXpRingPercent: setXpRingPercent,
+        isChillMode: isChillMode,
+        setChillMode: setChillMode,
+        syncChillBtn: function () {
+            var signedIn = false;
+            try {
+                var state = window.usertypoAuth && window.usertypoAuth.getState
+                    ? window.usertypoAuth.getState()
+                    : null;
+                signedIn = !!(state && state.isSignedIn && state.user);
+            } catch (e) { /* ignore */ }
+            syncChillBtn(signedIn);
+        },
         updateHeader: function () {
             if (!window.usertypoAuth) return;
             try { updateHeader(window.usertypoAuth.getState()); } catch (e) { /* ignore */ }
