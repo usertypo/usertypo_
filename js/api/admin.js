@@ -56,8 +56,32 @@
         } catch (e) { /* ignore */ }
     }
 
+    /**
+     * Drop stale impersonation meta after the admin session returns (or user
+     * re-signs in as admin while sessionStorage still says "Viewing as …").
+     * That leftover key was hiding the header Admin icon even though /admin worked.
+     */
+    function reconcileImpersonationMeta() {
+        var meta = getImpersonationMeta();
+        if (!meta) return null;
+        var current = currentPublicId();
+        if (!current) return meta;
+        var target = normalizePublicId(meta.target_public_id);
+        var adminId = normalizePublicId(meta.admin_public_id);
+        if (current === adminId || (isAdminPublicId(current) && current !== target)) {
+            setImpersonationMeta(null);
+            return null;
+        }
+        return meta;
+    }
+
     function isImpersonating() {
-        return !!getImpersonationMeta();
+        var meta = reconcileImpersonationMeta();
+        if (!meta) return false;
+        var current = currentPublicId();
+        // No profile yet — keep banner until we know who is signed in.
+        if (!current) return true;
+        return current === normalizePublicId(meta.target_public_id);
     }
 
     async function getClerkBearer() {
@@ -300,6 +324,7 @@
     }
 
     function syncAdminUi() {
+        var meta = reconcileImpersonationMeta();
         applyLeaderboardFlagVisibility();
         var btn = document.getElementById('header-admin-btn');
         if (btn) {
@@ -309,12 +334,11 @@
         }
         var banner = document.getElementById('admin-impersonation-banner');
         if (banner) {
-            var meta = getImpersonationMeta();
-            var showBanner = !!meta;
+            var showBanner = !!meta && isImpersonating();
             banner.classList.toggle('hidden', !showBanner);
             banner.setAttribute('aria-hidden', showBanner ? 'false' : 'true');
             var label = document.getElementById('admin-impersonation-label');
-            if (label && meta) {
+            if (label && meta && showBanner) {
                 label.textContent = 'Viewing as ' + (meta.target_username || meta.target_public_id || 'user');
             }
         }
