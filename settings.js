@@ -924,6 +924,52 @@ function isCustomThemeName(themeName) {
     return themeName === 'custom' || (typeof themeName === 'string' && themeName.startsWith('custom:'));
 }
 
+/**
+ * If main / secondary / bg match a built-in palette exactly, return that theme name.
+ * Custom themes only control those three colors (→ accentPrimary, textPrimary, bgMain).
+ */
+function findMatchingBuiltInThemeName(config) {
+    if (!config || typeof config !== 'object') return null;
+    const main = normalizeHexColor(config.mainColor, '');
+    const secondary = normalizeHexColor(config.secondaryColor, '');
+    const bg = normalizeHexColor(config.bgColor, '');
+    if (!main || !secondary || !bg) return null;
+
+    for (const name of Object.keys(THEME_PALETTES)) {
+        const p = THEME_PALETTES[name];
+        if (!p) continue;
+        if (
+            normalizeHexColor(p.accentPrimary, '') === main
+            && normalizeHexColor(p.textPrimary, '') === secondary
+            && normalizeHexColor(p.bgMain, '') === bg
+        ) {
+            return name;
+        }
+    }
+    return null;
+}
+
+/**
+ * When the active custom theme colors are an exact built-in match, select that
+ * built-in instead of leaving colorTheme as "custom" / "custom:N".
+ */
+function coerceCustomThemeToBuiltIn(settings, options = {}) {
+    if (!settings || !settings.lookFeel) return null;
+    const name = settings.lookFeel.colorTheme;
+    if (!isCustomThemeName(name)) return null;
+
+    const cfg = getCustomThemeConfig(settings, name);
+    const match = findMatchingBuiltInThemeName(cfg);
+    if (!match) return null;
+
+    settings.lookFeel.colorTheme = match;
+    if (options.persist) {
+        saveSettings(settings);
+        if (options.syncCloud !== false) notifyLookFeelCloudSync();
+    }
+    return match;
+}
+
 function resolveThemePalette(settings, themeName) {
     if (!settings) settings = loadSettings();
     const name = themeName || settings.lookFeel?.colorTheme || getPreferredDefaultTheme();
@@ -1220,7 +1266,8 @@ function commitCustomTheme(partial, options = {}) {
     }
 
     settings.lookFeel.customTheme = next;
-    settings.lookFeel.colorTheme = 'custom';
+    const builtInMatch = findMatchingBuiltInThemeName(next);
+    settings.lookFeel.colorTheme = builtInMatch || 'custom';
     saveSettings(settings);
     pushSharedCustomThemes(settings);
     applyAllSettings(settings);
@@ -1243,6 +1290,21 @@ function saveCustomThemePreset() {
 
     const cfg = readCustomThemeFromEditor();
     settings.lookFeel.customTheme = cfg;
+
+    // Exact built-in match → select that theme instead of saving a redundant custom preset.
+    const builtInMatch = findMatchingBuiltInThemeName(cfg);
+    if (builtInMatch) {
+        settings.lookFeel.colorTheme = builtInMatch;
+        saveSettings(settings);
+        pushSharedCustomThemes(settings);
+        applyAllSettings(settings);
+        syncColorThemeSelectLabel(settings);
+        syncCustomThemeEditor(settings);
+        notifyLookFeelCloudSync();
+        if (typeof window.triggerSave === 'function') window.triggerSave();
+        return true;
+    }
+
     const index = settings.lookFeel.customPresets.length;
     settings.lookFeel.customPresets.push({
         name: `Custom ${index + 1}`,
@@ -1283,7 +1345,8 @@ function applyCustomThemePreset(index) {
         bgColor,
         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, preset.bgSpectrumPos),
     };
-    settings.lookFeel.colorTheme = `custom:${idx}`;
+    const builtInMatch = findMatchingBuiltInThemeName(settings.lookFeel.customTheme);
+    settings.lookFeel.colorTheme = builtInMatch || `custom:${idx}`;
     saveSettings(settings);
     pushSharedCustomThemes(settings);
     applyAllSettings(settings);
@@ -4142,6 +4205,10 @@ function selectColorTheme(themeName) {
     }
 
     setByPath(settings, 'lookFeel.colorTheme', themeName);
+    if (isCustomThemeName(themeName)) {
+        const match = findMatchingBuiltInThemeName(settings.lookFeel.customTheme);
+        if (match) settings.lookFeel.colorTheme = match;
+    }
     saveSettings(settings);
     applyAllSettings(settings);
     syncColorThemeSelectLabel(settings);
@@ -4441,6 +4508,10 @@ function isTestSessionActive() {
 
 function applyAllSettings(settings) {
     if (!settings) settings = loadSettings();
+    // Cloud / cookie / old saves may still say "custom" with built-in colors.
+    if (coerceCustomThemeToBuiltIn(settings, { persist: true, syncCloud: true })) {
+        // colorTheme updated + persisted; continue applying with built-in name
+    }
     applyCursorSettings(settings);
     applySoundscapeSettings(settings);
     applyTestRulesSettings(settings);
@@ -5286,6 +5357,8 @@ window.usertypo_settingsApi = {
     syncColorThemeSelectLabel,
     pushSharedCustomThemes,
     notifyLookFeelCloudSync,
+    findMatchingBuiltInThemeName,
+    coerceCustomThemeToBuiltIn,
     getLanguageDisplayName,
     isDualPage,
     isRoomPage,
