@@ -150,6 +150,7 @@
                     <li>Notifications (for example, friend requests and acceptances)</li>
                     <li>Blocked users</li>
                     <li>Privacy settings such as profile visibility, friend-request preference, and leaderboard visibility</li>
+                    <li>Look &amp; Feel / theme settings when you are signed in (synced to your account)</li>
                     <li>Public profile information (username, avatar, and stats you choose to make visible)</li>
                 </ul>
 
@@ -171,8 +172,11 @@
                 <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.6 Local device data</h3>
                 <p>
                     We store preferences and settings in your browser (for example, via localStorage),
-                    such as theme and typing preferences. This data stays on your device unless you
-                    clear site data in your browser.
+                    such as typing preferences (caret, sound, language, and related options).
+                    When you are signed in, Look &amp; Feel settings (color theme, custom themes,
+                    font, glow, and related theme options) are also synced to your account so they
+                    are available on other devices. Other preference data stays on your device unless
+                    you clear site data in your browser.
                 </p>
 
                 <h3 class="text-base font-semibold text-slate-200 mt-6 mb-2">2.7 Automatically collected technical data</h3>
@@ -317,9 +321,11 @@
                         deliver content. These are required for core operation.
                     </li>
                     <li>
-                        <strong class="text-slate-200">Functional:</strong> full typing preferences
-                        stored in your browser via localStorage (theme details, caret, sound, language,
-                        and related settings). This is separate from cookies and stays on your device.
+                        <strong class="text-slate-200">Functional:</strong> typing preferences
+                        stored in your browser via localStorage (caret, sound, language, and related
+                        settings). When you are signed in, Look &amp; Feel / theme settings are also
+                        stored with your account so they sync across devices. Local preference data
+                        is separate from cookies.
                     </li>
                     <li>
                         <strong class="text-slate-200">Analytics:</strong> if you choose
