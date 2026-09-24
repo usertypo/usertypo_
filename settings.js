@@ -158,6 +158,14 @@ function pullSharedCustomThemes(settings) {
                 p?.bgColor || (mode === 'Light' ? '#ffffff' : '#000000'),
                 CUSTOM_THEME_DEFAULT.bgColor
             );
+            const normalizeBg = (raw) => (
+                window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                    ? window.usertypoThemeBgEditor.normalizeBgImage(raw)
+                    : (raw && raw.url ? raw : null)
+            );
+            // Cookie may omit data:/blob: URLs — keep a durable local image if shared has none.
+            const sharedBg = normalizeBg(p?.bgImage);
+            const localBg = normalizeBg(localPresets[i] && localPresets[i].bgImage);
             return {
                 name: (p && p.name) || `Custom ${i + 1}`,
                 mode,
@@ -165,6 +173,7 @@ function pullSharedCustomThemes(settings) {
                 secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                 bgColor,
                 bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+                bgImage: sharedBg || localBg,
             };
         });
 
@@ -203,11 +212,19 @@ function pushSharedCustomThemes(settings) {
         return false;
     }
     const updatedAt = Date.now();
-    const presets = Array.isArray(settings.lookFeel.customPresets)
+    // Cookie budget is tiny — never ship data:/blob: URLs (localStorage + cloud keep those).
+    const cookieSafeBg = (bg) => {
+        if (!bg || !bg.url) return null;
+        const url = String(bg.url);
+        if (url.indexOf('data:') === 0 || url.indexOf('blob:') === 0) return null;
+        return bg;
+    };
+    const presets = (Array.isArray(settings.lookFeel.customPresets)
         ? settings.lookFeel.customPresets.slice(0, MAX_CUSTOM_PRESETS)
-        : [];
+        : []
+    ).map((p) => (p ? { ...p, bgImage: cookieSafeBg(p.bgImage) } : p));
     const customTheme = settings.lookFeel.customTheme && typeof settings.lookFeel.customTheme === 'object'
-        ? settings.lookFeel.customTheme
+        ? { ...settings.lookFeel.customTheme, bgImage: cookieSafeBg(settings.lookFeel.customTheme.bgImage) }
         : null;
     let ok = false;
     try {
@@ -418,6 +435,11 @@ function loadSettings() {
                         secondaryColor: normalizeHexColor(p?.secondaryColor, CUSTOM_THEME_DEFAULT.secondaryColor),
                         bgColor,
                         bgSpectrumPos: resolveSpectrumPos(mode, bgColor, p?.bgSpectrumPos),
+                        bgImage: (
+                            window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function'
+                                ? window.usertypoThemeBgEditor.normalizeBgImage(p?.bgImage)
+                                : (p?.bgImage && p.bgImage.url ? p.bgImage : null)
+                        ),
                     };
                 });
         }
@@ -2133,10 +2155,26 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
     const spaContent = document.getElementById('spa-content');
     if (spaContent) spaContent.style.backgroundColor = 'transparent';
 
-    if (img.dataset.src !== bgImage.url) {
-        img.dataset.src = bgImage.url;
+    const applySrc = (url) => {
+        img.dataset.src = url;
         img.onload = () => layout();
-        img.src = bgImage.url;
+        if (img.src !== url) img.src = url;
+        else if (img.complete && img.naturalWidth) layout();
+    };
+
+    if (img.dataset.src !== bgImage.url) {
+        // Preload so we never blank the visible layer when swapping URLs (data → R2).
+        const prevSrc = img.dataset.src || img.src || '';
+        if (prevSrc && img.complete && img.naturalWidth) {
+            const pre = new Image();
+            pre.onload = () => applySrc(bgImage.url);
+            pre.onerror = () => applySrc(bgImage.url);
+            pre.src = bgImage.url;
+            // Keep current pixels visible with updated opacity/zoom until swap.
+            layout();
+        } else {
+            applySrc(bgImage.url);
+        }
     } else if (img.complete && img.naturalWidth) {
         layout();
     } else {
@@ -2152,6 +2190,35 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
             } catch (e) { /* ignore */ }
         });
     }
+}
+
+/** Resolve when #app-bg-image has painted the given URL (or timeout). */
+function whenThemeBackgroundReady(url, timeoutMs) {
+    const limit = Math.max(200, Number(timeoutMs) || 1200);
+    return new Promise((resolve) => {
+        const started = Date.now();
+        const tick = () => {
+            const layer = document.getElementById('app-bg-image');
+            const img = layer && layer.querySelector('img');
+            if (
+                layer
+                && layer.classList.contains('is-active')
+                && img
+                && img.dataset.src === url
+                && img.complete
+                && img.naturalWidth > 0
+            ) {
+                resolve(true);
+                return;
+            }
+            if (Date.now() - started >= limit) {
+                resolve(false);
+                return;
+            }
+            requestAnimationFrame(tick);
+        };
+        tick();
+    });
 }
 
 function applyThemeSettings(settings) {
@@ -5520,4 +5587,6 @@ window.usertypo_settingsApi = {
     isDualPage,
     isRoomPage,
     getEffectiveTapeMode,
+    applyThemeBackgroundImage,
+    whenThemeBackgroundReady,
 };
