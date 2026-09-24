@@ -28,7 +28,7 @@
         try {
             var settings = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : null) || {};
             if (settings.systemData && settings.systemData.saveTestStats === false) {
-                console.info('[usertypo sessions] skipped saving because Save Test Stats is disabled');
+                console.info('[usertypo sessions] skipped saving because Chill mode is on');
                 return { skipped: true, reason: 'user_opt_out' };
             }
         } catch (e) {

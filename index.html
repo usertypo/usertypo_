@@ -131,7 +131,7 @@
     <link rel="preload" href="/logo-assets/typ_.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/user.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/logo-assets/o.png" as="image" fetchpriority="high" />
-    <link rel="preload" href="/css/fonts/material-symbols.ttf?v=4" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/css/fonts/material-symbols.ttf?v=7" as="font" type="font/ttf" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -227,7 +227,7 @@
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
     <link href="css/global.css?v=35" rel="stylesheet" />
-    <link href="css/material-symbols.css?v=6" rel="stylesheet" />
+    <link href="css/material-symbols.css?v=7" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
     <style id="shell-surface-fix">
@@ -328,11 +328,72 @@
             margin-right: 4px;
             margin-bottom: 4px;
         }
-        /* Info button forced-active state (mirrors hover) */
+        /* Info / chill button forced-active state (mirrors hover).
+           Apply to the icon — not the button — so a tip portal isn't trapped
+           by a transformed ancestor (fixed/absolute clamp would fail). */
         #graph-info-btn.info-active {
             transform: scale(1.1) !important;
             box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1))) !important;
             border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
+        }
+        #header-chill-btn.info-active {
+            box-shadow: 0 0 20px rgba(var(--theme-primary-rgb, 255, 255, 255), calc(0.4 * var(--glow-intensity, 1))) !important;
+            border-color: rgba(var(--theme-primary-rgb, 255, 255, 255), 0.5) !important;
+        }
+        #header-chill-btn.info-active > .material-symbols-outlined {
+            transform: scale(1.1);
+        }
+
+        /* Chill tip: CSS hover show; JS only flips edge alignment to stay on-screen */
+        #header-chill-tip {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 400;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            white-space: nowrap;
+        }
+        #header-chill-btn:hover #header-chill-tip,
+        #header-chill-btn:focus-visible #header-chill-tip,
+        #header-chill-btn:focus #header-chill-tip {
+            opacity: 1;
+            visibility: visible;
+        }
+        #header-chill-btn.tip-edge-end #header-chill-tip {
+            left: auto;
+            right: 0;
+            transform: none;
+        }
+        #header-chill-btn.tip-edge-start #header-chill-tip {
+            left: 0;
+            right: auto;
+            transform: none;
+        }
+
+        /* Header chill + profile: never show browser focus rings after click-then-type */
+        #header-chill-btn,
+        #header-account-btn {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #header-chill-btn:focus,
+        #header-chill-btn:focus-visible,
+        #header-chill-btn:active,
+        #header-account-btn:focus,
+        #header-account-btn:focus-visible,
+        #header-account-btn:active {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #header-account-btn:focus .player-level-avatar,
+        #header-account-btn:focus-visible .player-level-avatar,
+        #header-account-btn .player-level-avatar:focus,
+        #header-account-btn .player-level-avatar:focus-visible {
+            outline: none !important;
         }
 
         .glass-panel {
@@ -1208,8 +1269,16 @@
                 title="Admin" aria-label="Admin" aria-hidden="true">
                 <span class="material-symbols-outlined text-[1.25rem]">admin_panel_settings</span>
             </a>
+            <button type="button" id="header-chill-btn"
+                class="hidden relative w-7 h-7 flex items-center justify-center rounded-full glass-panel transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(0,208,255,0.4)] hover:border-primary/50"
+                aria-label="Chill mode" aria-pressed="false" aria-hidden="true">
+                <span class="material-symbols-outlined text-primary text-[0.85rem] transition-transform duration-300" aria-hidden="true">spa</span>
+                <span id="header-chill-tip"
+                    class="px-2.5 py-1.5 bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg text-[0.586rem] font-mono font-bold text-white"
+                    aria-hidden="true">Chill — pause saving tests</span>
+            </button>
             <a href="/signin" data-spa-link id="header-account-btn"
-                class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group"
+                class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-slate-300 hover:text-white transition-all group outline-none"
                 title="Sign in" aria-label="Sign in"></a>
         </div>
     </header>
@@ -1622,7 +1691,7 @@
     <script src="screenshot.js?v=5"></script>
     <script src="js/config/public.js?v=11"></script>
     <script src="js/cookies.js?v=4"></script>
-    <script src="settings.js?v=94"></script>
+    <script src="settings.js?v=96"></script>
     <script src="footer-picker.js?v=9"></script>
     <script src="settings-search.js?v=24"></script>
     <!-- Auth + data API (before router) -->
@@ -1631,7 +1700,7 @@
     <script src="js/auth/clerk.js?v=21"></script>
     <script src="js/api/supabase.js"></script>
     <script src="js/api/profiles.js?v=14"></script>
-    <script src="js/api/sessions.js?v=19"></script>
+    <script src="js/api/sessions.js?v=20"></script>
     <script src="js/api/account.js?v=15"></script>
     <script src="js/api/progression.js?v=8"></script>
     <script src="js/api/site-stats.js?v=2"></script>
@@ -1643,7 +1712,7 @@
     <script src="js/ui/player-profile-card.js?v=5"></script>
     <script src="js/ui/system-confirm.js?v=7"></script>
     <script src="js/ui/contact.js?v=205"></script>
-    <script src="js/auth/header.js?v=10"></script>
+    <script src="js/auth/header.js?v=15"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
