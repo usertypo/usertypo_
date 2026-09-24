@@ -103,6 +103,14 @@
         if (!window.Clerk || !window.Clerk.client || !window.Clerk.client.signIn) {
             throw new Error('clerk_not_ready');
         }
+        // Must clear the current session before consuming a ticket.
+        try {
+            if (window.Clerk.session) {
+                await window.Clerk.signOut({ redirectUrl: null });
+            }
+        } catch (e) {
+            try { await window.Clerk.signOut(); } catch (_) { /* ignore */ }
+        }
         var signIn = await window.Clerk.client.signIn.create({
             strategy: 'ticket',
             ticket: ticket,
@@ -112,6 +120,56 @@
         }
         await window.Clerk.setActive({ session: signIn.createdSessionId });
         return true;
+    }
+
+    function clearLocalUserCaches() {
+        window.__USERTYPO_PROFILE__ = null;
+        try {
+            if (window.usertypoProgression && typeof window.usertypoProgression.clearCache === 'function') {
+                window.usertypoProgression.clearCache();
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    async function impersonate(publicId) {
+        if (!isAdmin()) throw new Error('forbidden');
+        var data = await workerFetch(
+            '/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/impersonate',
+            { method: 'POST', body: '{}' },
+        );
+        if (!data || !data.token) throw new Error('actor_token_missing');
+        if (!data.return_token) throw new Error('return_token_missing');
+        setImpersonationMeta({
+            admin_public_id: data.admin_public_id || currentPublicId(),
+            admin_user_id: data.admin_user_id || null,
+            return_token: data.return_token,
+            target_public_id: normalizePublicId(publicId),
+            target_username: data.target && (data.target.username || data.target.display_name) || publicId,
+            started_at: Date.now(),
+        });
+        await signInWithTicket(data.token);
+        clearLocalUserCaches();
+        return data;
+    }
+
+    async function endImpersonation() {
+        var meta = getImpersonationMeta();
+        var ticket = meta && meta.return_token ? meta.return_token : null;
+        if (!ticket) {
+            // Fallback: ask Worker for a fresh admin sign-in token.
+            var data = await workerFetch('/impersonate/end', {
+                method: 'POST',
+                body: JSON.stringify({
+                    admin_user_id: meta && meta.admin_user_id || null,
+                }),
+            });
+            ticket = data && data.token;
+        }
+        if (!ticket) throw new Error('return_token_missing');
+        setImpersonationMeta(null);
+        await signInWithTicket(ticket);
+        clearLocalUserCaches();
+        return { ok: true };
     }
 
     async function me() {
@@ -179,58 +237,18 @@
     }
 
     async function createReport(payload) {
-        var headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
-        var opts = {
-            method: 'POST',
-            body: JSON.stringify(payload || {}),
-            headers: headers,
-            skipAuth: true,
-        };
         try {
-            var token = await getClerkBearer();
-            opts.skipAuth = false;
-            opts.headers = headers;
-            // workerFetch will attach auth when skipAuth is false
-            return workerFetch('/reports', {
+            return await workerFetch('/reports', {
                 method: 'POST',
                 body: JSON.stringify(payload || {}),
             });
         } catch (_) {
-            return workerFetch('/reports', opts);
+            return workerFetch('/reports', {
+                method: 'POST',
+                body: JSON.stringify(payload || {}),
+                skipAuth: true,
+            });
         }
-    }
-
-    async function impersonate(publicId) {
-        if (!isAdmin()) throw new Error('forbidden');
-        var data = await workerFetch(
-            '/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/impersonate',
-            { method: 'POST', body: '{}' },
-        );
-        if (!data || !data.token) throw new Error('actor_token_missing');
-        setImpersonationMeta({
-            admin_public_id: currentPublicId(),
-            target_public_id: normalizePublicId(publicId),
-            target_username: data.target && (data.target.username || data.target.display_name) || publicId,
-            started_at: Date.now(),
-        });
-        await signInWithTicket(data.token);
-        window.__USERTYPO_PROFILE__ = null;
-        if (window.usertypoProgression && typeof window.usertypoProgression.clearCache === 'function') {
-            window.usertypoProgression.clearCache();
-        }
-        return data;
-    }
-
-    async function endImpersonation() {
-        var data = await workerFetch('/impersonate/end', { method: 'POST', body: '{}' });
-        if (!data || !data.token) throw new Error('return_token_missing');
-        setImpersonationMeta(null);
-        await signInWithTicket(data.token);
-        window.__USERTYPO_PROFILE__ = null;
-        if (window.usertypoProgression && typeof window.usertypoProgression.clearCache === 'function') {
-            window.usertypoProgression.clearCache();
-        }
-        return data;
     }
 
     function formatDuration(seconds) {
@@ -317,17 +335,23 @@
             returnBtn.dataset.wired = '1';
             returnBtn.addEventListener('click', function () {
                 if (!window.usertypoAdmin || typeof window.usertypoAdmin.endImpersonation !== 'function') return;
+                if (returnBtn.dataset.busy === '1') return;
+                returnBtn.dataset.busy = '1';
                 returnBtn.disabled = true;
                 window.usertypoAdmin.endImpersonation()
                     .then(function () {
-                        if (window.navigateTo) window.navigateTo('/admin');
-                        else window.location.href = '/admin';
-                        window.location.reload();
+                        window.location.assign('/admin');
                     })
                     .catch(function (err) {
                         console.error('[usertypo admin] return failed', err);
+                        returnBtn.dataset.busy = '0';
                         returnBtn.disabled = false;
-                        window.alert((err && err.message) || 'Could not return to admin');
+                        if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                            window.usertypoNotifications.showToast(
+                                (err && err.message) || 'Could not return to admin',
+                                'error'
+                            );
+                        }
                     });
             });
         }

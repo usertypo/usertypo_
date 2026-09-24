@@ -244,12 +244,12 @@ async function createActorToken(env: Env, targetUserId: string, actorId: string)
   return data;
 }
 
-async function createSignInToken(env: Env, userId: string) {
+async function createSignInToken(env: Env, userId: string, expiresInSeconds = 300) {
   const res = await clerkApi(env, '/sign_in_tokens', {
     method: 'POST',
     body: JSON.stringify({
       user_id: userId,
-      expires_in_seconds: 300,
+      expires_in_seconds: expiresInSeconds,
     }),
   });
   const data = await res.json().catch(() => null) as Record<string, unknown> | null;
@@ -325,6 +325,28 @@ export default {
           }),
         });
         return json(env, 201, { ok: true, report: Array.isArray(created) ? created[0] : created }, request);
+      }
+
+      // ---- End impersonation (signed-in as target; must run before requireAdmin) ----
+      if (path === '/impersonate/end' && request.method === 'POST') {
+        const session = await requireSignedIn(env, request);
+        const body = await readJson(request);
+        const adminUserId = String(session.actorId || body.admin_user_id || '').trim();
+        if (!adminUserId) {
+          return json(env, 400, { error: 'not_impersonating' }, request);
+        }
+        const actorProfile = await fetchProfileByUserId(env, adminUserId);
+        if (!actorProfile || !adminPublicIds(env).has(actorProfile.public_id)) {
+          return json(env, 403, { error: 'forbidden' }, request);
+        }
+        const tokenData = await createSignInToken(env, adminUserId, 600);
+        await writeAudit(env, adminUserId, 'impersonate_end', session.userId, {});
+        return json(env, 200, {
+          ok: true,
+          token: tokenData?.token || null,
+          url: tokenData?.url || null,
+          admin: actorProfile,
+        }, request);
       }
 
       // ---- Admin-only below ----
@@ -502,6 +524,8 @@ export default {
           return json(env, 400, { error: 'cannot_impersonate_self' }, request);
         }
         const tokenData = await createActorToken(env, profile.user_id, session.userId);
+        // One-time return ticket so the client can restore the admin without relying on JWT act claims.
+        const returnData = await createSignInToken(env, session.userId, 7200);
         await writeAudit(env, effectiveAdminId, 'impersonate_start', profile.user_id, {
           public_id: profile.public_id,
         });
@@ -509,26 +533,11 @@ export default {
           ok: true,
           token: tokenData?.token || null,
           url: tokenData?.url || null,
+          return_token: returnData?.token || null,
+          return_url: returnData?.url || null,
           target: profile,
           admin_public_id: admin.public_id,
-        }, request);
-      }
-
-      if (path === '/impersonate/end' && request.method === 'POST') {
-        if (!session.actorId) {
-          return json(env, 400, { error: 'not_impersonating' }, request);
-        }
-        const actorProfile = await fetchProfileByUserId(env, session.actorId);
-        if (!actorProfile || !adminPublicIds(env).has(actorProfile.public_id)) {
-          return json(env, 403, { error: 'forbidden' }, request);
-        }
-        const tokenData = await createSignInToken(env, session.actorId);
-        await writeAudit(env, session.actorId, 'impersonate_end', session.userId, {});
-        return json(env, 200, {
-          ok: true,
-          token: tokenData?.token || null,
-          url: tokenData?.url || null,
-          admin: actorProfile,
+          admin_user_id: session.userId,
         }, request);
       }
 

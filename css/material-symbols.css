@@ -4,14 +4,5 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/css/fonts/material-symbols.ttf?v=5') format('truetype');
-}
-
-/* Extra ligatures not in the main subset (admin header control). */
-@font-face {
-  font-family: 'Material Symbols Outlined';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/css/fonts/material-symbols-admin.ttf?v=1') format('truetype');
+  src: url('/css/fonts/material-symbols.ttf?v=6') format('truetype');
 }
