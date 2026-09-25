@@ -13,6 +13,10 @@ export default {
     if (url.pathname === '/health') {
       return Response.json({ ok: true, service: 'usertypo-multiplayer-gateway' });
     }
+    // DO-to-DO endpoints are called through stubs, never through the public gateway.
+    if (url.pathname.startsWith('/internal/')) {
+      return Response.json({ ok: false, error: 'not_found' }, { status: 404 });
+    }
 
     // One Durable Object per duel: /ws?room=<id> (or /race/<id>/ws) → room:{id}
     // Lobby / matchmaking: /ws → lobby
