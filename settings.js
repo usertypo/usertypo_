@@ -99,6 +99,7 @@ const DEFAULTS = {
             bgImage: null,
         },
         customPresets: [],
+        bgImage: null,
     },
     systemData: {
         saveTestStats: true,
@@ -447,6 +448,7 @@ function loadSettings() {
             settings.lookFeel.randomizeTheme = 'Off';
         }
         settings.lookFeel.glowIntensity = normalizeGlowIntensity(settings.lookFeel.glowIntensity);
+        settings.lookFeel.bgImage = normalizeBgImageValue(settings.lookFeel.bgImage);
     }
 
     // Cross-site custom themes (usertypo.com ↔ learn.usertypo.com via shared cookie)
@@ -978,6 +980,60 @@ function isCustomThemeName(themeName) {
     return themeName === 'custom' || (typeof themeName === 'string' && themeName.startsWith('custom:'));
 }
 
+function normalizeBgImageValue(raw) {
+    if (window.usertypoThemeBgEditor && typeof window.usertypoThemeBgEditor.normalizeBgImage === 'function') {
+        return window.usertypoThemeBgEditor.normalizeBgImage(raw);
+    }
+    return raw && typeof raw === 'object' && raw.url ? raw : null;
+}
+
+/** Site-wide background shown behind built-in themes (custom themes carry their own). */
+function getGlobalBgImage(settings) {
+    return normalizeBgImageValue(settings?.lookFeel?.bgImage);
+}
+
+/** A built-in palette expressed as Custom Theme editor values. */
+function getBuiltInThemeConfig(themeName) {
+    const p = THEME_PALETTES[themeName];
+    if (!p) return null;
+    const bgColor = normalizeHexColor(p.bgMain, CUSTOM_THEME_DEFAULT.bgColor);
+    const mode = getHexLuminance(bgColor) > 0.55 ? 'Light' : 'Dark';
+    return {
+        mode,
+        mainColor: normalizeHexColor(p.accentPrimary, CUSTOM_THEME_DEFAULT.mainColor),
+        secondaryColor: normalizeHexColor(p.textPrimary, CUSTOM_THEME_DEFAULT.secondaryColor),
+        bgColor,
+        bgSpectrumPos: resolveSpectrumPos(mode, bgColor, null),
+        bgImage: null,
+    };
+}
+
+/**
+ * Values the Custom Theme editor shows: the active custom theme, or the active
+ * built-in's colors plus the site-wide background it is displayed with.
+ */
+function getEditorThemeConfig(settings) {
+    const name = settings?.lookFeel?.colorTheme || getPreferredDefaultTheme();
+    if (!isCustomThemeName(name)) {
+        const builtIn = getBuiltInThemeConfig(name);
+        if (builtIn) return { ...builtIn, bgImage: getGlobalBgImage(settings) };
+        return getCustomThemeConfig(settings, 'custom');
+    }
+    return getCustomThemeConfig(settings, name);
+}
+
+function setGlobalBgImage(bgImage) {
+    const settings = loadSettings();
+    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+    settings.lookFeel.bgImage = normalizeBgImageValue(bgImage);
+    saveSettings(settings);
+    const themeName = settings.lookFeel.colorTheme || getPreferredDefaultTheme();
+    applyThemeBackgroundImage(settings, themeName, resolveThemePalette(settings, themeName).bgMain);
+    notifyLookFeelCloudSync();
+    if (typeof window.triggerSave === 'function') window.triggerSave();
+    return settings.lookFeel.bgImage;
+}
+
 /**
  * If main / secondary / bg match a built-in palette exactly, return that theme name.
  * Custom themes only control those three colors (→ accentPrimary, textPrimary, bgMain).
@@ -1165,8 +1221,8 @@ function syncOneCustomThemeEditor(editor, settings, cfg) {
 
 function syncCustomThemeEditor(settings) {
     if (!settings) settings = loadSettings();
-    // Sync from the active theme (custom / custom:N), not always the live draft.
-    const cfg = getCustomThemeConfig(settings, settings.lookFeel?.colorTheme || 'custom');
+    // Sync from the active theme (custom / custom:N / built-in), not always the live draft.
+    const cfg = getEditorThemeConfig(settings);
     beginCustomThemeSync();
     try {
         forEachCustomThemeEditor((editor) => syncOneCustomThemeEditor(editor, settings, cfg));
@@ -1281,7 +1337,9 @@ function renderCustomThemePresetsInto(editor, settings) {
 function readCustomThemeFromEditor(editor) {
     const root = editor || getActiveCustomThemeEditor();
     const settings = loadSettings();
-    const fallback = getCustomThemeConfig(settings, 'custom');
+    const fallback = isCustomThemeName(settings.lookFeel?.colorTheme)
+        ? getCustomThemeConfig(settings, 'custom')
+        : getEditorThemeConfig(settings);
     if (!root) {
         return {
             mode: fallback.mode,
@@ -1336,7 +1394,13 @@ function commitCustomTheme(partial, options = {}) {
     const settings = loadSettings();
     if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
 
-    const current = settings.lookFeel.customTheme || structuredClone(CUSTOM_THEME_DEFAULT);
+    // With a built-in selected the editor shows its colors, so edits start from them.
+    const activeName = settings.lookFeel.colorTheme;
+    const current = (!isCustomThemeName(activeName) && getBuiltInThemeConfig(activeName)
+        ? getEditorThemeConfig(settings)
+        : null)
+        || settings.lookFeel.customTheme
+        || structuredClone(CUSTOM_THEME_DEFAULT);
     let next = {
         mode: isLightModeValue(partial?.mode ?? current.mode) ? 'Light' : 'Dark',
         mainColor: normalizeHexColor(partial?.mainColor ?? current.mainColor, CUSTOM_THEME_DEFAULT.mainColor),
@@ -2130,7 +2194,7 @@ function embedGlowIntensityInCss(css) {
 
 /**
  * Layer a theme background image over #app-backdrop (behind page content).
- * Only active for custom themes that carry a bgImage payload.
+ * Custom themes use their own bgImage; built-in themes use the site-wide lookFeel.bgImage.
  */
 function applyThemeBackgroundImage(settings, themeName, bgMain) {
     let layer = document.getElementById('app-bg-image');
@@ -2147,7 +2211,9 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
     const cfg = isCustomThemeName(name)
         ? getCustomThemeConfig(settings, name)
         : null;
-    const bgImage = cfg && cfg.bgImage && cfg.bgImage.url ? cfg.bgImage : null;
+    const bgImage = cfg
+        ? (cfg.bgImage && cfg.bgImage.url ? cfg.bgImage : null)
+        : getGlobalBgImage(settings);
 
     if (!bgImage) {
         layer.classList.remove('is-active');
@@ -5638,4 +5704,7 @@ window.usertypo_settingsApi = {
     getEffectiveTapeMode,
     applyThemeBackgroundImage,
     whenThemeBackgroundReady,
+    getGlobalBgImage,
+    setGlobalBgImage,
+    getEditorThemeConfig,
 };
