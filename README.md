@@ -3,7 +3,7 @@
 A modern typing-test web app with profiles, friends, leaderboards, and real-time multiplayer races.
 
 **Live site:** [https://usertypo.com](https://usertypo.com)  
-**Repository:** [https://github.com/usertypo/usertypo](https://github.com/usertypo/usertypo)
+**Repository:** [https://github.com/usertypo/usertypo_](https://github.com/usertypo/usertypo_)
 
 License: [AGPLv3](./LICENSE)
 
