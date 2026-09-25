@@ -52,6 +52,7 @@
     var resizeObserver = null;
     var busy = false;
     var imageRevealed = false;
+    var target = 'custom';
 
     function toast(message, icon) {
         if (window.usertypoNotifications && window.usertypoNotifications.showToast) {
@@ -66,16 +67,56 @@
         return window.usertypo_settings || null;
     }
 
-    function currentBgImage() {
-        var settings = loadSettings();
-        var cfg = settings && settings.lookFeel && settings.lookFeel.customTheme;
-        var bg = cfg && cfg.bgImage;
-        if (!bg || typeof bg !== 'object' || !bg.url) return null;
-        return bg;
+    function isCustomThemeActive(settings) {
+        var name = settings && settings.lookFeel && settings.lookFeel.colorTheme;
+        return name === 'custom' || (typeof name === 'string' && name.indexOf('custom:') === 0);
     }
 
-    function hasBgImage() {
-        return !!currentBgImage();
+    /** 'custom' edits the custom theme's image; 'global' edits the site-wide one used by built-in themes. */
+    function resolveTarget(hint) {
+        if (hint === 'custom' || hint === 'global') return hint;
+        return isCustomThemeActive(loadSettings()) ? 'custom' : 'global';
+    }
+
+    function validBg(bg) {
+        return bg && typeof bg === 'object' && bg.url ? bg : null;
+    }
+
+    /** Image stored in the target slot (what a save overwrites). */
+    function storedBgImage(t) {
+        var settings = loadSettings();
+        var lf = settings && settings.lookFeel;
+        if (!lf) return null;
+        if (resolveTarget(t) === 'global') return validBg(lf.bgImage);
+        return validBg(lf.customTheme && lf.customTheme.bgImage);
+    }
+
+    /** Image the target currently shows; with a built-in selected the custom editor mirrors the site-wide one. */
+    function currentBgImage(t) {
+        var tgt = resolveTarget(t === undefined ? target : t);
+        if (tgt === 'custom' && !isCustomThemeActive(loadSettings())) return storedBgImage('global');
+        return storedBgImage(tgt);
+    }
+
+    function hasBgImage(t) {
+        return !!currentBgImage(t);
+    }
+
+    function commitBgImage(t, bg) {
+        var api = window.usertypo_settingsApi;
+        if (!api) return;
+        if (resolveTarget(t) === 'global') {
+            if (typeof api.setGlobalBgImage === 'function') api.setGlobalBgImage(bg);
+        } else if (typeof api.commitCustomTheme === 'function') {
+            api.commitCustomTheme({ bgImage: bg }, { force: true });
+        }
+    }
+
+    function deleteUnusedUpload(bg) {
+        if (!bg || !bg.url) return;
+        if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.deleteByUrl === 'function') {
+            window.usertypoThemeAssets.deleteByUrl(bg.url).catch(function () { /* ignore */ });
+        }
     }
 
     function normalizeBgImage(raw) {
@@ -369,10 +410,7 @@
     }
 
     function getBgColor() {
-        var settings = loadSettings();
-        var hex = settings && settings.lookFeel && settings.lookFeel.customTheme
-            && settings.lookFeel.customTheme.bgColor;
-        return hex || getComputedStyle(document.documentElement).getPropertyValue('--theme-bg').trim() || '#000000';
+        return getComputedStyle(document.documentElement).getPropertyValue('--theme-bg').trim() || '#000000';
     }
 
     function delay(ms) {
@@ -851,13 +889,11 @@
     }
 
     function onRemove() {
-        var prev = currentBgImage();
-        if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
-            window.usertypo_settingsApi.commitCustomTheme({ bgImage: null }, { force: true });
-        }
-        if (prev && window.usertypoThemeAssets && typeof window.usertypoThemeAssets.deleteByUrl === 'function') {
-            window.usertypoThemeAssets.deleteByUrl(prev.url).catch(function () { /* ignore */ });
-        }
+        // Remove what is on screen: a built-in theme shows the site-wide image.
+        var slot = target === 'custom' && !isCustomThemeActive(loadSettings()) ? 'global' : target;
+        var prev = storedBgImage(slot);
+        commitBgImage(slot, null);
+        deleteUnusedUpload(prev);
         closeModal();
         syncSettingsButton();
         toast('Background image removed.', 'delete');
@@ -872,7 +908,7 @@
         busy = true;
         var saveLabel = els.saveBtn.textContent;
         els.saveBtn.textContent = 'Saving…';
-        var prev = currentBgImage();
+        var prev = storedBgImage(target);
         var norm = offsetsToNormalized();
         var payload = normalizeBgImage({
             id: imgId || 'custom',
@@ -887,7 +923,7 @@
         try {
             // Persist while the edit layer still covers the screen (no flash).
             if (window.usertypoThemeAssets && typeof window.usertypoThemeAssets.persistBgImage === 'function') {
-                payload = await window.usertypoThemeAssets.persistBgImage(payload, prev);
+                payload = await window.usertypoThemeAssets.persistBgImage(payload, null);
             }
             payload = normalizeBgImage(payload);
 
@@ -901,9 +937,8 @@
                 });
             }
 
-            if (window.usertypo_settingsApi && typeof window.usertypo_settingsApi.commitCustomTheme === 'function') {
-                window.usertypo_settingsApi.commitCustomTheme({ bgImage: payload }, { force: true });
-            }
+            commitBgImage(target, payload);
+            if (prev && payload && prev.url !== payload.url) deleteUnusedUpload(prev);
 
             // Force account sync now that the URL is durable (R2 / default asset).
             try {
@@ -944,17 +979,20 @@
     }
 
     function syncSettingsButton() {
-        var has = hasBgImage();
         document.querySelectorAll('[data-theme-bg-trigger]').forEach(function (btn) {
+            var has = hasBgImage(btn.getAttribute('data-theme-bg-trigger') || 'custom');
             var label = btn.querySelector('[data-theme-bg-label]');
             if (label) label.textContent = has ? 'Edit background image' : 'Set background image';
             btn.classList.toggle('has-bg-image', has);
         });
     }
 
-    function open() {
+    /** @param {'custom'|'global'|'active'} [hint] which background to edit; 'active' follows the selected theme. */
+    function open(hint) {
+        if (busy || mode === 'edit') return;
         ensureDom();
-        if (hasBgImage()) showMenu();
+        target = resolveTarget(hint || 'custom');
+        if (hasBgImage(target)) showMenu();
         else showPicker();
     }
 
