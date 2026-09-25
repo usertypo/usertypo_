@@ -596,7 +596,7 @@
                     <div id="signin-panel" class="form-inner">
                         <div class="form-title">Welcome Back!</div>
                         <div id="auth-error" class="auth-error hidden" role="alert"></div>
-                        <div class="fields-stack">
+                        <div class="fields-stack" id="signin-fields">
                             <div class="field-wrap">
                                 <input id="si-username" type="text" placeholder=" " autocomplete="username" />
                                 <label for="si-username">Email</label>
@@ -610,9 +610,22 @@
                                     Password?</button>
                             </div>
                         </div>
+                        <div class="fields-stack hidden" id="signin-code-fields">
+                            <div class="form-title" style="font-size:1.1rem;">Check your email</div>
+                            <p class="bottom-note" style="margin:0;" id="signin-code-note">Enter the 6-digit code we sent to your email.</p>
+                            <div class="field-wrap">
+                                <input id="si-code" type="text" inputmode="numeric" placeholder=" " autocomplete="one-time-code" />
+                                <label for="si-code">Verification code</label>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;">
+                                <button type="button" class="white-link" id="btn-signin-code-back" style="font-size:.7rem;">Back</button>
+                                <button type="button" class="white-link accent" id="btn-signin-code-resend" style="font-size:.7rem;">Resend code</button>
+                            </div>
+                        </div>
                         <div style="display:flex;flex-direction:column;gap:.75rem;">
                             <button type="button" class="btn-primary" id="btn-signin-submit">Sign In</button>
-                            <div class="divider">or</div>
+                            <button type="button" class="btn-primary hidden" id="btn-signin-code-submit">Verify</button>
+                            <div class="divider" id="signin-or-divider">or</div>
                             <button type="button" class="btn-google" id="btn-signin-google">
                                 <svg width="15" height="15" viewBox="0 0 48 48">
                                     <path fill="#EA4335"
@@ -838,6 +851,13 @@ window.__spaPageInit = function() {
     const authError = document.getElementById('auth-error');
     const signupError = document.getElementById('signup-error');
     const btnSignIn = document.getElementById('btn-signin-submit');
+    const btnSignInCode = document.getElementById('btn-signin-code-submit');
+    const btnSignInCodeBack = document.getElementById('btn-signin-code-back');
+    const btnSignInCodeResend = document.getElementById('btn-signin-code-resend');
+    const signinFields = document.getElementById('signin-fields');
+    const signinCodeFields = document.getElementById('signin-code-fields');
+    const signinCodeNote = document.getElementById('signin-code-note');
+    const signinOrDivider = document.getElementById('signin-or-divider');
     const btnSignUp = document.getElementById('btn-signup-submit');
     const btnVerify = document.getElementById('btn-verify-submit');
     const btnOAuthUsername = document.getElementById('btn-oauth-username-submit');
@@ -872,9 +892,50 @@ window.__spaPageInit = function() {
 
     function setAuthBusy(isBusy) {
         authBusy = isBusy;
-        [btnSignIn, btnSignUp, btnVerify, btnOAuthUsername, btnSignInGoogle, btnSignUpGoogle].forEach(function (btn) {
+        [
+            btnSignIn, btnSignInCode, btnSignInCodeBack, btnSignInCodeResend,
+            btnSignUp, btnVerify, btnOAuthUsername, btnSignInGoogle, btnSignUpGoogle,
+        ].forEach(function (btn) {
             if (btn) btn.disabled = isBusy;
         });
+    }
+
+    function showSignInCodeStep(result) {
+        var strategy = result && result.strategy;
+        var destination = (result && result.destination) || '';
+        var note;
+        if (strategy === 'totp') {
+            note = 'Enter the 6-digit code from your authenticator app.';
+        } else if (strategy === 'backup_code') {
+            note = 'Enter one of your backup codes.';
+        } else {
+            var where = destination ? ' to ' + destination : (strategy === 'phone_code' ? ' to your phone' : ' to your email');
+            note = (result && result.newDevice ? 'New device detected. ' : '')
+                + 'Enter the 6-digit code we sent' + where + '.';
+        }
+        var title = signinCodeFields ? signinCodeFields.querySelector('.form-title') : null;
+        if (title) title.textContent = strategy === 'email_code' ? 'Check your email' : 'Verify it\u2019s you';
+        if (signinCodeNote) signinCodeNote.textContent = note;
+        if (signinFields) signinFields.classList.add('hidden');
+        if (signinCodeFields) signinCodeFields.classList.remove('hidden');
+        if (btnSignIn) btnSignIn.classList.add('hidden');
+        if (btnSignInCode) btnSignInCode.classList.remove('hidden');
+        if (signinOrDivider) signinOrDivider.classList.add('hidden');
+        if (btnSignInGoogle) btnSignInGoogle.classList.add('hidden');
+        const codeInput = document.getElementById('si-code');
+        if (codeInput) {
+            codeInput.value = '';
+            codeInput.focus();
+        }
+    }
+
+    function resetSignInForm() {
+        if (signinFields) signinFields.classList.remove('hidden');
+        if (signinCodeFields) signinCodeFields.classList.add('hidden');
+        if (btnSignIn) btnSignIn.classList.remove('hidden');
+        if (btnSignInCode) btnSignInCode.classList.add('hidden');
+        if (signinOrDivider) signinOrDivider.classList.remove('hidden');
+        if (btnSignInGoogle) btnSignInGoogle.classList.remove('hidden');
     }
 
     function resetSignupForm() {
@@ -1065,12 +1126,64 @@ window.__spaPageInit = function() {
                 goHomeAfterAuth('back');
                 return;
             }
+            if (result.status === 'needs_sign_in_code') {
+                showSignInCodeStep(result);
+                return;
+            }
             showError(authError, result.message || 'Sign in needs another step.');
         } catch (err) {
             showError(authError, window.usertypoAuth.formatError(err));
         } finally {
             setAuthBusy(false);
         }
+    }
+
+    async function handleSignInCode() {
+        if (authBusy || !window.usertypoAuth) return;
+        showError(authError, '');
+
+        const code = (document.getElementById('si-code')?.value || '').trim();
+        if (!code) {
+            showError(authError, 'Enter the verification code.');
+            return;
+        }
+
+        setAuthBusy(true);
+        try {
+            const result = await window.usertypoAuth.verifySignInCode(code);
+            if (result.status === 'complete') {
+                goHomeAfterAuth('back');
+                return;
+            }
+            showError(authError, result.message || 'Verification failed. Try again.');
+        } catch (err) {
+            showError(authError, window.usertypoAuth.formatError(err));
+        } finally {
+            setAuthBusy(false);
+        }
+    }
+
+    async function handleSignInCodeResend() {
+        if (authBusy || !window.usertypoAuth) return;
+        showError(authError, '');
+        setAuthBusy(true);
+        try {
+            await window.usertypoAuth.resendSignInCode();
+            if (signinCodeNote) signinCodeNote.textContent = 'A new code is on its way. Enter it below.';
+        } catch (err) {
+            showError(authError, window.usertypoAuth.formatError(err));
+        } finally {
+            setAuthBusy(false);
+        }
+    }
+
+    function handleSignInCodeBack() {
+        if (authBusy) return;
+        showError(authError, '');
+        if (window.usertypoAuth && typeof window.usertypoAuth.cancelSignInCode === 'function') {
+            window.usertypoAuth.cancelSignInCode();
+        }
+        resetSignInForm();
     }
 
     async function handleSignUp() {
@@ -1213,6 +1326,9 @@ window.__spaPageInit = function() {
     }
 
     if (btnSignIn) btnSignIn.addEventListener('click', handleSignIn, { signal: __pageSignal });
+    if (btnSignInCode) btnSignInCode.addEventListener('click', handleSignInCode, { signal: __pageSignal });
+    if (btnSignInCodeResend) btnSignInCodeResend.addEventListener('click', handleSignInCodeResend, { signal: __pageSignal });
+    if (btnSignInCodeBack) btnSignInCodeBack.addEventListener('click', handleSignInCodeBack, { signal: __pageSignal });
     if (btnSignUp) btnSignUp.addEventListener('click', handleSignUp, { signal: __pageSignal });
     if (btnVerify) btnVerify.addEventListener('click', handleVerifyEmail, { signal: __pageSignal });
     if (btnOAuthUsername) btnOAuthUsername.addEventListener('click', handleOAuthUsernameContinue, { signal: __pageSignal });
@@ -1227,6 +1343,9 @@ window.__spaPageInit = function() {
 
     document.getElementById('si-password')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') handleSignIn();
+    }, { signal: __pageSignal });
+    document.getElementById('si-code')?.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') handleSignInCode();
     }, { signal: __pageSignal });
     document.getElementById('su-verify')?.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !awaitingVerification) handleSignUp();
