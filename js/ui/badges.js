@@ -139,7 +139,7 @@
         '</g>';
     }
 
-    function artFirst100(uid) {
+    function artGoldHex(uid, label) {
         var outer = 'M16 1.5L28.6 8.75V23.25L16 30.5L3.4 23.25V8.75Z';
         var inner = 'M16 4.3L26.2 10.15V21.85L16 27.7L5.8 21.85V10.15Z';
         return '<defs>' +
@@ -158,13 +158,13 @@
             '<path d="' + outer + '" fill="url(#' + uid + '-rim)"></path>' +
             '<path d="' + inner + '" fill="url(#' + uid + '-fill)"></path>' +
             '<path d="M16 4.3L26.2 10.15V15.2H5.8V10.15Z" fill="#fff" opacity="0.22"></path>' +
-            '<text x="16" y="19.3" text-anchor="middle" class="ut-badge__num" font-size="9.2" fill="#7A3A00">100</text>' +
+            '<text x="16" y="19.3" text-anchor="middle" class="ut-badge__num" font-size="9.2" fill="#7A3A00">' + label + '</text>' +
             sheen(uid, '<path d="' + inner + '"></path>') +
             star(26.6, 5.4, 1, 'ut-badge__spark--a') +
             star(5.2, 25.6, 0.6, 'ut-badge__spark--b');
     }
 
-    function artFirst1k(uid) {
+    function artAmethystDiamond(uid, label, fontSize) {
         var outer = 'M16 1.2L30.8 16L16 30.8L1.2 16Z';
         var inner = 'M16 4.4L27.6 16L16 27.6L4.4 16Z';
         return '<defs>' +
@@ -184,7 +184,7 @@
             '<path d="' + inner + '" fill="url(#' + uid + '-fill)"></path>' +
             '<path d="M16 4.4L27.6 16H16Z" fill="#fff" opacity="0.2"></path>' +
             '<path d="M16 27.6L4.4 16H16Z" fill="#3B0764" opacity="0.18"></path>' +
-            '<text x="16" y="19.4" text-anchor="middle" class="ut-badge__num" font-size="9" fill="#fff" stroke="#4C1D95" stroke-width="1.1" paint-order="stroke">1K</text>' +
+            '<text x="16" y="19.1" text-anchor="middle" class="ut-badge__num" font-size="' + fontSize + '" fill="#fff" stroke="#4C1D95" stroke-width="1.1" paint-order="stroke">' + label + '</text>' +
             sheen(uid, '<path d="' + inner + '"></path>') +
             star(24.6, 6.6, 0.75, 'ut-badge__spark--a');
     }
@@ -211,28 +211,22 @@
             sheen(uid, '<path d="' + inner + '"></path>');
     }
 
-    function artContributor(uid, compact) {
-        var mark = compact
-            ? '<g transform="translate(16 16) scale(1.42) translate(-16.05 -18.35)">' +
-                '<path class="ut-badge__mark-o" d="' + MARK_O_PATH + '"></path>' +
-                '<rect class="ut-badge__mark-fg ut-badge__caret" x="16.3" y="22.1" width="7.6" height="1.6" rx="0.3"></rect>' +
-              '</g>'
-            : '<path class="ut-badge__mark-fg" d="' + MARK_USER_PATH + '"></path>' +
-              '<path class="ut-badge__mark-o" d="' + MARK_O_PATH + '"></path>' +
-              '<rect class="ut-badge__mark-fg ut-badge__caret" x="16.3" y="22.1" width="7.6" height="1.6" rx="0.3"></rect>';
+    function artContributor(uid) {
         return '<defs>' + sheenGradient(uid) + '</defs>' +
             '<rect class="ut-badge__tile" x="2" y="2" width="28" height="28" rx="8"></rect>' +
             '<rect class="ut-badge__tile-shine" x="3.2" y="3.2" width="25.6" height="11" rx="7"></rect>' +
-            mark +
+            '<path class="ut-badge__mark-fg" d="' + MARK_USER_PATH + '"></path>' +
+            '<path class="ut-badge__mark-o" d="' + MARK_O_PATH + '"></path>' +
+            '<rect class="ut-badge__mark-fg ut-badge__caret" x="16.3" y="22.1" width="7.6" height="1.6" rx="0.3"></rect>' +
             sheen(uid, '<rect x="2" y="2" width="28" height="28" rx="8"></rect>');
     }
 
-    function art(id, size) {
+    function art(id) {
         var uid = nextUid();
-        if (id === 'first_100') return artFirst100(uid);
-        if (id === 'first_1k') return artFirst1k(uid);
+        if (id === 'first_100') return artAmethystDiamond(uid, '100', 8.2);
+        if (id === 'first_1k') return artGoldHex(uid, '1K');
         if (id === 'discord_mod') return artDiscord(uid);
-        if (id === 'contributor') return artContributor(uid, size === 'xs');
+        if (id === 'contributor') return artContributor(uid);
         return '';
     }
 
@@ -241,27 +235,30 @@
      * @param {string} id
      * @param {object} [options]
      * @param {string} [options.size] xs|sm|md|lg
-     * @param {boolean} [options.tip] CSS hover tip (default true for md/lg)
+     * @param {boolean} [options.tip] delayed hover tip (default true)
      */
     function renderOne(id, options) {
         var def = DEFS[id];
         if (!def) return '';
         var opts = options || {};
         var size = opts.size || 'md';
-        var tip = opts.tip != null ? !!opts.tip : (size === 'md' || size === 'lg');
+        var tip = opts.tip !== false;
         var label = def.name + ' — ' + def.description;
         return '<span class="ut-badge ut-badge--' + id + ' ut-badge--' + size + '"' +
             ' role="img" aria-label="' + escapeHtml(label) + '"' +
-            (tip ? ' data-tip="' + escapeHtml(def.name) + '"' : ' title="' + escapeHtml(label) + '"') + '>' +
+            (tip ? ' data-tip="' + escapeHtml(def.name) + '"' : '') + '>' +
             '<svg class="ut-badge__svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false">' +
-                art(id, size) +
+                art(id) +
             '</svg>' +
         '</span>';
     }
 
-    /** Inline list of badges (no overflow handling). */
+    /** Inline list of badges; `options.max` caps how many are shown. */
     function render(badges, options) {
-        return normalize(badges).map(function (id) {
+        var list = normalize(badges);
+        var max = options && Number(options.max);
+        if (max > 0) list = list.slice(0, max);
+        return list.map(function (id) {
             return renderOne(id, options);
         }).join('');
     }
@@ -447,9 +444,75 @@
         closeAll();
     }
 
+    // ── Hover tip (fixed to <body> so tables / scroll boxes never clip it) ──
+    var TIP_DELAY_MS = 500;
+    var tipEl = null;
+    var tipTimer = null;
+    var tipTarget = null;
+
+    function ensureTip() {
+        if (tipEl && tipEl.parentNode) return tipEl;
+        tipEl = document.createElement('div');
+        tipEl.className = 'ut-badge-tip';
+        tipEl.setAttribute('role', 'tooltip');
+        document.body.appendChild(tipEl);
+        return tipEl;
+    }
+
+    function hideTip() {
+        if (tipTimer) {
+            clearTimeout(tipTimer);
+            tipTimer = null;
+        }
+        tipTarget = null;
+        if (tipEl) tipEl.classList.remove('is-visible');
+    }
+
+    function showTip(badge) {
+        if (!badge || !document.contains(badge)) return;
+        var tip = ensureTip();
+        tip.textContent = badge.getAttribute('data-tip') || '';
+        tip.classList.remove('is-visible');
+        var rect = badge.getBoundingClientRect();
+        var tipRect = tip.getBoundingClientRect();
+        var margin = 8;
+        var left = rect.left + rect.width / 2 - tipRect.width / 2;
+        left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+        var top = rect.top - tipRect.height - margin;
+        if (top < margin) top = rect.bottom + margin;
+        tip.style.left = Math.round(left) + 'px';
+        tip.style.top = Math.round(top) + 'px';
+        tip.classList.add('is-visible');
+    }
+
+    function onMouseOver(event) {
+        var target = event.target;
+        var badge = target && target.closest ? target.closest('.ut-badge[data-tip]') : null;
+        if (badge === tipTarget) return;
+        hideTip();
+        if (!badge) return;
+        tipTarget = badge;
+        tipTimer = setTimeout(function () {
+            tipTimer = null;
+            if (tipTarget === badge) showTip(badge);
+        }, TIP_DELAY_MS);
+    }
+
+    function onMouseOut(event) {
+        if (!tipTarget) return;
+        var next = event.relatedTarget;
+        if (next && tipTarget.contains(next)) return;
+        hideTip();
+    }
+
     function boot() {
         document.addEventListener('click', onDocumentClick, true);
         document.addEventListener('keydown', onKeyDown, true);
+        document.addEventListener('mouseover', onMouseOver);
+        document.addEventListener('mouseout', onMouseOut);
+        document.addEventListener('pointerdown', hideTip, true);
+        window.addEventListener('scroll', hideTip, true);
+        window.addEventListener('blur', hideTip);
     }
 
     window.usertypoBadges = {
