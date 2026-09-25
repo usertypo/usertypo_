@@ -5089,6 +5089,19 @@ window.__spaPageInit = function() {
             const hostCard = btn.closest('.settings-panel-card');
             const isFromMain = !hostCard || hostCard.id === 'panel-card';
 
+            // The host already has a panel open beside it: clicking the same option
+            // again closes it; a different option replaces it instead of stacking.
+            const hostIdx = isFromMain ? -1 : panelDepth.indexOf(hostCard);
+            const openChild = (isFromMain || hostIdx >= 0) ? panelDepth[hostIdx + 1] : null;
+            if (openChild && openChild.dataset.leafTitle === title) {
+                if (isFromMain) closeSubSetting();
+                else while (panelDepth.length > hostIdx + 1) popSubSetting();
+                return;
+            }
+            if (openChild && !isFromMain) {
+                while (panelDepth.length > hostIdx + 1) popSubSetting();
+            }
+
             let pathTitles;
             if (isFromMain) {
                 pathTitles = [getBaseCategoryTitle(), title];
