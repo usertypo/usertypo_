@@ -734,10 +734,11 @@
         layoutEditImage();
     }
 
-    function loadImage(src, isObjectUrl) {
+    // No crossOrigin: the editor never reads pixels, and a CORS request can hit a
+    // cached no-CORS copy of an R2 upload and fail to load.
+    function loadImage(src) {
         return new Promise(function (resolve, reject) {
             var next = new Image();
-            if (!isObjectUrl && src.indexOf('data:') !== 0) next.crossOrigin = 'anonymous';
             next.onload = function () {
                 img = next;
                 imgUrl = src;
@@ -770,9 +771,8 @@
         resetEditLayer();
 
         clearObjectUrl();
-        var isBlob = src.indexOf('blob:') === 0 || src.indexOf('data:') === 0;
         // Decode in parallel with the scroll/fade so the reveal never waits on the network.
-        var loading = loadImage(src, isBlob);
+        var loading = loadImage(src);
         loading.catch(function () { /* handled below */ });
 
         try {
