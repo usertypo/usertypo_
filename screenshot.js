@@ -462,13 +462,99 @@
         return canvas;
     }
 
-    function addPadding(sourceCanvas, paddingPx, bgColor) {
+    /** Snapshot of the fixed #app-bg-image layer as currently painted (viewport coords). */
+    function getThemeBackgroundImage() {
+        if (!document.body.classList.contains('has-theme-bg-image')) return null;
+        const layer = document.getElementById('app-bg-image');
+        if (!layer || !layer.classList.contains('is-active')) return null;
+        const img = layer.querySelector('img');
+        if (!img || !img.naturalWidth) return null;
+        const src = img.currentSrc || img.src;
+        if (!src) return null;
+        const box = img.getBoundingClientRect();
+        if (box.width < 1 || box.height < 1) return null;
+        const fill = getComputedStyle(layer).backgroundColor;
+        const opacity = parseFloat(getComputedStyle(img).opacity);
+        return {
+            src,
+            fill: fill && fill !== 'rgba(0, 0, 0, 0)' && fill !== 'transparent' ? fill : null,
+            opacity: Number.isFinite(opacity) ? opacity : 1,
+            left: box.left,
+            top: box.top,
+            width: box.width,
+            height: box.height,
+        };
+    }
+
+    function decodeImage(src, crossOrigin) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            if (crossOrigin) img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img.naturalWidth ? img : null);
+            img.onerror = () => resolve(null);
+            img.src = src;
+        });
+    }
+
+    async function loadCanvasSafeImage(src) {
+        if (/^(data|blob):/i.test(src)) return decodeImage(src, false);
+        // Without CORS mode a cross-origin image would taint the canvas and break toBlob.
+        const img = await decodeImage(src, true);
+        if (img) return img;
+        // Uploads served before the theme-assets worker always sent CORS headers can sit in the
+        // HTTP cache (immutable) without them; refetch past the cache to get a CORS-clean copy.
+        try {
+            const res = await fetch(src, { mode: 'cors', cache: 'reload', credentials: 'omit' });
+            if (!res.ok) return null;
+            const objectUrl = URL.createObjectURL(await res.blob());
+            const fresh = await decodeImage(objectUrl, false);
+            URL.revokeObjectURL(objectUrl);
+            return fresh;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function prepareThemeBackdrop(region) {
+        const bg = getThemeBackgroundImage();
+        if (!bg) return null;
+        const img = await loadCanvasSafeImage(bg.src);
+        if (!img) {
+            console.warn('Screenshot: theme background image could not be loaded for capture', bg.src);
+            return null;
+        }
+
+        let w = bg.width;
+        let h = bg.height;
+        let x = bg.left - region.left;
+        let y = bg.top - region.top;
+        const grow = Math.max(1, region.width / w, region.height / h);
+        if (grow > 1) {
+            x -= (w * grow - w) / 2;
+            y -= (h * grow - h) / 2;
+            w *= grow;
+            h *= grow;
+        }
+        x = Math.min(0, Math.max(region.width - w, x));
+        y = Math.min(0, Math.max(region.height - h, y));
+
+        return { img, fill: bg.fill, opacity: bg.opacity, x, y, w, h, regionWidth: region.width, regionHeight: region.height };
+    }
+
+    function addPadding(sourceCanvas, paddingPx, bgColor, backdrop) {
         const canvas = document.createElement('canvas');
         canvas.width = sourceCanvas.width + paddingPx * 2;
         canvas.height = sourceCanvas.height + paddingPx * 2;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = bgColor;
+        ctx.fillStyle = (backdrop && backdrop.fill) || bgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (backdrop) {
+            const sx = canvas.width / backdrop.regionWidth;
+            const sy = canvas.height / backdrop.regionHeight;
+            ctx.globalAlpha = backdrop.opacity;
+            ctx.drawImage(backdrop.img, backdrop.x * sx, backdrop.y * sy, backdrop.w * sx, backdrop.h * sy);
+            ctx.globalAlpha = 1;
+        }
         ctx.drawImage(sourceCanvas, paddingPx, paddingPx);
         return canvas;
     }
@@ -670,16 +756,23 @@
                 await beforeCapture();
             }
 
-            if (injectLogo) {
-                logoLayers = await prepareBrandLogoLayers();
-            }
-
             const rect = captureArea.getBoundingClientRect();
             const width = Math.ceil(Math.max(captureArea.offsetWidth, captureArea.scrollWidth, rect.width));
             const height = Math.ceil(Math.max(captureArea.offsetHeight, captureArea.scrollHeight, rect.height));
             if (width < 1 || height < 1) {
                 throw new Error(`Capture area has zero dimensions (${width}x${height})`);
             }
+
+            const [layers, backdrop] = await Promise.all([
+                injectLogo ? prepareBrandLogoLayers() : null,
+                prepareThemeBackdrop({
+                    left: rect.left - padding,
+                    top: rect.top - padding,
+                    width: width + padding * 2,
+                    height: height + padding * 2,
+                }),
+            ]);
+            logoLayers = layers;
 
             refs = tagCaptureTree(captureArea);
 
@@ -690,7 +783,7 @@
                 width,
                 height,
                 scale: pixelScale,
-                backgroundColor: bgColor,
+                backgroundColor: backdrop ? null : bgColor,
                 filter: (node) => shouldIncludeNode(node, hideSelectors),
                 onCloneEachNode: (cloned) => {
                     if (cloned.nodeType !== 1 || !refs) return;
@@ -708,7 +801,7 @@
                 timeout: 30000,
             });
 
-            const paddedCanvas = addPadding(rawCanvas, Math.round(padding * pixelScale), bgColor);
+            const paddedCanvas = addPadding(rawCanvas, Math.round(padding * pixelScale), bgColor, backdrop);
             const finalCanvas = await addWatermark(paddedCanvas);
 
             const blob = await new Promise((resolve, reject) => {
