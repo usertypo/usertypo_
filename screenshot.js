@@ -486,22 +486,43 @@
         };
     }
 
-    function loadCanvasSafeImage(src) {
+    function decodeImage(src, crossOrigin) {
         return new Promise((resolve) => {
             const img = new Image();
-            // Without CORS mode a cross-origin image would taint the canvas and break toBlob.
-            if (!/^(data|blob):/i.test(src)) img.crossOrigin = 'anonymous';
+            if (crossOrigin) img.crossOrigin = 'anonymous';
             img.onload = () => resolve(img.naturalWidth ? img : null);
             img.onerror = () => resolve(null);
             img.src = src;
         });
     }
 
+    async function loadCanvasSafeImage(src) {
+        if (/^(data|blob):/i.test(src)) return decodeImage(src, false);
+        // Without CORS mode a cross-origin image would taint the canvas and break toBlob.
+        const img = await decodeImage(src, true);
+        if (img) return img;
+        // Uploads served before the theme-assets worker always sent CORS headers can sit in the
+        // HTTP cache (immutable) without them; refetch past the cache to get a CORS-clean copy.
+        try {
+            const res = await fetch(src, { mode: 'cors', cache: 'reload', credentials: 'omit' });
+            if (!res.ok) return null;
+            const objectUrl = URL.createObjectURL(await res.blob());
+            const fresh = await decodeImage(objectUrl, false);
+            URL.revokeObjectURL(objectUrl);
+            return fresh;
+        } catch (_) {
+            return null;
+        }
+    }
+
     async function prepareThemeBackdrop(region) {
         const bg = getThemeBackgroundImage();
         if (!bg) return null;
         const img = await loadCanvasSafeImage(bg.src);
-        if (!img) return null;
+        if (!img) {
+            console.warn('Screenshot: theme background image could not be loaded for capture', bg.src);
+            return null;
+        }
 
         let w = bg.width;
         let h = bg.height;
