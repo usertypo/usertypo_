@@ -283,6 +283,14 @@
         if (xpEl) xpEl.textContent = (card.xpIntoLevel || 0) + ' / ' + (card.xpToNext || 100) + ' XP';
         if (streakEl) streakEl.textContent = String(card.currentStreak || 0);
 
+        if (window.usertypoBadges) {
+            window.usertypoBadges.mountRow($('ppc-badges'), card.badges, {
+                max: 3,
+                size: 'md',
+                username: card.username,
+            });
+        }
+
         if (avatarHost && window.usertypoPlayerAvatar) {
             avatarHost.innerHTML = window.usertypoPlayerAvatar.render({
                 avatarUrl: card.avatarUrl,
@@ -329,6 +337,11 @@
         if (publicIdEl) publicIdEl.textContent = '—';
         var slot = $('ppc-friend-slot');
         if (slot) slot.innerHTML = '';
+        var badgesEl = $('ppc-badges');
+        if (badgesEl) {
+            badgesEl.innerHTML = '';
+            badgesEl.hidden = true;
+        }
     }
 
     function showError(message) {

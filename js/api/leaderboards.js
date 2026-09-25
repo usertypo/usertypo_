@@ -270,11 +270,28 @@
     async function finalizeEntries(entries) {
         var list = entries || [];
         await blankBlockedAvatars(list);
-        await enrichMissingCountryCodes(list);
+        await Promise.all([
+            enrichMissingCountryCodes(list),
+            enrichBadges(list),
+        ]);
         if (window.usertypoProgression && typeof window.usertypoProgression.attachToList === 'function') {
             await window.usertypoProgression.attachToList(list, 'userId');
         }
         return list;
+    }
+
+    /** Attach profile badge ids (entry.badges) to board rows. */
+    async function enrichBadges(entries) {
+        if (!entries || !entries.length || !window.usertypoBadges) return;
+        try {
+            var byId = await window.usertypoBadges.fetchFor(entries.map(function (entry) {
+                return entry && entry.userId;
+            }));
+            entries.forEach(function (entry) {
+                if (!entry) return;
+                entry.badges = (entry.userId && byId[entry.userId]) || [];
+            });
+        } catch (e) { /* ignore — badges optional */ }
     }
 
     /** Fill country_code when a board row omits it. */
