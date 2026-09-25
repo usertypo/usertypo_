@@ -162,6 +162,7 @@
             glowIntensity: glowFrom(lf.glowIntensity),
             customTheme: customTheme,
             customPresets: presets,
+            bgImage: cloudSafeBgImage(lf.bgImage),
         };
     }
 
@@ -178,6 +179,7 @@
             glowIntensity: glowFrom(raw.glowIntensity),
             customTheme: normalizeCustomTheme(raw.customTheme),
             customPresets: normalizePresets(raw.customPresets),
+            bgImage: normalizeBgImage(raw.bgImage),
         };
     }
 
@@ -205,6 +207,7 @@
             settings.lookFeel.glowIntensity = payload.glowIntensity;
             settings.lookFeel.customTheme = payload.customTheme;
             settings.lookFeel.customPresets = payload.customPresets;
+            settings.lookFeel.bgImage = payload.bgImage;
             settings.lookFeel._lookFeelUpdatedAt = payload.updatedAt;
             saveLocalSettings(settings);
 
@@ -321,6 +324,19 @@
                     changed = true;
                 }
             }
+            var globalBg = settings.lookFeel.bgImage;
+            if (globalBg && globalBg.url) {
+                var nextGlobal = await window.usertypoThemeAssets.persistBgImage(globalBg, null);
+                if (nextGlobal && nextGlobal.url) {
+                    var normalizedGlobal = window.usertypoThemeAssets.normalizeDurableUrl
+                        ? window.usertypoThemeAssets.normalizeDurableUrl(nextGlobal.url)
+                        : nextGlobal.url;
+                    if (normalizedGlobal !== globalBg.url) {
+                        settings.lookFeel.bgImage = Object.assign({}, nextGlobal, { url: normalizedGlobal });
+                        changed = true;
+                    }
+                }
+            }
             if (changed) {
                 settings.lookFeel.customPresets = presets;
                 saveLocalSettings(settings);
@@ -334,6 +350,7 @@
     function localHasEphemeralImages(settings) {
         if (!settings || !settings.lookFeel) return false;
         if (themeHasEphemeralImage(settings.lookFeel.customTheme)) return true;
+        if (themeHasEphemeralImage({ bgImage: settings.lookFeel.bgImage })) return true;
         var presets = Array.isArray(settings.lookFeel.customPresets)
             ? settings.lookFeel.customPresets
             : [];
