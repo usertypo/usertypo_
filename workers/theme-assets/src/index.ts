@@ -101,11 +101,13 @@ export default {
         if (!key) return json(env, 404, { error: 'not_found' }, request);
         const obj = await env.THEME_BGS.get(key);
         if (!obj) return json(env, 404, { error: 'not_found' }, request);
+        // Same headers with or without Origin, so a cached copy works for img/CSS and CORS loads alike.
         const headers: Record<string, string> = {
           'Content-Type': obj.httpMetadata?.contentType || 'image/jpeg',
           'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
         };
-        applyCors(env, request, headers);
         return new Response(obj.body, { status: 200, headers });
       }
 
