@@ -25,6 +25,8 @@
     var readyPromise = null;
     var listeners = [];
     var pendingSignUp = null;
+    var pendingSignIn = null;
+    var pendingSignInFactor = null;
     var pendingDisplayUsername = '';
 
     function notify(state) {
@@ -208,6 +210,9 @@
             throw new Error('Clerk is not ready yet.');
         }
 
+        pendingSignIn = null;
+        pendingSignInFactor = null;
+
         var signIn = await clerk.client.signIn.create({
             identifier: identifier,
             password: password,
@@ -219,10 +224,102 @@
             return { status: 'complete' };
         }
 
+        // Device Trust: password sign-in on an unrecognized browser (new device,
+        // incognito, guest) returns needs_client_trust and must be confirmed with
+        // a one-time code. Accounts with MFA get needs_second_factor instead.
+        if (signIn.status === 'needs_client_trust' || signIn.status === 'needs_second_factor') {
+            var step = await startSignInSecondFactor(signIn);
+            if (step) return step;
+        }
+
         return {
             status: signIn.status,
             message: 'More verification is required for this account.',
         };
+    }
+
+    var SECOND_FACTOR_ORDER = ['email_code', 'phone_code', 'totp', 'backup_code'];
+
+    function pickSecondFactor(signIn) {
+        var factors = (signIn && signIn.supportedSecondFactors) || [];
+        for (var i = 0; i < SECOND_FACTOR_ORDER.length; i += 1) {
+            for (var j = 0; j < factors.length; j += 1) {
+                if (factors[j] && factors[j].strategy === SECOND_FACTOR_ORDER[i]) {
+                    return factors[j];
+                }
+            }
+        }
+        return null;
+    }
+
+    async function prepareSignInFactor(signIn, factor) {
+        if (factor.strategy === 'email_code') {
+            var emailParams = { strategy: 'email_code' };
+            if (factor.emailAddressId) emailParams.emailAddressId = factor.emailAddressId;
+            return (await signIn.prepareSecondFactor(emailParams)) || signIn;
+        }
+        if (factor.strategy === 'phone_code') {
+            var phoneParams = { strategy: 'phone_code' };
+            if (factor.phoneNumberId) phoneParams.phoneNumberId = factor.phoneNumberId;
+            return (await signIn.prepareSecondFactor(phoneParams)) || signIn;
+        }
+        return signIn;
+    }
+
+    async function startSignInSecondFactor(signIn) {
+        var factor = pickSecondFactor(signIn);
+        if (!factor || typeof signIn.attemptSecondFactor !== 'function') return null;
+
+        signIn = await prepareSignInFactor(signIn, factor);
+        pendingSignIn = signIn;
+        pendingSignInFactor = factor;
+        return {
+            status: 'needs_sign_in_code',
+            strategy: factor.strategy,
+            destination: factor.safeIdentifier || '',
+            newDevice: signIn.status === 'needs_client_trust',
+        };
+    }
+
+    async function verifySignInCode(code) {
+        await readyPromise;
+        if (!pendingSignIn || !pendingSignInFactor) {
+            throw new Error('This sign-in expired. Enter your email and password again.');
+        }
+
+        var result = await pendingSignIn.attemptSecondFactor({
+            strategy: pendingSignInFactor.strategy,
+            code: String(code || '').trim(),
+        });
+        pendingSignIn = result || pendingSignIn;
+
+        if (pendingSignIn.status === 'complete') {
+            var sessionId = pendingSignIn.createdSessionId;
+            pendingSignIn = null;
+            pendingSignInFactor = null;
+            await activateSession(sessionId);
+            markAuthWelcome('back');
+            return { status: 'complete' };
+        }
+
+        return {
+            status: pendingSignIn.status,
+            message: 'Verification is not complete yet.',
+        };
+    }
+
+    async function resendSignInCode() {
+        await readyPromise;
+        if (!pendingSignIn || !pendingSignInFactor) {
+            throw new Error('This sign-in expired. Enter your email and password again.');
+        }
+        pendingSignIn = await prepareSignInFactor(pendingSignIn, pendingSignInFactor);
+        return { status: 'sent' };
+    }
+
+    function cancelSignInCode() {
+        pendingSignIn = null;
+        pendingSignInFactor = null;
     }
 
     async function signUpWithPassword(fields) {
@@ -1138,6 +1235,9 @@
         isReverificationError: isReverificationError,
         ensureReverified: ensureReverified,
         signInWithPassword: signInWithPassword,
+        verifySignInCode: verifySignInCode,
+        resendSignInCode: resendSignInCode,
+        cancelSignInCode: cancelSignInCode,
         signUpWithPassword: signUpWithPassword,
         verifyEmailCode: verifyEmailCode,
         signInWithGoogle: signInWithGoogle,
