@@ -1,6 +1,6 @@
 /**
  * usertypo_ Notifications Worker — friend inbox on D1 (staging first).
- * Auth: Clerk JWT. Friend emit verified against Supabase friend_requests.
+ * Auth: Clerk JWT. Friend emit verified via Supabase notify_* RPCs (user JWT).
  */
 import {
   type Env,
@@ -227,7 +227,7 @@ async function syncIncomingFriendRequests(
 
   for (const fr of pending) {
     if (existing.has(fr.id)) continue;
-    const label = await profileDisplayLabel(env, fr.from_user_id, userToken);
+    const label = fr.from_label || await profileDisplayLabel(env, fr.from_user_id, userToken);
     const row = await insertNotification(env, {
       userId,
       type: 'friend_request',
@@ -330,7 +330,7 @@ async function emitFriendNotification(
   if (typeHint === 'friend_accepted' || (!typeHint && fr.status === 'accepted' && fr.to_user_id === actorId)) {
     if (fr.to_user_id !== actorId) throw new Error('forbidden');
     if (fr.status !== 'accepted') {
-      const friends = await friendshipExists(env, actorId, fr.from_user_id, userToken);
+      const friends = await friendshipExists(env, fr.from_user_id, userToken);
       if (!friends) throw new Error('not_friends');
     }
     const label = await profileDisplayLabel(env, actorId, userToken);
@@ -351,7 +351,7 @@ async function emitFriendNotification(
   // Explicit to_user_id path from plan (accepter notifies original requester)
   const toUserId = String(body.to_user_id || '').trim();
   if (typeHint === 'friend_accepted' && toUserId) {
-    const friends = await friendshipExists(env, actorId, toUserId, userToken);
+    const friends = await friendshipExists(env, toUserId, userToken);
     if (!friends) throw new Error('not_friends');
     const label = await profileDisplayLabel(env, actorId, userToken);
     const row = await insertNotification(env, {

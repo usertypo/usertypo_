@@ -24,6 +24,9 @@
     var RETENTION_MS = 24 * 60 * 60 * 1000;
     var lastFriendSyncAt = 0;
     var FRIEND_SYNC_MIN_MS = 1500;
+    // Self-heal lookups hit Supabase; emits already land in the D1 inbox polled every POLL_MS.
+    var SELF_HEAL_MS = 30000;
+    var lastSelfHealAt = 0;
 
     function notificationsWorkerUrl() {
         var cfg = (window.USERTYPO_CONFIG && window.USERTYPO_CONFIG.notifications) || {};
@@ -795,12 +798,16 @@
         renderNotificationsPanel();
 
         // Self-heal missed emits even when the Worker list/sync path fails.
-        try {
-            await syncFriendRequestsViaWorker({ toastNew: !!opts.toastNew, force: !!opts.forceSync });
-        } catch (_) { /* ignore */ }
-        try {
-            await backfillIncomingFriendRequests({ toastNew: !!opts.toastNew });
-        } catch (_) { /* ignore */ }
+        var now = Date.now();
+        if (opts.forceSync || now - lastSelfHealAt >= SELF_HEAL_MS) {
+            lastSelfHealAt = now;
+            try {
+                await syncFriendRequestsViaWorker({ toastNew: !!opts.toastNew, force: !!opts.forceSync });
+            } catch (_) { /* ignore */ }
+            try {
+                await backfillIncomingFriendRequests({ toastNew: !!opts.toastNew });
+            } catch (_) { /* ignore */ }
+        }
 
         return { notifications: cached, unreadCount: unreadCount };
     }
@@ -891,13 +898,22 @@
         }).catch(function () { channel = null; });
     }
 
-    function startPolling() {
+    function isTabHidden() {
+        return document.visibilityState === 'hidden';
+    }
+
+    function startPolling(opts) {
         stopPolling();
+        if (isTabHidden()) return;
         // Immediate check, then every POLL_MS (native timer — SPA pages wrap setInterval)
-        refresh({ toastNew: true }).catch(function (err) {
+        refresh({ toastNew: true, forceSync: !!(opts && opts.forceSync) }).catch(function (err) {
             console.warn('[usertypo notifications] poll failed', err);
         });
         pollTimer = nativeSetInterval(function () {
+            if (isTabHidden()) {
+                stopPolling();
+                return;
+            }
             refresh({ toastNew: true }).catch(function (err) {
                 console.warn('[usertypo notifications] poll failed', err);
             });
@@ -954,10 +970,14 @@
         }
 
         document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState !== 'visible') return;
+            if (isTabHidden()) {
+                stopPolling();
+                return;
+            }
             var s = window.usertypoAuth && window.usertypoAuth.getState();
             if (s && s.isSignedIn && s.user) {
-                refresh({ toastNew: true }).catch(function () { /* ignore */ });
+                // Catch anything missed while hidden, then resume the live poll.
+                startPolling({ forceSync: true });
             }
         });
     }

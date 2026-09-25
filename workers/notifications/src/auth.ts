@@ -78,58 +78,51 @@ function userSupabaseHeaders(env: Env, userToken: string): Record<string, string
   };
 }
 
-function serviceHeaders(env: Env): Record<string, string> | null {
-  const key = String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  if (!key) return null;
-  return {
-    // Prefer anon as apikey (PostgREST convention) with service role as Bearer —
-    // same pattern as the multiplayer worker.
-    apikey: String(env.SUPABASE_ANON_KEY || '').trim() || key,
-    Authorization: `Bearer ${key}`,
-    'Content-Type': 'application/json',
-    Prefer: 'return=representation',
-  };
-}
-
-/** Prefer service role for trusted server lookups; fall back to the caller's Clerk JWT. */
-function supabaseHeaders(env: Env, userToken?: string): Record<string, string> | null {
-  return serviceHeaders(env) || (userToken ? userSupabaseHeaders(env, userToken) : null);
-}
-
 export type FriendRequestRow = {
   id: string;
   from_user_id: string;
   to_user_id: string;
   status: string;
+  from_label?: string;
 };
 
-async function fetchJsonRows(
+/**
+ * Calls a Postgres function via PostgREST. friend_requests / friendships have no
+ * direct table grants for signed-in users, so the Worker only uses the notify_* RPCs
+ * (they scope results to auth.jwt() ->> 'sub', which requires the user's JWT).
+ */
+async function callRpc(
   env: Env,
-  pathAndQuery: string,
+  name: string,
+  args: Record<string, unknown>,
   userToken: string,
-): Promise<Record<string, unknown>[]> {
+): Promise<unknown> {
   const base = supabaseBase(env);
-  const preferred = supabaseHeaders(env, userToken);
-  if (!base || !preferred) throw new Error('supabase_not_configured');
+  const headers = userSupabaseHeaders(env, userToken);
+  if (!base || !headers) throw new Error('supabase_not_configured');
 
-  const url = `${base}/rest/v1/${pathAndQuery}`;
-  let res = await fetch(url, { headers: preferred });
-
-  // Service role preferred; if it fails and a user JWT is available, retry once.
-  if (!res.ok && serviceHeaders(env) && userToken) {
-    const userHeaders = userSupabaseHeaders(env, userToken);
-    if (userHeaders) {
-      console.warn('[notifications] supabase fetch failed with service role', res.status, '— retrying with user JWT');
-      res = await fetch(url, { headers: userHeaders });
-    }
-  }
-
+  const res = await fetch(`${base}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(args || {}),
+  });
   if (!res.ok) {
-    console.warn('[notifications] supabase fetch failed', pathAndQuery, res.status);
+    const text = await res.text().catch(() => '');
+    console.warn('[notifications] supabase rpc failed', name, res.status, text.slice(0, 200));
     throw new Error('supabase_lookup_failed');
   }
-  const rows = await res.json().catch(() => null);
-  return Array.isArray(rows) ? rows as Record<string, unknown>[] : [];
+  return res.json().catch(() => null);
+}
+
+function toFriendRequestRow(row: Record<string, unknown>): FriendRequestRow {
+  const label = String(row.from_label || '').trim();
+  return {
+    id: String(row.id),
+    from_user_id: String(row.from_user_id),
+    to_user_id: String(row.to_user_id),
+    status: String(row.status || ''),
+    ...(label ? { from_label: label } : {}),
+  };
 }
 
 export async function fetchFriendRequest(
@@ -137,53 +130,31 @@ export async function fetchFriendRequest(
   requestId: string,
   userToken: string,
 ): Promise<FriendRequestRow | null> {
-  const rows = await fetchJsonRows(
-    env,
-    `friend_requests?id=eq.${encodeURIComponent(requestId)}&select=id,from_user_id,to_user_id,status&limit=1`,
-    userToken,
-  );
-  if (!rows[0]) return null;
-  const row = rows[0];
-  return {
-    id: String(row.id),
-    from_user_id: String(row.from_user_id),
-    to_user_id: String(row.to_user_id),
-    status: String(row.status || ''),
-  };
+  if (!/^[0-9a-fA-F-]{36}$/.test(requestId)) return null;
+  const rows = await callRpc(env, 'notify_friend_request', { p_request_id: requestId }, userToken);
+  const first = Array.isArray(rows) ? rows[0] as Record<string, unknown> | undefined : undefined;
+  return first ? toFriendRequestRow(first) : null;
 }
 
 export async function fetchPendingIncomingFriendRequests(
   env: Env,
-  userId: string,
+  _userId: string,
   userToken: string,
 ): Promise<FriendRequestRow[]> {
-  const rows = await fetchJsonRows(
-    env,
-    `friend_requests?to_user_id=eq.${encodeURIComponent(userId)}`
-      + `&status=eq.pending&select=id,from_user_id,to_user_id,status&order=created_at.desc&limit=50`,
-    userToken,
-  );
-  return rows.map((row) => ({
-    id: String(row.id),
-    from_user_id: String(row.from_user_id),
-    to_user_id: String(row.to_user_id),
-    status: String(row.status || 'pending'),
-  }));
+  const rows = await callRpc(env, 'notify_pending_friend_requests', {}, userToken);
+  return Array.isArray(rows)
+    ? (rows as Record<string, unknown>[]).map(toFriendRequestRow)
+    : [];
 }
 
+/** True if the signed-in caller (the JWT subject) is friends with `otherUserId`. */
 export async function friendshipExists(
   env: Env,
-  userA: string,
-  userB: string,
+  otherUserId: string,
   userToken: string,
 ): Promise<boolean> {
-  const rows = await fetchJsonRows(
-    env,
-    `friendships?user_id=eq.${encodeURIComponent(userA)}`
-      + `&friend_id=eq.${encodeURIComponent(userB)}&select=user_id&limit=1`,
-    userToken,
-  );
-  return rows.length > 0;
+  const result = await callRpc(env, 'notify_is_friend', { p_other_user_id: otherUserId }, userToken);
+  return result === true;
 }
 
 export async function profileDisplayLabel(
@@ -192,17 +163,9 @@ export async function profileDisplayLabel(
   userToken: string,
 ): Promise<string> {
   try {
-    const rows = await fetchJsonRows(
-      env,
-      `profiles?user_id=eq.${encodeURIComponent(userId)}`
-        + `&select=username,display_name,user_id&limit=1`,
-      userToken,
-    );
-    if (!rows[0]) return userId;
-    const row = rows[0];
-    const username = String(row.username || '').trim();
-    const display = String(row.display_name || '').trim();
-    return username || display || String(row.user_id || userId);
+    const label = await callRpc(env, 'profile_display_label', { p_user_id: userId }, userToken);
+    const text = typeof label === 'string' ? label.trim() : '';
+    return text || userId;
   } catch {
     return userId;
   }
