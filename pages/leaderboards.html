@@ -658,11 +658,15 @@ window.__spaPageInit = function() {
                     var date = escapeHtml(lb.formatRelativeTime(entry.createdAt));
                     var username = escapeHtml(entry.username || 'Player');
                     var flag = renderFlag(entry);
+                    var badges = window.usertypoBadges && entry.badges && entry.badges.length
+                        ? '<span class="ut-badge-inline">' + window.usertypoBadges.render(entry.badges, { size: 'xs' }) + '</span>'
+                        : '';
 
                     var nameBlock = '<span class="inline-flex items-center gap-1.5 min-w-0">' +
                         '<span class="font-sans tracking-wide truncate ' +
                         (isMe ? 'font-bold lb-text-strong' : 'font-medium lb-name-hover transition-colors') +
                         '">' + username + '</span>' +
+                        badges +
                         flag +
                         (isMe ? '<span class="material-symbols-outlined text-primary text-sm shrink-0" title="You">person</span>' : '') +
                         '</span>';
