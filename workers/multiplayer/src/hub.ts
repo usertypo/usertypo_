@@ -136,6 +136,8 @@ const ROOM_BOT_NAMES = [
   'TypeBot', 'KeyClaw', 'NeonType', 'SwiftKeys', 'PixelPace',
 ];
 
+const LOBBY_RELAY_EVENTS = new Set(['room:match-starting']);
+
 function shortId(bytes = 9): string {
   const arr = new Uint8Array(bytes);
   crypto.getRandomValues(arr);
@@ -228,6 +230,20 @@ export class MultiplayerHub implements DurableObject {
           userIds: room.allowedUserIds,
           roomCode: room.roomCode || undefined,
         }),
+      });
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  /** Deliver an event over players' lobby sockets, which reconnect on their own when idle tabs drop the race socket. */
+  private async relayViaLobby(event: string, userIds: string[], payload: unknown) {
+    if (this.role !== 'race' || !userIds.length) return;
+    try {
+      await this.lobbyStub().fetch('https://lobby-do/internal/notify-users', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ event, userIds, payload }),
       });
     } catch {
       /* best-effort */
@@ -500,6 +516,17 @@ export class MultiplayerHub implements DurableObject {
       this.emitRoomState(room);
       await this.persist();
       return Response.json({ ok: true, roomId: room.id });
+    }
+
+    if (url.pathname === '/internal/notify-users' && request.method === 'POST') {
+      const body = await request.json() as { event?: string; userIds?: unknown; payload?: unknown };
+      const event = String(body.event || '');
+      if (!LOBBY_RELAY_EVENTS.has(event)) {
+        return Response.json({ ok: false, error: 'invalid_event' }, { status: 400 });
+      }
+      const userIds = Array.isArray(body.userIds) ? body.userIds.map((id) => String(id)) : [];
+      for (const uid of userIds) this.emitToUser(uid, event, body.payload ?? null);
+      return Response.json({ ok: true });
     }
 
     if (url.pathname === '/internal/room-disposed' && request.method === 'POST') {
@@ -1204,6 +1231,15 @@ export class MultiplayerHub implements DurableObject {
     let seconds = LIMITS.countdownSeconds;
     room.countdownEndsAt = Date.now() + seconds * 1000;
     this.emitRoom(room, 'race:countdown', [room.id, seconds, room.countdownEndsAt]);
+    if (room.type === 'custom') {
+      // Players who never pressed Ready may be sitting on a dead race socket; the
+      // lobby socket tells them to resync so a host start pulls everyone in.
+      this.ctx.waitUntil(this.relayViaLobby(
+        'room:match-starting',
+        this.remainingCustomPlayers(room).map((p) => p.userId),
+        { roomId: room.id, countdownEndsAt: room.countdownEndsAt },
+      ));
+    }
     await this.scheduleAlarm(1000, { kind: 'countdown-tick', roomId: room.id });
     await this.persist();
   }
