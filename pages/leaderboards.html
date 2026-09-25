@@ -659,7 +659,7 @@ window.__spaPageInit = function() {
                     var username = escapeHtml(entry.username || 'Player');
                     var flag = renderFlag(entry);
                     var badges = window.usertypoBadges && entry.badges && entry.badges.length
-                        ? '<span class="ut-badge-inline">' + window.usertypoBadges.render(entry.badges, { size: 'xs' }) + '</span>'
+                        ? '<span class="ut-badge-inline">' + window.usertypoBadges.render(entry.badges, { size: 'xs', max: 3 }) + '</span>'
                         : '';
 
                     var nameBlock = '<span class="inline-flex items-center gap-1.5 min-w-0">' +
