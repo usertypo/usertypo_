@@ -339,6 +339,41 @@
         });
     }
 
+    function resumeActiveRoom(activeSocket) {
+        var resumeRoomId = activeRoomId;
+        if (!resumeRoomId || !activeSocket) return;
+        activeSocket.emit('match:resume', resumeRoomId, function (response) {
+            if (!response || response.ok === false) {
+                if (response && response.error === 'room_unavailable' && activeRoomId === resumeRoomId) {
+                    activeRoomId = '';
+                }
+                return;
+            }
+            dispatch('match-resumed', response);
+            // Replay finished results after reconnect so dual/room stats can paint.
+            if (response.state === 'finished' && Array.isArray(response.results)) {
+                dispatch('race-finished', [
+                    resumeRoomId,
+                    response.finishReason || 'complete',
+                    response.results,
+                    response.opponentLeft ? 1 : 0,
+                    (response.room && (response.room.reason || response.room.type)) || '',
+                ]);
+            }
+            // Only replay live race-start when the server says the race is still active.
+            // Never invent a new race UI after the room has finished.
+            if (response.race && response.state === 'racing') {
+                dispatch('race-start', response.race);
+            } else if (response.state === 'countdown' && response.countdown != null) {
+                dispatch('race-countdown', [
+                    resumeRoomId,
+                    response.countdown,
+                    response.countdownEndsAt || null,
+                ]);
+            }
+        });
+    }
+
     function bindSocketEvents(activeSocket) {
         activeSocket.on('connect', function () {
             unavailableSince = 0;
@@ -373,34 +408,7 @@
             dispatch('ready', state);
             dispatch('listings', listings.slice());
             if (activeRoomId) {
-                activeSocket.emit('match:resume', activeRoomId, function (response) {
-                    if (!response || response.ok === false) {
-                        if (response && response.error === 'room_unavailable') activeRoomId = '';
-                        return;
-                    }
-                    dispatch('match-resumed', response);
-                    // Replay finished results after reconnect so dual/room stats can paint.
-                    if (response.state === 'finished' && Array.isArray(response.results)) {
-                        dispatch('race-finished', [
-                            activeRoomId,
-                            response.finishReason || 'complete',
-                            response.results,
-                            response.opponentLeft ? 1 : 0,
-                            (response.room && (response.room.reason || response.room.type)) || '',
-                        ]);
-                    }
-                    // Only replay live race-start when the server says the race is still active.
-                    // Never invent a new race UI after the room has finished.
-                    if (response.race && response.state === 'racing') {
-                        dispatch('race-start', response.race);
-                    } else if (response.state === 'countdown' && response.countdown != null) {
-                        dispatch('race-countdown', [
-                            activeRoomId,
-                            response.countdown,
-                            response.countdownEndsAt || null,
-                        ]);
-                    }
-                });
+                resumeActiveRoom(activeSocket);
                 if (pendingLeaveRoomId) {
                     var leaveTarget = pendingLeaveRoomId;
                     pendingLeaveRoomId = null;
@@ -537,6 +545,12 @@
                 );
             }
             dispatch('room-host-ready', payload);
+        });
+        // Relayed over the lobby socket so it still arrives when the race socket went stale.
+        activeSocket.on('room:match-starting', function (payload) {
+            var startingRoomId = payload && payload.roomId ? String(payload.roomId) : '';
+            if (!startingRoomId || startingRoomId !== activeRoomId) return;
+            dispatch('room-match-starting', payload);
         });
         activeSocket.on('room:closed', function (payload) {
             var roomId = Array.isArray(payload) ? payload[0] : '';
@@ -1053,6 +1067,11 @@
                     return activeSocket;
                 }
                 return activeSocket.ensureRaceConnected(String(roomId || activeRoomId || ''));
+            });
+        },
+        resyncActiveRoom: function () {
+            return ensureConnected().then(resumeActiveRoom).catch(function (error) {
+                console.warn('[multiplayer] resync failed:', error && error.message);
             });
         },
         describeConfig: describeConfig,

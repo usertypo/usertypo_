@@ -2461,6 +2461,16 @@
                 if (state === 'finished' || state === 'closed') return;
                 startRace(event.detail);
             });
+            listen('room-match-starting', function (event) {
+                var payload = event.detail || {};
+                if (!payload.roomId || payload.roomId !== roomId) return;
+                // A live race socket delivers the countdown first; still sitting in the
+                // lobby means it went stale (idle/background tab), so pull the match state.
+                setTimeout(function () {
+                    if (signal.aborted || state !== 'lobby') return;
+                    window.usertypoMultiplayer?.resyncActiveRoom?.();
+                }, 800);
+            });
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState !== 'visible') return;
                 beginRaceIfAlreadyLive();
