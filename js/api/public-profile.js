@@ -72,6 +72,7 @@
                 totalWords: Math.max(0, Math.floor(Number(summary.total_words) || 0)),
             },
             bests: normalizeBests(raw.bests),
+            badges: [],
         };
     }
 
@@ -90,9 +91,13 @@
         if (!state || !state.isSignedIn) return { error: 'guest' };
 
         var client = await window.usertypoDb.getClient();
+        var badgesPromise = window.usertypoBadges
+            ? window.usertypoBadges.fetchOne(id, { force: !!(options && options.force) }).catch(function () { return []; })
+            : Promise.resolve([]);
         var result = await client.rpc('get_public_profile_card', { p_user_id: id });
         if (result.error) throw result.error;
         var card = normalizeCard(result.data || { error: 'user_not_found' });
+        if (card && !card.error) card.badges = await badgesPromise;
         writeCache(id, card);
         return card;
     }

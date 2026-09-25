@@ -226,7 +226,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
-    <link href="css/global.css?v=35" rel="stylesheet" />
+    <link href="css/global.css?v=37" rel="stylesheet" />
     <link href="css/material-symbols.css?v=8" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -1704,6 +1704,7 @@
                 </div>
 
                 <div class="flex flex-col items-center order-1 lg:order-2">
+                    <div id="ppc-badges" class="ut-badge-host mb-3" hidden></div>
                     <div id="ppc-avatar-host" class="mb-4 flex items-center justify-center"></div>
                     <h2 id="ppc-username" class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-slate-100 mb-1 text-center">Player</h2>
                     <p id="ppc-public-id" class="text-[0.7rem] font-mono tracking-wider text-slate-500 mb-1">?</p>
@@ -1788,6 +1789,27 @@
         </div>
     </div>
 
+    <!-- Show-all badges box (above the profile box, no page dim) -->
+    <div id="badges-overlay"
+        class="opacity-0 pointer-events-none"
+        aria-hidden="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="badges-title">
+        <div id="badges-box"
+            class="glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.45)] scale-95 relative">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 id="badges-title" class="font-headline text-lg font-bold tracking-tight text-slate-100">Badges</h2>
+                <button type="button" id="badges-close-btn"
+                    class="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    aria-label="Close badges">
+                    <span class="material-symbols-outlined text-[1.172rem]">close</span>
+                </button>
+            </div>
+            <ul id="badges-list"></ul>
+        </div>
+    </div>
+
     <script src="languages.js?v=12"></script>
     <script src="js/fonts.js?v=1"></script>
     <script src="js/keymap-layouts.js?v=3"></script>
@@ -1815,15 +1837,16 @@
     <script src="js/util/mobile.js?v=3"></script>
     <script src="js/typing-cursor.js?v=4"></script>
     <script src="js/ui/player-avatar.js?v=5"></script>
-    <script src="js/api/public-profile.js?v=4"></script>
-    <script src="js/ui/player-profile-card.js?v=5"></script>
+    <script src="js/ui/badges.js?v=2"></script>
+    <script src="js/api/public-profile.js?v=5"></script>
+    <script src="js/ui/player-profile-card.js?v=6"></script>
     <script src="js/ui/system-confirm.js?v=7"></script>
     <script src="js/ui/contact.js?v=205"></script>
     <script src="js/auth/header.js?v=16"></script>
     <script src="js/api/diagnostics.js?v=7"></script>
     <script src="js/api/adapt-refine.js?v=1"></script>
     <script src="js/api/test-activity.js?v=3"></script>
-    <script src="js/api/leaderboards.js?v=19"></script>
+    <script src="js/api/leaderboards.js?v=20"></script>
     <script src="js/api/friends.js?v=6"></script>
     <script src="js/api/presence.js?v=2"></script>
     <script src="js/api/notifications.js?v=14"></script>
@@ -1833,7 +1856,7 @@
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=56"></script>
     <script src="dual.js?v=14"></script>
-    <script src="js/page-fragments.js?v=331"></script>
+    <script src="js/page-fragments.js?v=333"></script>
     <script src="js/page-scrollbar.js?v=2"></script>
     <script src="js/router.js?v=127"></script>
 
