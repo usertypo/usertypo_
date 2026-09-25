@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are applied to the latest `main` branch of [usertypo/usertypo](https://github.com/usertypo/usertypo).
+Security fixes are applied to the latest `main` branch of [usertypo/usertypo_](https://github.com/usertypo/usertypo_).
 
 ## Reporting a vulnerability
 

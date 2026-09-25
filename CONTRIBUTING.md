@@ -19,7 +19,7 @@ Thanks for helping improve usertypo_.
 ## Pull requests
 
 1. Push your branch to your fork.
-2. Open a Pull Request against `usertypo/usertypo` → `main`.
+2. Open a Pull Request against `usertypo/usertypo_` → `main`.
 3. Describe **what** changed and **why**.
 4. Wait for review; maintainers merge when ready.
 
