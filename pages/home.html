@@ -2974,7 +2974,10 @@ window.setTimeout = function(handler, timeout) {
                 return;
             }
 
-            if (e.ctrlKey || e.altKey || e.metaKey || e.key.length > 1 && e.key !== 'Backspace') return;
+            const isWordDelete = e.key === 'Backspace' && e.ctrlKey && !e.altKey && !e.metaKey
+                && window.usertypo_settingsApi?.isCtrlBackspaceEnabled?.() !== false;
+            if (isWordDelete) e.preventDefault();
+            else if (e.ctrlKey || e.altKey || e.metaKey || e.key.length > 1 && e.key !== 'Backspace') return;
 
             if (!isTyping && e.key !== 'Backspace') {
                 startTest();
@@ -2998,14 +3001,15 @@ window.setTimeout = function(handler, timeout) {
                     return;
                 }
 
-                if (currentCharIndex > 0) {
+                // Returns false when Confidence Mode blocks deleting the previous char.
+                const deletePrevChar = () => {
                     // â”€â”€ Confidence Mode: On â”€â”€ prevent deleting correctly typed chars
                     if (confMode === 'On') {
                         const prevCharEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex - 1}`);
                         if (prevCharEl && !prevCharEl.classList.contains('extra') &&
                             prevCharEl.classList.contains('text-primary')) {
                             // Correctly typed character â€” can't delete
-                            return;
+                            return false;
                         }
                     }
 
@@ -3013,10 +3017,11 @@ window.setTimeout = function(handler, timeout) {
                     const charEl = document.getElementById(`char-${currentWordIndex}-${currentCharIndex}`);
 
                     if (charEl.classList.contains('extra')) {
-                        const beforeWidth = wordEl ? wordEl.offsetWidth : 0;
+                        const activeWordEl = document.getElementById(`word-${currentWordIndex}`);
+                        const beforeWidth = activeWordEl ? activeWordEl.offsetWidth : 0;
                         charEl.remove();
-                        if (wordEl && typeof window.compensateLetterTapeWidthDelta === 'function') {
-                            window.compensateLetterTapeWidthDelta(textContainer, wordEl.offsetWidth - beforeWidth);
+                        if (activeWordEl && typeof window.compensateLetterTapeWidthDelta === 'function') {
+                            window.compensateLetterTapeWidthDelta(textContainer, activeWordEl.offsetWidth - beforeWidth);
                         }
                         needsRelayout = true;
                     } else {
@@ -3029,6 +3034,15 @@ window.setTimeout = function(handler, timeout) {
                         charEl.innerText = origChar;
                         charEl.style.position = '';
                     }
+                    return true;
+                };
+                const deleteToWordStart = () => {
+                    while (currentCharIndex > 0 && deletePrevChar()) { /* keep deleting */ }
+                };
+
+                if (currentCharIndex > 0) {
+                    if (isWordDelete) deleteToWordStart();
+                    else if (!deletePrevChar()) return;
                 } else if (currentWordIndex > 0) {
                     // â”€â”€ Freedom Mode: allow going back to ANY previous word when ON â”€â”€
                     const freedom = getTestRule('freedomMode');
@@ -3083,6 +3097,11 @@ window.setTimeout = function(handler, timeout) {
                     }
 
                     recomputeLiveValidCounters();
+
+                    if (isWordDelete) {
+                        deleteToWordStart();
+                        recomputeLiveValidCounters();
+                    }
                 }
 
             }
