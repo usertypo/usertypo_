@@ -1318,7 +1318,7 @@
 
                 <!-- Card 8: Keyboard & Layout -->
                 <div class="setting-card" data-category="keyboard-layout"
-                    data-keywords="keymap keyboard shortcuts layout legend qwerty tab">
+                    data-keywords="keymap keyboard shortcuts layout legend qwerty tab ctrl backspace delete word">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -3534,6 +3534,39 @@
                                                         </p>
                                                     </div>
                                                     <div class="toggle-track on" data-setting="keyboardLayout.quickSettings"
+                                                        onclick="toggleSwitch(this)">
+                                                        <div class="toggle-thumb"></div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="setting-toggle-row flex items-center justify-between gap-4 py-1">
+                                                    <div class="flex flex-col flex-1 min-w-0 justify-center">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold text-slate-200">Ctrl +
+                                                                Backspace</p>
+                                                            <div
+                                                                class="info-icon-wrapper group relative flex items-center justify-center">
+                                                                <span
+                                                                    class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                                <div
+                                                                    class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                    <div
+                                                                        class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                                        <span
+                                                                            class="material-symbols-outlined text-[0.746rem]">info</span>
+                                                                        How it works
+                                                                    </div>
+                                                                    When enabled, press Ctrl + Backspace while typing to
+                                                                    delete back to the start of the current word. At the
+                                                                    start of a word, it clears the previous word (if you
+                                                                    are allowed to go back to it).
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="text-xs text-slate-500">Delete back to the start of
+                                                            the word</p>
+                                                    </div>
+                                                    <div class="toggle-track on" data-setting="keyboardLayout.ctrlBackspace"
                                                         onclick="toggleSwitch(this)">
                                                         <div class="toggle-thumb"></div>
                                                     </div>

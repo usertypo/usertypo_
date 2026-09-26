@@ -1817,8 +1817,18 @@
             updateCaret();
         }
 
-        function handleBackspace(event) {
+        function handleBackspace(event, wordDelete) {
             event.preventDefault();
+            if (!backspaceStep()) return;
+            if (wordDelete) {
+                while (currentCharIndex > 0 && backspaceStep()) { /* keep deleting */ }
+            }
+            if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+            updateCaret();
+        }
+
+        /** Undo one character (or one error entry). Returns false when nothing changed. */
+        function backspaceStep() {
             if (unresolvedError && errorHistory.length) {
                 var errorEntry = errorHistory.pop();
                 if (errorEntry.kind === 'space') {
@@ -1836,15 +1846,12 @@
                     resetCharacter(currentWordIndex, currentCharIndex);
                 }
                 if (!errorHistory.length) unresolvedError = null;
-                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
-                updateCaret();
-                return;
+                return true;
             }
-            if (currentCharIndex <= 0) return;
-            if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+            if (currentCharIndex <= 0) return false;
             currentCharIndex -= 1;
             resetCharacter(currentWordIndex, currentCharIndex);
-            updateCaret();
+            return true;
         }
 
         function handlePrintable(event) {
@@ -1950,7 +1957,9 @@
 
         function onKeyDown(event) {
             if (state !== 'racing') return;
-            if (event.ctrlKey || event.altKey || event.metaKey) return;
+            var wordDelete = event.key === 'Backspace' && event.ctrlKey && !event.altKey && !event.metaKey
+                && window.usertypo_settingsApi?.isCtrlBackspaceEnabled?.() !== false;
+            if (!wordDelete && (event.ctrlKey || event.altKey || event.metaKey)) return;
             if (event.key === 'Enter') {
                 event.preventDefault();
                 return;
@@ -1958,7 +1967,7 @@
             zenTypingActive = true;
             hideZenElements();
             updateKeymapHighlight(event.key, true);
-            if (event.key === 'Backspace') handleBackspace(event);
+            if (event.key === 'Backspace') handleBackspace(event, wordDelete);
             else handlePrintable(event);
         }
 
