@@ -61,7 +61,7 @@ as $$
       and ts.amount = p_amount
       and ts.failed = false
       and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) ~ '^english(_[0-9]+k)?$'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -166,7 +166,7 @@ as $$
       and ts.amount = p_amount
       and ts.failed = false
       and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) ~ '^english(_[0-9]+k)?$'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -236,7 +236,7 @@ as $$
     left join user_test_counts utc on utc.user_id = ts.user_id
     where ts.failed = false
       and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) ~ '^english(_[0-9]+k)?$'
       and ts.accuracy >= 75
       and ts.wpm >= 30
       and p.show_on_leaderboard = true
@@ -308,7 +308,7 @@ as $$
       and ts.amount = p_amount
       and ts.failed = false
       and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) ~ '^english(_[0-9]+k)?$'
       and ts.accuracy >= 75
       and p.show_on_leaderboard = true
       and (
@@ -437,7 +437,7 @@ begin
       and ts.amount = p_amount
       and ts.failed = false
       and coalesce(ts.adapt_refine, false) = false
-      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) = 'english'
+      and lower(coalesce(nullif(trim(ts.language), ''), 'english')) ~ '^english(_[0-9]+k)?$'
       and ts.accuracy >= 75
       and (
         p.show_on_leaderboard = true

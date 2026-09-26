@@ -328,7 +328,7 @@ async function handleIngest(env: Env, body: Record<string, unknown>, authHeader:
     return json(env, 200, { source: 'postgres', skipped: true, reason: 'adapt_refine' }, request);
   }
   const language = String(session.language || 'english').trim().toLowerCase() || 'english';
-  if (language !== 'english') {
+  if (!/^english(_\d+k)?$/.test(language)) {
     return json(env, 200, { source: 'postgres', skipped: true, reason: 'non_english' }, request);
   }
 
