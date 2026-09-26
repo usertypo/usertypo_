@@ -33,7 +33,7 @@ const DEFAULTS = {
         paceCaretStyle: 'underscore', // line | block | underscore | outline
         paceCaretCustomSpeed: 100,
         repeatedPace: true,          // auto pace caret on replay at previous test speed
-        smoothLineScroll: true,
+        smoothLineScroll: false,
         tapeMode: 'off',       // off | letter | word — shared across home, dual, and rooms
     },
     soundscape: {
@@ -67,6 +67,7 @@ const DEFAULTS = {
         quickRestart: true,      // Tab restarts the test when shortcuts are on
         quickRestartCustomKey: '',
         quickSettings: true, // Esc opens quick settings search
+        ctrlBackspace: true, // Ctrl+Backspace deletes back to the start of the word
     },
     resultsAndGraphs: {
         decimalPrecision: false,
@@ -4717,6 +4718,14 @@ function isQuickRestartEnabled(settings) {
     return v === 'Tab';
 }
 
+/** Ctrl+Backspace word delete toggle (independent of the Keyboard Shortcuts master switch). */
+function isCtrlBackspaceEnabled(settings) {
+    if (!settings) {
+        settings = window.usertypo_settings || loadSettings();
+    }
+    return settings?.keyboardLayout?.ctrlBackspace !== false;
+}
+
 /**
  * When Keyboard Shortcuts is off, block Enter / \\ app shortcuts site-wide.
  * Tab quick-restart and Esc quick settings are controlled by their own toggles.
@@ -5686,6 +5695,7 @@ window.usertypo_settingsApi = {
     maybeRandomizeTheme,
     areKeyboardShortcutsEnabled,
     isQuickRestartEnabled,
+    isCtrlBackspaceEnabled,
     resolveThemePalette,
     getThemeDisplayName,
     isThemeLight,

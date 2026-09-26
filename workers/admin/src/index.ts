@@ -121,7 +121,28 @@ async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminPro
 const PROFILE_LIST_SELECT =
   'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
 
-async function searchUsers(env: Env, q: string, limit: number): Promise<AdminProfile[]> {
+const COUNTRY_CODE_RE = /^[A-Z]{2}$/;
+
+/**
+ * PostgREST filter for the admin country chart.
+ * `country=IN` → only India; `country=OTHER&exclude=IN,US` → any known country not listed.
+ */
+function countryFilterQuery(url: URL): string {
+  const country = String(url.searchParams.get('country') || '').trim().toUpperCase();
+  if (!country) return '';
+  if (country === 'OTHER') {
+    const exclude = String(url.searchParams.get('exclude') || '')
+      .split(',')
+      .map((c) => c.trim().toUpperCase())
+      .filter((c) => COUNTRY_CODE_RE.test(c));
+    return '&country_code=not.is.null'
+      + (exclude.length ? `&country_code=not.in.(${exclude.join(',')})` : '');
+  }
+  if (!COUNTRY_CODE_RE.test(country)) throw new Error('bad_request');
+  return `&country_code=eq.${country}`;
+}
+
+async function searchUsers(env: Env, q: string, limit: number, filter = ''): Promise<AdminProfile[]> {
   const query = q.trim();
   if (!query) return [];
   const upper = query.toUpperCase();
@@ -138,6 +159,7 @@ async function searchUsers(env: Env, q: string, limit: number): Promise<AdminPro
   const rows = await supabaseRest<Record<string, unknown>[]>(
     env,
     `profiles?or=(username.ilike.${encoded},display_name.ilike.${encoded})`
+      + filter
       + `&select=${PROFILE_LIST_SELECT}`
       + `&order=username.asc&limit=${limit}`,
   );
@@ -149,6 +171,7 @@ async function listUsers(
   env: Env,
   limit: number,
   offset: number,
+  filter = '',
 ): Promise<{ users: AdminProfile[]; has_more: boolean }> {
   const take = Math.min(50, Math.max(1, limit));
   const from = Math.max(0, offset);
@@ -156,6 +179,7 @@ async function listUsers(
   const rows = await supabaseRest<Record<string, unknown>[]>(
     env,
     `profiles?select=${PROFILE_LIST_SELECT}`
+      + filter
       + `&order=last_seen_at.desc.nullslast&order=username.asc`
       + `&limit=${take + 1}&offset=${from}`,
   );
@@ -538,8 +562,9 @@ export default {
         const q = String(url.searchParams.get('q') || '').trim();
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit') || 20) || 20));
         const offset = Math.max(0, Number(url.searchParams.get('offset') || 0) || 0);
+        const filter = countryFilterQuery(url);
         if (!q) {
-          const page = await listUsers(env, limit, offset);
+          const page = await listUsers(env, limit, offset, filter);
           return json(env, 200, {
             ok: true,
             users: page.users,
@@ -548,7 +573,7 @@ export default {
             has_more: page.has_more,
           }, request);
         }
-        const users = await searchUsers(env, q, limit);
+        const users = await searchUsers(env, q, limit, filter);
         return json(env, 200, { ok: true, users, limit, offset: 0, has_more: false }, request);
       }
 

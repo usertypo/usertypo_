@@ -290,17 +290,27 @@
         return workerFetch('/analytics');
     }
 
-    async function searchUsers(q, limit, offset) {
+    /** `filter` = { country: 'IN' } or { country: 'OTHER', exclude: ['IN', 'US'] }. */
+    function countryFilterParams(filter) {
+        if (!filter || !filter.country) return '';
+        var qs = '&country=' + encodeURIComponent(String(filter.country).toUpperCase());
+        if (Array.isArray(filter.exclude) && filter.exclude.length) {
+            qs += '&exclude=' + encodeURIComponent(filter.exclude.join(','));
+        }
+        return qs;
+    }
+
+    async function searchUsers(q, limit, offset, filter) {
         var query = encodeURIComponent(String(q || '').trim());
         var lim = limit || 20;
         var off = offset || 0;
-        return workerFetch('/users?q=' + query + '&limit=' + lim + '&offset=' + off);
+        return workerFetch('/users?q=' + query + '&limit=' + lim + '&offset=' + off + countryFilterParams(filter));
     }
 
-    async function listUsers(limit, offset) {
+    async function listUsers(limit, offset, filter) {
         var lim = limit || 20;
         var off = offset || 0;
-        return workerFetch('/users?limit=' + lim + '&offset=' + off);
+        return workerFetch('/users?limit=' + lim + '&offset=' + off + countryFilterParams(filter));
     }
 
     async function getUser(publicId) {

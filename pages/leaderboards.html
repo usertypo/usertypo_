@@ -754,15 +754,16 @@ window.__spaPageInit = function() {
                     list.innerHTML = '<p class="text-xs text-slate-500 text-center py-8 px-2">No matching countries.</p>';
                     return;
                 }
-                list.innerHTML = rows.map(function (c) {
-                    var selected = c.code === lbState.countryCode ? ' is-selected' : '';
+                list.innerHTML = rows.map(function (c, index) {
+                    // Only the top search match is highlighted; Enter picks it.
+                    var highlighted = !!q && index === 0;
                     var usersLabel = c.users === 1 ? '1 player' : (c.users + ' players');
                     var flag = window.usertypoLeaderboards && typeof window.usertypoLeaderboards.flagHtml === 'function'
                         ? window.usertypoLeaderboards.flagHtml(c.code, { className: 'lb-country-flag' })
                         : '';
-                    return '<button type="button" class="lb-country-row' + selected + '" data-country="' +
+                    return '<button type="button" class="lb-country-row' + (highlighted ? ' is-selected' : '') + '" data-country="' +
                         escapeHtml(c.code) + '" role="option" aria-selected="' +
-                        (c.code === lbState.countryCode ? 'true' : 'false') + '">' +
+                        (highlighted ? 'true' : 'false') + '">' +
                         flag +
                         '<span class="lb-country-meta">' +
                         '<span class="lb-country-name">' + escapeHtml(c.name || c.code) + '</span>' +
@@ -985,6 +986,12 @@ window.__spaPageInit = function() {
             if (countrySearch) {
                 countrySearch.addEventListener('input', function () {
                     renderCountryList(countrySearch.value);
+                }, { signal: __pageSignal });
+                countrySearch.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    var top = countryList && countryList.querySelector('.lb-country-row.is-selected');
+                    if (top) top.click();
                 }, { signal: __pageSignal });
             }
             if (countryList) {
