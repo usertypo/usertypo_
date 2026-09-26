@@ -1908,8 +1908,38 @@
             updateCaret();
         }
 
+        /** Undo one character (or one error entry). Returns false when nothing changed. */
+        function backspaceStep() {
+            if (lockedAt != null && errorHistory.length) {
+                var errorEntry = errorHistory.pop();
+                if (errorEntry.kind === 'space') {
+                    // Remove error-underlines from skipped chars
+                    var skipWord = words[errorEntry.wordIndex];
+                    for (var ri = errorEntry.charIndex; ri < skipWord.length; ri++) {
+                        var uel = document.getElementById('room-char-' + errorEntry.wordIndex + '-' + ri);
+                        if (uel) uel.classList.remove('error-underline');
+                    }
+                    currentWordIndex = errorEntry.wordIndex;
+                    currentCharIndex = errorEntry.charIndex;
+                } else {
+                    currentWordIndex = errorEntry.wordIndex;
+                    currentCharIndex = errorEntry.charIndex;
+                    resetCharacter(currentCharIndex);
+                }
+                if (!errorHistory.length) lockedAt = null;
+                return true;
+            }
+            if (currentCharIndex <= 0) return false;
+            currentCharIndex -= 1;
+            resetCharacter(currentCharIndex);
+            return true;
+        }
+
         function handleKey(event) {
-            if (state !== 'racing' || event.ctrlKey || event.altKey || event.metaKey) return;
+            if (state !== 'racing') return;
+            var wordDelete = event.key === 'Backspace' && event.ctrlKey && !event.altKey && !event.metaKey
+                && window.usertypo_settingsApi?.isCtrlBackspaceEnabled?.() !== false;
+            if (!wordDelete && (event.ctrlKey || event.altKey || event.metaKey)) return;
             if (event.key === 'Enter') {
                 event.preventDefault();
                 return;
@@ -1917,31 +1947,12 @@
             hideZenElements();
             if (event.key === 'Backspace') {
                 event.preventDefault();
-                if (lockedAt != null && errorHistory.length) {
-                    var errorEntry = errorHistory.pop();
-                    if (errorEntry.kind === 'space') {
-                        // Remove error-underlines from skipped chars
-                        var skipWord = words[errorEntry.wordIndex];
-                        for (var ri = errorEntry.charIndex; ri < skipWord.length; ri++) {
-                            var uel = document.getElementById('room-char-' + errorEntry.wordIndex + '-' + ri);
-                            if (uel) uel.classList.remove('error-underline');
-                        }
-                        currentWordIndex = errorEntry.wordIndex;
-                        currentCharIndex = errorEntry.charIndex;
-                    } else {
-                        currentWordIndex = errorEntry.wordIndex;
-                        currentCharIndex = errorEntry.charIndex;
-                        resetCharacter(currentCharIndex);
-                    }
-                    if (!errorHistory.length) lockedAt = null;
-                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
-                    updateCaret();
-                } else if (currentCharIndex > 0) {
-                    if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
-                    currentCharIndex -= 1;
-                    resetCharacter(currentCharIndex);
-                    updateCaret();
+                if (!backspaceStep()) return;
+                if (wordDelete) {
+                    while (currentCharIndex > 0 && backspaceStep()) { /* keep deleting */ }
                 }
+                if (typeof window.playKeystrokeSound === 'function') window.playKeystrokeSound('Backspace');
+                updateCaret();
                 return;
             }
             var key = event.key === 'Spacebar' ? ' ' : event.key;
