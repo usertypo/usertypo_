@@ -230,11 +230,6 @@
             background: var(--theme-primary);
             transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .about-country-ring circle {
-            transition: stroke-dasharray 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                stroke 0.35s ease;
-        }
         @media (max-width: 640px) {
             .about-toc ol {
                 grid-template-columns: 1fr;
@@ -398,35 +393,12 @@
                 </div>
             </div>
 
-            <div class="grid lg:grid-cols-2 gap-6 sm:gap-8">
-                <div class="about-chart-panel" data-about-panel style="transition-delay:180ms">
-                    <div class="flex items-start justify-between gap-3 mb-4">
-                        <div>
-                        <h3 class="text-sm font-semibold text-slate-100">Users by country</h3>
-                        <p class="text-[0.7rem] text-slate-500 mt-1">Top 5 + other · signed-in accounts only</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row items-center gap-5">
-                        <div class="relative w-36 h-36 shrink-0">
-                            <svg id="about-country-svg" class="about-country-ring w-full h-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true"></svg>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
-                                <span id="about-country-center" class="text-lg font-bold text-slate-100 font-[Space_Grotesk]">—</span>
-                                <span class="text-[0.6rem] uppercase tracking-wider text-slate-500">top share</span>
-                            </div>
-                        </div>
-                        <div id="about-country-legend" class="grid grid-cols-1 gap-2 w-full min-w-0">
-                            <div class="text-xs text-slate-500">Loading…</div>
-                        </div>
-                    </div>
+            <div class="about-chart-panel" data-about-panel style="transition-delay:180ms">
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-slate-100">Most popular modes</h3>
+                    <p class="text-[0.7rem] text-slate-500 mt-1">Standard presets · signed-in accounts only</p>
                 </div>
-
-                <div class="about-chart-panel" data-about-panel style="transition-delay:220ms">
-                    <div class="mb-4">
-                        <h3 class="text-sm font-semibold text-slate-100">Most popular modes</h3>
-                        <p class="text-[0.7rem] text-slate-500 mt-1">Standard presets · signed-in accounts only</p>
-                    </div>
-                    <div id="about-modes-list" class="min-w-0"></div>
-                </div>
+                <div id="about-modes-list" class="min-w-0"></div>
             </div>
         </section>
 
@@ -775,94 +747,12 @@ const __pageAbort = new AbortController();
 const __pageSignal = __pageAbort.signal;
 
 function initAboutCommunityStats() {
-    var lastCountries = null;
-
-    function clampByte(n) {
-        return Math.max(0, Math.min(255, Math.round(n)));
-    }
-
-    function parseRgbCss(value) {
-        var parts = String(value || '').trim().split(/[,\s]+/).map(Number);
-        if (parts.length >= 3 && parts.slice(0, 3).every(function (n) { return isFinite(n); })) {
-            return [clampByte(parts[0]), clampByte(parts[1]), clampByte(parts[2])];
-        }
-        return null;
-    }
-
-    function parseHex(hex) {
-        var raw = String(hex || '').trim();
-        if (raw.charAt(0) === '#') raw = raw.slice(1);
-        if (raw.length === 3) {
-            raw = raw.split('').map(function (c) { return c + c; }).join('');
-        }
-        if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null;
-        return [
-            parseInt(raw.slice(0, 2), 16),
-            parseInt(raw.slice(2, 4), 16),
-            parseInt(raw.slice(4, 6), 16),
-        ];
-    }
-
-    function rgbToHex(rgb) {
-        return '#' + rgb.map(function (n) {
-            var h = clampByte(n).toString(16);
-            return h.length === 1 ? '0' + h : h;
-        }).join('');
-    }
-
-    function mixRgb(a, b, t) {
-        return [
-            a[0] + (b[0] - a[0]) * t,
-            a[1] + (b[1] - a[1]) * t,
-            a[2] + (b[2] - a[2]) * t,
-        ];
-    }
-
-    /** Theme-aware donut palette — first slice follows --theme-primary; no fixed green/amber. */
-    function countryColors() {
-        var styles = getComputedStyle(document.documentElement);
-        var primary = parseRgbCss(styles.getPropertyValue('--theme-primary-rgb'))
-            || parseHex(styles.getPropertyValue('--theme-primary'))
-            || [0, 208, 255];
-        var muted = parseHex(styles.getPropertyValue('--theme-text-muted')) || [148, 163, 184];
-        var text = parseHex(styles.getPropertyValue('--theme-text')) || [203, 213, 225];
-        var bgSec = parseRgbCss(styles.getPropertyValue('--theme-bg-secondary-rgb'))
-            || parseHex(styles.getPropertyValue('--theme-bg-secondary'))
-            || [68, 68, 68];
-        var isLight = String(styles.getPropertyValue('--theme-is-light')).trim() === '1'
-            || document.documentElement.getAttribute('data-theme-light') === '1';
-        // Light themes blend toward black/slate so slices don't stay white.
-        // Dark themes blend toward muted/bg for separable segments without a green tint.
-        var blendA = isLight ? [0, 0, 0] : muted;
-        var blendB = isLight ? muted : bgSec;
-        var blendC = isLight ? bgSec : text;
-        return [
-            rgbToHex(primary),
-            rgbToHex(mixRgb(primary, blendA, isLight ? 0.18 : 0.32)),
-            rgbToHex(mixRgb(primary, blendB, 0.45)),
-            rgbToHex(mixRgb(primary, blendC, 0.55)),
-            rgbToHex(mixRgb(primary, muted, 0.65)),
-            rgbToHex(mixRgb(primary, blendB, 0.78)),
-        ];
-    }
-
     function escapeHtml(value) {
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
-    }
-
-    function countryName(code) {
-        if (!code) return 'Unknown';
-        try {
-            if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
-                var names = new Intl.DisplayNames(['en'], { type: 'region' });
-                return names.of(code) || code;
-            }
-        } catch (e) { /* ignore */ }
-        return code;
     }
 
     function formatCompact(n) {
@@ -941,101 +831,6 @@ function initAboutCommunityStats() {
             var tip = el.parentElement && el.parentElement.querySelector('[data-about-tooltip]');
             if (tip) tip.textContent = formatExactTooltip(raw, format);
         });
-    }
-
-    function renderCountries(countries) {
-        var svg = document.getElementById('about-country-svg');
-        var legend = document.getElementById('about-country-legend');
-        var center = document.getElementById('about-country-center');
-        if (!svg || !legend) return;
-
-        if (countries) lastCountries = countries;
-        var source = countries || lastCountries;
-        var palette = countryColors();
-
-        var items = (source && source.items ? source.items.slice() : []);
-        var other = source && source.other ? Number(source.other) : 0;
-        if (other > 0) items.push({ code: 'OTHER', users: other });
-        var total = items.reduce(function (sum, item) { return sum + (Number(item.users) || 0); }, 0);
-
-        if (!total) {
-            if (center) center.textContent = '—';
-            svg.innerHTML = '';
-            legend.innerHTML = '<div class="text-xs text-slate-500 leading-relaxed">Country chart fills in as signed-in typists visit from around the world.</div>';
-            return;
-        }
-
-        var topPct = Math.round((Number(items[0].users) / total) * 1000) / 10;
-        if (center && countries) animateCount(center, topPct, 'percent', 900);
-        else if (center) center.textContent = (Math.round(topPct * 10) / 10).toLocaleString() + '%';
-
-        // Equal visual gaps: reserve n*GAP, allocate remaining length by share,
-        // enforce a min pill width (2*CAP) so tiny slices don't fill their wedge
-        // and collide. Cursor advances by visual+GAP so every seam matches GAP.
-        var CAP = (2 / (2 * Math.PI * 16)) * 100;
-        var GAP = items.length > 1 ? 1.15 : 0;
-        var n = items.length;
-        var pcts = items.map(function (item) {
-            return (Number(item.users) / total) * 100;
-        });
-        var available = 100 - n * GAP;
-        var visuals = pcts.map(function (pct) { return (pct / 100) * available; });
-        var minVisual = 2 * CAP + 0.05;
-        var deficit = 0;
-        for (var vi = 0; vi < visuals.length; vi++) {
-            if (pcts[vi] > 0 && visuals[vi] < minVisual) {
-                deficit += minVisual - visuals[vi];
-                visuals[vi] = minVisual;
-            }
-        }
-        if (deficit > 0) {
-            var flexible = [];
-            var flexTotal = 0;
-            for (var fi = 0; fi < visuals.length; fi++) {
-                var excess = visuals[fi] - minVisual;
-                if (excess > 0.01) {
-                    flexible.push(fi);
-                    flexTotal += excess;
-                }
-            }
-            if (flexTotal > 0) {
-                flexible.forEach(function (fi) {
-                    var excess = visuals[fi] - minVisual;
-                    visuals[fi] -= deficit * (excess / flexTotal);
-                });
-            }
-        }
-        var rings = '';
-        var cursor = 0;
-        items.forEach(function (item, index) {
-            var visual = visuals[index];
-            var arc = Math.max(visual - 2 * CAP, 0.05);
-            var start = cursor + CAP;
-            rings += '<circle cx="18" cy="18" fill="none" r="16" pathLength="100" stroke="'
-                + palette[index % palette.length]
-                + '" stroke-linecap="round" stroke-dasharray="0 100'
-                + '" stroke-dashoffset="' + (-start)
-                + '" stroke-width="4" data-about-arc="' + arc + ' ' + (100 - arc) + '"></circle>';
-            cursor += visual + GAP;
-        });
-        svg.innerHTML = rings;
-        requestAnimationFrame(function () {
-            svg.querySelectorAll('[data-about-arc]').forEach(function (circle) {
-                circle.setAttribute('stroke-dasharray', circle.getAttribute('data-about-arc'));
-            });
-        });
-
-        legend.innerHTML = items.map(function (item, index) {
-            var pct = Math.round((Number(item.users) / total) * 1000) / 10;
-            var label = item.code === 'OTHER' ? 'Other' : countryName(item.code);
-            return '<div class="flex items-center justify-between gap-3 min-w-0">'
-                + '<div class="flex items-center gap-2 min-w-0">'
-                + '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + palette[index % palette.length] + '"></span>'
-                + '<span class="text-xs text-slate-300 truncate">' + escapeHtml(label) + '</span>'
-                + '</div>'
-                + '<span class="text-xs text-slate-500 font-mono shrink-0">' + pct + '%</span>'
-                + '</div>';
-        }).join('');
     }
 
     function renderScoreDistribution(distribution) {
@@ -1140,8 +935,8 @@ function initAboutCommunityStats() {
     revealCards();
 
     if (!window.usertypoSiteStats || typeof window.usertypoSiteStats.getPublicStats !== 'function') {
-        var legend = document.getElementById('about-country-legend');
-        if (legend) legend.innerHTML = '<div class="text-xs text-slate-500">Stats unavailable right now.</div>';
+        var modesList = document.getElementById('about-modes-list');
+        if (modesList) modesList.innerHTML = '<div class="text-xs text-slate-500">Stats unavailable right now.</div>';
         return;
     }
 
@@ -1149,7 +944,6 @@ function initAboutCommunityStats() {
         .then(function (stats) {
             if (__pageAbort.signal.aborted || !stats) return;
             renderKpis(stats.totals || {});
-            renderCountries(stats.countries || {});
             renderScoreDistribution(stats.score_distribution_30s || {});
             renderModes(stats.popular_modes || []);
             var updated = document.getElementById('about-stats-updated');
@@ -1162,14 +956,9 @@ function initAboutCommunityStats() {
         })
         .catch(function (err) {
             console.warn('[about] failed to load community stats', err);
-            var legendFail = document.getElementById('about-country-legend');
-            if (legendFail) legendFail.innerHTML = '<div class="text-xs text-slate-500">Could not load live stats.</div>';
+            var modesFail = document.getElementById('about-modes-list');
+            if (modesFail) modesFail.innerHTML = '<div class="text-xs text-slate-500">Could not load live stats.</div>';
         });
-
-    window.addEventListener('usertypo:theme-applied', function () {
-        if (__pageAbort.signal.aborted || !lastCountries) return;
-        renderCountries(null);
-    }, { signal: __pageSignal });
 }
 
 window.__spaPageInit = function () {
