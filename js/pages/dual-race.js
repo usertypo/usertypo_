@@ -2485,20 +2485,29 @@
             beginActualRace(ready);
         }
 
-        function beginActualRace(payload) {
+        function beginActualRace(payload, localStartAt) {
             if (!payload || payload.roomId !== roomId) return;
             if (state === 'racing' || state === 'finished') return;
             raceStartToken += 1;
             var token = raceStartToken;
+            // Local unlock clock from relative delay — avoids skew delaying typing.
+            // Words stay hidden until that moment so they never render while input is locked.
+            var startAt = localStartAt || (Date.now() + raceUnlockDelayMs(payload));
+            var revealWait = startAt - Date.now();
+            if (revealWait > 0) {
+                setTimeout(function () {
+                    if (token !== raceStartToken || signal.aborted) return;
+                    beginActualRace(payload, startAt);
+                }, revealWait);
+                return;
+            }
             applyDualRaceConfig(payload.config);
             words = payload.words || [];
             bindDualKeymapRenderArgs();
             window.updateKeymapHighlight = updateKeymapHighlight;
             players = payload.players || [];
             bot = payload.bot || null;
-            // Local unlock clock from relative delay — avoids skew delaying typing.
-            var unlockDelay = raceUnlockDelayMs(payload);
-            startTime = Date.now() + unlockDelay;
+            startTime = Date.now();
             selfUserId = (window.usertypoMultiplayer && window.usertypoMultiplayer.getReadyState()
                 && window.usertypoMultiplayer.getReadyState().userId) || getLocalUserId();
             var self = players.find(function (player) { return player.userId === selfUserId; });
@@ -2603,9 +2612,7 @@
                 updateCaret();
             }
 
-            var wait = Math.max(0, startTime - Date.now());
-            if (wait <= 0) unlockTyping();
-            else setTimeout(unlockTyping, wait);
+            unlockTyping();
         }
 
         function updateConfigUi() {
