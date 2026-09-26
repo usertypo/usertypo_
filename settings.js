@@ -33,7 +33,7 @@ const DEFAULTS = {
         paceCaretStyle: 'underscore', // line | block | underscore | outline
         paceCaretCustomSpeed: 100,
         repeatedPace: true,          // auto pace caret on replay at previous test speed
-        smoothLineScroll: true,
+        smoothLineScroll: false,
         tapeMode: 'off',       // off | letter | word — shared across home, dual, and rooms
     },
     soundscape: {
