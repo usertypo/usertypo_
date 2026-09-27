@@ -7,9 +7,13 @@
     var cache = Object.create(null);
     var uidCounter = 0;
 
-    var ORDER = ['discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
+    var ORDER = ['owner', 'discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
 
     var DEFS = {
+        owner: {
+            name: 'Owner',
+            description: 'One of the owners of usertypo_.',
+        },
         discord_mod: {
             name: 'Discord Mod',
             description: 'Keeps the usertypo_ Discord community running smoothly.',
@@ -209,9 +213,8 @@
     }
 
     function artDiscord(uid) {
-        var shield = 'M16 2.6L28.2 6.9V16.1C28.2 23.3 23 28.6 16 31C9 28.6 3.8 23.3 3.8 16.1V6.9Z';
-        var inner = 'M16 5.2L25.8 8.7V16.1C25.8 21.9 21.7 26.3 16 28.4C10.3 26.3 6.2 21.9 6.2 16.1V8.7Z';
-        var crown = 'M11.3 5.6L10.6 1.1L13.6 3.2L16 -0.4L18.4 3.2L21.4 1.1L20.7 5.6Z';
+        var shield = 'M16 1.6L28.2 5.9V15.3C28.2 22.7 23 28.1 16 30.5C9 28.1 3.8 22.7 3.8 15.3V5.9Z';
+        var inner = 'M16 4.2L25.8 7.7V15.3C25.8 21.3 21.7 25.8 16 27.9C10.3 25.8 6.2 21.3 6.2 15.3V7.7Z';
         return '<defs>' +
                 '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="0" y2="1">' +
                     '<stop offset="0" stop-color="#E0E3FF"></stop>' +
@@ -223,22 +226,15 @@
                     '<stop offset="0.55" stop-color="#5865F2"></stop>' +
                     '<stop offset="1" stop-color="#343DAE"></stop>' +
                 '</radialGradient>' +
-                '<linearGradient id="' + uid + '-crown" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#FFF7B8"></stop>' +
-                    '<stop offset="0.55" stop-color="#FEE75C"></stop>' +
-                    '<stop offset="1" stop-color="#E8B400"></stop>' +
-                '</linearGradient>' +
                 sheenGradient(uid) +
             '</defs>' +
             '<path d="' + shield + '" fill="url(#' + uid + '-rim)"></path>' +
             '<path d="' + inner + '" fill="url(#' + uid + '-fill)"></path>' +
-            '<path d="M16 5.2V28.4C21.7 26.3 25.8 21.9 25.8 16.1V8.7Z" fill="#1E2275" opacity="0.2"></path>' +
-            '<path d="M16 5.2L25.8 8.7V13.6H6.2V8.7Z" fill="#fff" opacity="0.13"></path>' +
-            '<g transform="translate(9.2 12.4) scale(0.107)"><path d="' + DISCORD_PATH + '" fill="#1E2275" opacity="0.35" transform="translate(0 9)"></path>' +
+            '<path d="M16 4.2V27.9C21.7 25.8 25.8 21.3 25.8 15.3V7.7Z" fill="#1E2275" opacity="0.2"></path>' +
+            '<path d="M16 4.2L25.8 7.7V12.6H6.2V7.7Z" fill="#fff" opacity="0.13"></path>' +
+            '<g transform="translate(9.2 10.8) scale(0.107)"><path d="' + DISCORD_PATH + '" fill="#1E2275" opacity="0.35" transform="translate(0 9)"></path>' +
                 '<path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
             '<path class="ut-badge__trace" d="' + shield + '" pathLength="100" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-dasharray="14 86"></path>' +
-            '<path d="' + crown + '" fill="url(#' + uid + '-crown)" stroke="#8A6500" stroke-width="0.55" stroke-linejoin="round"></path>' +
-            '<circle cx="16" cy="3.9" r="0.75" fill="#EB459E"></circle>' +
             sheen(uid, '<path d="' + inner + '"></path>') +
             star(27.4, 4.4, 0.7, 'ut-badge__spark--a') +
             star(4.4, 26.8, 0.5, 'ut-badge__spark--b');
@@ -316,8 +312,46 @@
             star(26.2, 5.4, 0.8, 'ut-badge__spark--a');
     }
 
+    function artOwner(uid) {
+        var crown = 'M5.4 22.2L3.2 9.6L10.4 15.2L16 5.4L21.6 15.2L28.8 9.6L26.6 22.2Z';
+        var band = 'M5 21.6H27A1.4 1.4 0 0 1 28.4 23V26.4A1.4 1.4 0 0 1 27 27.8H5A1.4 1.4 0 0 1 3.6 26.4V23A1.4 1.4 0 0 1 5 21.6Z';
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-gold" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FFF6C2"></stop>' +
+                    '<stop offset="0.45" stop-color="#FFCB3D"></stop>' +
+                    '<stop offset="1" stop-color="#D98300"></stop>' +
+                '</linearGradient>' +
+                '<linearGradient id="' + uid + '-band" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FFD966"></stop>' +
+                    '<stop offset="1" stop-color="#B86A00"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-ruby" cx="0.38" cy="0.3" r="0.8">' +
+                    '<stop offset="0" stop-color="#FFC2C8"></stop>' +
+                    '<stop offset="0.45" stop-color="#FF4D5E"></stop>' +
+                    '<stop offset="1" stop-color="#A30F25"></stop>' +
+                '</radialGradient>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path d="' + crown + '" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.8" stroke-linejoin="round"></path>' +
+            '<path d="M16 5.4L21.6 15.2L16 13.2L10.4 15.2Z" fill="#fff" opacity="0.28"></path>' +
+            '<circle cx="3.2" cy="9.6" r="1.9" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<circle cx="16" cy="5.2" r="2.1" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<circle cx="28.8" cy="9.6" r="1.9" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<path class="ut-badge__gem" d="M16 12.6L19.1 16.9L16 21.2L12.9 16.9Z" fill="url(#' + uid + '-ruby)" stroke="#7A0A1B" stroke-width="0.6" stroke-linejoin="round"></path>' +
+            '<path d="M16 12.6L17.5 14.7H14.5Z" fill="#fff" opacity="0.6"></path>' +
+            '<path d="' + band + '" fill="url(#' + uid + '-band)" stroke="#7A4300" stroke-width="0.8"></path>' +
+            '<rect x="4.8" y="22.4" width="22.4" height="1" rx="0.5" fill="#fff" opacity="0.4"></rect>' +
+            '<circle cx="9.4" cy="24.7" r="1.25" fill="url(#' + uid + '-ruby)"></circle>' +
+            '<circle cx="16" cy="24.7" r="1.25" fill="#5EEAD4"></circle>' +
+            '<circle cx="22.6" cy="24.7" r="1.25" fill="url(#' + uid + '-ruby)"></circle>' +
+            sheen(uid, '<path d="' + crown + '"></path><path d="' + band + '"></path>') +
+            star(27.6, 3.6, 0.85, 'ut-badge__spark--a') +
+            star(4.2, 3.8, 0.55, 'ut-badge__spark--b');
+    }
+
     function art(id) {
         var uid = nextUid();
+        if (id === 'owner') return artOwner(uid);
         if (id === 'first_100') return artAmethystDiamond(uid, '100', 8.2);
         if (id === 'first_1k') return artGoldHex(uid, '1K');
         if (id === 'discord_mod') return artDiscord(uid);
@@ -364,7 +398,7 @@
      * Row above an avatar: first `max` badges plus a Show all button when there are more.
      * @param {string[]} badges
      * @param {object} [options]
-     * @param {number} [options.max] default 3
+     * @param {number} [options.max] default 5
      * @param {string} [options.size] default md
      * @param {string} [options.username]
      */
@@ -372,7 +406,7 @@
         var list = normalize(badges);
         if (!list.length) return '';
         var opts = options || {};
-        var max = Math.max(1, Number(opts.max) || 3);
+        var max = Math.max(1, Number(opts.max) || 5);
         var size = opts.size || 'md';
         var shown = list.slice(0, max);
         var hidden = list.length - shown.length;
