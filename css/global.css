@@ -1048,6 +1048,22 @@ html {
     86% { transform: scale(0.6) rotate(90deg); opacity: 0.7; }
 }
 
+/* Owner: gold crown with a usertypo_-red ruby */
+.ut-badge--owner .ut-badge__svg {
+    filter:
+        drop-shadow(0 0 calc(var(--utb-glow) * 2px) rgba(255, 214, 102, 0.95))
+        drop-shadow(0 0 calc(var(--utb-glow) * 7px) rgba(255, 77, 94, 0.6));
+}
+.ut-badge__gem {
+    animation: ut-badge-gem 2.6s ease-in-out infinite;
+}
+@keyframes ut-badge-gem {
+    0%, 100% { filter: drop-shadow(0 0 0.6px rgba(255, 77, 94, 0.7)); }
+    50% { filter: drop-shadow(0 0 2.2px rgba(255, 120, 135, 1)); }
+}
+.ut-badge--owner .ut-badge__sheen { animation-delay: 0.6s; }
+.ut-badge--owner .ut-badge__spark { animation-delay: 1.5s; }
+
 /* First 1K: molten gold hex crest */
 .ut-badge--first_1k .ut-badge__svg {
     filter:
@@ -1337,6 +1353,7 @@ html {
     font: 700 0.95rem/1.2 'Space Grotesk', Inter, sans-serif;
     margin: 0 0 0.2rem;
 }
+.ut-badge-item__name--owner { color: #ff7a88; }
 .ut-badge-item__name--first_1k { color: #ffc940; }
 .ut-badge-item__name--first_100 { color: #d8a4ff; }
 .ut-badge-item__name--discord_mod { color: #8c95ff; }
@@ -1356,6 +1373,7 @@ html {
     .ut-badge__caret,
     .ut-badge__trace,
     .ut-badge__code,
+    .ut-badge__gem,
     .ut-badge__seal,
     .ut-badge__svg {
         animation: none !important;
