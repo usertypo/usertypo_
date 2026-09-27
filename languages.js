@@ -418,21 +418,10 @@ function saveLanguage(filename) {
         if (!settings.languageContent) settings.languageContent = {};
         settings.languageContent.testLanguage = filename;
 
-        if (!settings.keyboardLayout) settings.keyboardLayout = {};
-        if (typeof window.syncKeymapLayoutForLanguage === 'function') {
-            window.syncKeymapLayoutForLanguage(settings);
-        } else if (typeof window.resolveLanguageKeymapLayout === 'function') {
-            settings.keyboardLayout.keymapLayout = window.resolveLanguageKeymapLayout(filename);
-        }
-        settings.keyboardLayout.keymapLangSyncVersion = 1;
-
         localStorage.setItem('usertypo_settings', JSON.stringify(settings));
         if (window.usertypo_settings) {
             if (!window.usertypo_settings.languageContent) window.usertypo_settings.languageContent = {};
             window.usertypo_settings.languageContent.testLanguage = filename;
-            if (!window.usertypo_settings.keyboardLayout) window.usertypo_settings.keyboardLayout = {};
-            window.usertypo_settings.keyboardLayout.keymapLayout = settings.keyboardLayout.keymapLayout;
-            window.usertypo_settings.keyboardLayout.keymapLangSyncVersion = 1;
         }
         if (typeof currentLanguageFile !== 'undefined') {
             currentLanguageFile = filename;
