@@ -1569,7 +1569,7 @@ if ('scrollRestoration' in history) {
                         var badgeName = (nameEl && nameEl.textContent) || fallbackName;
                         window.usertypoBadges.fetchOne(user.id).then(function (badges) {
                             window.usertypoBadges.mountRow(document.getElementById('profile-badges'), badges, {
-                                max: 3,
+                                max: 5,
                                 size: 'md',
                                 username: badgeName,
                             });
