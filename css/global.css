@@ -1119,6 +1119,48 @@ html {
 }
 .ut-badge--contributor .ut-badge__sheen { animation-delay: 3.2s; }
 
+/* Tester: emerald lab coin with a bubbling flask */
+.ut-badge--tester .ut-badge__svg {
+    filter:
+        drop-shadow(0 0 calc(var(--utb-glow) * 2px) rgba(110, 231, 183, 0.9))
+        drop-shadow(0 0 calc(var(--utb-glow) * 7px) rgba(16, 185, 129, 0.55));
+}
+.ut-badge__liquid {
+    filter: drop-shadow(0 0 1.2px rgba(134, 239, 172, 0.9));
+}
+.ut-badge__bubble {
+    fill: #ECFDF5;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ut-badge-bubble 2.4s ease-in infinite;
+}
+.ut-badge__bubble--b { animation-delay: 0.8s; }
+.ut-badge__bubble--c { animation-delay: 1.6s; }
+@keyframes ut-badge-bubble {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    20% { opacity: 0.95; }
+    100% { transform: translateY(-11px) scale(1.1); opacity: 0; }
+}
+.ut-badge--tester .ut-badge__sheen { animation-delay: 1.7s; }
+.ut-badge--tester .ut-badge__spark { animation-delay: 0.4s; }
+
+/* First 100 Discord: spinning blurple seal with a fuchsia 100 ribbon */
+.ut-badge--discord_first_100 .ut-badge__svg {
+    filter:
+        drop-shadow(0 0 calc(var(--utb-glow) * 2px) rgba(140, 150, 255, 0.95))
+        drop-shadow(0 0 calc(var(--utb-glow) * 7px) rgba(235, 69, 158, 0.45));
+}
+.ut-badge__seal {
+    transform-box: view-box;
+    transform-origin: 16px 16px;
+    animation: ut-badge-seal 16s linear infinite;
+}
+@keyframes ut-badge-seal {
+    to { transform: rotate(360deg); }
+}
+.ut-badge--discord_first_100 .ut-badge__sheen { animation-delay: 2.7s; }
+.ut-badge--discord_first_100 .ut-badge__spark { animation-delay: 1.9s; }
+
 /* Delayed hover tip: same look as the About page stat tips */
 .ut-badge-tip {
     position: fixed;
@@ -1236,6 +1278,8 @@ html {
 .ut-badge-item__name--first_100 { color: #d8a4ff; }
 .ut-badge-item__name--discord_mod { color: #8c95ff; }
 .ut-badge-item__name--contributor { color: var(--theme-primary, #ffffff); }
+.ut-badge-item__name--tester { color: #6ee7b7; }
+.ut-badge-item__name--discord_first_100 { color: #f58ac3; }
 .ut-badge-item__desc {
     margin: 0;
     font-size: 0.75rem;
@@ -1247,6 +1291,8 @@ html {
     .ut-badge__sheen,
     .ut-badge__spark,
     .ut-badge__caret,
+    .ut-badge__bubble,
+    .ut-badge__seal,
     .ut-badge__svg {
         animation: none !important;
     }
