@@ -285,7 +285,7 @@
 
         if (window.usertypoBadges) {
             window.usertypoBadges.mountRow($('ppc-badges'), card.badges, {
-                max: 3,
+                max: 5,
                 size: 'md',
                 username: card.username,
             });

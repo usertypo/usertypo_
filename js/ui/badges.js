@@ -7,9 +7,17 @@
     var cache = Object.create(null);
     var uidCounter = 0;
 
-    var ORDER = ['discord_mod', 'contributor', 'first_100', 'first_1k'];
+    var ORDER = ['owner', 'builder', 'discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
 
     var DEFS = {
+        owner: {
+            name: 'Owner',
+            description: 'One of the owners of usertypo_.',
+        },
+        builder: {
+            name: 'Builder',
+            description: 'Built usertypo_ from the ground up.',
+        },
         discord_mod: {
             name: 'Discord Mod',
             description: 'Keeps the usertypo_ Discord community running smoothly.',
@@ -17,6 +25,14 @@
         contributor: {
             name: 'Contributor',
             description: 'Helped build usertypo_.',
+        },
+        tester: {
+            name: 'Tester',
+            description: 'Helped test usertypo_ features before they shipped.',
+        },
+        discord_first_100: {
+            name: 'First 100 Discord',
+            description: 'One of the first 100 members of the usertypo_ Discord server.',
         },
         first_100: {
             name: 'First 100',
@@ -87,6 +103,35 @@
         return d;
     })();
     var MARK_O_PATH = pixelPath(O_GLYPH, 8.2, 13, 0.9);
+
+    function starburstPath(points, outer, inner) {
+        var d = '';
+        for (var i = 0; i < points * 2; i++) {
+            var r = i % 2 === 0 ? outer : inner;
+            var a = (Math.PI * i) / points - Math.PI / 2;
+            d += (i ? 'L' : 'M') + (16 + r * Math.cos(a)).toFixed(2) + ' ' + (16 + r * Math.sin(a)).toFixed(2);
+        }
+        return d + 'Z';
+    }
+    var SEAL_PATH = starburstPath(14, 15.2, 13.2);
+
+    function gearPath(teeth, outer, root, tipHalf, rootHalf) {
+        var step = (Math.PI * 2) / teeth;
+        var pt = function (r, a) {
+            return (16 + r * Math.cos(a)).toFixed(2) + ' ' + (16 + r * Math.sin(a)).toFixed(2);
+        };
+        var d = '';
+        for (var i = 0; i < teeth; i++) {
+            var a = i * step - Math.PI / 2;
+            d += (i ? 'L' : 'M') + pt(root, a - rootHalf) +
+                'L' + pt(outer, a - tipHalf) +
+                'L' + pt(outer, a + tipHalf) +
+                'L' + pt(root, a + rootHalf) +
+                'A' + root + ' ' + root + ' 0 0 1 ' + pt(root, a + step - rootHalf);
+        }
+        return d + 'Z';
+    }
+    var GEAR_PATH = gearPath(10, 15.3, 12.6, 0.13, 0.2);
 
     function escapeHtml(value) {
         if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
@@ -194,21 +239,27 @@
         var inner = 'M16 4.2L25.8 7.7V15.3C25.8 21.3 21.7 25.8 16 27.9C10.3 25.8 6.2 21.3 6.2 15.3V7.7Z';
         return '<defs>' +
                 '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#C7CCFF"></stop>' +
-                    '<stop offset="1" stop-color="#3C45A5"></stop>' +
+                    '<stop offset="0" stop-color="#E0E3FF"></stop>' +
+                    '<stop offset="0.45" stop-color="#8C95FF"></stop>' +
+                    '<stop offset="1" stop-color="#2F37A0"></stop>' +
                 '</linearGradient>' +
-                '<linearGradient id="' + uid + '-fill" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#7983F5"></stop>' +
+                '<radialGradient id="' + uid + '-fill" cx="0.5" cy="0.3" r="0.8">' +
+                    '<stop offset="0" stop-color="#8F98FF"></stop>' +
                     '<stop offset="0.55" stop-color="#5865F2"></stop>' +
-                    '<stop offset="1" stop-color="#4752C4"></stop>' +
-                '</linearGradient>' +
+                    '<stop offset="1" stop-color="#343DAE"></stop>' +
+                '</radialGradient>' +
                 sheenGradient(uid) +
             '</defs>' +
             '<path d="' + shield + '" fill="url(#' + uid + '-rim)"></path>' +
             '<path d="' + inner + '" fill="url(#' + uid + '-fill)"></path>' +
-            '<path d="M16 4.2L25.8 7.7V13H6.2V7.7Z" fill="#fff" opacity="0.14"></path>' +
-            '<g transform="translate(8.3 10.2) scale(0.1211)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
-            sheen(uid, '<path d="' + inner + '"></path>');
+            '<path d="M16 4.2V27.9C21.7 25.8 25.8 21.3 25.8 15.3V7.7Z" fill="#1E2275" opacity="0.2"></path>' +
+            '<path d="M16 4.2L25.8 7.7V12.6H6.2V7.7Z" fill="#fff" opacity="0.13"></path>' +
+            '<g transform="translate(9.2 10.8) scale(0.107)"><path d="' + DISCORD_PATH + '" fill="#1E2275" opacity="0.35" transform="translate(0 9)"></path>' +
+                '<path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
+            '<path class="ut-badge__trace" d="' + shield + '" pathLength="100" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-dasharray="14 86"></path>' +
+            sheen(uid, '<path d="' + inner + '"></path>') +
+            star(27.4, 4.4, 0.7, 'ut-badge__spark--a') +
+            star(4.4, 26.8, 0.5, 'ut-badge__spark--b');
     }
 
     function artContributor(uid) {
@@ -221,12 +272,155 @@
             sheen(uid, '<rect x="2" y="2" width="28" height="28" rx="8"></rect>');
     }
 
+    function artTester(uid) {
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#D1FAE5"></stop>' +
+                    '<stop offset="0.5" stop-color="#10B981"></stop>' +
+                    '<stop offset="1" stop-color="#065F46"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.4" r="0.65">' +
+                    '<stop offset="0" stop-color="#0B6B50"></stop>' +
+                    '<stop offset="1" stop-color="#022C22"></stop>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + '-lid" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#F8FAFC"></stop>' +
+                    '<stop offset="1" stop-color="#A7B0BE"></stop>' +
+                '</linearGradient>' +
+                '<clipPath id="' + uid + '-coreclip"><circle cx="16" cy="16" r="12.4"></circle></clipPath>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<circle cx="16" cy="16" r="14.8" fill="url(#' + uid + '-rim)"></circle>' +
+            '<circle cx="16" cy="16" r="12.4" fill="url(#' + uid + '-core)"></circle>' +
+            '<g clip-path="url(#' + uid + '-coreclip)">' +
+                '<path d="M8.4 26C8.4 20.2 11.6 17.2 16 17.2C20.4 17.2 23.6 20.2 23.6 26Z" fill="#2DD4BF"></path>' +
+                '<path d="M14.3 17.4L16 19.4L17.7 17.4Z" fill="#ECFDF5"></path>' +
+            '</g>' +
+            '<circle cx="16" cy="11.6" r="3.5" fill="#FCD5B5"></circle>' +
+            '<path d="M12.5 11.5C12.2 8.6 13.9 7.3 16 7.3C18.3 7.3 19.9 8.7 19.5 11.5C18.7 10.2 17.3 9.8 16 9.9C14.5 9.9 13.2 10.4 12.5 11.5Z" fill="#1F2937"></path>' +
+            '<rect x="9.4" y="16.6" width="13.2" height="7.6" rx="1.1" fill="url(#' + uid + '-lid)"></rect>' +
+            '<g class="ut-badge__code" fill="none" stroke="#059669" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M14.1 18.9L12.7 20.4L14.1 21.9"></path>' +
+                '<path d="M16.6 18.6L15.4 22.2"></path>' +
+                '<path d="M17.9 18.9L19.3 20.4L17.9 21.9"></path>' +
+            '</g>' +
+            '<rect x="7" y="24" width="18" height="1.7" rx="0.85" fill="#CBD5E1"></rect>' +
+            '<rect x="7.6" y="24" width="16.8" height="0.55" rx="0.27" fill="#fff" opacity="0.7"></rect>' +
+            sheen(uid, '<circle cx="16" cy="16" r="12.4"></circle>') +
+            star(26.4, 6.2, 0.8, 'ut-badge__spark--a') +
+            star(5.8, 25.2, 0.55, 'ut-badge__spark--b');
+    }
+
+    function artDiscordFirst100(uid) {
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="1" y2="1">' +
+                    '<stop offset="0" stop-color="#D5D9FF"></stop>' +
+                    '<stop offset="0.5" stop-color="#5865F2"></stop>' +
+                    '<stop offset="1" stop-color="#2F37A0"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.3" r="0.75">' +
+                    '<stop offset="0" stop-color="#8891FF"></stop>' +
+                    '<stop offset="0.6" stop-color="#5865F2"></stop>' +
+                    '<stop offset="1" stop-color="#3B44B8"></stop>' +
+                '</radialGradient>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path class="ut-badge__seal" d="' + SEAL_PATH + '" fill="url(#' + uid + '-rim)"></path>' +
+            '<circle cx="16" cy="16" r="11.6" fill="url(#' + uid + '-core)"></circle>' +
+            '<path d="M4.4 16A11.6 11.6 0 0 1 27.6 16Z" fill="#fff" opacity="0.12"></path>' +
+            '<g transform="translate(10.28 7.2) scale(0.09)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
+            '<text x="16" y="24.2" text-anchor="middle" class="ut-badge__num" font-size="7.6" fill="#fff" stroke="#262D8C" stroke-width="1.2" paint-order="stroke">100</text>' +
+            sheen(uid, '<circle cx="16" cy="16" r="11.6"></circle>') +
+            star(26.2, 5.4, 0.8, 'ut-badge__spark--a');
+    }
+
+    function artOwner(uid) {
+        var crown = 'M5.4 22.2L3.2 9.6L10.4 15.2L16 5.4L21.6 15.2L28.8 9.6L26.6 22.2Z';
+        var band = 'M5 21.6H27A1.4 1.4 0 0 1 28.4 23V26.4A1.4 1.4 0 0 1 27 27.8H5A1.4 1.4 0 0 1 3.6 26.4V23A1.4 1.4 0 0 1 5 21.6Z';
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-gold" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FFF6C2"></stop>' +
+                    '<stop offset="0.45" stop-color="#FFCB3D"></stop>' +
+                    '<stop offset="1" stop-color="#D98300"></stop>' +
+                '</linearGradient>' +
+                '<linearGradient id="' + uid + '-band" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FFD966"></stop>' +
+                    '<stop offset="1" stop-color="#B86A00"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-ruby" cx="0.38" cy="0.3" r="0.8">' +
+                    '<stop offset="0" stop-color="#FFC2C8"></stop>' +
+                    '<stop offset="0.45" stop-color="#FF4D5E"></stop>' +
+                    '<stop offset="1" stop-color="#A30F25"></stop>' +
+                '</radialGradient>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path d="' + crown + '" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.8" stroke-linejoin="round"></path>' +
+            '<path d="M16 5.4L21.6 15.2L16 13.2L10.4 15.2Z" fill="#fff" opacity="0.28"></path>' +
+            '<circle cx="3.2" cy="9.6" r="1.9" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<circle cx="16" cy="5.2" r="2.1" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<circle cx="28.8" cy="9.6" r="1.9" fill="url(#' + uid + '-gold)" stroke="#7A4300" stroke-width="0.7"></circle>' +
+            '<path class="ut-badge__gem" d="M16 12.6L19.1 16.9L16 21.2L12.9 16.9Z" fill="url(#' + uid + '-ruby)" stroke="#7A0A1B" stroke-width="0.6" stroke-linejoin="round"></path>' +
+            '<path d="M16 12.6L17.5 14.7H14.5Z" fill="#fff" opacity="0.6"></path>' +
+            '<path d="' + band + '" fill="url(#' + uid + '-band)" stroke="#7A4300" stroke-width="0.8"></path>' +
+            '<rect x="4.8" y="22.4" width="22.4" height="1" rx="0.5" fill="#fff" opacity="0.4"></rect>' +
+            '<circle cx="9.4" cy="24.7" r="1.25" fill="url(#' + uid + '-ruby)"></circle>' +
+            '<circle cx="16" cy="24.7" r="1.25" fill="#5EEAD4"></circle>' +
+            '<circle cx="22.6" cy="24.7" r="1.25" fill="url(#' + uid + '-ruby)"></circle>' +
+            sheen(uid, '<path d="' + crown + '"></path><path d="' + band + '"></path>') +
+            star(27.6, 3.6, 0.85, 'ut-badge__spark--a') +
+            star(4.2, 3.8, 0.55, 'ut-badge__spark--b');
+    }
+
+    function artBuilder(uid) {
+        var grid = '';
+        for (var g = 6; g <= 26; g += 4) {
+            grid += 'M' + g + ' 4V28M4 ' + g + 'H28';
+        }
+        var tool = 'fill="#F0F9FF" stroke="#0C4A6E" stroke-width="0.55" stroke-linejoin="round"';
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="1" y2="1">' +
+                    '<stop offset="0" stop-color="#E0F2FE"></stop>' +
+                    '<stop offset="0.5" stop-color="#38BDF8"></stop>' +
+                    '<stop offset="1" stop-color="#075985"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.35" r="0.75">' +
+                    '<stop offset="0" stop-color="#1E88D0"></stop>' +
+                    '<stop offset="1" stop-color="#0B3B66"></stop>' +
+                '</radialGradient>' +
+                '<clipPath id="' + uid + '-coreclip"><circle cx="16" cy="16" r="10.8"></circle></clipPath>' +
+                '<mask id="' + uid + '-jaw" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32">' +
+                    '<rect x="0" y="0" width="32" height="32" fill="#fff"></rect>' +
+                    '<rect x="15" y="6" width="2" height="4.4" rx="0.4" fill="#000"></rect>' +
+                '</mask>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path class="ut-badge__gear" d="' + GEAR_PATH + '" fill="url(#' + uid + '-rim)"></path>' +
+            '<circle cx="16" cy="16" r="10.8" fill="url(#' + uid + '-core)"></circle>' +
+            '<path d="' + grid + '" clip-path="url(#' + uid + '-coreclip)" stroke="#7DD3FC" stroke-width="0.3" opacity="0.35"></path>' +
+            '<circle cx="16" cy="16" r="10.8" fill="none" stroke="#BAE6FD" stroke-width="0.6" opacity="0.6"></circle>' +
+            '<g transform="rotate(-45 16 16)">' +
+                '<g mask="url(#' + uid + '-jaw)"><circle cx="16" cy="9.6" r="3" ' + tool + '></circle></g>' +
+                '<rect x="15" y="11.6" width="2" height="13.8" rx="1" ' + tool + '></rect>' +
+            '</g>' +
+            '<g transform="rotate(45 16 16)">' +
+                '<rect x="15.05" y="11" width="1.9" height="13.4" rx="0.95" fill="#FDE68A" stroke="#78350F" stroke-width="0.55"></rect>' +
+                '<path d="M12.6 7.6H19.4C20 7.6 20.4 8 20.4 8.6V10.6C20.4 11.2 20 11.6 19.4 11.6H12.6L11.6 9.6Z" ' + tool + '></path>' +
+            '</g>' +
+            sheen(uid, '<circle cx="16" cy="16" r="10.8"></circle>') +
+            star(26.8, 5, 0.8, 'ut-badge__spark--a') +
+            star(5.2, 26.6, 0.55, 'ut-badge__spark--b');
+    }
+
     function art(id) {
         var uid = nextUid();
+        if (id === 'owner') return artOwner(uid);
+        if (id === 'builder') return artBuilder(uid);
         if (id === 'first_100') return artAmethystDiamond(uid, '100', 8.2);
         if (id === 'first_1k') return artGoldHex(uid, '1K');
         if (id === 'discord_mod') return artDiscord(uid);
         if (id === 'contributor') return artContributor(uid);
+        if (id === 'tester') return artTester(uid);
+        if (id === 'discord_first_100') return artDiscordFirst100(uid);
         return '';
     }
 
@@ -267,7 +461,7 @@
      * Row above an avatar: first `max` badges plus a Show all button when there are more.
      * @param {string[]} badges
      * @param {object} [options]
-     * @param {number} [options.max] default 3
+     * @param {number} [options.max] default 5
      * @param {string} [options.size] default md
      * @param {string} [options.username]
      */
@@ -275,7 +469,7 @@
         var list = normalize(badges);
         if (!list.length) return '';
         var opts = options || {};
-        var max = Math.max(1, Number(opts.max) || 3);
+        var max = Math.max(1, Number(opts.max) || 5);
         var size = opts.size || 'md';
         var shown = list.slice(0, max);
         var hidden = list.length - shown.length;
@@ -365,15 +559,39 @@
         return document.getElementById(id);
     }
 
-    function isAllOpen() {
-        var overlay = $('badges-overlay');
+    function isOverlayOpen(id) {
+        var overlay = $(id);
         return !!(overlay && !overlay.classList.contains('pointer-events-none'));
     }
 
-    function setAllOpen(isOpen) {
-        var overlay = $('badges-overlay');
-        var box = $('badges-box');
+    function isAllOpen() {
+        return isOverlayOpen('badges-overlay');
+    }
+
+    /** Keep a badge box between the site header and footer. */
+    function fitBetweenChrome(overlay) {
+        var gap = 12;
+        var top = gap;
+        var bottom = gap;
+        var header = document.querySelector('body > header');
+        if (header) {
+            var h = header.getBoundingClientRect();
+            if (h.height > 0) top = Math.max(top, Math.round(h.bottom) + gap);
+        }
+        var footer = $('spa-shell-footer');
+        if (footer && !footer.classList.contains('hidden')) {
+            var f = footer.getBoundingClientRect();
+            if (f.height > 0) bottom = Math.max(bottom, Math.round(window.innerHeight - f.top) + gap);
+        }
+        overlay.style.setProperty('--utb-top', top + 'px');
+        overlay.style.setProperty('--utb-bottom', bottom + 'px');
+    }
+
+    function setOverlayOpen(overlayId, boxId, isOpen) {
+        var overlay = $(overlayId);
+        var box = $(boxId);
         if (!overlay || !box) return;
+        if (isOpen) fitBetweenChrome(overlay);
         overlay.classList.toggle('pointer-events-none', !isOpen);
         overlay.classList.toggle('opacity-0', !isOpen);
         overlay.classList.toggle('pointer-events-auto', isOpen);
@@ -381,6 +599,28 @@
         box.classList.toggle('scale-95', !isOpen);
         box.classList.toggle('scale-100', isOpen);
         overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+
+    function setAllOpen(isOpen) {
+        setOverlayOpen('badges-overlay', 'badges-box', isOpen);
+    }
+
+    function renderItems(list) {
+        return list.map(function (id, index) {
+            var def = DEFS[id];
+            return '<li class="ut-badge-item" style="--utb-i:' + index + '">' +
+                renderOne(id, { size: 'lg', tip: false }) +
+                '<div class="ut-badge-item__text">' +
+                    '<p class="ut-badge-item__name ut-badge-item__name--' + id + '">' + escapeHtml(def.name) + '</p>' +
+                    '<p class="ut-badge-item__desc">' + escapeHtml(def.description) + '</p>' +
+                '</div>' +
+            '</li>';
+        }).join('');
+    }
+
+    function focusQuietly(el) {
+        if (!el) return;
+        try { el.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
     }
 
     function openAll(badges, username) {
@@ -391,30 +631,92 @@
         if (titleEl) {
             titleEl.textContent = username ? (username + '\u2019s badges') : 'Badges';
         }
-        listEl.innerHTML = list.map(function (id) {
-            var def = DEFS[id];
-            return '<li class="ut-badge-item">' +
-                renderOne(id, { size: 'lg', tip: false }) +
-                '<div class="ut-badge-item__text">' +
-                    '<p class="ut-badge-item__name ut-badge-item__name--' + id + '">' + escapeHtml(def.name) + '</p>' +
-                    '<p class="ut-badge-item__desc">' + escapeHtml(def.description) + '</p>' +
-                '</div>' +
-            '</li>';
-        }).join('');
+        listEl.innerHTML = renderItems(list);
+        listEl.scrollTop = 0;
         setAllOpen(true);
-        var closeBtn = $('badges-close-btn');
-        if (closeBtn) {
-            try { closeBtn.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
-        }
+        focusQuietly($('badges-close-btn'));
     }
 
     function closeAll() {
         setAllOpen(false);
     }
 
+    // ── "New badge" notice (once per badge, claimed server-side) ─────────
+    var claimedFor = Object.create(null);
+
+    function isAwardOpen() {
+        return isOverlayOpen('badge-award-overlay');
+    }
+
+    function openAward(badges) {
+        var list = normalize(badges);
+        var listEl = $('badge-award-list');
+        if (!listEl || !list.length) return;
+        var titleEl = $('badge-award-title');
+        var subEl = $('badge-award-sub');
+        if (titleEl) {
+            titleEl.textContent = list.length === 1 ? 'New badge unlocked!' : list.length + ' new badges unlocked!';
+        }
+        if (subEl) {
+            subEl.textContent = list.length === 1
+                ? 'You\u2019ve been awarded a new badge. It now shows on your profile and the leaderboard.'
+                : 'You\u2019ve been awarded new badges. They now show on your profile and the leaderboard.';
+        }
+        listEl.innerHTML = renderItems(list);
+        listEl.scrollTop = 0;
+        setOverlayOpen('badge-award-overlay', 'badge-award-box', true);
+        focusQuietly($('badge-award-ok'));
+    }
+
+    function closeAward() {
+        setOverlayOpen('badge-award-overlay', 'badge-award-box', false);
+    }
+
+    async function claimNewBadges(userId) {
+        var id = String(userId || '').trim();
+        if (!id || id.indexOf('guest_') === 0 || claimedFor[id] || !window.usertypoDb) return;
+        claimedFor[id] = true;
+        try {
+            var client = await window.usertypoDb.getClient();
+            var result = await client.rpc('claim_my_new_badges');
+            if (result.error) {
+                delete claimedFor[id];
+                return;
+            }
+            var list = normalize(result.data);
+            if (!list.length) return;
+            invalidate(id);
+            setTimeout(function () { openAward(list); }, 900);
+        } catch (e) {
+            delete claimedFor[id];
+        }
+    }
+
+    function onProfileSynced(event) {
+        var profile = (event && event.detail && event.detail.profile) || window.__USERTYPO_PROFILE__;
+        if (!profile || !profile.user_id) return;
+        var state = window.usertypoAuth && window.usertypoAuth.getState ? window.usertypoAuth.getState() : null;
+        if (!state || !state.isSignedIn || !state.user || state.user.id !== profile.user_id) return;
+        claimNewBadges(profile.user_id);
+    }
+
     function onDocumentClick(event) {
         var target = event.target;
         if (!target || !target.closest) return;
+        if (isAwardOpen()) {
+            if (target.closest('#badge-award-ok') || target.closest('#badge-award-close-btn')) {
+                closeAward();
+                return;
+            }
+            var awardBox = $('badge-award-box');
+            if (awardBox && awardBox.contains(target)) return;
+            var awardOverlay = $('badge-award-overlay');
+            if (awardOverlay && awardOverlay.contains(target)) {
+                event.stopPropagation();
+                closeAward();
+                return;
+            }
+        }
         var more = target.closest('.ut-badge-more');
         if (more) {
             event.preventDefault();
@@ -438,7 +740,13 @@
     }
 
     function onKeyDown(event) {
-        if (event.key !== 'Escape' || !isAllOpen()) return;
+        if (event.key !== 'Escape') return;
+        if (isAwardOpen()) {
+            event.stopPropagation();
+            closeAward();
+            return;
+        }
+        if (!isAllOpen()) return;
         // Capture phase: close only this box, not the profile box underneath.
         event.stopPropagation();
         closeAll();
@@ -513,6 +821,12 @@
         document.addEventListener('pointerdown', hideTip, true);
         window.addEventListener('scroll', hideTip, true);
         window.addEventListener('blur', hideTip);
+        window.addEventListener('usertypo:profile-synced', onProfileSynced);
+        window.addEventListener('resize', function () {
+            if (isAllOpen()) fitBetweenChrome($('badges-overlay'));
+            if (isAwardOpen()) fitBetweenChrome($('badge-award-overlay'));
+        });
+        if (window.__USERTYPO_PROFILE__) onProfileSynced(null);
     }
 
     window.usertypoBadges = {
@@ -528,6 +842,8 @@
         invalidate: invalidate,
         openAll: openAll,
         closeAll: closeAll,
+        openAward: openAward,
+        closeAward: closeAward,
     };
 
     if (document.readyState === 'loading') {
