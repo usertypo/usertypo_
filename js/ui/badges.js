@@ -107,10 +107,6 @@
     }
     var SEAL_PATH = starburstPath(14, 15.2, 13.2);
 
-    var FLASK_BODY = 'M13.7 8.4V13.4L8.6 22.1C7.9 23.4 8.8 24.9 10.3 24.9H21.7C23.2 24.9 24.1 23.4 23.4 22.1L18.3 13.4V8.4Z';
-    var FLASK_LIQUID = 'M11.12 17.8C12.8 17.1 14.3 18.5 16 17.8S19.2 17.1 20.88 17.8' +
-        'L23.4 22.1C24.1 23.4 23.2 24.9 21.7 24.9H10.3C8.8 24.9 7.9 23.4 8.6 22.1Z';
-
     function escapeHtml(value) {
         if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
             return window.usertypoEscape.html(value);
@@ -213,25 +209,39 @@
     }
 
     function artDiscord(uid) {
-        var shield = 'M16 1.6L28.2 5.9V15.3C28.2 22.7 23 28.1 16 30.5C9 28.1 3.8 22.7 3.8 15.3V5.9Z';
-        var inner = 'M16 4.2L25.8 7.7V15.3C25.8 21.3 21.7 25.8 16 27.9C10.3 25.8 6.2 21.3 6.2 15.3V7.7Z';
+        var shield = 'M16 2.6L28.2 6.9V16.1C28.2 23.3 23 28.6 16 31C9 28.6 3.8 23.3 3.8 16.1V6.9Z';
+        var inner = 'M16 5.2L25.8 8.7V16.1C25.8 21.9 21.7 26.3 16 28.4C10.3 26.3 6.2 21.9 6.2 16.1V8.7Z';
+        var crown = 'M11.3 5.6L10.6 1.1L13.6 3.2L16 -0.4L18.4 3.2L21.4 1.1L20.7 5.6Z';
         return '<defs>' +
                 '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#C7CCFF"></stop>' +
-                    '<stop offset="1" stop-color="#3C45A5"></stop>' +
+                    '<stop offset="0" stop-color="#E0E3FF"></stop>' +
+                    '<stop offset="0.45" stop-color="#8C95FF"></stop>' +
+                    '<stop offset="1" stop-color="#2F37A0"></stop>' +
                 '</linearGradient>' +
-                '<linearGradient id="' + uid + '-fill" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#7983F5"></stop>' +
+                '<radialGradient id="' + uid + '-fill" cx="0.5" cy="0.3" r="0.8">' +
+                    '<stop offset="0" stop-color="#8F98FF"></stop>' +
                     '<stop offset="0.55" stop-color="#5865F2"></stop>' +
-                    '<stop offset="1" stop-color="#4752C4"></stop>' +
+                    '<stop offset="1" stop-color="#343DAE"></stop>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + '-crown" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FFF7B8"></stop>' +
+                    '<stop offset="0.55" stop-color="#FEE75C"></stop>' +
+                    '<stop offset="1" stop-color="#E8B400"></stop>' +
                 '</linearGradient>' +
                 sheenGradient(uid) +
             '</defs>' +
             '<path d="' + shield + '" fill="url(#' + uid + '-rim)"></path>' +
             '<path d="' + inner + '" fill="url(#' + uid + '-fill)"></path>' +
-            '<path d="M16 4.2L25.8 7.7V13H6.2V7.7Z" fill="#fff" opacity="0.14"></path>' +
-            '<g transform="translate(8.3 10.2) scale(0.1211)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
-            sheen(uid, '<path d="' + inner + '"></path>');
+            '<path d="M16 5.2V28.4C21.7 26.3 25.8 21.9 25.8 16.1V8.7Z" fill="#1E2275" opacity="0.2"></path>' +
+            '<path d="M16 5.2L25.8 8.7V13.6H6.2V8.7Z" fill="#fff" opacity="0.13"></path>' +
+            '<g transform="translate(9.2 12.4) scale(0.107)"><path d="' + DISCORD_PATH + '" fill="#1E2275" opacity="0.35" transform="translate(0 9)"></path>' +
+                '<path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
+            '<path class="ut-badge__trace" d="' + shield + '" pathLength="100" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-dasharray="14 86"></path>' +
+            '<path d="' + crown + '" fill="url(#' + uid + '-crown)" stroke="#8A6500" stroke-width="0.55" stroke-linejoin="round"></path>' +
+            '<circle cx="16" cy="3.9" r="0.75" fill="#EB459E"></circle>' +
+            sheen(uid, '<path d="' + inner + '"></path>') +
+            star(27.4, 4.4, 0.7, 'ut-badge__spark--a') +
+            star(4.4, 26.8, 0.5, 'ut-badge__spark--b');
     }
 
     function artContributor(uid) {
@@ -255,30 +265,35 @@
                     '<stop offset="0" stop-color="#0B6B50"></stop>' +
                     '<stop offset="1" stop-color="#022C22"></stop>' +
                 '</radialGradient>' +
-                '<linearGradient id="' + uid + '-liquid" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#BBF7D0"></stop>' +
-                    '<stop offset="0.35" stop-color="#4ADE80"></stop>' +
-                    '<stop offset="1" stop-color="#16A34A"></stop>' +
+                '<linearGradient id="' + uid + '-lid" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#F8FAFC"></stop>' +
+                    '<stop offset="1" stop-color="#A7B0BE"></stop>' +
                 '</linearGradient>' +
+                '<clipPath id="' + uid + '-coreclip"><circle cx="16" cy="16" r="12.4"></circle></clipPath>' +
                 sheenGradient(uid) +
             '</defs>' +
             '<circle cx="16" cy="16" r="14.8" fill="url(#' + uid + '-rim)"></circle>' +
             '<circle cx="16" cy="16" r="12.4" fill="url(#' + uid + '-core)"></circle>' +
-            '<path d="' + FLASK_BODY + '" fill="#fff" opacity="0.1"></path>' +
-            '<path class="ut-badge__liquid" d="' + FLASK_LIQUID + '" fill="url(#' + uid + '-liquid)"></path>' +
-            '<circle class="ut-badge__bubble ut-badge__bubble--a" cx="14.2" cy="22.4" r="1"></circle>' +
-            '<circle class="ut-badge__bubble ut-badge__bubble--b" cx="17.8" cy="21.6" r="0.75"></circle>' +
-            '<circle class="ut-badge__bubble ut-badge__bubble--c" cx="16" cy="23.2" r="0.6"></circle>' +
-            '<path d="' + FLASK_BODY + '" fill="none" stroke="#ECFDF5" stroke-width="1.3" stroke-linejoin="round"></path>' +
-            '<rect x="12.3" y="6.9" width="7.4" height="1.8" rx="0.9" fill="#ECFDF5"></rect>' +
-            '<path d="M15.2 9.6V13.6L12.4 18.3" fill="none" stroke="#fff" stroke-width="0.7" stroke-linecap="round" opacity="0.55"></path>' +
+            '<g clip-path="url(#' + uid + '-coreclip)">' +
+                '<path d="M8.4 26C8.4 20.2 11.6 17.2 16 17.2C20.4 17.2 23.6 20.2 23.6 26Z" fill="#2DD4BF"></path>' +
+                '<path d="M14.3 17.4L16 19.4L17.7 17.4Z" fill="#ECFDF5"></path>' +
+            '</g>' +
+            '<circle cx="16" cy="11.6" r="3.5" fill="#FCD5B5"></circle>' +
+            '<path d="M12.5 11.5C12.2 8.6 13.9 7.3 16 7.3C18.3 7.3 19.9 8.7 19.5 11.5C18.7 10.2 17.3 9.8 16 9.9C14.5 9.9 13.2 10.4 12.5 11.5Z" fill="#1F2937"></path>' +
+            '<rect x="9.4" y="16.6" width="13.2" height="7.6" rx="1.1" fill="url(#' + uid + '-lid)"></rect>' +
+            '<g class="ut-badge__code" fill="none" stroke="#059669" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M14.1 18.9L12.7 20.4L14.1 21.9"></path>' +
+                '<path d="M16.6 18.6L15.4 22.2"></path>' +
+                '<path d="M17.9 18.9L19.3 20.4L17.9 21.9"></path>' +
+            '</g>' +
+            '<rect x="7" y="24" width="18" height="1.7" rx="0.85" fill="#CBD5E1"></rect>' +
+            '<rect x="7.6" y="24" width="16.8" height="0.55" rx="0.27" fill="#fff" opacity="0.7"></rect>' +
             sheen(uid, '<circle cx="16" cy="16" r="12.4"></circle>') +
             star(26.4, 6.2, 0.8, 'ut-badge__spark--a') +
             star(5.8, 25.2, 0.55, 'ut-badge__spark--b');
     }
 
     function artDiscordFirst100(uid) {
-        var ribbon = 'M2.2 18.6H29.8L27.6 22L29.8 25.4H2.2L4.4 22Z';
         return '<defs>' +
                 '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="1" y2="1">' +
                     '<stop offset="0" stop-color="#D5D9FF"></stop>' +
@@ -290,19 +305,13 @@
                     '<stop offset="0.6" stop-color="#5865F2"></stop>' +
                     '<stop offset="1" stop-color="#3B44B8"></stop>' +
                 '</radialGradient>' +
-                '<linearGradient id="' + uid + '-ribbon" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#FF8CC8"></stop>' +
-                    '<stop offset="1" stop-color="#C21F76"></stop>' +
-                '</linearGradient>' +
                 sheenGradient(uid) +
             '</defs>' +
             '<path class="ut-badge__seal" d="' + SEAL_PATH + '" fill="url(#' + uid + '-rim)"></path>' +
             '<circle cx="16" cy="16" r="11.6" fill="url(#' + uid + '-core)"></circle>' +
             '<path d="M4.4 16A11.6 11.6 0 0 1 27.6 16Z" fill="#fff" opacity="0.12"></path>' +
-            '<g transform="translate(9.96 6.4) scale(0.0944)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
-            '<path d="' + ribbon + '" fill="url(#' + uid + '-ribbon)"></path>' +
-            '<path d="M2.2 18.6H29.8L29.2 19.5H2.8Z" fill="#fff" opacity="0.3"></path>' +
-            '<text x="16" y="24.35" text-anchor="middle" class="ut-badge__num" font-size="6.6" fill="#fff" stroke="#8A1152" stroke-width="0.9" paint-order="stroke">100</text>' +
+            '<g transform="translate(10.28 7.2) scale(0.09)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
+            '<text x="16" y="24.2" text-anchor="middle" class="ut-badge__num" font-size="7.6" fill="#fff" stroke="#262D8C" stroke-width="1.2" paint-order="stroke">100</text>' +
             sheen(uid, '<circle cx="16" cy="16" r="11.6"></circle>') +
             star(26.2, 5.4, 0.8, 'ut-badge__spark--a');
     }
@@ -453,15 +462,39 @@
         return document.getElementById(id);
     }
 
-    function isAllOpen() {
-        var overlay = $('badges-overlay');
+    function isOverlayOpen(id) {
+        var overlay = $(id);
         return !!(overlay && !overlay.classList.contains('pointer-events-none'));
     }
 
-    function setAllOpen(isOpen) {
-        var overlay = $('badges-overlay');
-        var box = $('badges-box');
+    function isAllOpen() {
+        return isOverlayOpen('badges-overlay');
+    }
+
+    /** Keep a badge box between the site header and footer. */
+    function fitBetweenChrome(overlay) {
+        var gap = 12;
+        var top = gap;
+        var bottom = gap;
+        var header = document.querySelector('body > header');
+        if (header) {
+            var h = header.getBoundingClientRect();
+            if (h.height > 0) top = Math.max(top, Math.round(h.bottom) + gap);
+        }
+        var footer = $('spa-shell-footer');
+        if (footer && !footer.classList.contains('hidden')) {
+            var f = footer.getBoundingClientRect();
+            if (f.height > 0) bottom = Math.max(bottom, Math.round(window.innerHeight - f.top) + gap);
+        }
+        overlay.style.setProperty('--utb-top', top + 'px');
+        overlay.style.setProperty('--utb-bottom', bottom + 'px');
+    }
+
+    function setOverlayOpen(overlayId, boxId, isOpen) {
+        var overlay = $(overlayId);
+        var box = $(boxId);
         if (!overlay || !box) return;
+        if (isOpen) fitBetweenChrome(overlay);
         overlay.classList.toggle('pointer-events-none', !isOpen);
         overlay.classList.toggle('opacity-0', !isOpen);
         overlay.classList.toggle('pointer-events-auto', isOpen);
@@ -469,6 +502,28 @@
         box.classList.toggle('scale-95', !isOpen);
         box.classList.toggle('scale-100', isOpen);
         overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+
+    function setAllOpen(isOpen) {
+        setOverlayOpen('badges-overlay', 'badges-box', isOpen);
+    }
+
+    function renderItems(list) {
+        return list.map(function (id, index) {
+            var def = DEFS[id];
+            return '<li class="ut-badge-item" style="--utb-i:' + index + '">' +
+                renderOne(id, { size: 'lg', tip: false }) +
+                '<div class="ut-badge-item__text">' +
+                    '<p class="ut-badge-item__name ut-badge-item__name--' + id + '">' + escapeHtml(def.name) + '</p>' +
+                    '<p class="ut-badge-item__desc">' + escapeHtml(def.description) + '</p>' +
+                '</div>' +
+            '</li>';
+        }).join('');
+    }
+
+    function focusQuietly(el) {
+        if (!el) return;
+        try { el.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
     }
 
     function openAll(badges, username) {
@@ -479,30 +534,92 @@
         if (titleEl) {
             titleEl.textContent = username ? (username + '\u2019s badges') : 'Badges';
         }
-        listEl.innerHTML = list.map(function (id) {
-            var def = DEFS[id];
-            return '<li class="ut-badge-item">' +
-                renderOne(id, { size: 'lg', tip: false }) +
-                '<div class="ut-badge-item__text">' +
-                    '<p class="ut-badge-item__name ut-badge-item__name--' + id + '">' + escapeHtml(def.name) + '</p>' +
-                    '<p class="ut-badge-item__desc">' + escapeHtml(def.description) + '</p>' +
-                '</div>' +
-            '</li>';
-        }).join('');
+        listEl.innerHTML = renderItems(list);
+        listEl.scrollTop = 0;
         setAllOpen(true);
-        var closeBtn = $('badges-close-btn');
-        if (closeBtn) {
-            try { closeBtn.focus({ preventScroll: true }); } catch (_) { /* ignore */ }
-        }
+        focusQuietly($('badges-close-btn'));
     }
 
     function closeAll() {
         setAllOpen(false);
     }
 
+    // ── "New badge" notice (once per badge, claimed server-side) ─────────
+    var claimedFor = Object.create(null);
+
+    function isAwardOpen() {
+        return isOverlayOpen('badge-award-overlay');
+    }
+
+    function openAward(badges) {
+        var list = normalize(badges);
+        var listEl = $('badge-award-list');
+        if (!listEl || !list.length) return;
+        var titleEl = $('badge-award-title');
+        var subEl = $('badge-award-sub');
+        if (titleEl) {
+            titleEl.textContent = list.length === 1 ? 'New badge unlocked!' : list.length + ' new badges unlocked!';
+        }
+        if (subEl) {
+            subEl.textContent = list.length === 1
+                ? 'You\u2019ve been awarded a new badge. It now shows on your profile and the leaderboard.'
+                : 'You\u2019ve been awarded new badges. They now show on your profile and the leaderboard.';
+        }
+        listEl.innerHTML = renderItems(list);
+        listEl.scrollTop = 0;
+        setOverlayOpen('badge-award-overlay', 'badge-award-box', true);
+        focusQuietly($('badge-award-ok'));
+    }
+
+    function closeAward() {
+        setOverlayOpen('badge-award-overlay', 'badge-award-box', false);
+    }
+
+    async function claimNewBadges(userId) {
+        var id = String(userId || '').trim();
+        if (!id || id.indexOf('guest_') === 0 || claimedFor[id] || !window.usertypoDb) return;
+        claimedFor[id] = true;
+        try {
+            var client = await window.usertypoDb.getClient();
+            var result = await client.rpc('claim_my_new_badges');
+            if (result.error) {
+                delete claimedFor[id];
+                return;
+            }
+            var list = normalize(result.data);
+            if (!list.length) return;
+            invalidate(id);
+            setTimeout(function () { openAward(list); }, 900);
+        } catch (e) {
+            delete claimedFor[id];
+        }
+    }
+
+    function onProfileSynced(event) {
+        var profile = (event && event.detail && event.detail.profile) || window.__USERTYPO_PROFILE__;
+        if (!profile || !profile.user_id) return;
+        var state = window.usertypoAuth && window.usertypoAuth.getState ? window.usertypoAuth.getState() : null;
+        if (!state || !state.isSignedIn || !state.user || state.user.id !== profile.user_id) return;
+        claimNewBadges(profile.user_id);
+    }
+
     function onDocumentClick(event) {
         var target = event.target;
         if (!target || !target.closest) return;
+        if (isAwardOpen()) {
+            if (target.closest('#badge-award-ok') || target.closest('#badge-award-close-btn')) {
+                closeAward();
+                return;
+            }
+            var awardBox = $('badge-award-box');
+            if (awardBox && awardBox.contains(target)) return;
+            var awardOverlay = $('badge-award-overlay');
+            if (awardOverlay && awardOverlay.contains(target)) {
+                event.stopPropagation();
+                closeAward();
+                return;
+            }
+        }
         var more = target.closest('.ut-badge-more');
         if (more) {
             event.preventDefault();
@@ -526,7 +643,13 @@
     }
 
     function onKeyDown(event) {
-        if (event.key !== 'Escape' || !isAllOpen()) return;
+        if (event.key !== 'Escape') return;
+        if (isAwardOpen()) {
+            event.stopPropagation();
+            closeAward();
+            return;
+        }
+        if (!isAllOpen()) return;
         // Capture phase: close only this box, not the profile box underneath.
         event.stopPropagation();
         closeAll();
@@ -601,6 +724,12 @@
         document.addEventListener('pointerdown', hideTip, true);
         window.addEventListener('scroll', hideTip, true);
         window.addEventListener('blur', hideTip);
+        window.addEventListener('usertypo:profile-synced', onProfileSynced);
+        window.addEventListener('resize', function () {
+            if (isAllOpen()) fitBetweenChrome($('badges-overlay'));
+            if (isAwardOpen()) fitBetweenChrome($('badge-award-overlay'));
+        });
+        if (window.__USERTYPO_PROFILE__) onProfileSynced(null);
     }
 
     window.usertypoBadges = {
@@ -616,6 +745,8 @@
         invalidate: invalidate,
         openAll: openAll,
         closeAll: closeAll,
+        openAward: openAward,
+        closeAward: closeAward,
     };
 
     if (document.readyState === 'loading') {
