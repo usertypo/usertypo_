@@ -1064,6 +1064,20 @@ html {
 .ut-badge--owner .ut-badge__sheen { animation-delay: 0.6s; }
 .ut-badge--owner .ut-badge__spark { animation-delay: 1.5s; }
 
+/* Builder: blueprint gear with a hammer and wrench */
+.ut-badge--builder .ut-badge__svg {
+    filter:
+        drop-shadow(0 0 calc(var(--utb-glow) * 2px) rgba(125, 211, 252, 0.95))
+        drop-shadow(0 0 calc(var(--utb-glow) * 7px) rgba(14, 165, 233, 0.55));
+}
+.ut-badge__gear {
+    transform-box: view-box;
+    transform-origin: 16px 16px;
+    animation: ut-badge-seal 20s linear infinite;
+}
+.ut-badge--builder .ut-badge__sheen { animation-delay: 2s; }
+.ut-badge--builder .ut-badge__spark { animation-delay: 0.9s; }
+
 /* First 1K: molten gold hex crest */
 .ut-badge--first_1k .ut-badge__svg {
     filter:
@@ -1354,6 +1368,7 @@ html {
     margin: 0 0 0.2rem;
 }
 .ut-badge-item__name--owner { color: #ff7a88; }
+.ut-badge-item__name--builder { color: #7dd3fc; }
 .ut-badge-item__name--first_1k { color: #ffc940; }
 .ut-badge-item__name--first_100 { color: #d8a4ff; }
 .ut-badge-item__name--discord_mod { color: #8c95ff; }
@@ -1374,6 +1389,7 @@ html {
     .ut-badge__trace,
     .ut-badge__code,
     .ut-badge__gem,
+    .ut-badge__gear,
     .ut-badge__seal,
     .ut-badge__svg {
         animation: none !important;
