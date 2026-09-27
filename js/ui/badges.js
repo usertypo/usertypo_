@@ -7,7 +7,7 @@
     var cache = Object.create(null);
     var uidCounter = 0;
 
-    var ORDER = ['discord_mod', 'contributor', 'first_100', 'first_1k'];
+    var ORDER = ['discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
 
     var DEFS = {
         discord_mod: {
@@ -17,6 +17,14 @@
         contributor: {
             name: 'Contributor',
             description: 'Helped build usertypo_.',
+        },
+        tester: {
+            name: 'Tester',
+            description: 'Helped test usertypo_ features before they shipped.',
+        },
+        discord_first_100: {
+            name: 'First 100 Discord',
+            description: 'One of the first 100 members of the usertypo_ Discord server.',
         },
         first_100: {
             name: 'First 100',
@@ -87,6 +95,21 @@
         return d;
     })();
     var MARK_O_PATH = pixelPath(O_GLYPH, 8.2, 13, 0.9);
+
+    function starburstPath(points, outer, inner) {
+        var d = '';
+        for (var i = 0; i < points * 2; i++) {
+            var r = i % 2 === 0 ? outer : inner;
+            var a = (Math.PI * i) / points - Math.PI / 2;
+            d += (i ? 'L' : 'M') + (16 + r * Math.cos(a)).toFixed(2) + ' ' + (16 + r * Math.sin(a)).toFixed(2);
+        }
+        return d + 'Z';
+    }
+    var SEAL_PATH = starburstPath(14, 15.2, 13.2);
+
+    var FLASK_BODY = 'M13.7 8.4V13.4L8.6 22.1C7.9 23.4 8.8 24.9 10.3 24.9H21.7C23.2 24.9 24.1 23.4 23.4 22.1L18.3 13.4V8.4Z';
+    var FLASK_LIQUID = 'M11.12 17.8C12.8 17.1 14.3 18.5 16 17.8S19.2 17.1 20.88 17.8' +
+        'L23.4 22.1C24.1 23.4 23.2 24.9 21.7 24.9H10.3C8.8 24.9 7.9 23.4 8.6 22.1Z';
 
     function escapeHtml(value) {
         if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
@@ -221,12 +244,77 @@
             sheen(uid, '<rect x="2" y="2" width="28" height="28" rx="8"></rect>');
     }
 
+    function artTester(uid) {
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#D1FAE5"></stop>' +
+                    '<stop offset="0.5" stop-color="#10B981"></stop>' +
+                    '<stop offset="1" stop-color="#065F46"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.4" r="0.65">' +
+                    '<stop offset="0" stop-color="#0B6B50"></stop>' +
+                    '<stop offset="1" stop-color="#022C22"></stop>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + '-liquid" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#BBF7D0"></stop>' +
+                    '<stop offset="0.35" stop-color="#4ADE80"></stop>' +
+                    '<stop offset="1" stop-color="#16A34A"></stop>' +
+                '</linearGradient>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<circle cx="16" cy="16" r="14.8" fill="url(#' + uid + '-rim)"></circle>' +
+            '<circle cx="16" cy="16" r="12.4" fill="url(#' + uid + '-core)"></circle>' +
+            '<path d="' + FLASK_BODY + '" fill="#fff" opacity="0.1"></path>' +
+            '<path class="ut-badge__liquid" d="' + FLASK_LIQUID + '" fill="url(#' + uid + '-liquid)"></path>' +
+            '<circle class="ut-badge__bubble ut-badge__bubble--a" cx="14.2" cy="22.4" r="1"></circle>' +
+            '<circle class="ut-badge__bubble ut-badge__bubble--b" cx="17.8" cy="21.6" r="0.75"></circle>' +
+            '<circle class="ut-badge__bubble ut-badge__bubble--c" cx="16" cy="23.2" r="0.6"></circle>' +
+            '<path d="' + FLASK_BODY + '" fill="none" stroke="#ECFDF5" stroke-width="1.3" stroke-linejoin="round"></path>' +
+            '<rect x="12.3" y="6.9" width="7.4" height="1.8" rx="0.9" fill="#ECFDF5"></rect>' +
+            '<path d="M15.2 9.6V13.6L12.4 18.3" fill="none" stroke="#fff" stroke-width="0.7" stroke-linecap="round" opacity="0.55"></path>' +
+            sheen(uid, '<circle cx="16" cy="16" r="12.4"></circle>') +
+            star(26.4, 6.2, 0.8, 'ut-badge__spark--a') +
+            star(5.8, 25.2, 0.55, 'ut-badge__spark--b');
+    }
+
+    function artDiscordFirst100(uid) {
+        var ribbon = 'M2.2 18.6H29.8L27.6 22L29.8 25.4H2.2L4.4 22Z';
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="1" y2="1">' +
+                    '<stop offset="0" stop-color="#D5D9FF"></stop>' +
+                    '<stop offset="0.5" stop-color="#5865F2"></stop>' +
+                    '<stop offset="1" stop-color="#2F37A0"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.3" r="0.75">' +
+                    '<stop offset="0" stop-color="#8891FF"></stop>' +
+                    '<stop offset="0.6" stop-color="#5865F2"></stop>' +
+                    '<stop offset="1" stop-color="#3B44B8"></stop>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + uid + '-ribbon" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#FF8CC8"></stop>' +
+                    '<stop offset="1" stop-color="#C21F76"></stop>' +
+                '</linearGradient>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path class="ut-badge__seal" d="' + SEAL_PATH + '" fill="url(#' + uid + '-rim)"></path>' +
+            '<circle cx="16" cy="16" r="11.6" fill="url(#' + uid + '-core)"></circle>' +
+            '<path d="M4.4 16A11.6 11.6 0 0 1 27.6 16Z" fill="#fff" opacity="0.12"></path>' +
+            '<g transform="translate(9.96 6.4) scale(0.0944)"><path d="' + DISCORD_PATH + '" fill="#fff"></path></g>' +
+            '<path d="' + ribbon + '" fill="url(#' + uid + '-ribbon)"></path>' +
+            '<path d="M2.2 18.6H29.8L29.2 19.5H2.8Z" fill="#fff" opacity="0.3"></path>' +
+            '<text x="16" y="24.35" text-anchor="middle" class="ut-badge__num" font-size="6.6" fill="#fff" stroke="#8A1152" stroke-width="0.9" paint-order="stroke">100</text>' +
+            sheen(uid, '<circle cx="16" cy="16" r="11.6"></circle>') +
+            star(26.2, 5.4, 0.8, 'ut-badge__spark--a');
+    }
+
     function art(id) {
         var uid = nextUid();
         if (id === 'first_100') return artAmethystDiamond(uid, '100', 8.2);
         if (id === 'first_1k') return artGoldHex(uid, '1K');
         if (id === 'discord_mod') return artDiscord(uid);
         if (id === 'contributor') return artContributor(uid);
+        if (id === 'tester') return artTester(uid);
+        if (id === 'discord_first_100') return artDiscordFirst100(uid);
         return '';
     }
 
