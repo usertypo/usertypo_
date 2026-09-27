@@ -1318,7 +1318,7 @@
 
                 <!-- Card 8: Keyboard & Layout -->
                 <div class="setting-card" data-category="keyboard-layout"
-                    data-keywords="keymap keyboard shortcuts layout legend qwerty tab ctrl backspace delete word">
+                    data-keywords="keymap keyboard shortcuts layout legend qwerty dvorak colemak workman azerty qwertz tab ctrl backspace delete word">
                     <button
                         class="setting-card-header flex items-center justify-center py-2.5 cursor-pointer"
                         onclick="openCategory(this)">
@@ -3352,6 +3352,50 @@
                                                     <div class="flex items-center gap-2">
                                                         <label
                                                             class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Keymap
+                                                            Layout</label>
+                                                        <div
+                                                            class="info-icon-wrapper group relative flex items-center justify-center">
+                                                            <span
+                                                                class="material-symbols-outlined text-[0.799rem] text-slate-500 hover:text-primary transition-colors cursor-help">info</span>
+                                                            <div
+                                                                class="info-popover w-64 p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all border border-primary/20 text-xs text-slate-300 text-left cursor-default font-normal tracking-normal normal-case">
+                                                                <div
+                                                                    class="font-bold text-primary mb-1 flex items-center gap-1 uppercase tracking-widest text-[0.533rem]">
+                                                                    <span
+                                                                        class="material-symbols-outlined text-[0.746rem]">info</span>
+                                                                    How it works
+                                                                </div>
+                                                                Sets the key arrangement shown on the on-screen keyboard.
+                                                                Match this to the layout your computer types with. Auto
+                                                                picks the standard layout for the test language.
+                                                                Languages with their own alphabet (Russian, Arabic,
+                                                                Greek, etc.) always use their own layout.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex gap-2 flex-wrap" id="keymap-layout-btns"
+                                                        data-setting="keyboardLayout.keymapLayout"><button
+                                                            class="opt-btn active"
+                                                            onclick="selectOpt(this)">Auto</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">QWERTY</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">Dvorak</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">Colemak</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">Colemak-DH</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">Workman</button><button
+                                                            class="opt-btn"
+                                                            onclick="selectOpt(this)">AZERTY</button><button
+                                                            class="opt-btn" onclick="selectOpt(this)">QWERTZ</button>
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-col gap-2 relative">
+                                                    <div class="flex items-center gap-2">
+                                                        <label
+                                                            class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Keymap
                                                             Style</label>
                                                         <div
                                                             class="info-icon-wrapper group relative flex items-center justify-center">
@@ -3399,8 +3443,8 @@
                                                                         class="material-symbols-outlined text-[0.746rem]">info</span>
                                                                     How it works
                                                                 </div>
-                                                                Large letter = character for the selected language.
-                                                                Small letter = the English QWERTY key that produces it.
+                                                                Large letter = character in the selected layout.
+                                                                Small letter = the English QWERTY key in that position.
                                                                 Dynamic changes case to match what you type next.
                                                             </div>
                                                         </div>
