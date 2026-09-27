@@ -1,11 +1,11 @@
 /**
- * On-screen keymap layouts + language → layout resolution.
+ * On-screen keymap layouts + layout resolution (user choice or test language).
  *
  * Character arrangements follow widely published national keyboard standards.
  * Data is authored in this project's { k, s, u } format.
  *
  * Each rendered key shows:
- *   - main (large): character produced in the active language layout
+ *   - main (large): character produced in the active layout
  *   - secondary (small): English QWERTY label for that physical key position
  */
 (function (global) {
@@ -42,6 +42,34 @@
             row(MOD.tab, key('q'), key('w'), key('e'), key('r'), key('t'), key('y'), key('u'), key('i'), key('o'), key('p'), key('[', '{'), key(']', '}'), MOD.backslash('\\', '|')),
             row(MOD.caps, key('a'), key('s'), key('d'), key('f'), key('g'), key('h'), key('j'), key('k'), key('l'), key(';', ':'), key("'", '"'), MOD.enter),
             row(MOD.shiftL, key('z'), key('x'), key('c'), key('v'), key('b'), key('n'), key('m'), key(',', '<'), key('.', '>'), key('/', '?'), MOD.shiftR),
+            row(MOD.space),
+        ],
+        Dvorak: [
+            row(key('`', '~'), key('1', '!'), key('2', '@'), key('3', '#'), key('4', '$'), key('5', '%'), key('6', '^'), key('7', '&'), key('8', '*'), key('9', '('), key('0', ')'), key('[', '{'), key(']', '}'), MOD.backspace),
+            row(MOD.tab, key("'", '"'), key(',', '<'), key('.', '>'), key('p'), key('y'), key('f'), key('g'), key('c'), key('r'), key('l'), key('/', '?'), key('=', '+'), MOD.backslash('\\', '|')),
+            row(MOD.caps, key('a'), key('o'), key('e'), key('u'), key('i'), key('d'), key('h'), key('t'), key('n'), key('s'), key('-', '_'), MOD.enter),
+            row(MOD.shiftL, key(';', ':'), key('q'), key('j'), key('k'), key('x'), key('b'), key('m'), key('w'), key('v'), key('z'), MOD.shiftR),
+            row(MOD.space),
+        ],
+        Colemak: [
+            row(key('`', '~'), key('1', '!'), key('2', '@'), key('3', '#'), key('4', '$'), key('5', '%'), key('6', '^'), key('7', '&'), key('8', '*'), key('9', '('), key('0', ')'), key('-', '_'), key('=', '+'), MOD.backspace),
+            row(MOD.tab, key('q'), key('w'), key('f'), key('p'), key('g'), key('j'), key('l'), key('u'), key('y'), key(';', ':'), key('[', '{'), key(']', '}'), MOD.backslash('\\', '|')),
+            row(MOD.caps, key('a'), key('r'), key('s'), key('t'), key('d'), key('h'), key('n'), key('e'), key('i'), key('o'), key("'", '"'), MOD.enter),
+            row(MOD.shiftL, key('z'), key('x'), key('c'), key('v'), key('b'), key('k'), key('m'), key(',', '<'), key('.', '>'), key('/', '?'), MOD.shiftR),
+            row(MOD.space),
+        ],
+        'Colemak-DH': [
+            row(key('`', '~'), key('1', '!'), key('2', '@'), key('3', '#'), key('4', '$'), key('5', '%'), key('6', '^'), key('7', '&'), key('8', '*'), key('9', '('), key('0', ')'), key('-', '_'), key('=', '+'), MOD.backspace),
+            row(MOD.tab, key('q'), key('w'), key('f'), key('p'), key('b'), key('j'), key('l'), key('u'), key('y'), key(';', ':'), key('[', '{'), key(']', '}'), MOD.backslash('\\', '|')),
+            row(MOD.caps, key('a'), key('r'), key('s'), key('t'), key('g'), key('m'), key('n'), key('e'), key('i'), key('o'), key("'", '"'), MOD.enter),
+            row(MOD.shiftL, key('z'), key('x'), key('c'), key('d'), key('v'), key('k'), key('h'), key(',', '<'), key('.', '>'), key('/', '?'), MOD.shiftR),
+            row(MOD.space),
+        ],
+        Workman: [
+            row(key('`', '~'), key('1', '!'), key('2', '@'), key('3', '#'), key('4', '$'), key('5', '%'), key('6', '^'), key('7', '&'), key('8', '*'), key('9', '('), key('0', ')'), key('-', '_'), key('=', '+'), MOD.backspace),
+            row(MOD.tab, key('q'), key('d'), key('r'), key('w'), key('b'), key('j'), key('f'), key('u'), key('p'), key(';', ':'), key('[', '{'), key(']', '}'), MOD.backslash('\\', '|')),
+            row(MOD.caps, key('a'), key('s'), key('h'), key('t'), key('g'), key('y'), key('n'), key('e'), key('o'), key('i'), key("'", '"'), MOD.enter),
+            row(MOD.shiftL, key('z'), key('x'), key('m'), key('c'), key('v'), key('k'), key('l'), key(',', '<'), key('.', '>'), key('/', '?'), MOD.shiftR),
             row(MOD.space),
         ],
         AZERTY: [
@@ -141,20 +169,36 @@
         return 'QWERTY';
     }
 
+    // Options offered by the Keymap Layout setting. 'Auto' follows the test language.
+    const KEYMAP_LAYOUT_CHOICES = ['Auto', 'QWERTY', 'Dvorak', 'Colemak', 'Colemak-DH', 'Workman', 'AZERTY', 'QWERTZ'];
+
+    // Language layouts for non-Latin scripts; a Latin layout can't type these, so they win over the user choice.
+    const SCRIPT_LAYOUTS = new Set(['Arabic', 'Russian', 'Greek', 'Korean', 'Hindi', 'Japanese Hiragana', 'Japanese Katakana']);
+
+    function normalizeKeymapLayoutChoice(value) {
+        return KEYMAP_LAYOUT_CHOICES.indexOf(value) !== -1 ? value : 'Auto';
+    }
+
+    /** Layout to draw for a Keymap Layout setting value and test language. */
+    function resolveKeymapLayout(choice, langFile) {
+        const languageLayout = resolveLanguageKeymapLayout(langFile);
+        const picked = normalizeKeymapLayoutChoice(choice);
+        if (picked === 'Auto' || SCRIPT_LAYOUTS.has(languageLayout)) return languageLayout;
+        return picked;
+    }
+
     /**
-     * Always set keymapLayout from the active test language.
+     * Coerce keymapLayout to a valid Keymap Layout choice (unknown/legacy values → 'Auto').
      * @returns {boolean} whether keymapLayout changed
      */
     function syncKeymapLayoutForLanguage(settings) {
         if (!settings) return false;
         if (!settings.keyboardLayout) settings.keyboardLayout = {};
 
-        const lang = settings.languageContent?.testLanguage || 'english';
-        const preferred = resolveLanguageKeymapLayout(lang);
-        const current = settings.keyboardLayout.keymapLayout || 'QWERTY';
-
-        if (preferred === current) return false;
-        settings.keyboardLayout.keymapLayout = preferred;
+        const current = settings.keyboardLayout.keymapLayout;
+        const normalized = normalizeKeymapLayoutChoice(current);
+        if (normalized === current) return false;
+        settings.keyboardLayout.keymapLayout = normalized;
         return true;
     }
 
@@ -227,6 +271,8 @@
 
     global.keymapLayouts = Object.assign({}, global.keymapLayouts || {}, layouts);
     global.resolveLanguageKeymapLayout = resolveLanguageKeymapLayout;
+    global.resolveKeymapLayout = resolveKeymapLayout;
+    global.KEYMAP_LAYOUT_CHOICES = KEYMAP_LAYOUT_CHOICES.slice();
     global.syncKeymapLayoutForLanguage = syncKeymapLayoutForLanguage;
     global.getKeymapLayoutData = getKeymapLayoutData;
     global.getKeymapLayoutDataForLanguage = getKeymapLayoutDataForLanguage;

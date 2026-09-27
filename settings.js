@@ -61,7 +61,7 @@ const DEFAULTS = {
     keyboardLayout: {
         keymapMode: 'Off',       // Off | Static | React | Next
         keymapStyle: 'Staggered', // Staggered | Alice | Matrix | Split
-        keymapLayout: 'QWERTY',
+        keymapLayout: 'Auto',    // Auto (follow test language) | QWERTY | Dvorak | Colemak | Colemak-DH | Workman | AZERTY | QWERTZ
         keymapLegend: 'Lowercase',
         keyboardShortcuts: true, // master switch for app keyboard shortcuts
         quickRestart: true,      // Tab restarts the test when shortcuts are on
@@ -369,12 +369,10 @@ function loadSettings() {
         settings.keyboardLayout.keyboardShortcuts = true;
     }
 
-    // One-time: adopt language-appropriate keymap for existing saves
-    if (settings.keyboardLayout && settings.keyboardLayout.keymapLangSyncVersion !== 1) {
-        if (typeof window.syncKeymapLayoutForLanguage === 'function') {
-            window.syncKeymapLayoutForLanguage(settings);
-        }
-        settings.keyboardLayout.keymapLangSyncVersion = 1;
+    // One-time: keymapLayout used to be auto-assigned from the language; start everyone on Auto
+    if (settings.keyboardLayout && !(settings.keyboardLayout.keymapLangSyncVersion >= 2)) {
+        settings.keyboardLayout.keymapLayout = 'Auto';
+        settings.keyboardLayout.keymapLangSyncVersion = 2;
     }
 
     // Look & Feel migrations
@@ -5316,7 +5314,7 @@ document.addEventListener('visibilitychange', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  9. KEYMAP RENDER LOGIC
 //  Layout tables live in js/keymap-layouts.js (loaded before this file).
-//  Main legend = language glyph; small legend = US QWERTY key at that position.
+//  Main legend = glyph in the active layout; small legend = US QWERTY key at that position.
 // ─────────────────────────────────────────────────────────────────────────────
 
 window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFileOverride) {
@@ -5329,15 +5327,9 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
         ? window.resolveActiveLanguageFile(langFileOverride || settings.languageContent?.testLanguage)
         : (langFileOverride || settings.languageContent?.testLanguage || 'english');
 
-    const layoutName = (typeof window.resolveLanguageKeymapLayout === 'function')
-        ? window.resolveLanguageKeymapLayout(langFile)
+    const layoutName = (typeof window.resolveKeymapLayout === 'function')
+        ? window.resolveKeymapLayout(kl.keymapLayout, langFile)
         : 'QWERTY';
-
-    // Keep persisted setting aligned with the active language
-    if (kl.keymapLayout !== layoutName) {
-        kl.keymapLayout = layoutName;
-        saveSettings(settings);
-    }
 
     const containers = document.querySelectorAll('#dynamic-keymap');
     if (containers.length === 0) return;
@@ -5377,6 +5369,20 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
         if (mode === 'Lowercase' || mode === 'Dynamic') return text.toLowerCase();
         return text;
     };
+
+    // Characters some key in this layout produces directly. A key's QWERTY hint
+    // only joins its data-chars when no key produces that character, otherwise
+    // highlighting and heatmaps would match two keys for one character.
+    const layoutChars = new Set();
+    layoutData.forEach((row) => row.forEach((keyObj) => {
+        if (isModifier(keyObj.k)) return;
+        [keyObj.k, keyObj.s].forEach((ch) => {
+            if (!ch) return;
+            layoutChars.add(ch);
+            layoutChars.add(ch.toLowerCase());
+            layoutChars.add(ch.toUpperCase());
+        });
+    }));
 
     layoutData.forEach((row) => {
         let rowHasVisibleKeys = false;
@@ -5426,8 +5432,8 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
             } else {
                 keyText = applyLegend(rawMain, legend);
                 qwertyText = applyLegend(rawQwerty, legend);
-                // On plain QWERTY, hide duplicate secondary labels
-                if (layoutName === 'QWERTY' && qwertyText && keyText
+                // Hide the secondary label where the key matches QWERTY
+                if (qwertyText && keyText
                     && qwertyText.toLowerCase() === keyText.toLowerCase()) {
                     qwertyText = '';
                 }
@@ -5435,7 +5441,8 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
 
             const visibilityClass = isVisible ? '' : 'hidden';
 
-            let charBag = `${rawMain || ''}${keyObj.s || ''}${rawQwerty || ''}`;
+            const qwertyIsOwnKey = !!rawQwerty && !layoutChars.has(rawQwerty);
+            let charBag = `${rawMain || ''}${keyObj.s || ''}${qwertyIsOwnKey ? rawQwerty : ''}`;
             if (rawMain && rawMain.length === 1 && isLetterLike(rawMain)) {
                 const up = rawMain.toUpperCase();
                 const lo = rawMain.toLowerCase();
@@ -5444,7 +5451,7 @@ window.renderKeymap = function (useNumbers = true, usePunctuation = true, langFi
                     if (!charBag.includes(lo)) charBag += lo;
                 }
             }
-            if (rawQwerty && rawQwerty.length === 1 && /[a-z]/i.test(rawQwerty)) {
+            if (qwertyIsOwnKey && rawQwerty.length === 1 && /[a-z]/i.test(rawQwerty)) {
                 const up = rawQwerty.toUpperCase();
                 const lo = rawQwerty.toLowerCase();
                 if (!charBag.includes(up)) charBag += up;
