@@ -390,7 +390,7 @@
                 '<clipPath id="' + uid + '-coreclip"><circle cx="16" cy="16" r="10.8"></circle></clipPath>' +
                 '<mask id="' + uid + '-jaw" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32">' +
                     '<rect x="0" y="0" width="32" height="32" fill="#fff"></rect>' +
-                    '<rect x="15" y="5.4" width="2" height="4.4" rx="0.4" fill="#000"></rect>' +
+                    '<rect x="15" y="6" width="2" height="4.4" rx="0.4" fill="#000"></rect>' +
                 '</mask>' +
                 sheenGradient(uid) +
             '</defs>' +
@@ -399,12 +399,12 @@
             '<path d="' + grid + '" clip-path="url(#' + uid + '-coreclip)" stroke="#7DD3FC" stroke-width="0.3" opacity="0.35"></path>' +
             '<circle cx="16" cy="16" r="10.8" fill="none" stroke="#BAE6FD" stroke-width="0.6" opacity="0.6"></circle>' +
             '<g transform="rotate(-45 16 16)">' +
-                '<g mask="url(#' + uid + '-jaw)"><circle cx="16" cy="9" r="3.1" ' + tool + '></circle></g>' +
-                '<rect x="15" y="11" width="2" height="11.6" rx="1" ' + tool + '></rect>' +
+                '<g mask="url(#' + uid + '-jaw)"><circle cx="16" cy="9.6" r="3" ' + tool + '></circle></g>' +
+                '<rect x="15" y="11.6" width="2" height="13.8" rx="1" ' + tool + '></rect>' +
             '</g>' +
             '<g transform="rotate(45 16 16)">' +
-                '<rect x="15.05" y="11.2" width="1.9" height="12" rx="0.95" fill="#FDE68A" stroke="#78350F" stroke-width="0.55"></rect>' +
-                '<path d="M11.2 8.2H19.6C20.5 8.2 21 8.9 21 9.7V11.1C21 11.8 20.5 12.2 19.8 12.2H11.2L9.8 10.2Z" ' + tool + '></path>' +
+                '<rect x="15.05" y="11" width="1.9" height="13.4" rx="0.95" fill="#FDE68A" stroke="#78350F" stroke-width="0.55"></rect>' +
+                '<path d="M12.6 7.6H19.4C20 7.6 20.4 8 20.4 8.6V10.6C20.4 11.2 20 11.6 19.4 11.6H12.6L11.6 9.6Z" ' + tool + '></path>' +
             '</g>' +
             sheen(uid, '<circle cx="16" cy="16" r="10.8"></circle>') +
             star(26.8, 5, 0.8, 'ut-badge__spark--a') +
