@@ -7,12 +7,16 @@
     var cache = Object.create(null);
     var uidCounter = 0;
 
-    var ORDER = ['owner', 'discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
+    var ORDER = ['owner', 'builder', 'discord_mod', 'contributor', 'tester', 'discord_first_100', 'first_100', 'first_1k'];
 
     var DEFS = {
         owner: {
             name: 'Owner',
             description: 'One of the owners of usertypo_.',
+        },
+        builder: {
+            name: 'Builder',
+            description: 'Built usertypo_ from the ground up.',
         },
         discord_mod: {
             name: 'Discord Mod',
@@ -110,6 +114,24 @@
         return d + 'Z';
     }
     var SEAL_PATH = starburstPath(14, 15.2, 13.2);
+
+    function gearPath(teeth, outer, root, tipHalf, rootHalf) {
+        var step = (Math.PI * 2) / teeth;
+        var pt = function (r, a) {
+            return (16 + r * Math.cos(a)).toFixed(2) + ' ' + (16 + r * Math.sin(a)).toFixed(2);
+        };
+        var d = '';
+        for (var i = 0; i < teeth; i++) {
+            var a = i * step - Math.PI / 2;
+            d += (i ? 'L' : 'M') + pt(root, a - rootHalf) +
+                'L' + pt(outer, a - tipHalf) +
+                'L' + pt(outer, a + tipHalf) +
+                'L' + pt(root, a + rootHalf) +
+                'A' + root + ' ' + root + ' 0 0 1 ' + pt(root, a + step - rootHalf);
+        }
+        return d + 'Z';
+    }
+    var GEAR_PATH = gearPath(10, 15.3, 12.6, 0.13, 0.2);
 
     function escapeHtml(value) {
         if (window.usertypoEscape && typeof window.usertypoEscape.html === 'function') {
@@ -349,9 +371,50 @@
             star(4.2, 3.8, 0.55, 'ut-badge__spark--b');
     }
 
+    function artBuilder(uid) {
+        var grid = '';
+        for (var g = 6; g <= 26; g += 4) {
+            grid += 'M' + g + ' 4V28M4 ' + g + 'H28';
+        }
+        var tool = 'fill="#F0F9FF" stroke="#0C4A6E" stroke-width="0.55" stroke-linejoin="round"';
+        return '<defs>' +
+                '<linearGradient id="' + uid + '-rim" x1="0" y1="0" x2="1" y2="1">' +
+                    '<stop offset="0" stop-color="#E0F2FE"></stop>' +
+                    '<stop offset="0.5" stop-color="#38BDF8"></stop>' +
+                    '<stop offset="1" stop-color="#075985"></stop>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + uid + '-core" cx="0.5" cy="0.35" r="0.75">' +
+                    '<stop offset="0" stop-color="#1E88D0"></stop>' +
+                    '<stop offset="1" stop-color="#0B3B66"></stop>' +
+                '</radialGradient>' +
+                '<clipPath id="' + uid + '-coreclip"><circle cx="16" cy="16" r="10.8"></circle></clipPath>' +
+                '<mask id="' + uid + '-jaw" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32">' +
+                    '<rect x="0" y="0" width="32" height="32" fill="#fff"></rect>' +
+                    '<rect x="15" y="5.4" width="2" height="4.4" rx="0.4" fill="#000"></rect>' +
+                '</mask>' +
+                sheenGradient(uid) +
+            '</defs>' +
+            '<path class="ut-badge__gear" d="' + GEAR_PATH + '" fill="url(#' + uid + '-rim)"></path>' +
+            '<circle cx="16" cy="16" r="10.8" fill="url(#' + uid + '-core)"></circle>' +
+            '<path d="' + grid + '" clip-path="url(#' + uid + '-coreclip)" stroke="#7DD3FC" stroke-width="0.3" opacity="0.35"></path>' +
+            '<circle cx="16" cy="16" r="10.8" fill="none" stroke="#BAE6FD" stroke-width="0.6" opacity="0.6"></circle>' +
+            '<g transform="rotate(-45 16 16)">' +
+                '<g mask="url(#' + uid + '-jaw)"><circle cx="16" cy="9" r="3.1" ' + tool + '></circle></g>' +
+                '<rect x="15" y="11" width="2" height="11.6" rx="1" ' + tool + '></rect>' +
+            '</g>' +
+            '<g transform="rotate(45 16 16)">' +
+                '<rect x="15.05" y="11.2" width="1.9" height="12" rx="0.95" fill="#FDE68A" stroke="#78350F" stroke-width="0.55"></rect>' +
+                '<path d="M11.2 8.2H19.6C20.5 8.2 21 8.9 21 9.7V11.1C21 11.8 20.5 12.2 19.8 12.2H11.2L9.8 10.2Z" ' + tool + '></path>' +
+            '</g>' +
+            sheen(uid, '<circle cx="16" cy="16" r="10.8"></circle>') +
+            star(26.8, 5, 0.8, 'ut-badge__spark--a') +
+            star(5.2, 26.6, 0.55, 'ut-badge__spark--b');
+    }
+
     function art(id) {
         var uid = nextUid();
         if (id === 'owner') return artOwner(uid);
+        if (id === 'builder') return artBuilder(uid);
         if (id === 'first_100') return artAmethystDiamond(uid, '100', 8.2);
         if (id === 'first_1k') return artGoldHex(uid, '1K');
         if (id === 'discord_mod') return artDiscord(uid);
