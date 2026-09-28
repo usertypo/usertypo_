@@ -13,9 +13,19 @@ import {
   requireAdmin,
   requireSignedIn,
   supabaseRest,
+  supabaseRestWithCount,
   supabaseRpc,
   writeAudit,
 } from './auth';
+import {
+  STEP_UP_LOCKOUT_MINUTES,
+  STEP_UP_MAX_FAILURES,
+  passwordFromRequest,
+  recentStepUpFailures,
+  requiresStepUp,
+  stepUpConfigured,
+  verifyActionPassword,
+} from './step-up';
 
 const DEFAULT_ORIGINS = [
   'https://usertypo.com',
@@ -60,7 +70,7 @@ function applyCors(env: Env, request: Request | undefined, headers: Record<strin
     headers['Vary'] = 'Origin';
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
-  headers['Access-Control-Allow-Headers'] = 'content-type, authorization';
+  headers['Access-Control-Allow-Headers'] = 'content-type, authorization, x-admin-password';
   headers['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
 }
 
@@ -111,6 +121,7 @@ async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminPro
     avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
     country_code: row.country_code != null ? String(row.country_code) : null,
     last_seen_at: row.last_seen_at != null ? String(row.last_seen_at) : null,
+    last_active_at: row.last_active_at != null ? String(row.last_active_at) : null,
     is_banned: row.is_banned === true,
     banned_at: row.banned_at != null ? String(row.banned_at) : null,
     banned_reason: row.banned_reason != null ? String(row.banned_reason) : null,
@@ -119,7 +130,7 @@ async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminPro
 }
 
 const PROFILE_LIST_SELECT =
-  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
+  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,last_active_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
 
 const COUNTRY_CODE_RE = /^[A-Z]{2}$/;
 
@@ -180,7 +191,7 @@ async function listUsers(
     env,
     `profiles?select=${PROFILE_LIST_SELECT}`
       + filter
-      + `&order=last_seen_at.desc.nullslast&order=username.asc`
+      + `&order=last_active_at.desc.nullslast&order=username.asc`
       + `&limit=${take + 1}&offset=${from}`,
   );
   const list = Array.isArray(rows) ? rows : [];
@@ -189,14 +200,88 @@ async function listUsers(
   return { users: await mapProfileRows(page), has_more: hasMore };
 }
 
-async function recentSessions(env: Env, userId: string, limit: number) {
+const SESSION_PAGE_SIZE = 50;
+const SESSION_SELECT =
+  'id,wpm,raw_wpm,accuracy,consistency,mode,amount,language,punctuation,numbers,adapt_refine,is_pb,failed,fail_reason,duration_seconds,created_at';
+
+/** Must match the user_badges_badge_check constraint. */
+const BADGE_IDS = [
+  'owner', 'builder', 'discord_mod', 'contributor',
+  'tester', 'discord_first_100', 'first_100', 'first_1k',
+];
+
+const ANNOUNCEMENT_MAX_LENGTH = 500;
+
+/**
+ * PostgREST filter for one user's test list.
+ * Toggles take `on` / `off`; anything else means "any".
+ */
+function sessionFilterQuery(url: URL): string {
+  let q = '';
+  const mode = String(url.searchParams.get('mode') || '').trim();
+  if (mode) {
+    if (mode !== 'time' && mode !== 'words') throw new Error('bad_request');
+    q += `&mode=eq.${mode}`;
+  }
+  const amountRaw = String(url.searchParams.get('amount') || '').trim();
+  if (amountRaw) {
+    const amount = Number(amountRaw);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 100000) throw new Error('bad_request');
+    q += `&amount=eq.${amount}`;
+  }
+  const language = String(url.searchParams.get('language') || '').trim();
+  if (language) {
+    if (!/^[a-z0-9_]{1,40}$/i.test(language)) throw new Error('bad_request');
+    q += `&language=eq.${encodeURIComponent(language)}`;
+  }
+  for (const key of ['punctuation', 'numbers', 'adapt_refine']) {
+    const value = String(url.searchParams.get(key) || '').trim();
+    if (value === 'on') q += `&${key}=is.true`;
+    else if (value === 'off') q += `&${key}=is.false`;
+  }
+  return q;
+}
+
+async function sessionFacets(env: Env, userId: string) {
+  const data = await supabaseRpc<Record<string, unknown> | null>(env, 'admin_session_facets', {
+    p_user_id: userId,
+  });
+  return data || { total: 0, languages: [], time_amounts: [], word_amounts: [] };
+}
+
+async function userBadges(env: Env, userId: string): Promise<string[]> {
   const rows = await supabaseRest<Record<string, unknown>[]>(
     env,
-    `typing_sessions?user_id=eq.${encodeURIComponent(userId)}`
-      + `&select=id,wpm,accuracy,mode,amount,language,created_at,duration_seconds`
-      + `&order=created_at.desc&limit=${limit}`,
+    `user_badges?user_id=eq.${encodeURIComponent(userId)}&revoked_at=is.null&select=badge`,
   );
-  return Array.isArray(rows) ? rows : [];
+  return Array.isArray(rows) ? rows.map((r) => String(r.badge || '')).filter(Boolean) : [];
+}
+
+/** Primary email from Clerk (profiles don't store it). */
+async function clerkEmail(env: Env, userId: string): Promise<{ email: string | null; verified: boolean }> {
+  if (!userId || userId.startsWith('guest_')) return { email: null, verified: false };
+  const res = await clerkApi(env, `/users/${encodeURIComponent(userId)}`);
+  if (!res.ok) return { email: null, verified: false };
+  const data = await res.json().catch(() => null) as {
+    primary_email_address_id?: string | null;
+    email_addresses?: Array<{ id?: string; email_address?: string; verification?: { status?: string } | null }>;
+  } | null;
+  const list = Array.isArray(data?.email_addresses) ? data!.email_addresses! : [];
+  const primary = list.find((e) => e.id === data?.primary_email_address_id) || list[0];
+  if (!primary?.email_address) return { email: null, verified: false };
+  return {
+    email: primary.email_address,
+    verified: primary.verification?.status === 'verified',
+  };
+}
+
+async function activeAnnouncement(env: Env) {
+  const rows = await supabaseRest<Record<string, unknown>[]>(
+    env,
+    'site_announcements?active=is.true&select=id,message,created_by,created_at,updated_at'
+      + '&order=updated_at.desc&limit=1',
+  );
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
 
 async function progressionFor(env: Env, userId: string) {
@@ -479,6 +564,29 @@ export default {
       // ---- Admin-only below ----
       const { session, admin, effectiveAdminId } = await requireAdmin(env, request);
 
+      if (requiresStepUp(path, request.method)) {
+        if (!stepUpConfigured(env)) {
+          return json(env, 503, { error: 'step_up_not_configured' }, request);
+        }
+        const password = passwordFromRequest(request);
+        if (!password) {
+          return json(env, 403, { error: 'step_up_required' }, request);
+        }
+        const failures = await recentStepUpFailures(env, effectiveAdminId);
+        if (failures >= STEP_UP_MAX_FAILURES) {
+          return json(env, 429, { error: 'step_up_locked', retry_after_minutes: STEP_UP_LOCKOUT_MINUTES }, request);
+        }
+        if (!(await verifyActionPassword(env, password))) {
+          await writeAudit(env, effectiveAdminId, 'step_up_failed', null, { path, method: request.method });
+          const attemptsLeft = Math.max(0, STEP_UP_MAX_FAILURES - failures - 1);
+          return json(env, 403, {
+            error: attemptsLeft > 0 ? 'wrong_password' : 'step_up_locked',
+            attempts_left: attemptsLeft,
+            retry_after_minutes: STEP_UP_LOCKOUT_MINUTES,
+          }, request);
+        }
+      }
+
       if (path === '/me' && request.method === 'GET') {
         return json(env, 200, {
           ok: true,
@@ -581,24 +689,198 @@ export default {
       if (userMatch && request.method === 'GET') {
         const profile = await fetchProfileByPublicId(env, userMatch[1]);
         if (!profile) return json(env, 404, { error: 'not_found' }, request);
-        const [sessions, progression, avgVisit] = await Promise.all([
-          recentSessions(env, profile.user_id, 25).catch((err) => {
-            console.warn('[admin] recentSessions failed', err);
-            return [] as Record<string, unknown>[];
-          }),
+        const [progression, avgVisit, email, badges, facets] = await Promise.all([
           progressionFor(env, profile.user_id).catch((err) => {
             console.warn('[admin] progressionFor failed', err);
             return null;
           }),
           avgVisitSeconds(env, profile.user_id).catch(() => 0),
+          clerkEmail(env, profile.user_id).catch((err) => {
+            console.warn('[admin] clerkEmail failed', err);
+            return { email: null, verified: false };
+          }),
+          userBadges(env, profile.user_id).catch((err) => {
+            console.warn('[admin] userBadges failed', err);
+            return [] as string[];
+          }),
+          sessionFacets(env, profile.user_id).catch((err) => {
+            console.warn('[admin] sessionFacets failed', err);
+            return null;
+          }),
         ]);
         return json(env, 200, {
           ok: true,
           user: profile,
-          recent_sessions: sessions,
+          email: email.email,
+          email_verified: email.verified,
+          badges,
+          session_facets: facets,
           progression,
           avg_visit_seconds: avgVisit,
         }, request);
+      }
+
+      const sessionsMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/sessions$/);
+      if (sessionsMatch && request.method === 'GET') {
+        const profile = await fetchProfileByPublicId(env, sessionsMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        const offset = Math.max(0, Math.floor(Number(url.searchParams.get('offset') || 0) || 0));
+        const filter = sessionFilterQuery(url);
+        const { rows, total } = await supabaseRestWithCount<Record<string, unknown>>(
+          env,
+          `typing_sessions?user_id=eq.${encodeURIComponent(profile.user_id)}`
+            + filter
+            + `&select=${SESSION_SELECT}`
+            + `&order=created_at.desc&limit=${SESSION_PAGE_SIZE}&offset=${offset}`,
+        );
+        return json(env, 200, {
+          ok: true,
+          sessions: rows,
+          offset,
+          limit: SESSION_PAGE_SIZE,
+          total,
+          has_more: total != null ? offset + rows.length < total : rows.length === SESSION_PAGE_SIZE,
+        }, request);
+      }
+
+      if (userMatch && request.method === 'DELETE') {
+        const profile = await fetchProfileByPublicId(env, userMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        if (adminPublicIds(env).has(profile.public_id) || profile.user_id === effectiveAdminId) {
+          return json(env, 400, { error: 'cannot_delete_admin' }, request);
+        }
+        const body = await readJson(request);
+        if (String(body.confirm_public_id || '').trim().toUpperCase() !== profile.public_id) {
+          return json(env, 400, { error: 'confirmation_mismatch' }, request);
+        }
+
+        const result = await supabaseRpc<Record<string, unknown> | null>(env, 'admin_delete_account_data', {
+          p_user_id: profile.user_id,
+        });
+
+        let clerkDeleted = false;
+        if (!profile.user_id.startsWith('guest_')) {
+          const res = await clerkApi(env, `/users/${encodeURIComponent(profile.user_id)}`, { method: 'DELETE' });
+          clerkDeleted = res.ok || res.status === 404;
+          if (!clerkDeleted) {
+            const detail = await res.text().catch(() => '');
+            console.warn('[admin] clerk user delete failed', res.status, detail.slice(0, 300));
+          }
+        }
+
+        if (env.LEARN_PROGRESS) {
+          await env.LEARN_PROGRESS.delete(`learn:progress:${profile.user_id}`).catch((err) => {
+            console.warn('[admin] learn progress delete failed', err);
+          });
+        }
+        if (env.NOTIFICATIONS_DB) {
+          await env.NOTIFICATIONS_DB.prepare('DELETE FROM notifications WHERE user_id = ?')
+            .bind(profile.user_id)
+            .run()
+            .catch((err) => {
+              console.warn('[admin] notifications delete failed', err);
+            });
+        }
+
+        await writeAudit(env, effectiveAdminId, 'delete_account', profile.user_id, {
+          public_id: profile.public_id,
+          username: profile.username,
+          sessions_deleted: result && result.sessions_deleted,
+          clerk_deleted: clerkDeleted,
+        });
+        if (!clerkDeleted) {
+          return json(env, 502, { error: 'clerk_delete_failed', data_deleted: true }, request);
+        }
+        return json(env, 200, { ok: true, sessions_deleted: result && result.sessions_deleted }, request);
+      }
+
+      const badgeAddMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/badges$/);
+      if (badgeAddMatch && request.method === 'POST') {
+        const profile = await fetchProfileByPublicId(env, badgeAddMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        const body = await readJson(request);
+        const badge = String(body.badge || '').trim();
+        if (!BADGE_IDS.includes(badge)) return json(env, 400, { error: 'invalid_badge' }, request);
+        const where = `user_badges?user_id=eq.${encodeURIComponent(profile.user_id)}&badge=eq.${badge}`;
+        const existing = await supabaseRest<Record<string, unknown>[]>(env, `${where}&select=badge,revoked_at&limit=1`);
+        if (Array.isArray(existing) && existing[0]) {
+          // Re-grant keeps the original source so auto signup slots stay counted;
+          // clearing notified_at shows the "new badge" notice again.
+          await supabaseRest(env, where, {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ revoked_at: null, notified_at: null }),
+          });
+        } else {
+          await supabaseRest(env, 'user_badges', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ user_id: profile.user_id, badge, source: 'manual' }),
+          });
+        }
+        await writeAudit(env, effectiveAdminId, 'badge_add', profile.user_id, {
+          public_id: profile.public_id,
+          badge,
+        });
+        return json(env, 200, { ok: true, badges: await userBadges(env, profile.user_id) }, request);
+      }
+
+      const badgeRemoveMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/badges\/([a-z0-9_]{1,40})$/);
+      if (badgeRemoveMatch && request.method === 'DELETE') {
+        const profile = await fetchProfileByPublicId(env, badgeRemoveMatch[1]);
+        if (!profile) return json(env, 404, { error: 'not_found' }, request);
+        const badge = badgeRemoveMatch[2];
+        if (!BADGE_IDS.includes(badge)) return json(env, 400, { error: 'invalid_badge' }, request);
+        // Revoke instead of delete so auto First 100 / First 1K rows keep their slot.
+        await supabaseRest(
+          env,
+          `user_badges?user_id=eq.${encodeURIComponent(profile.user_id)}&badge=eq.${badge}&revoked_at=is.null`,
+          {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ revoked_at: new Date().toISOString() }),
+          },
+        );
+        await writeAudit(env, effectiveAdminId, 'badge_remove', profile.user_id, {
+          public_id: profile.public_id,
+          badge,
+        });
+        return json(env, 200, { ok: true, badges: await userBadges(env, profile.user_id) }, request);
+      }
+
+      if (path === '/announcement' && request.method === 'GET') {
+        return json(env, 200, { ok: true, announcement: await activeAnnouncement(env) }, request);
+      }
+
+      if (path === '/announcement' && request.method === 'POST') {
+        const body = await readJson(request);
+        const message = String(body.message || '').replace(/\s+/g, ' ').trim();
+        if (!message || message.length > ANNOUNCEMENT_MAX_LENGTH) {
+          return json(env, 400, { error: 'invalid_message' }, request);
+        }
+        // A new row (new id) re-shows the box to visitors who closed the old one.
+        await supabaseRest(env, 'site_announcements?active=is.true', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ active: false, updated_at: new Date().toISOString() }),
+        });
+        const created = await supabaseRest<Record<string, unknown>[]>(env, 'site_announcements', {
+          method: 'POST',
+          body: JSON.stringify({ message, active: true, created_by: effectiveAdminId }),
+        });
+        const announcement = Array.isArray(created) ? created[0] : created;
+        await writeAudit(env, effectiveAdminId, 'announcement_publish', null, { message });
+        return json(env, 200, { ok: true, announcement }, request);
+      }
+
+      if (path === '/announcement' && request.method === 'DELETE') {
+        await supabaseRest(env, 'site_announcements?active=is.true', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ active: false, updated_at: new Date().toISOString() }),
+        });
+        await writeAudit(env, effectiveAdminId, 'announcement_remove', null, {});
+        return json(env, 200, { ok: true, announcement: null }, request);
       }
 
       const banMatch = path.match(/^\/users\/([A-Za-z0-9]{8})\/(ban|unban)$/);
