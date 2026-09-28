@@ -1541,8 +1541,10 @@ export class MultiplayerHub implements DurableObject {
       : (fs?.displaySeconds != null
         ? Math.max(displaySeconds / 60, 2 / 60)
         : Math.max(displaySeconds / 60, 1 / 120));
-    const exactWpm = (validChars / 5) / elapsedMinutes;
-    const exactRawWpm = (rawChars / 5) / elapsedMinutes;
+    // Unfinished leavers have no end time, so elapsedMinutes collapses to the floor.
+    const leftUnfinished = player.status === 'left' && !player.finishedAt;
+    const exactWpm = leftUnfinished ? 0 : (validChars / 5) / elapsedMinutes;
+    const exactRawWpm = leftUnfinished ? 0 : (rawChars / 5) / elapsedMinutes;
     const accuracy = rawChars > 0
       ? Math.max(0, ((rawChars - errorsMade) / rawChars) * 100)
       : 100;
