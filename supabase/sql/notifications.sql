@@ -3,6 +3,10 @@
 alter table public.profiles
   add column if not exists last_seen_at timestamptz;
 
+-- Never cleared (go_offline nulls last_seen_at); admin "last online".
+alter table public.profiles
+  add column if not exists last_active_at timestamptz;
+
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id text not null references public.profiles(user_id) on delete cascade,
@@ -108,7 +112,7 @@ begin
   end if;
 
   update public.profiles
-  set last_seen_at = now(), updated_at = now()
+  set last_seen_at = now(), last_active_at = now(), updated_at = now()
   where user_id = v_me;
 end;
 $$;

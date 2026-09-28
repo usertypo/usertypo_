@@ -121,6 +121,7 @@ async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminPro
     avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
     country_code: row.country_code != null ? String(row.country_code) : null,
     last_seen_at: row.last_seen_at != null ? String(row.last_seen_at) : null,
+    last_active_at: row.last_active_at != null ? String(row.last_active_at) : null,
     is_banned: row.is_banned === true,
     banned_at: row.banned_at != null ? String(row.banned_at) : null,
     banned_reason: row.banned_reason != null ? String(row.banned_reason) : null,
@@ -129,7 +130,7 @@ async function mapProfileRows(rows: Record<string, unknown>[]): Promise<AdminPro
 }
 
 const PROFILE_LIST_SELECT =
-  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
+  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,last_active_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
 
 const COUNTRY_CODE_RE = /^[A-Z]{2}$/;
 
@@ -190,7 +191,7 @@ async function listUsers(
     env,
     `profiles?select=${PROFILE_LIST_SELECT}`
       + filter
-      + `&order=last_seen_at.desc.nullslast&order=username.asc`
+      + `&order=last_active_at.desc.nullslast&order=username.asc`
       + `&limit=${take + 1}&offset=${from}`,
   );
   const list = Array.isArray(rows) ? rows : [];

@@ -487,6 +487,13 @@
         return Math.floor(diff / 86400000) + 'd ago';
     }
 
+    /** Same 45s window friends use for "online"; last_seen_at is cleared when the tab closes. */
+    function lastOnline(u) {
+        var live = u && u.last_seen_at ? new Date(u.last_seen_at).getTime() : NaN;
+        if (Number.isFinite(live) && Date.now() - live < 45000) return 'online now';
+        return relativeTime((u && (u.last_active_at || u.last_seen_at)) || null);
+    }
+
     async function loadOverview() {
         var status = $('admin-overview-status');
         try {
@@ -516,7 +523,7 @@
                 '<div><div class="admin-row-title">' + name + ban + '</div>' +
                 '<div class="admin-row-meta">' + esc(u.public_id) +
                 (u.country_code ? ' · ' + esc(u.country_code) : '') +
-                ' · last ' + esc(relativeTime(u.last_seen_at)) +
+                ' · last online ' + esc(lastOnline(u)) +
                 '</div></div></button>'
             );
         }).join('');
@@ -1073,7 +1080,7 @@
                 '<div class="admin-detail-grid">' +
                 '<div><div class="admin-kv-label">Email</div><div class="admin-kv-value">' + emailHtml + '</div></div>' +
                 '<div><div class="admin-kv-label">Country</div><div class="admin-kv-value">' + esc(u.country_code || '—') + '</div></div>' +
-                '<div><div class="admin-kv-label">Last active</div><div class="admin-kv-value">' + esc(relativeTime(u.last_seen_at)) + '</div></div>' +
+                '<div><div class="admin-kv-label">Last online</div><div class="admin-kv-value">' + esc(lastOnline(u)) + '</div></div>' +
                 '<div><div class="admin-kv-label">Avg site visit</div><div class="admin-kv-value">' + esc(api.formatDuration(data.avg_visit_seconds || 0)) + '</div></div>' +
                 '<div><div class="admin-kv-label">Level / XP</div><div class="admin-kv-value">' + esc(prog.level || '—') + ' · ' + esc(prog.total_xp != null ? prog.total_xp : '—') + '</div></div>' +
                 '<div><div class="admin-kv-label">Leaderboard</div><div class="admin-kv-value">' + (u.show_on_leaderboard === false ? 'hidden' : 'visible') + '</div></div>' +
