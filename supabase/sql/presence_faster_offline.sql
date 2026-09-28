@@ -13,7 +13,7 @@ begin
   end if;
 
   update public.profiles
-  set last_seen_at = null, updated_at = now()
+  set last_seen_at = null, last_active_at = now(), updated_at = now()
   where user_id = v_me;
 end;
 $$;
