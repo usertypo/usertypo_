@@ -177,8 +177,8 @@
         color: #fca5a5;
     }
     .admin-sessions {
-        margin-top: 1rem;
-        max-height: 14rem;
+        margin-top: 0.75rem;
+        max-height: 30rem;
         overflow: auto;
         font-size: 0.75rem;
         font-family: ui-monospace, monospace;
@@ -188,7 +188,107 @@
         text-align: left;
         padding: 0.35rem 0.4rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        white-space: nowrap;
     }
+    .admin-sessions thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(15, 23, 42, 0.95);
+        z-index: 1;
+    }
+    .admin-section-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--theme-text-muted, #94a3b8);
+        margin: 1.25rem 0 0.5rem;
+    }
+    .admin-filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+        gap: 0.45rem;
+        align-items: end;
+    }
+    .admin-filter-row label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--theme-text-muted, #94a3b8);
+    }
+    .admin-select {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.6rem;
+        padding: 0.4rem 0.55rem;
+        color: inherit;
+        font-size: 0.8rem;
+        text-transform: none;
+        letter-spacing: normal;
+        outline: none;
+    }
+    .admin-select:focus { border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.55); }
+    .admin-select option { background: #0f172a; color: #e2e8f0; }
+    .admin-chip {
+        display: inline-block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 0.05rem 0.4rem;
+        border-radius: 9999px;
+        margin-right: 0.2rem;
+        background: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.15);
+        color: var(--theme-text, #e2e8f0);
+    }
+    .admin-chip.pb { background: rgba(250, 204, 21, 0.18); color: #fde68a; }
+    .admin-chip.fail { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+    .admin-pager {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.6rem;
+    }
+    .admin-ubadges {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .admin-ubadge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.3rem 0.2rem 0.35rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.2);
+        font-size: 0.75rem;
+    }
+    .admin-ubadge button {
+        display: inline-flex;
+        border: 0;
+        background: transparent;
+        color: var(--theme-text-muted, #94a3b8);
+        cursor: pointer;
+        padding: 0;
+    }
+    .admin-ubadge button:hover { color: #f87171; }
+    .admin-textarea {
+        width: 100%;
+        min-height: 4.5rem;
+        resize: vertical;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem;
+        padding: 0.55rem 0.85rem;
+        color: inherit;
+        font-size: 0.875rem;
+        font-family: inherit;
+        outline: none;
+    }
+    .admin-textarea:focus { border-color: rgba(var(--theme-primary-rgb, 99, 102, 241), 0.55); }
     .admin-denied {
         padding: 3rem 1rem;
         text-align: center;
@@ -270,6 +370,25 @@
         </div>
         <p class="admin-muted" id="admin-overview-status">Loading analytics…</p>
 
+        <div class="admin-country-panel" id="admin-announcement-panel">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="admin-row-title text-base">Site announcement</h2>
+                    <p class="admin-muted mt-1" style="font-size:0.72rem;">Shows a box to everyone on the site, including people already on a page (within about a minute).</p>
+                </div>
+            </div>
+            <p class="admin-muted mb-2" id="admin-announcement-status">Loading…</p>
+            <textarea id="admin-announcement-input" class="admin-textarea" maxlength="500" placeholder="e.g. Maintenance tonight at 10 PM IST — multiplayer may be down for 15 minutes."></textarea>
+            <div class="admin-pager">
+                <button type="button" class="admin-btn" id="admin-announcement-publish">
+                    <span class="material-symbols-outlined text-[1rem]">campaign</span> Publish
+                </button>
+                <button type="button" class="admin-btn danger hidden" id="admin-announcement-remove">Remove</button>
+                <span class="admin-muted" id="admin-announcement-count" style="font-size:0.72rem;">0 / 500</span>
+            </div>
+            <p class="admin-error hidden" id="admin-announcement-error"></p>
+        </div>
+
         <div class="admin-country-panel" id="admin-country-panel">
             <div class="flex items-start justify-between gap-3 mb-4">
                 <div>
@@ -334,6 +453,12 @@
     var userListToken = 0;
     var countryData = null; // { items: [{ code, users }], topCodes: [] }
     var countryFilter = null; // { country: 'IN' } or { country: 'OTHER', exclude: [...] }
+    var selectedUser = null; // profile of the open user
+    var sessionFacets = null; // { total, languages, time_amounts, word_amounts }
+    var sessionOffset = 0;
+    var sessionToken = 0;
+    var SESSION_PAGE_SIZE = 50;
+    var ANNOUNCEMENT_MAX = 500;
 
     function $(id) { return document.getElementById(id); }
 
@@ -726,23 +851,198 @@
         }
     }
 
-    function renderSessions(sessions) {
-        if (!sessions || !sessions.length) return '<p class="admin-muted">No recent typing sessions.</p>';
+    function languageName(code) {
+        var key = String(code || '');
+        try {
+            if (typeof ALL_LANGUAGES !== 'undefined' && Array.isArray(ALL_LANGUAGES)) {
+                for (var i = 0; i < ALL_LANGUAGES.length; i++) {
+                    if (ALL_LANGUAGES[i].file === key) return ALL_LANGUAGES[i].name;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return key.replace(/_/g, ' ') || '—';
+    }
+
+    function formatNum(value, digits) {
+        var n = Number(value);
+        if (!isFinite(n)) return '—';
+        return digits ? n.toFixed(digits) : String(Math.round(n));
+    }
+
+    function badgeDefs() {
+        var b = window.usertypoBadges;
+        return {
+            order: (b && b.ORDER) || [],
+            name: function (id) {
+                return (b && b.DEFS && b.DEFS[id] && b.DEFS[id].name) || id;
+            },
+            art: function (id) {
+                return b && typeof b.renderOne === 'function' ? b.renderOne(id, { size: 'sm', tip: false }) : '';
+            },
+        };
+    }
+
+    function renderBadges(badges) {
+        var host = $('admin-user-badges');
+        if (!host) return;
+        var defs = badgeDefs();
+        var have = (badges || []).slice().sort(function (a, b) {
+            return defs.order.indexOf(a) - defs.order.indexOf(b);
+        });
+        var chips = have.map(function (id) {
+            return '<span class="admin-ubadge">' + defs.art(id) + esc(defs.name(id)) +
+                '<button type="button" data-action="remove-badge" data-badge="' + esc(id) + '" ' +
+                'title="Remove ' + esc(defs.name(id)) + '" aria-label="Remove ' + esc(defs.name(id)) + '">' +
+                '<span class="material-symbols-outlined text-[1rem]">close</span></button></span>';
+        }).join('');
+        var missing = defs.order.filter(function (id) { return have.indexOf(id) < 0; });
+        var picker = missing.length
+            ? '<select class="admin-select" id="admin-badge-pick" aria-label="Badge to add">' +
+                missing.map(function (id) {
+                    return '<option value="' + esc(id) + '">' + esc(defs.name(id)) + '</option>';
+                }).join('') +
+              '</select>' +
+              '<button type="button" class="admin-btn" data-action="add-badge">' +
+              '<span class="material-symbols-outlined text-[1rem]">add</span> Add badge</button>'
+            : '';
+        host.innerHTML = '<div class="admin-ubadges">' +
+            (chips || '<span class="admin-muted">No badges.</span>') +
+            picker + '</div>';
+    }
+
+    function filterSelect(id, label, options) {
+        return '<label>' + esc(label) +
+            '<select class="admin-select" id="' + id + '" data-session-filter="1">' +
+            options.map(function (o) {
+                return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
+            }).join('') +
+            '</select></label>';
+    }
+
+    function renderSessionFilters() {
+        var toggle = [['', 'Any'], ['on', 'On'], ['off', 'Off']];
+        var langs = (sessionFacets && sessionFacets.languages) || [];
+        return '<div class="admin-filter-row">' +
+            filterSelect('admin-sf-mode', 'Mode', [['', 'Any'], ['time', 'Time'], ['words', 'Words']]) +
+            filterSelect('admin-sf-amount', 'Amount', [['', 'Any']]) +
+            filterSelect('admin-sf-language', 'Language', [['', 'Any']].concat(langs.map(function (l) {
+                return [l, languageName(l)];
+            }))) +
+            filterSelect('admin-sf-punctuation', 'Punctuation', toggle) +
+            filterSelect('admin-sf-numbers', 'Numbers', toggle) +
+            filterSelect('admin-sf-adapt', 'Adapt & refine', toggle) +
+            '<button type="button" class="admin-btn ghost" data-action="sessions-reset" style="justify-self:start;">' +
+            '<span class="material-symbols-outlined text-[1rem]">restart_alt</span> Reset</button>' +
+            '</div>';
+    }
+
+    /** Amount options follow the chosen mode (only amounts this user actually played). */
+    function updateAmountOptions() {
+        var select = $('admin-sf-amount');
+        if (!select) return;
+        var mode = ($('admin-sf-mode') && $('admin-sf-mode').value) || '';
+        var f = sessionFacets || {};
+        var amounts;
+        if (mode === 'time') amounts = f.time_amounts || [];
+        else if (mode === 'words') amounts = f.word_amounts || [];
+        else {
+            amounts = (f.time_amounts || []).concat(f.word_amounts || [])
+                .filter(function (v, i, arr) { return arr.indexOf(v) === i; })
+                .sort(function (a, b) { return a - b; });
+        }
+        var current = select.value;
+        var suffix = mode === 'time' ? 's' : '';
+        select.innerHTML = '<option value="">Any</option>' + amounts.map(function (a) {
+            return '<option value="' + esc(a) + '">' + esc(a) + suffix + '</option>';
+        }).join('');
+        if (amounts.map(String).indexOf(current) >= 0) select.value = current;
+    }
+
+    function readSessionFilters() {
+        function val(id) { return ($(id) && $(id).value) || ''; }
+        return {
+            mode: val('admin-sf-mode'),
+            amount: val('admin-sf-amount'),
+            language: val('admin-sf-language'),
+            punctuation: val('admin-sf-punctuation'),
+            numbers: val('admin-sf-numbers'),
+            adapt_refine: val('admin-sf-adapt'),
+        };
+    }
+
+    function resetSessionFilters() {
+        ['admin-sf-mode', 'admin-sf-amount', 'admin-sf-language', 'admin-sf-punctuation', 'admin-sf-numbers', 'admin-sf-adapt']
+            .forEach(function (id) { if ($(id)) $(id).value = ''; });
+        updateAmountOptions();
+    }
+
+    function renderSessionRows(sessions) {
+        if (!sessions || !sessions.length) return '<p class="admin-muted">No tests match these filters.</p>';
         var rows = sessions.map(function (s) {
             var id = esc(s.id || '');
+            var unit = s.mode === 'time' ? 's' : ' words';
+            var opts = '';
+            if (s.punctuation) opts += '<span class="admin-chip">punctuation</span>';
+            if (s.numbers) opts += '<span class="admin-chip">numbers</span>';
+            if (s.adapt_refine) opts += '<span class="admin-chip">adapt &amp; refine</span>';
+            var flags = '';
+            if (s.is_pb) flags += '<span class="admin-chip pb">PB</span>';
+            if (s.failed) flags += '<span class="admin-chip fail" title="' + esc(s.fail_reason || '') + '">failed</span>';
             return '<tr data-session-id="' + id + '">' +
-                '<td>' + esc(s.created_at || '').slice(0, 19).replace('T', ' ') + '</td>' +
-                '<td>' + esc(s.wpm) + ' wpm</td>' +
-                '<td>' + esc(s.accuracy) + '%</td>' +
-                '<td>' + esc(s.mode) + ' ' + esc(s.amount) + '</td>' +
+                '<td>' + esc(String(s.created_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
+                '<td>' + esc(formatNum(s.wpm, 2)) + '</td>' +
+                '<td>' + esc(formatNum(s.raw_wpm, 2)) + '</td>' +
+                '<td>' + esc(formatNum(s.accuracy, 1)) + '%</td>' +
+                '<td>' + esc(s.mode) + ' ' + esc(s.amount) + esc(unit) + '</td>' +
+                '<td>' + esc(languageName(s.language)) + '</td>' +
+                '<td>' + (opts || '<span class="admin-muted" style="font-size:0.7rem;">—</span>') + '</td>' +
+                '<td>' + flags + '</td>' +
                 '<td style="width:2.5rem;text-align:right;">' +
                 '<button type="button" class="admin-btn ghost" data-action="delete-session" data-session-id="' + id + '" ' +
                 'title="Delete this test" aria-label="Delete this test" style="padding:0.25rem 0.4rem;">' +
                 '<span class="material-symbols-outlined text-[1rem]" style="color:#f87171;">delete</span>' +
                 '</button></td></tr>';
         }).join('');
-        return '<div class="admin-sessions"><table><thead><tr><th>When</th><th>WPM</th><th>Acc</th><th>Mode</th><th></th></tr></thead><tbody>' +
-            rows + '</tbody></table></div>';
+        return '<div class="admin-sessions"><table><thead><tr>' +
+            '<th>When</th><th>WPM</th><th>Raw</th><th>Acc</th><th>Mode</th><th>Language</th><th>Options</th><th></th><th></th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    async function loadSessions(offset) {
+        if (!selectedPublicId) return;
+        var wrap = $('admin-sessions-wrap');
+        var meta = $('admin-sessions-meta');
+        var prev = $('admin-sessions-prev');
+        var next = $('admin-sessions-next');
+        if (!wrap) return;
+        var token = ++sessionToken;
+        var from = Math.max(0, offset || 0);
+        if (prev) prev.disabled = true;
+        if (next) next.disabled = true;
+        if (meta) meta.textContent = 'Loading…';
+        try {
+            var data = await api.listSessions(selectedPublicId, from, readSessionFilters());
+            if (token !== sessionToken) return;
+            var sessions = data.sessions || [];
+            if (!sessions.length && from > 0) {
+                loadSessions(Math.max(0, from - SESSION_PAGE_SIZE));
+                return;
+            }
+            sessionOffset = from;
+            wrap.innerHTML = renderSessionRows(sessions);
+            if (meta) {
+                var total = data.total != null ? Number(data.total) : null;
+                meta.textContent = sessions.length
+                    ? 'Showing ' + (from + 1) + '–' + (from + sessions.length) + (total != null ? ' of ' + total.toLocaleString() : '')
+                    : (total === 0 ? '0 tests' : '');
+            }
+            if (prev) prev.disabled = from <= 0;
+            if (next) next.disabled = !data.has_more;
+        } catch (e) {
+            if (token !== sessionToken) return;
+            wrap.innerHTML = '<p class="admin-error">' + esc(e.message || 'Could not load tests') + '</p>';
+            if (meta) meta.textContent = '';
+        }
     }
 
     async function openUser(publicId) {
@@ -757,12 +1057,21 @@
             var data = await api.getUser(publicId);
             var u = data.user || {};
             var prog = data.progression || {};
+            selectedUser = u;
+            sessionFacets = data.session_facets || null;
+            sessionOffset = 0;
             var banBadge = u.is_banned ? ' <span class="admin-badge">banned</span>' : '';
+            var emailHtml = data.email
+                ? '<a href="mailto:' + esc(data.email) + '" style="color:inherit;">' + esc(data.email) + '</a>' +
+                  (data.email_verified ? '' : ' <span class="admin-muted" style="font-size:0.7rem;">(unverified)</span>')
+                : '—';
+            var isAdminUser = api.isAdminPublicId(u.public_id);
             detail.innerHTML =
                 '<div class="flex items-center justify-between gap-2 flex-wrap">' +
                 '<div><div class="admin-row-title text-lg">' + esc(u.username || u.display_name || u.public_id) + banBadge + '</div>' +
                 '<div class="admin-row-meta">' + esc(u.public_id) + '</div></div></div>' +
                 '<div class="admin-detail-grid">' +
+                '<div><div class="admin-kv-label">Email</div><div class="admin-kv-value">' + emailHtml + '</div></div>' +
                 '<div><div class="admin-kv-label">Country</div><div class="admin-kv-value">' + esc(u.country_code || '—') + '</div></div>' +
                 '<div><div class="admin-kv-label">Last active</div><div class="admin-kv-value">' + esc(relativeTime(u.last_seen_at)) + '</div></div>' +
                 '<div><div class="admin-kv-label">Avg site visit</div><div class="admin-kv-value">' + esc(api.formatDuration(data.avg_visit_seconds || 0)) + '</div></div>' +
@@ -778,8 +1087,26 @@
                 '<button type="button" class="admin-btn" data-action="set-username">Change username</button>' +
                 '<button type="button" class="admin-btn" data-action="reset-token">One-time sign-in</button>' +
                 '<button type="button" class="admin-btn" data-action="impersonate"><span class="material-symbols-outlined text-[1rem]">switch_account</span> Log in as user</button>' +
+                (isAdminUser ? '' :
+                    '<button type="button" class="admin-btn danger" data-action="delete-account"><span class="material-symbols-outlined text-[1rem]">person_remove</span> Delete account</button>') +
                 '</div>' +
-                renderSessions(data.recent_sessions);
+                '<div class="admin-section-title">Badges</div>' +
+                '<div id="admin-user-badges"></div>' +
+                '<div class="admin-section-title">Tests' +
+                (sessionFacets && sessionFacets.total != null ? ' · ' + esc(Number(sessionFacets.total).toLocaleString()) + ' total' : '') +
+                '</div>' +
+                renderSessionFilters() +
+                '<div id="admin-sessions-wrap"><p class="admin-muted">Loading…</p></div>' +
+                '<div class="admin-pager">' +
+                '<button type="button" class="admin-btn ghost" id="admin-sessions-prev" data-action="sessions-prev" disabled>' +
+                '<span class="material-symbols-outlined text-[1rem]">chevron_left</span> Previous 50</button>' +
+                '<button type="button" class="admin-btn ghost" id="admin-sessions-next" data-action="sessions-next" disabled>' +
+                'Next 50 <span class="material-symbols-outlined text-[1rem]">chevron_right</span></button>' +
+                '<span class="admin-muted" id="admin-sessions-meta" style="font-size:0.75rem;"></span>' +
+                '</div>';
+            renderBadges(data.badges || []);
+            updateAmountOptions();
+            loadSessions(0);
         } catch (e) {
             detail.innerHTML = '';
             detail.classList.add('hidden');
@@ -793,8 +1120,66 @@
     async function runUserAction(action, el) {
         if (!selectedPublicId || !api) return;
         var err = $('admin-user-error');
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
         try {
-            if (action === 'ban') {
+            if (action === 'sessions-prev') {
+                loadSessions(Math.max(0, sessionOffset - SESSION_PAGE_SIZE));
+                return;
+            } else if (action === 'sessions-next') {
+                loadSessions(sessionOffset + SESSION_PAGE_SIZE);
+                return;
+            } else if (action === 'sessions-reset') {
+                resetSessionFilters();
+                loadSessions(0);
+                return;
+            } else if (action === 'add-badge') {
+                var pick = $('admin-badge-pick');
+                var badge = pick && pick.value;
+                if (!badge) return;
+                var added = await api.addBadge(selectedPublicId, badge);
+                renderBadges(added.badges || []);
+                if (selectedUser && window.usertypoBadges) window.usertypoBadges.invalidate(selectedUser.user_id);
+                return;
+            } else if (action === 'remove-badge') {
+                var removeId = el && el.getAttribute('data-badge');
+                if (!removeId) return;
+                var removeOk = await api.confirm(
+                    'Remove the ' + badgeDefs().name(removeId) + ' badge from this user?',
+                    { title: 'Remove badge', icon: 'military_tech', okLabel: 'Remove' }
+                );
+                if (!removeOk) return;
+                var removed = await api.removeBadge(selectedPublicId, removeId);
+                renderBadges(removed.badges || []);
+                if (selectedUser && window.usertypoBadges) window.usertypoBadges.invalidate(selectedUser.user_id);
+                return;
+            } else if (action === 'delete-account') {
+                var u = selectedUser || {};
+                var typed = await api.prompt(
+                    'This permanently deletes ' + (u.username || u.public_id) + '\u2019s account: sign-in, profile, all tests, XP, friends and learn progress. ' +
+                    'It cannot be undone. Type their public ID (' + selectedPublicId + ') to confirm.',
+                    { title: 'Delete account', icon: 'person_remove', okLabel: 'Delete forever', value: '' }
+                );
+                if (typed == null) return;
+                if (String(typed).trim().toUpperCase() !== String(selectedPublicId).toUpperCase()) {
+                    throw new Error('Public ID did not match — account not deleted.');
+                }
+                try {
+                    await api.deleteAccount(selectedPublicId);
+                } catch (delErr) {
+                    if (delErr && delErr.data && delErr.data.data_deleted) {
+                        throw new Error('App data was deleted, but removing the sign-in account failed. Try Delete account again.');
+                    }
+                    throw delErr;
+                }
+                var row = document.querySelector('#admin-user-results [data-public-id="' + selectedPublicId + '"]');
+                if (row) row.remove();
+                var detailEl = $('admin-user-detail');
+                if (detailEl) { detailEl.classList.add('hidden'); detailEl.innerHTML = ''; }
+                selectedPublicId = null;
+                selectedUser = null;
+                loadOverview();
+                return;
+            } else if (action === 'ban') {
                 var reason = await api.prompt('Ban reason for this account:', {
                     title: 'Ban user',
                     icon: 'block',
@@ -828,12 +1213,11 @@
                 });
                 if (!delOk) return;
                 await api.deleteSession(selectedPublicId, sessionId);
+                if (sessionFacets && sessionFacets.total) sessionFacets.total -= 1;
+                loadSessions(sessionOffset);
+                return;
             } else if (action === 'set-username') {
-                var currentName = '';
-                try {
-                    var titleEl = $('admin-user-detail') && $('admin-user-detail').querySelector('.admin-row-title');
-                    currentName = titleEl ? String(titleEl.textContent || '').replace(/\s*banned\s*$/i, '').trim() : '';
-                } catch (e) { /* ignore */ }
+                var currentName = (selectedUser && (selectedUser.username || selectedUser.display_name)) || '';
                 var next = await api.prompt('New username (3–32 characters):', {
                     title: 'Change username',
                     icon: 'edit',
@@ -937,6 +1321,100 @@
                 if (!btn) return;
                 runUserAction(btn.getAttribute('data-action'), btn);
             });
+            detail.addEventListener('change', function (e) {
+                var select = e.target.closest('[data-session-filter]');
+                if (!select) return;
+                if (select.id === 'admin-sf-mode') updateAmountOptions();
+                loadSessions(0);
+            });
+        }
+
+        var annInput = $('admin-announcement-input');
+        if (annInput) annInput.addEventListener('input', updateAnnouncementCount);
+        var annPublish = $('admin-announcement-publish');
+        if (annPublish) annPublish.addEventListener('click', publishAnnouncement);
+        var annRemove = $('admin-announcement-remove');
+        if (annRemove) annRemove.addEventListener('click', removeAnnouncement);
+    }
+
+    function updateAnnouncementCount() {
+        var input = $('admin-announcement-input');
+        var count = $('admin-announcement-count');
+        if (input && count) count.textContent = String(input.value.length) + ' / ' + ANNOUNCEMENT_MAX;
+    }
+
+    function renderAnnouncement(announcement) {
+        var status = $('admin-announcement-status');
+        var removeBtn = $('admin-announcement-remove');
+        var publishBtn = $('admin-announcement-publish');
+        var live = announcement && announcement.message;
+        if (status) {
+            status.textContent = live
+                ? 'Live since ' + relativeTime(announcement.updated_at || announcement.created_at) + ': \u201c' + announcement.message + '\u201d'
+                : 'No announcement is showing.';
+        }
+        if (removeBtn) removeBtn.classList.toggle('hidden', !live);
+        if (publishBtn) {
+            publishBtn.innerHTML = '<span class="material-symbols-outlined text-[1rem]">campaign</span> ' + (live ? 'Replace' : 'Publish');
+        }
+    }
+
+    function showAnnouncementError(message) {
+        var errEl = $('admin-announcement-error');
+        if (!errEl) return;
+        errEl.textContent = message || '';
+        errEl.classList.toggle('hidden', !message);
+    }
+
+    async function loadAnnouncement() {
+        try {
+            var data = await api.getAnnouncement();
+            renderAnnouncement(data.announcement);
+        } catch (e) {
+            var status = $('admin-announcement-status');
+            if (status) status.textContent = 'Could not load announcement: ' + (e.message || e);
+        }
+    }
+
+    async function publishAnnouncement() {
+        var input = $('admin-announcement-input');
+        var message = input ? String(input.value || '').trim() : '';
+        showAnnouncementError('');
+        if (!message) {
+            showAnnouncementError('Write a message first.');
+            return;
+        }
+        var ok = await api.confirm('Show this message to everyone on the site?\n\n\u201c' + message + '\u201d', {
+            title: 'Publish announcement',
+            icon: 'campaign',
+            okLabel: 'Publish',
+        });
+        if (!ok) return;
+        try {
+            var data = await api.publishAnnouncement(message);
+            if (input) input.value = '';
+            updateAnnouncementCount();
+            renderAnnouncement(data.announcement);
+            if (window.usertypoAnnouncement) window.usertypoAnnouncement.refresh();
+        } catch (e) {
+            showAnnouncementError(e.message || 'Could not publish');
+        }
+    }
+
+    async function removeAnnouncement() {
+        showAnnouncementError('');
+        var ok = await api.confirm('Remove the announcement for everyone?', {
+            title: 'Remove announcement',
+            icon: 'campaign',
+            okLabel: 'Remove',
+        });
+        if (!ok) return;
+        try {
+            await api.removeAnnouncement();
+            renderAnnouncement(null);
+            if (window.usertypoAnnouncement) window.usertypoAnnouncement.refresh();
+        } catch (e) {
+            showAnnouncementError(e.message || 'Could not remove');
         }
     }
 
@@ -967,6 +1445,7 @@
         showApp();
         wire();
         loadOverview();
+        loadAnnouncement();
         loadCountries();
         loadUserPage({ reset: true });
     }

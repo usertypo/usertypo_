@@ -366,6 +366,54 @@
         });
     }
 
+    /** `filters` keys: mode, amount, language, punctuation, numbers, adapt_refine ('on' | 'off'). */
+    async function listSessions(publicId, offset, filters) {
+        var qs = 'offset=' + Math.max(0, Number(offset) || 0);
+        var f = filters || {};
+        ['mode', 'amount', 'language', 'punctuation', 'numbers', 'adapt_refine'].forEach(function (key) {
+            var value = f[key];
+            if (value != null && String(value) !== '') qs += '&' + key + '=' + encodeURIComponent(String(value));
+        });
+        return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/sessions?' + qs);
+    }
+
+    async function deleteAccount(publicId) {
+        var id = normalizePublicId(publicId);
+        return workerFetch('/users/' + encodeURIComponent(id), {
+            method: 'DELETE',
+            body: JSON.stringify({ confirm_public_id: id }),
+        });
+    }
+
+    async function addBadge(publicId, badge) {
+        return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/badges', {
+            method: 'POST',
+            body: JSON.stringify({ badge: badge }),
+        });
+    }
+
+    async function removeBadge(publicId, badge) {
+        return workerFetch(
+            '/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/badges/' + encodeURIComponent(badge),
+            { method: 'DELETE' },
+        );
+    }
+
+    async function getAnnouncement() {
+        return workerFetch('/announcement');
+    }
+
+    async function publishAnnouncement(message) {
+        return workerFetch('/announcement', {
+            method: 'POST',
+            body: JSON.stringify({ message: message || '' }),
+        });
+    }
+
+    async function removeAnnouncement() {
+        return workerFetch('/announcement', { method: 'DELETE' });
+    }
+
     async function listReports(status) {
         var st = encodeURIComponent(status || 'open');
         return workerFetch('/reports?status=' + st);
@@ -669,6 +717,13 @@
         clearUsername: clearUsername,
         setUsername: setUsername,
         passwordResetToken: passwordResetToken,
+        listSessions: listSessions,
+        deleteAccount: deleteAccount,
+        addBadge: addBadge,
+        removeBadge: removeBadge,
+        getAnnouncement: getAnnouncement,
+        publishAnnouncement: publishAnnouncement,
+        removeAnnouncement: removeAnnouncement,
         listReports: listReports,
         updateReport: updateReport,
         createReport: createReport,
