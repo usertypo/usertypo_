@@ -109,6 +109,54 @@
         return token;
     }
 
+    /** Admin action password unlock, kept in memory only (10 minutes, per Worker). */
+    var stepUp = { token: null, expiresAt: 0 };
+
+    function stepUpError(data) {
+        var code = data && data.error;
+        if (code === 'step_up_locked') {
+            return new Error('Too many wrong passwords. Try again in ' + ((data && data.retry_after_minutes) || 15) + ' minutes.');
+        }
+        if (code === 'step_up_not_configured') {
+            return new Error('The admin action password has not been set up yet (run npm run admin:set-password).');
+        }
+        return null;
+    }
+
+    async function requestStepUp() {
+        var message = 'Enter the admin action password to continue.';
+        for (;;) {
+            var password = await adminPrompt(message, {
+                title: 'Admin password',
+                icon: 'lock',
+                okLabel: 'Unlock',
+                inputType: 'password',
+                trim: false,
+                requiredMessage: 'Enter the password.',
+            });
+            if (password == null) throw new Error('Cancelled: the admin password is required for this action.');
+            try {
+                var data = await workerFetch('/step-up', {
+                    method: 'POST',
+                    body: JSON.stringify({ password: password }),
+                    noStepUpRetry: true,
+                });
+                stepUp.token = data.token;
+                stepUp.expiresAt = Date.parse(data.expires_at) - 15000;
+                return;
+            } catch (e) {
+                var friendly = stepUpError(e && e.data);
+                if (friendly) throw friendly;
+                if (e && e.message === 'wrong_password') {
+                    var left = e.data && e.data.attempts_left;
+                    message = 'Wrong password.' + (left != null ? ' ' + left + (left === 1 ? ' attempt' : ' attempts') + ' left.' : '');
+                    continue;
+                }
+                throw e;
+            }
+        }
+    }
+
     async function workerFetch(path, options) {
         var base = adminWorkerUrl();
         if (!base) throw new Error('admin_worker_not_configured');
@@ -117,6 +165,7 @@
         if (!opts.skipAuth) {
             var token = await getClerkBearer();
             headers.Authorization = 'Bearer ' + token;
+            if (stepUp.token && Date.now() < stepUp.expiresAt) headers['X-Admin-Step-Up'] = stepUp.token;
         }
         if (opts.body != null && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
@@ -130,6 +179,13 @@
         var data = null;
         try { data = await res.json(); } catch (_) { data = null; }
         if (!res.ok) {
+            if (data && data.error === 'step_up_required' && !opts.noStepUpRetry) {
+                stepUp.token = null;
+                await requestStepUp();
+                return workerFetch(path, Object.assign({}, opts, { noStepUpRetry: true }));
+            }
+            var friendly = stepUpError(data);
+            if (friendly) throw friendly;
             var err = new Error((data && data.error) || ('admin_worker_' + res.status));
             err.status = res.status;
             err.data = data;
@@ -545,13 +601,17 @@
                 ok.removeEventListener('click', onOk);
                 cancel.removeEventListener('click', onCancel);
                 backdrop.removeEventListener('click', onCancel);
-                if (input) input.removeEventListener('keydown', onKey);
+                if (input) {
+                    input.removeEventListener('keydown', onKey);
+                    if (input.type === 'password') input.value = '';
+                }
                 resolve(value);
             }
             function onCancel() { close(null); }
             function onOk() {
                 if (type === 'prompt') {
-                    var val = input ? String(input.value || '').trim() : '';
+                    var raw = input ? String(input.value || '') : '';
+                    var val = options.trim === false ? raw : raw.trim();
                     if (options.required !== false && !val) {
                         if (error) {
                             error.textContent = options.requiredMessage || 'Please enter a value.';

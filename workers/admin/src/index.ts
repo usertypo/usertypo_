@@ -17,6 +17,16 @@ import {
   supabaseRpc,
   writeAudit,
 } from './auth';
+import {
+  STEP_UP_LOCKOUT_MINUTES,
+  STEP_UP_MAX_FAILURES,
+  issueStepUpToken,
+  recentStepUpFailures,
+  requiresStepUp,
+  stepUpConfigured,
+  verifyActionPassword,
+  verifyStepUpToken,
+} from './step-up';
 
 const DEFAULT_ORIGINS = [
   'https://usertypo.com',
@@ -61,7 +71,7 @@ function applyCors(env: Env, request: Request | undefined, headers: Record<strin
     headers['Vary'] = 'Origin';
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
-  headers['Access-Control-Allow-Headers'] = 'content-type, authorization';
+  headers['Access-Control-Allow-Headers'] = 'content-type, authorization, x-admin-step-up';
   headers['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
 }
 
@@ -553,6 +563,40 @@ export default {
 
       // ---- Admin-only below ----
       const { session, admin, effectiveAdminId } = await requireAdmin(env, request);
+
+      if (path === '/step-up' && request.method === 'POST') {
+        if (!stepUpConfigured(env)) {
+          return json(env, 503, { error: 'step_up_not_configured' }, request);
+        }
+        const failures = await recentStepUpFailures(env, effectiveAdminId);
+        if (failures >= STEP_UP_MAX_FAILURES) {
+          return json(env, 429, { error: 'step_up_locked', retry_after_minutes: STEP_UP_LOCKOUT_MINUTES }, request);
+        }
+        const body = await readJson(request);
+        const password = typeof body.password === 'string' ? body.password : '';
+        if (!password || password.length > 256 || !(await verifyActionPassword(env, password))) {
+          await writeAudit(env, effectiveAdminId, 'step_up_failed', null, {});
+          const attemptsLeft = Math.max(0, STEP_UP_MAX_FAILURES - failures - 1);
+          return json(env, 403, {
+            error: attemptsLeft > 0 ? 'wrong_password' : 'step_up_locked',
+            attempts_left: attemptsLeft,
+            retry_after_minutes: STEP_UP_LOCKOUT_MINUTES,
+          }, request);
+        }
+        await writeAudit(env, effectiveAdminId, 'step_up_ok', null, {});
+        const issued = await issueStepUpToken(env, effectiveAdminId);
+        return json(env, 200, { ok: true, ...issued }, request);
+      }
+
+      if (requiresStepUp(path, request.method)) {
+        if (!stepUpConfigured(env)) {
+          return json(env, 503, { error: 'step_up_not_configured' }, request);
+        }
+        const stepUpToken = request.headers.get('X-Admin-Step-Up') || '';
+        if (!(await verifyStepUpToken(env, effectiveAdminId, stepUpToken))) {
+          return json(env, 403, { error: 'step_up_required' }, request);
+        }
+      }
 
       if (path === '/me' && request.method === 'GET') {
         return json(env, 200, {

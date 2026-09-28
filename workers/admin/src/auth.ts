@@ -18,6 +18,8 @@ export interface Env {
   LEARN_PROGRESS?: KVNamespace;
   /** Friend notifications inbox (D1), cleared on account delete */
   NOTIFICATIONS_DB?: D1Database;
+  /** Worker secret: PBKDF2 hash of the admin action password (see step-up.ts) */
+  ADMIN_ACTION_PASSWORD_HASH?: string;
 }
 
 export type AdminProfile = {
