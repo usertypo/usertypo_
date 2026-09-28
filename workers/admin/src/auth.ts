@@ -14,6 +14,12 @@ export interface Env {
   SUPABASE_ANON_KEY?: string;
   /** Comma-separated profile public_ids allowed as admins */
   ADMIN_PUBLIC_IDS?: string;
+  /** learn.usertypo.com progress (KV), cleared on account delete */
+  LEARN_PROGRESS?: KVNamespace;
+  /** Friend notifications inbox (D1), cleared on account delete */
+  NOTIFICATIONS_DB?: D1Database;
+  /** Worker secret: PBKDF2 hash of the admin action password (see step-up.ts) */
+  ADMIN_ACTION_PASSWORD_HASH?: string;
 }
 
 export type AdminProfile = {
@@ -23,7 +29,10 @@ export type AdminProfile = {
   display_name: string | null;
   avatar_url: string | null;
   country_code: string | null;
+  /** Live presence: cleared when the tab closes. */
   last_seen_at: string | null;
+  /** Never cleared; the admin panel's "last online". */
+  last_active_at: string | null;
   is_banned: boolean;
   banned_at: string | null;
   banned_reason: string | null;
@@ -135,6 +144,27 @@ export async function supabaseRest<T = unknown>(
   return JSON.parse(text) as T;
 }
 
+/** GET rows plus the exact total from Content-Range (for paged lists). */
+export async function supabaseRestWithCount<T = unknown>(
+  env: Env,
+  pathAndQuery: string,
+): Promise<{ rows: T[]; total: number | null }> {
+  const url = `${supabaseBase(env)}/rest/v1/${pathAndQuery}`;
+  const headers = Object.assign({}, serviceHeaders(env), { Prefer: 'count=exact' });
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.warn('[admin] supabase', pathAndQuery, res.status, text.slice(0, 300));
+    throw new Error('supabase_error_' + res.status);
+  }
+  const match = (res.headers.get('content-range') || '').match(/\/(\d+)\s*$/);
+  const rows = await res.json().catch(() => []);
+  return {
+    rows: Array.isArray(rows) ? (rows as T[]) : [],
+    total: match ? Number(match[1]) : null,
+  };
+}
+
 export async function supabaseRpc<T = unknown>(
   env: Env,
   name: string,
@@ -165,6 +195,7 @@ function mapProfile(row: Record<string, unknown>): AdminProfile {
     avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
     country_code: row.country_code != null ? String(row.country_code) : null,
     last_seen_at: row.last_seen_at != null ? String(row.last_seen_at) : null,
+    last_active_at: row.last_active_at != null ? String(row.last_active_at) : null,
     is_banned: row.is_banned === true,
     banned_at: row.banned_at != null ? String(row.banned_at) : null,
     banned_reason: row.banned_reason != null ? String(row.banned_reason) : null,
@@ -173,7 +204,7 @@ function mapProfile(row: Record<string, unknown>): AdminProfile {
 }
 
 const PROFILE_SELECT =
-  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
+  'user_id,public_id,username,display_name,avatar_url,country_code,last_seen_at,last_active_at,is_banned,banned_at,banned_reason,show_on_leaderboard';
 
 export async function fetchProfileByUserId(env: Env, userId: string): Promise<AdminProfile | null> {
   const rows = await supabaseRest<Record<string, unknown>[]>(

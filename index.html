@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- SPA Shell: For direct URL access / refresh on any route, configure the server to serve this file for all paths. See _redirects. -->
 <html lang="en">
 
@@ -226,7 +226,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Roboto+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link href="css/tailwind.css?v=8" rel="stylesheet" />
-    <link href="css/global.css?v=41" rel="stylesheet" />
+    <link href="css/global.css?v=42" rel="stylesheet" />
     <link href="css/material-symbols.css?v=9" rel="stylesheet" />
     <link href="css/test-activity.css?v=8" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="css/test-activity.css?v=8" rel="stylesheet" /></noscript>
@@ -1399,6 +1399,16 @@
         </button>
     </div>
 
+    <div id="site-announcement" class="site-announcement hidden" role="status" aria-live="polite" aria-hidden="true">
+        <div class="site-announcement__card glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+            <span class="material-symbols-outlined site-announcement__icon" aria-hidden="true">campaign</span>
+            <p id="site-announcement-text" class="site-announcement__text"></p>
+            <button type="button" id="site-announcement-close" class="site-announcement__close" title="Dismiss" aria-label="Dismiss announcement">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+        </div>
+    </div>
+
     <div id="spa-content" class="flex-1 flex flex-col relative w-full min-h-0">
         <div id="spa-page-root" class="flex-1 flex flex-col relative w-full min-h-0"></div>
         <footer id="spa-shell-footer" class="px-8 py-4 flex justify-between items-center relative z-20 zen-element shrink-0 hidden gap-4">
@@ -1881,12 +1891,13 @@
     <script src="js/api/presence.js?v=2"></script>
     <script src="js/api/notifications.js?v=15"></script>
     <script src="js/api/friend-online-notify.js?v=3"></script>
-    <script src="js/api/admin.js?v=13"></script>
+    <script src="js/api/admin.js?v=16"></script>
     <script src="js/api/dwell.js?v=1"></script>
+    <script src="js/ui/announcement.js?v=1"></script>
     <!-- room-race / dual-race / performance-chart / avatar-editor load on demand via router. -->
     <script src="js/api/multiplayer.js?v=57"></script>
     <script src="dual.js?v=14"></script>
-    <script src="js/page-fragments.js?v=339"></script>
+    <script src="js/page-fragments.js?v=341"></script>
     <script src="js/page-scrollbar.js?v=2"></script>
     <script src="js/router.js?v=129"></script>
 

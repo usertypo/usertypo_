@@ -109,6 +109,45 @@
         return token;
     }
 
+    function stepUpError(data) {
+        var code = data && data.error;
+        if (code === 'step_up_locked') {
+            return new Error('Too many wrong passwords. Try again in ' + ((data && data.retry_after_minutes) || 15) + ' minutes.');
+        }
+        if (code === 'step_up_not_configured') {
+            return new Error('The admin action password has not been set up yet (run npm run admin:set-password).');
+        }
+        return null;
+    }
+
+    /** Protected actions: ask for the admin action password and resend with it (every time). */
+    async function workerFetchWithPassword(path, opts) {
+        var message = 'Enter the admin action password to continue.';
+        for (;;) {
+            var password = await adminPrompt(message, {
+                title: 'Admin password',
+                icon: 'lock',
+                okLabel: 'Continue',
+                inputType: 'password',
+                trim: false,
+                requiredMessage: 'Enter the password.',
+            });
+            if (password == null) throw new Error('Cancelled: the admin password is required for this action.');
+            try {
+                return await workerFetch(path, Object.assign({}, opts, { adminPassword: password }));
+            } catch (e) {
+                var friendly = stepUpError(e && e.data);
+                if (friendly) throw friendly;
+                if (e && e.message === 'wrong_password') {
+                    var left = e.data && e.data.attempts_left;
+                    message = 'Wrong password.' + (left != null ? ' ' + left + (left === 1 ? ' attempt' : ' attempts') + ' left.' : '');
+                    continue;
+                }
+                throw e;
+            }
+        }
+    }
+
     async function workerFetch(path, options) {
         var base = adminWorkerUrl();
         if (!base) throw new Error('admin_worker_not_configured');
@@ -117,6 +156,7 @@
         if (!opts.skipAuth) {
             var token = await getClerkBearer();
             headers.Authorization = 'Bearer ' + token;
+            if (opts.adminPassword) headers['X-Admin-Password'] = encodeURIComponent(opts.adminPassword);
         }
         if (opts.body != null && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
@@ -130,6 +170,11 @@
         var data = null;
         try { data = await res.json(); } catch (_) { data = null; }
         if (!res.ok) {
+            if (data && data.error === 'step_up_required' && !opts.adminPassword) {
+                return workerFetchWithPassword(path, opts);
+            }
+            var friendly = stepUpError(data);
+            if (friendly) throw friendly;
             var err = new Error((data && data.error) || ('admin_worker_' + res.status));
             err.status = res.status;
             err.data = data;
@@ -366,6 +411,54 @@
         });
     }
 
+    /** `filters` keys: mode, amount, language, punctuation, numbers, adapt_refine ('on' | 'off'). */
+    async function listSessions(publicId, offset, filters) {
+        var qs = 'offset=' + Math.max(0, Number(offset) || 0);
+        var f = filters || {};
+        ['mode', 'amount', 'language', 'punctuation', 'numbers', 'adapt_refine'].forEach(function (key) {
+            var value = f[key];
+            if (value != null && String(value) !== '') qs += '&' + key + '=' + encodeURIComponent(String(value));
+        });
+        return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/sessions?' + qs);
+    }
+
+    async function deleteAccount(publicId) {
+        var id = normalizePublicId(publicId);
+        return workerFetch('/users/' + encodeURIComponent(id), {
+            method: 'DELETE',
+            body: JSON.stringify({ confirm_public_id: id }),
+        });
+    }
+
+    async function addBadge(publicId, badge) {
+        return workerFetch('/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/badges', {
+            method: 'POST',
+            body: JSON.stringify({ badge: badge }),
+        });
+    }
+
+    async function removeBadge(publicId, badge) {
+        return workerFetch(
+            '/users/' + encodeURIComponent(normalizePublicId(publicId)) + '/badges/' + encodeURIComponent(badge),
+            { method: 'DELETE' },
+        );
+    }
+
+    async function getAnnouncement() {
+        return workerFetch('/announcement');
+    }
+
+    async function publishAnnouncement(message) {
+        return workerFetch('/announcement', {
+            method: 'POST',
+            body: JSON.stringify({ message: message || '' }),
+        });
+    }
+
+    async function removeAnnouncement() {
+        return workerFetch('/announcement', { method: 'DELETE' });
+    }
+
     async function listReports(status) {
         var st = encodeURIComponent(status || 'open');
         return workerFetch('/reports?status=' + st);
@@ -497,13 +590,17 @@
                 ok.removeEventListener('click', onOk);
                 cancel.removeEventListener('click', onCancel);
                 backdrop.removeEventListener('click', onCancel);
-                if (input) input.removeEventListener('keydown', onKey);
+                if (input) {
+                    input.removeEventListener('keydown', onKey);
+                    if (input.type === 'password') input.value = '';
+                }
                 resolve(value);
             }
             function onCancel() { close(null); }
             function onOk() {
                 if (type === 'prompt') {
-                    var val = input ? String(input.value || '').trim() : '';
+                    var raw = input ? String(input.value || '') : '';
+                    var val = options.trim === false ? raw : raw.trim();
                     if (options.required !== false && !val) {
                         if (error) {
                             error.textContent = options.requiredMessage || 'Please enter a value.';
@@ -669,6 +766,13 @@
         clearUsername: clearUsername,
         setUsername: setUsername,
         passwordResetToken: passwordResetToken,
+        listSessions: listSessions,
+        deleteAccount: deleteAccount,
+        addBadge: addBadge,
+        removeBadge: removeBadge,
+        getAnnouncement: getAnnouncement,
+        publishAnnouncement: publishAnnouncement,
+        removeAnnouncement: removeAnnouncement,
         listReports: listReports,
         updateReport: updateReport,
         createReport: createReport,
