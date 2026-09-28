@@ -1,5 +1,5 @@
 /**
- * Admin action password ("step-up") for high-risk admin endpoints.
+ * Admin action password for high-risk admin endpoints, checked on every request.
  *
  * The password is never stored in the repo: ADMIN_ACTION_PASSWORD_HASH is a
  * Worker secret in the form `pbkdf2-sha256$<iterations>$<salt b64>$<hash b64>`
@@ -7,7 +7,6 @@
  */
 import { type Env, supabaseRestWithCount } from './auth';
 
-export const STEP_UP_TTL_SECONDS = 10 * 60;
 export const STEP_UP_MAX_FAILURES = 5;
 export const STEP_UP_LOCKOUT_MINUTES = 15;
 /** Workers' WebCrypto rejects PBKDF2 above 100k iterations. */
@@ -22,21 +21,11 @@ function b64ToBytes(value: string): Uint8Array {
   return out;
 }
 
-function bytesToB64Url(bytes: Uint8Array): string {
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   let diff = a.length ^ b.length;
   const len = Math.max(a.length, b.length);
   for (let i = 0; i < len; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
   return diff === 0;
-}
-
-function secretHash(env: Env): string {
-  return String(env.ADMIN_ACTION_PASSWORD_HASH || '').trim();
 }
 
 function parseHash(raw: string): ParsedHash | null {
@@ -54,12 +43,16 @@ function parseHash(raw: string): ParsedHash | null {
   }
 }
 
+function storedHash(env: Env): ParsedHash | null {
+  return parseHash(String(env.ADMIN_ACTION_PASSWORD_HASH || '').trim());
+}
+
 export function stepUpConfigured(env: Env): boolean {
-  return parseHash(secretHash(env)) !== null;
+  return storedHash(env) !== null;
 }
 
 export async function verifyActionPassword(env: Env, password: string): Promise<boolean> {
-  const parsed = parseHash(secretHash(env));
+  const parsed = storedHash(env);
   if (!parsed || !password) return false;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
@@ -70,33 +63,15 @@ export async function verifyActionPassword(env: Env, password: string): Promise<
   return timingSafeEqual(new Uint8Array(bits), parsed.hash);
 }
 
-/** Tokens are signed with the stored hash, so changing the password revokes them. */
-async function sign(env: Env, message: string): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode('usertypo-admin-step-up:' + secretHash(env)),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)));
-}
-
-export async function issueStepUpToken(env: Env, adminUserId: string): Promise<{ token: string; expires_at: string }> {
-  const exp = Math.floor(Date.now() / 1000) + STEP_UP_TTL_SECONDS;
-  const sig = await sign(env, `${adminUserId}.${exp}`);
-  return { token: `${exp}.${bytesToB64Url(sig)}`, expires_at: new Date(exp * 1000).toISOString() };
-}
-
-export async function verifyStepUpToken(env: Env, adminUserId: string, token: string): Promise<boolean> {
-  if (!stepUpConfigured(env)) return false;
-  const match = String(token || '').match(/^(\d{10})\.([A-Za-z0-9_-]{20,})$/);
-  if (!match) return false;
-  const exp = Number(match[1]);
-  if (exp < Math.floor(Date.now() / 1000)) return false;
-  const expected = bytesToB64Url(await sign(env, `${adminUserId}.${exp}`));
-  const enc = new TextEncoder();
-  return timingSafeEqual(enc.encode(expected), enc.encode(match[2]!));
+/** The client sends the password URI-encoded so any characters survive as a header. */
+export function passwordFromRequest(request: Request): string {
+  const raw = request.headers.get('X-Admin-Password') || '';
+  if (!raw || raw.length > 1024) return '';
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return '';
+  }
 }
 
 export async function recentStepUpFailures(env: Env, adminUserId: string): Promise<number> {

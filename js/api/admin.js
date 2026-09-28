@@ -109,9 +109,6 @@
         return token;
     }
 
-    /** Admin action password unlock, kept in memory only (10 minutes, per Worker). */
-    var stepUp = { token: null, expiresAt: 0 };
-
     function stepUpError(data) {
         var code = data && data.error;
         if (code === 'step_up_locked') {
@@ -123,27 +120,21 @@
         return null;
     }
 
-    async function requestStepUp() {
+    /** Protected actions: ask for the admin action password and resend with it (every time). */
+    async function workerFetchWithPassword(path, opts) {
         var message = 'Enter the admin action password to continue.';
         for (;;) {
             var password = await adminPrompt(message, {
                 title: 'Admin password',
                 icon: 'lock',
-                okLabel: 'Unlock',
+                okLabel: 'Continue',
                 inputType: 'password',
                 trim: false,
                 requiredMessage: 'Enter the password.',
             });
             if (password == null) throw new Error('Cancelled: the admin password is required for this action.');
             try {
-                var data = await workerFetch('/step-up', {
-                    method: 'POST',
-                    body: JSON.stringify({ password: password }),
-                    noStepUpRetry: true,
-                });
-                stepUp.token = data.token;
-                stepUp.expiresAt = Date.parse(data.expires_at) - 15000;
-                return;
+                return await workerFetch(path, Object.assign({}, opts, { adminPassword: password }));
             } catch (e) {
                 var friendly = stepUpError(e && e.data);
                 if (friendly) throw friendly;
@@ -165,7 +156,7 @@
         if (!opts.skipAuth) {
             var token = await getClerkBearer();
             headers.Authorization = 'Bearer ' + token;
-            if (stepUp.token && Date.now() < stepUp.expiresAt) headers['X-Admin-Step-Up'] = stepUp.token;
+            if (opts.adminPassword) headers['X-Admin-Password'] = encodeURIComponent(opts.adminPassword);
         }
         if (opts.body != null && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
@@ -179,10 +170,8 @@
         var data = null;
         try { data = await res.json(); } catch (_) { data = null; }
         if (!res.ok) {
-            if (data && data.error === 'step_up_required' && !opts.noStepUpRetry) {
-                stepUp.token = null;
-                await requestStepUp();
-                return workerFetch(path, Object.assign({}, opts, { noStepUpRetry: true }));
+            if (data && data.error === 'step_up_required' && !opts.adminPassword) {
+                return workerFetchWithPassword(path, opts);
             }
             var friendly = stepUpError(data);
             if (friendly) throw friendly;
