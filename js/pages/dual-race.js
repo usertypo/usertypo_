@@ -1120,10 +1120,13 @@
         }
 
         function finalizeSeries(wBase, rBase, endTime, finalWpm, finalRaw) {
-            var avg = Math.max(0, Math.round(Number(finalWpm) || 0));
-            var raw = Math.max(0, Math.round(Number(finalRaw) || 0));
             var wOut = (wBase || []).slice();
             var rOut = (rBase || []).slice();
+            // null final = no trustworthy final stats; hold the last live sample.
+            if (finalWpm == null) finalWpm = wOut.length ? wOut[wOut.length - 1] : 0;
+            if (finalRaw == null) finalRaw = rOut.length ? rOut[rOut.length - 1] : finalWpm;
+            var avg = Math.max(0, Math.round(Number(finalWpm) || 0));
+            var raw = Math.max(0, Math.round(Number(finalRaw) || 0));
             if (!startTime || endTime == null) {
                 if (!wOut.length) {
                     wOut.push(avg);
@@ -2784,9 +2787,15 @@
                     }
                 }
             }
-            set(prefix + '-wpm', data.wpm);
-            set(prefix + '-acc', data.accuracy);
-            set(prefix + '-cons', data.consistency);
+            var left = !!data.left;
+            set(prefix + '-wpm', left ? '--' : data.wpm);
+            set(prefix + '-acc', left ? '--' : data.accuracy);
+            set(prefix + '-cons', left ? '--' : data.consistency);
+            ['-acc', '-cons'].forEach(function (suffix) {
+                var unit = document.getElementById(prefix + suffix);
+                unit = unit && unit.nextElementSibling;
+                if (unit) unit.classList.toggle('hidden', left);
+            });
         }
 
         function pillLabelForPlayer(data) {
@@ -3162,10 +3171,11 @@
                     meWon ? winnerData.wpm : loserData.wpm,
                     meWon ? winnerData.raw : loserData.raw
                 );
+                var oppData = meWon ? loserData : winnerData;
                 var oppSeries = finalizeOpponentGraphHistory(
                     endTime,
-                    meWon ? loserData.wpm : winnerData.wpm,
-                    meWon ? loserData.raw : winnerData.raw
+                    oppData.left ? null : oppData.wpm,
+                    oppData.left ? null : oppData.raw
                 );
                 if (!selfSeries.wpmHistory.length) {
                     selfSeries = {
@@ -3359,7 +3369,17 @@
                 otherData.userId = other.userId;
                 otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
                 meData.userId = me.userId;
-                var meWon = meRow.length && rows.length && rows[0][0] === meRow[0];
+                // Server rows for unfinished leavers divide their chars by a ~0s clock.
+                var otherLeftUnfinished = !isBotMatch()
+                    && Array.isArray(otherRow)
+                    && String(otherRow[6] || '') === 'left'
+                    && !Number(otherRow[7]);
+                if (otherLeftUnfinished) {
+                    otherData.left = true;
+                    otherData.wpm = 0;
+                    otherData.raw = 0;
+                }
+                var meWon = otherLeftUnfinished || (meRow.length && rows.length && rows[0][0] === meRow[0]);
                 var winnerData = meWon ? meData : otherData;
                 var loserData = meWon ? otherData : meData;
                 fillCard('w', winnerData);
