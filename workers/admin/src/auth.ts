@@ -14,6 +14,10 @@ export interface Env {
   SUPABASE_ANON_KEY?: string;
   /** Comma-separated profile public_ids allowed as admins */
   ADMIN_PUBLIC_IDS?: string;
+  /** learn.usertypo.com progress (KV), cleared on account delete */
+  LEARN_PROGRESS?: KVNamespace;
+  /** Friend notifications inbox (D1), cleared on account delete */
+  NOTIFICATIONS_DB?: D1Database;
 }
 
 export type AdminProfile = {
@@ -133,6 +137,27 @@ export async function supabaseRest<T = unknown>(
   const text = await res.text();
   if (!text) return null as T;
   return JSON.parse(text) as T;
+}
+
+/** GET rows plus the exact total from Content-Range (for paged lists). */
+export async function supabaseRestWithCount<T = unknown>(
+  env: Env,
+  pathAndQuery: string,
+): Promise<{ rows: T[]; total: number | null }> {
+  const url = `${supabaseBase(env)}/rest/v1/${pathAndQuery}`;
+  const headers = Object.assign({}, serviceHeaders(env), { Prefer: 'count=exact' });
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.warn('[admin] supabase', pathAndQuery, res.status, text.slice(0, 300));
+    throw new Error('supabase_error_' + res.status);
+  }
+  const match = (res.headers.get('content-range') || '').match(/\/(\d+)\s*$/);
+  const rows = await res.json().catch(() => []);
+  return {
+    rows: Array.isArray(rows) ? (rows as T[]) : [],
+    total: match ? Number(match[1]) : null,
+  };
 }
 
 export async function supabaseRpc<T = unknown>(
