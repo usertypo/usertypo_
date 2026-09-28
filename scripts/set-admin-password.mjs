@@ -73,5 +73,5 @@ for (const env of envs) {
   }
 }
 
-console.log(failed ? '\nSome environments failed; see above.' : '\nDone. The new password works immediately; old unlocks are revoked.');
+console.log(failed ? '\nSome environments failed; see above.' : '\nDone. The new password works immediately.');
 process.exit(failed ? 1 : 0);
