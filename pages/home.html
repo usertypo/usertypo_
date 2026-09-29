@@ -678,6 +678,455 @@
         .bubble-user-tier {
             color: var(--theme-primary);
         }
+
+        /* --- INPUT HISTORY (results screen) --- */
+        #input-history-toggle-row {
+            display: flex;
+            justify-content: center;
+        }
+        #input-history-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.65rem 0.3rem 0.8rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4));
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #input-history-toggle .material-symbols-outlined {
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+        #input-history-toggle .ih-toggle-icon {
+            color: var(--theme-primary);
+        }
+        #input-history-toggle .ih-toggle-chevron {
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #input-history-toggle:hover,
+        #input-history-toggle:focus-visible {
+            color: var(--theme-fg-strong, #fff);
+            border-color: rgba(var(--theme-primary-rgb), 0.4);
+            box-shadow: 0 0 14px rgba(var(--theme-primary-rgb), var(--gi-25, 0.25));
+        }
+        #input-history-toggle[aria-expanded="true"] {
+            color: var(--theme-fg-strong, #fff);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-25, 0.25));
+        }
+        #input-history-toggle[aria-expanded="true"] .ih-toggle-chevron {
+            transform: rotate(180deg);
+        }
+
+        #input-history-panel {
+            display: grid;
+            grid-template-rows: 0fr;
+            opacity: 0;
+            margin-top: 0;
+            transition:
+                grid-template-rows 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                margin-top 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s ease;
+        }
+        #input-history-panel.is-open {
+            grid-template-rows: 1fr;
+            opacity: 1;
+            margin-top: 0.85rem;
+        }
+        #input-history-panel > .ih-clip {
+            min-height: 0;
+            overflow: hidden;
+        }
+        #input-history-panel.is-settled > .ih-clip {
+            overflow: visible;
+        }
+        #input-history-panel .ih-card {
+            position: relative;
+            padding: 0.9rem 1.1rem 1rem;
+            transform: translateY(-10px) scale(0.985);
+            transform-origin: top center;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #input-history-panel.is-open .ih-card {
+            transform: none;
+        }
+
+        .ih-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.7rem;
+        }
+        .ih-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            min-width: 0;
+        }
+        .ih-title-label {
+            font-size: 0.533rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #7c8591;
+            white-space: nowrap;
+        }
+        .ih-summary {
+            font-size: 0.5rem;
+            font-weight: 700;
+            color: #7c8591;
+            white-space: nowrap;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .ih-summary .ih-summary-err {
+            color: var(--theme-error, #ff4444);
+        }
+        .ih-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .ih-action-btn {
+            width: 1.6rem;
+            height: 1.6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
+            color: #7c8591;
+            cursor: pointer;
+            outline: none;
+            transition: color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        }
+        .ih-action-btn .material-symbols-outlined {
+            font-size: 0.85rem;
+        }
+        .ih-action-btn:hover,
+        .ih-action-btn:focus-visible {
+            color: var(--theme-fg-strong, #fff);
+            border-color: rgba(var(--theme-primary-rgb), 0.4);
+            transform: scale(1.08);
+        }
+        .ih-action-btn.is-active {
+            color: var(--theme-primary);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-25, 0.25));
+        }
+
+        .ih-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem 0.9rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.5rem;
+            font-weight: 700;
+            color: #7c8591;
+        }
+        .ih-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .ih-legend-sample {
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .ih-legend-swatch {
+            width: 0.95rem;
+            height: 0.45rem;
+            border-radius: 9999px;
+        }
+
+        #input-history-words {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 0.45rem 0.7rem;
+            max-height: 17rem;
+            overflow-y: auto;
+            padding: 0.15rem 0.35rem 0.3rem 0;
+            font-size: 1rem;
+            line-height: 1.5;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(var(--theme-primary-rgb), 0.35) transparent;
+        }
+        #input-history-words::-webkit-scrollbar { width: 4px; display: block !important; }
+        #input-history-words::-webkit-scrollbar-track { background: transparent; }
+        #input-history-words::-webkit-scrollbar-thumb { background: rgba(var(--theme-primary-rgb), 0.35); border-radius: 9999px; }
+        body.typing-rtl #input-history-words {
+            direction: rtl;
+        }
+        .ih-empty {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #7c8591;
+            padding: 0.6rem 0;
+        }
+
+        .ih-word {
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
+            padding: 0 0.1rem 0.1rem;
+            cursor: default;
+            transform-origin: 50% 70%;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+        }
+        .ih-word:hover,
+        .ih-word.is-tip {
+            transform: scale(1.18);
+            z-index: 2;
+        }
+        #input-history-words.is-filtered .ih-word:not(.is-match) {
+            opacity: 0.2;
+        }
+        .ih-word.ih-error {
+            box-shadow: inset 0 -2px 0 rgba(var(--theme-error-rgb, 255, 68, 68), 0.85);
+        }
+        .ih-l.ih-correct,
+        .ih-l.ih-corrected { color: var(--theme-primary); }
+        .ih-l.ih-corrected {
+            text-decoration: underline dotted rgba(var(--theme-error-rgb, 255, 68, 68), 0.9);
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+            text-decoration-skip-ink: none;
+        }
+        .ih-l.ih-incorrect { color: var(--theme-error, #ff4444); }
+        .ih-l.ih-extra { color: var(--theme-error, #ff4444); opacity: 0.6; }
+        .ih-l.ih-missed,
+        .ih-l.ih-untyped { color: #7c8591; opacity: 0.75; }
+        #input-history-words.is-heatmap .ih-word { color: var(--ih-heat, #7c8591); }
+        #input-history-words.is-heatmap .ih-l { color: inherit; opacity: 1; text-decoration: none; }
+        #input-history-words.is-heatmap .ih-word.ih-no-burst { opacity: 0.55; }
+
+        /* fill-mode backwards so the finished entrance does not pin transform and block the hover scale */
+        #input-history-words.is-animating .ih-word {
+            animation: ih-word-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+            animation-delay: var(--ih-d, 0ms);
+        }
+        @keyframes ih-word-in {
+            from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
+            to { opacity: 1; transform: none; filter: none; }
+        }
+
+        /* A finished fill-forwards entrance animation makes the section a backdrop root,
+           which stops the card's backdrop blur from reaching the page behind it. */
+        #input-history-section.ih-entered {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        .ih-error-types {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem;
+            margin: -0.25rem 0 0.8rem;
+        }
+        .ih-error-types:empty {
+            display: none;
+        }
+        .ih-type-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
+            color: #7c8591;
+            font-size: 0.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            transition: color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .ih-type-chip:hover,
+        .ih-type-chip:focus-visible {
+            color: var(--theme-fg-strong, #fff);
+            border-color: rgba(var(--theme-primary-rgb), 0.4);
+        }
+        .ih-type-chip.is-active {
+            color: var(--theme-fg-strong, #fff);
+            background: rgba(var(--theme-primary-rgb), 0.12);
+            border-color: rgba(var(--theme-primary-rgb), 0.45);
+            box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-25, 0.25));
+        }
+        .ih-type-glyph {
+            font-size: 0.6rem;
+            line-height: 1;
+        }
+        .ih-type-count {
+            color: var(--theme-fg-strong, #fff);
+        }
+
+        .ih-copy-wrap {
+            position: relative;
+        }
+        #input-history-copy-menu {
+            position: absolute;
+            top: calc(100% + 0.4rem);
+            right: 0;
+            z-index: 45;
+            display: grid;
+            gap: 0.15rem;
+            min-width: 11rem;
+            padding: 0.35rem;
+            border-radius: var(--theme-box-radius, 1.375rem);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-4px) scale(0.97);
+            transform-origin: top right;
+            transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.25s;
+        }
+        #input-history-copy-menu.is-open {
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+            transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+        }
+        .ih-copy-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.45rem 0.75rem;
+            border: 0;
+            border-radius: var(--theme-box-radius, 1.375rem);
+            background: transparent;
+            color: #94a3b8;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+            cursor: pointer;
+            outline: none;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .ih-copy-option:hover:not(:disabled),
+        .ih-copy-option:focus-visible {
+            color: var(--theme-fg-strong, #fff);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .ih-copy-option:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .ih-copy-option .ih-copy-count {
+            color: #7c8591;
+            font-weight: 700;
+        }
+
+        #input-history-tip {
+            position: absolute;
+            z-index: 40;
+            left: 0;
+            top: 0;
+            padding: 0.5rem 0.8rem;
+            border-radius: var(--theme-box-radius, 1.375rem);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            font-size: 0.56rem;
+            font-weight: 700;
+            line-height: 1.7;
+            white-space: nowrap;
+            text-align: left;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, calc(-100% - 4px)) scale(0.96);
+            transform-origin: 50% 100%;
+            transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.22s;
+        }
+        #input-history-tip.is-visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, calc(-100% - 10px));
+            transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+        }
+        #input-history-tip .ih-tip-typed {
+            color: var(--theme-fg-strong, #fff);
+            font-size: 0.8rem;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+        #input-history-tip .ih-tip-typed .ih-tip-bad { color: var(--theme-error, #ff4444); }
+        #input-history-tip .ih-tip-typed .ih-tip-fixed {
+            color: var(--theme-error, #ff4444);
+            opacity: 0.8;
+            text-decoration: line-through;
+            text-decoration-thickness: 2px;
+        }
+        #input-history-tip .ih-tip-typed .ih-tip-skip { color: #7c8591; opacity: 0.75; }
+        #input-history-tip .ih-tip-meta {
+            color: #7c8591;
+            text-align: center;
+        }
+        #input-history-tip .ih-tip-meta b { color: var(--theme-text, #cbd5e1); font-weight: 700; }
+        #input-history-tip .ih-tip-meta .ih-tip-burst { color: var(--theme-primary); }
+        #input-history-tip .ih-tip-errors {
+            display: grid;
+            gap: 0.1rem;
+            margin: 0.3rem 0 0.2rem;
+            padding-top: 0.35rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        #input-history-tip .ih-tip-err {
+            display: flex;
+            align-items: baseline;
+            gap: 0.45rem;
+            color: var(--theme-text, #cbd5e1);
+            font-weight: 600;
+        }
+        #input-history-tip .ih-tip-err .ih-type-glyph { width: 0.7rem; text-align: center; }
+        #input-history-tip .ih-tip-err-label { color: #7c8591; font-weight: 700; min-width: 3.6rem; }
+        #input-history-tip .ih-tip-err code {
+            font-family: inherit;
+            color: var(--theme-fg-strong, #fff);
+            font-weight: 700;
+        }
+        #input-history-tip .ih-tip-status {
+            margin-left: auto;
+            padding-left: 0.6rem;
+            font-size: 0.48rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #7c8591;
+        }
+        #input-history-tip .ih-tip-status.is-kept { color: var(--theme-error, #ff4444); }
+
+        @media (prefers-reduced-motion: reduce) {
+            #input-history-panel,
+            #input-history-panel .ih-card,
+            #input-history-toggle .ih-toggle-chevron,
+            .ih-word,
+            #input-history-tip,
+            #input-history-copy-menu { transition: none; }
+            #input-history-words.is-animating .ih-word { animation: none; }
+        }
 </style>
 
 <!-- SPA Container -->
@@ -1146,7 +1595,49 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
+                            <!-- Input History (in-memory only, cleared on the next test) -->
+                            <div id="input-history-section" class="w-full opacity-0 stats-animate-card" style="animation-delay: 550ms;">
+                                <div id="input-history-toggle-row">
+                                    <button type="button" id="input-history-toggle" aria-expanded="false" aria-controls="input-history-panel" title="Show input history">
+                                        <span class="material-symbols-outlined ih-toggle-icon" aria-hidden="true">history</span>
+                                        <span>Input History</span>
+                                        <span class="material-symbols-outlined ih-toggle-chevron" aria-hidden="true">expand_more</span>
+                                    </button>
+                                </div>
+                                <div id="input-history-panel" aria-hidden="true">
+                                    <div class="ih-clip">
+                                        <div class="ih-card glass-panel">
+                                            <div class="ih-header">
+                                                <div class="ih-title">
+                                                    <span class="ih-title-label">Input History</span>
+                                                    <span id="input-history-summary" class="ih-summary"></span>
+                                                </div>
+                                                <div class="ih-actions">
+                                                    <button type="button" id="input-history-heatmap-btn" class="ih-action-btn" aria-pressed="false" title="Toggle burst heatmap">
+                                                        <span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span>
+                                                    </button>
+                                                    <div class="ih-copy-wrap">
+                                                        <button type="button" id="input-history-copy-btn" class="ih-action-btn" title="Copy words" aria-haspopup="menu" aria-expanded="false" aria-controls="input-history-copy-menu">
+                                                            <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                                                        </button>
+                                                        <div id="input-history-copy-menu" class="glass-panel" role="menu">
+                                                            <button type="button" class="ih-copy-option" role="menuitem" data-copy="all">All words <span class="ih-copy-count" data-copy-count="all"></span></button>
+                                                            <button type="button" class="ih-copy-option" role="menuitem" data-copy="slow">Slow words <span class="ih-copy-count" data-copy-count="slow"></span></button>
+                                                            <button type="button" class="ih-copy-option" role="menuitem" data-copy="errored">Words with errors <span class="ih-copy-count" data-copy-count="errored"></span></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="input-history-legend" class="ih-legend"></div>
+                                            <div id="input-history-error-types" class="ih-error-types" role="group" aria-label="Highlight words by error type"></div>
+                                            <div id="input-history-words"></div>
+                                            <div id="input-history-tip" class="glass-panel" role="tooltip"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Action Buttons -->
                             <div class="flex items-center justify-center w-full gap-5 mt-6 opacity-0 stats-animate-card [animation-delay:600ms]" id="stats-action-buttons">
                                 <button onclick="showTestView(true)" class="flex items-center justify-between pl-5 pr-2 py-2 bg-primary text-on-primary rounded-full shadow-[0_0_35px_rgba(var(--theme-primary-rgb),0.35)] hover:shadow-[0_0_50px_rgba(var(--theme-primary-rgb),0.5)] transition-all min-w-[220px]" title="Next Test (Enter)">
@@ -1430,6 +1921,26 @@ window.setTimeout = function(handler, timeout) {
         let graphInfoVisible = false;   // info overlay state
         let advWordsVisible = null;     // number of words visible in advanced graph
         let graphAnimationPlayed = { basic: false, advanced: false };
+
+        // --- INPUT HISTORY (results screen; in-memory only, never saved) ---
+        let inputHistoryPruned = [];    // snapshots of words pruned from the DOM mid-test
+        let inputHistoryWords = [];     // full per-word history, built when the test ends
+        let inputHistoryOpen = false;
+        let inputHistoryHeatmap = false;
+        let inputHistoryRendered = false;
+        let inputHistorySettleTimer = null;
+        const INPUT_HISTORY_CORRECTED_TYPES = new Set(['mistype', 'overshoot', 'reversal', 'wrong-shift']);
+        // Glyphs and colors match the advanced graph legend.
+        const INPUT_HISTORY_ERROR_TYPES = [
+            { key: 'mistype', label: 'mistype', glyph: '\u25CF', color: '#ff3333' },
+            { key: 'reversal', label: 'reversal', glyph: '\u25C6', color: '#ff6b6b' },
+            { key: 'overshoot', label: 'overshoot', glyph: '\u25B2', color: '#ff6b6b' },
+            { key: 'missed', label: 'missed', glyph: '\u2715', color: '#ff4466' },
+            { key: 'extra', label: 'extra', glyph: '+', color: '#ff3333' },
+            { key: 'wrong-shift', label: 'wrong shift', glyph: '\u21E7', color: '#ff6b6b' },
+            { key: 'hesitation', label: 'pause', glyph: '\u25A0', color: '#ffaa44' },
+        ];
+        let inputHistoryFilter = null;  // error type key currently highlighted, or null
 
         let typingTimer;
         let updateInterval;
@@ -2427,6 +2938,7 @@ window.setTimeout = function(handler, timeout) {
                 maxLiveBurstSeen = 0;
                 avgInterKeyInterval = 150;
                 typedCharsMap = {};
+                resetInputHistory();
                 isPaceRepeat = false;
                 resetPaceCaret();
                 // Hide fail overlay on restart
@@ -2536,6 +3048,12 @@ window.setTimeout = function(handler, timeout) {
         function pruneTypedWords(count) {
             const removeCount = Math.min(count, currentWordIndex);
             if (removeCount <= 0) return false;
+
+            const historyIndex = buildInputHistoryIndex();
+            for (let i = 0; i < removeCount; i++) {
+                const snap = snapshotInputHistoryWord(i, historyIndex);
+                if (snap) inputHistoryPruned.push(snap);
+            }
 
             for (let i = 0; i < removeCount; i++) {
                 const wordEl = document.getElementById('word-' + i);
@@ -4075,6 +4593,12 @@ window.setTimeout = function(handler, timeout) {
                 currentWordCharTimes = [];
             }
 
+            inputHistoryWords = collectInputHistory();
+            inputHistoryRendered = false;
+            inputHistoryFilter = null;
+            document.getElementById('input-history-section')?.classList.remove('ih-entered');
+            setInputHistoryOpen(false, true);
+
             // Calculate final exact stats
             let validChars = prunedValidChars;
             let rawChars = prunedRawChars;
@@ -4777,6 +5301,7 @@ window.setTimeout = function(handler, timeout) {
             maxLiveBurstSeen = 0;
             avgInterKeyInterval = 150;
             typedCharsMap = {};
+            resetInputHistory();
             // Hide fail overlay on restart
             const dfo = document.getElementById('difficulty-fail-overlay');
             if (dfo) dfo.classList.add('hidden');
@@ -5765,6 +6290,626 @@ window.setTimeout = function(handler, timeout) {
             }
         }
 
+        // ───────────────────────────────────────────────────────────────
+        //  INPUT HISTORY (results screen)
+        // ───────────────────────────────────────────────────────────────
+        function resetInputHistory() {
+            inputHistoryPruned = [];
+            inputHistoryWords = [];
+            inputHistoryRendered = false;
+            inputHistoryFilter = null;
+            document.getElementById('input-history-section')?.classList.remove('ih-entered');
+            setInputHistoryOpen(false, true);
+        }
+
+        /** Maps absolute word index → error markers, corrected letter positions and commit timings. */
+        function buildInputHistoryIndex() {
+            const corrected = new Map();
+            const marks = new Map();
+            (errorMarkers || []).forEach((em) => {
+                if (!em || em.wordIndex == null) return;
+                const abs = typeof em.absoluteIndex === 'number' ? em.absoluteIndex : wordsPrunedCount + em.wordIndex;
+                if (!marks.has(abs)) marks.set(abs, []);
+                marks.get(abs).push({ type: em.type, i: em.charIndex, typed: em.typed, expected: em.expected });
+                if (!INPUT_HISTORY_CORRECTED_TYPES.has(em.type)) return;
+                if (!corrected.has(abs)) corrected.set(abs, new Set());
+                corrected.get(abs).add(em.charIndex);
+            });
+            const timing = new Map();
+            (wordTimestamps || []).forEach((wt) => {
+                if (!wt || wt.wordIndex == null) return;
+                const abs = typeof wt.absoluteIndex === 'number' ? wt.absoluteIndex : wordsPrunedCount + wt.wordIndex;
+                if (!timing.has(abs)) timing.set(abs, []);
+                timing.get(abs).push(wt);
+            });
+            return { corrected, marks, timing };
+        }
+
+        /** Reads one word's final typed state from the prompt DOM. */
+        function snapshotInputHistoryWord(wordIndex, index) {
+            const target = generatedWords[wordIndex];
+            const wordEl = document.getElementById('word-' + wordIndex);
+            if (typeof target !== 'string' || !wordEl) return null;
+
+            const abs = wordsPrunedCount + wordIndex;
+            const typedMap = typedCharsMap[wordIndex] || {};
+            const correctedSet = index.corrected.get(abs);
+            const letters = [];
+            let error = false;
+            let typed = false;
+            let correctCount = 0;
+
+            for (let i = 0; i < target.length; i++) {
+                const cl = document.getElementById(`char-${wordIndex}-${i}`)?.classList;
+                let s = 'untyped';
+                let t;
+                if (cl && cl.contains('text-primary')) {
+                    s = correctedSet && correctedSet.has(i) ? 'corrected' : 'correct';
+                    correctCount++;
+                } else if (cl && cl.contains('text-error')) {
+                    s = 'incorrect';
+                    t = typedMap[i] != null ? String(typedMap[i]) : target[i];
+                    error = true;
+                } else if (cl && cl.contains('error-underline')) {
+                    s = 'missed';
+                    error = true;
+                }
+                if (s !== 'untyped') typed = true;
+                letters.push(t === undefined ? { c: target[i], s } : { c: target[i], s, t });
+            }
+            wordEl.querySelectorAll('.char.extra').forEach((el) => {
+                letters.push({ c: el.textContent || '', s: 'extra' });
+                error = true;
+                typed = true;
+            });
+
+            let burst = null;
+            const commits = index.timing.get(abs);
+            if (commits && commits.length && letters.some(l => l.s !== 'untyped' && l.s !== 'missed')) {
+                const activeMs = commits.reduce((sum, wt) => sum + Math.max(0, (wt.endTime || 0) - (wt.startTime || 0)), 0);
+                burst = activeMs > 0 ? computeWordBurstWpm(correctCount, 0, activeMs) : 0;
+            }
+
+            return { target, letters, error, typed, burst, marks: index.marks.get(abs) || [] };
+        }
+
+        function collectInputHistory() {
+            const index = buildInputHistoryIndex();
+            const words = inputHistoryPruned.slice();
+            const last = Math.min(currentWordIndex, generatedWords.length - 1);
+            for (let i = 0; i <= last; i++) {
+                const snap = snapshotInputHistoryWord(i, index);
+                if (!snap) continue;
+                // The word the caret was on only counts if something was typed into it.
+                if (i === currentWordIndex && !snap.typed) continue;
+                words.push(snap);
+            }
+            return words;
+        }
+
+        function ihEscape(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function ihDisplayChar(ch) {
+            return ch === ' ' ? '_' : ch;
+        }
+
+        function inputHistoryLettersHtml(letters) {
+            let html = '';
+            let runState = null;
+            let runText = '';
+            const flush = () => {
+                if (runText) html += `<span class="ih-l ih-${runState}">${ihEscape(runText)}</span>`;
+                runText = '';
+            };
+            letters.forEach((l) => {
+                if (l.s !== runState) {
+                    flush();
+                    runState = l.s;
+                }
+                runText += ihDisplayChar(l.c);
+            });
+            flush();
+            return html;
+        }
+
+        function renderInputHistory() {
+            const wordsEl = document.getElementById('input-history-words');
+            const summaryEl = document.getElementById('input-history-summary');
+            if (!wordsEl) return;
+
+            const words = inputHistoryWords || [];
+            if (!words.length) {
+                wordsEl.innerHTML = '<div class="ih-empty">Nothing was typed in this test.</div>';
+            } else {
+                wordsEl.innerHTML = words.map((w, i) => {
+                    const cls = 'ih-word' + (w.error ? ' ih-error' : '') + (w.burst == null ? ' ih-no-burst' : '');
+                    const delay = Math.min(i, 60) * 7;
+                    return `<span class="${cls}" data-ih="${i}" style="--ih-d:${delay}ms">${inputHistoryLettersHtml(w.letters)}</span>`;
+                }).join('');
+            }
+
+            if (summaryEl) {
+                const errCount = words.filter(w => w.error).length;
+                summaryEl.innerHTML = `${words.length} ${words.length === 1 ? 'word' : 'words'}`
+                    + (errCount ? ` · <span class="ih-summary-err">${errCount} incorrect</span>` : '');
+            }
+
+            inputHistoryRendered = true;
+            renderInputHistoryErrorTypes();
+            applyInputHistoryHeatmap();
+        }
+
+        function getInputHistoryErrorType(key) {
+            return INPUT_HISTORY_ERROR_TYPES.find(t => t.key === key) || null;
+        }
+
+        function wordHasErrorType(w, key) {
+            return !!(w && w.marks && w.marks.some(m => m.type === key));
+        }
+
+        function renderInputHistoryErrorTypes() {
+            const typesEl = document.getElementById('input-history-error-types');
+            if (!typesEl) return;
+            const counts = {};
+            (inputHistoryWords || []).forEach((w) => {
+                (w.marks || []).forEach((m) => { counts[m.type] = (counts[m.type] || 0) + 1; });
+            });
+            if (inputHistoryFilter && !counts[inputHistoryFilter]) inputHistoryFilter = null;
+            typesEl.innerHTML = INPUT_HISTORY_ERROR_TYPES.filter(t => counts[t.key]).map((t) => {
+                const active = inputHistoryFilter === t.key;
+                return `<button type="button" class="ih-type-chip${active ? ' is-active' : ''}" data-type="${t.key}" aria-pressed="${active}" title="Highlight words with a ${t.label}">`
+                    + `<span class="ih-type-glyph" style="color:${t.color}">${t.glyph}</span>`
+                    + `<span class="ih-type-count">${counts[t.key]}</span>${t.label}</button>`;
+            }).join('');
+            applyInputHistoryFilter();
+        }
+
+        function applyInputHistoryFilter() {
+            const wordsEl = document.getElementById('input-history-words');
+            if (!wordsEl) return;
+            const words = inputHistoryWords || [];
+            wordsEl.classList.toggle('is-filtered', !!inputHistoryFilter);
+            wordsEl.querySelectorAll('.ih-word').forEach((el) => {
+                el.classList.toggle('is-match', !!inputHistoryFilter && wordHasErrorType(words[Number(el.dataset.ih)], inputHistoryFilter));
+            });
+            document.querySelectorAll('#input-history-error-types .ih-type-chip').forEach((chip) => {
+                const active = chip.dataset.type === inputHistoryFilter;
+                chip.classList.toggle('is-active', active);
+                chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        }
+
+        function resolveThemeRgb(name) {
+            const probe = document.createElement('span');
+            probe.style.display = 'none';
+            probe.style.color = `var(${name})`;
+            document.body.appendChild(probe);
+            const parts = getComputedStyle(probe).color.match(/\d+(\.\d+)?/g);
+            probe.remove();
+            return parts && parts.length >= 3 ? parts.slice(0, 3).map(Number) : null;
+        }
+
+        function getInputHistoryHeatColors() {
+            const err = 'var(--theme-error, #ff4444)';
+            const primary = 'var(--theme-primary)';
+            const primaryRgb = resolveThemeRgb('--theme-primary');
+            const textRgb = resolveThemeRgb('--theme-text');
+            const distance = (primaryRgb && textRgb)
+                ? Math.hypot(primaryRgb[0] - textRgb[0], primaryRgb[1] - textRgb[1], primaryRgb[2] - textRgb[2])
+                : Infinity;
+            // When accent and text are near-identical (monochrome themes), the muted text keeps the scale readable.
+            const mid = distance < 110 ? 'var(--theme-text-muted, #7c8591)' : 'var(--theme-text, #cbd5e1)';
+            return [
+                err,
+                `color-mix(in srgb, ${err} 50%, ${mid})`,
+                mid,
+                `color-mix(in srgb, ${primary} 50%, ${mid})`,
+                primary,
+            ];
+        }
+
+        function getInputHistoryHeatSteps(words) {
+            const bursts = words.filter(w => w.burst != null).map(w => w.burst).sort((a, b) => a - b);
+            if (!bursts.length) return null;
+            const at = (p) => bursts[Math.min(bursts.length - 1, Math.floor(bursts.length * p))];
+            return [0, at(0.15), at(0.35), at(0.65), at(0.85)];
+        }
+
+        function renderInputHistoryLegend(steps, colors) {
+            const legendEl = document.getElementById('input-history-legend');
+            if (!legendEl) return;
+
+            if (inputHistoryHeatmap && steps) {
+                const labels = steps.map((val, i) => {
+                    if (i === 0) return steps[1] > 0 ? `<${steps[1]}` : '0';
+                    if (i === steps.length - 1) return `${val}+`;
+                    const next = steps[i + 1];
+                    return next - 1 > val ? `${val}-${next - 1}` : `${val}`;
+                });
+                legendEl.innerHTML = labels.map((label, i) =>
+                    `<span class="ih-legend-item"><span class="ih-legend-swatch" style="background:${colors[i]}"></span>${ihEscape(label)}</span>`
+                ).join('') + '<span class="ih-legend-item">burst wpm</span>';
+                return;
+            }
+
+            const sample = (state, text) =>
+                `<span class="ih-legend-item"><span class="ih-legend-sample ih-l ih-${state}">a</span>${text}</span>`;
+            legendEl.innerHTML = sample('correct', 'correct')
+                + sample('corrected', 'corrected')
+                + sample('incorrect', 'incorrect')
+                + sample('extra', 'extra')
+                + sample('missed', 'missed')
+                + '<span class="ih-legend-item" style="margin-left:auto;">hover a word to see how you typed it</span>';
+        }
+
+        function applyInputHistoryHeatmap() {
+            const wordsEl = document.getElementById('input-history-words');
+            const btn = document.getElementById('input-history-heatmap-btn');
+            if (btn) {
+                btn.classList.toggle('is-active', inputHistoryHeatmap);
+                btn.setAttribute('aria-pressed', inputHistoryHeatmap ? 'true' : 'false');
+            }
+            if (!wordsEl) return;
+
+            const words = inputHistoryWords || [];
+            const steps = getInputHistoryHeatSteps(words);
+            const colors = getInputHistoryHeatColors();
+            wordsEl.classList.toggle('is-heatmap', inputHistoryHeatmap && !!steps);
+
+            wordsEl.querySelectorAll('.ih-word').forEach((el) => {
+                const w = words[Number(el.dataset.ih)];
+                if (!inputHistoryHeatmap || !steps || !w || w.burst == null) {
+                    el.style.removeProperty('--ih-heat');
+                    return;
+                }
+                let colorIdx = 0;
+                steps.forEach((val, i) => { if (w.burst >= val) colorIdx = i; });
+                el.style.setProperty('--ih-heat', colors[colorIdx]);
+            });
+
+            renderInputHistoryLegend(steps, colors);
+        }
+
+        function hideInputHistoryTip() {
+            const tip = document.getElementById('input-history-tip');
+            if (tip) tip.classList.remove('is-visible');
+            document.querySelectorAll('#input-history-words .ih-word.is-tip').forEach(el => el.classList.remove('is-tip'));
+        }
+
+        /** Keystroke replay: fixed wrong attempts struck through, kept mistakes in red, skipped letters dimmed. */
+        function inputHistoryReplayHtml(w) {
+            const targetLen = w.target.length;
+            const attempts = {};
+            (w.marks || []).forEach((m) => {
+                const isLetterAttempt = INPUT_HISTORY_CORRECTED_TYPES.has(m.type) && m.i < targetLen;
+                const isExtraAttempt = m.type === 'extra';
+                if (!isLetterAttempt && !isExtraAttempt) return;
+                (attempts[m.i] = attempts[m.i] || []).push(m.typed == null ? '' : String(m.typed));
+            });
+            const struck = (chars) => chars.map(ch => `<span class="ih-tip-fixed">${ihEscape(ihDisplayChar(ch))}</span>`).join('');
+            const dropLast = (list, ch) => {
+                const copy = list.slice();
+                const idx = copy.lastIndexOf(ch);
+                if (idx !== -1) copy.splice(idx, 1);
+                return copy;
+            };
+
+            let html = '';
+            for (let i = 0; i < targetLen; i++) {
+                const l = w.letters[i];
+                const tries = attempts[i] || [];
+                if (!l || l.s === 'untyped') continue;
+                if (l.s === 'correct' || l.s === 'corrected') {
+                    html += struck(tries) + ihEscape(ihDisplayChar(l.c));
+                } else if (l.s === 'incorrect') {
+                    html += struck(dropLast(tries, l.t)) + `<span class="ih-tip-bad">${ihEscape(ihDisplayChar(l.t))}</span>`;
+                } else if (l.s === 'missed') {
+                    html += `<span class="ih-tip-skip">${ihEscape(ihDisplayChar(l.c))}</span>`;
+                }
+            }
+
+            const finalExtras = w.letters.slice(targetLen);
+            const lastExtraIdx = Math.max(targetLen + finalExtras.length - 1, ...Object.keys(attempts).map(Number));
+            for (let i = targetLen; i <= lastExtraIdx; i++) {
+                const kept = finalExtras[i - targetLen];
+                const tries = attempts[i] || [];
+                if (kept) {
+                    html += struck(dropLast(tries, kept.c)) + `<span class="ih-tip-bad">${ihEscape(ihDisplayChar(kept.c))}</span>`;
+                } else {
+                    html += struck(tries);
+                }
+            }
+            return html;
+        }
+
+        /** Groups a word's error markers into readable rows (runs of missed / extra letters become one row). */
+        function inputHistoryErrorRows(w) {
+            const targetLen = w.target.length;
+            const finalExtraCount = Math.max(0, w.letters.length - targetLen);
+            const letterFixed = (i) => {
+                const l = w.letters[i];
+                return !!l && (l.s === 'correct' || l.s === 'corrected');
+            };
+            const rows = [];
+            (w.marks || []).forEach((m) => {
+                const typedCh = m.typed == null ? '' : String(m.typed);
+                if (m.type === 'hesitation') {
+                    rows.push({ type: m.type, detail: `before <code>${ihEscape(ihDisplayChar(m.expected || w.target[m.i] || ''))}</code>`, fixed: null });
+                    return;
+                }
+                if (m.type === 'missed' || m.type === 'extra') {
+                    const fixed = m.type === 'missed' ? letterFixed(m.i) : (m.i - targetLen) >= finalExtraCount;
+                    const ch = m.type === 'missed' ? (w.target[m.i] || m.expected || '') : typedCh;
+                    const prev = rows[rows.length - 1];
+                    if (prev && prev.type === m.type && prev.fixed === fixed && prev.lastIndex === m.i - 1) {
+                        prev.chars += ch;
+                        prev.lastIndex = m.i;
+                    } else {
+                        rows.push({ type: m.type, chars: ch, lastIndex: m.i, fixed });
+                    }
+                    return;
+                }
+                const expected = m.expected || w.target[m.i] || '';
+                const detail = m.type === 'wrong-shift'
+                    ? `on <code>${ihEscape(ihDisplayChar(expected))}</code>`
+                    : `<code>${ihEscape(ihDisplayChar(typedCh))}</code> for <code>${ihEscape(ihDisplayChar(expected))}</code>`;
+                rows.push({ type: m.type, detail, fixed: m.i < targetLen ? letterFixed(m.i) : false });
+            });
+            rows.forEach((row) => {
+                if (row.chars != null) row.detail = `<code>${ihEscape(row.chars.split('').map(ihDisplayChar).join(''))}</code>`;
+            });
+            return rows;
+        }
+
+        function showInputHistoryTip(wordEl) {
+            const tip = document.getElementById('input-history-tip');
+            const card = tip && tip.parentElement;
+            const wordsEl = document.getElementById('input-history-words');
+            const w = inputHistoryWords[Number(wordEl.dataset.ih)];
+            if (!tip || !card || !wordsEl || !w) return;
+
+            const replay = inputHistoryReplayHtml(w);
+            let html = replay
+                ? `<div class="ih-tip-typed">${replay}</div>`
+                : '<div class="ih-tip-typed"><span class="ih-tip-skip">skipped</span></div>';
+
+            const meta = [];
+            if (w.error) meta.push(`expected <b>${ihEscape(w.target)}</b>`);
+            if (w.burst != null) meta.push(`<span class="ih-tip-burst">${w.burst}</span> wpm`);
+            if (meta.length) html += `<div class="ih-tip-meta">${meta.join(' · ')}</div>`;
+
+            const rows = inputHistoryErrorRows(w);
+            if (rows.length) {
+                const MAX_ROWS = 6;
+                html += '<div class="ih-tip-errors">' + rows.slice(0, MAX_ROWS).map((row) => {
+                    const t = getInputHistoryErrorType(row.type) || { label: row.type, glyph: '\u25CF', color: '#ff3333' };
+                    const status = row.fixed == null ? ''
+                        : `<span class="ih-tip-status${row.fixed ? '' : ' is-kept'}">${row.fixed ? 'fixed' : 'not fixed'}</span>`;
+                    return `<div class="ih-tip-err"><span class="ih-type-glyph" style="color:${t.color}">${t.glyph}</span>`
+                        + `<span class="ih-tip-err-label">${t.label}</span><span>${row.detail}</span>${status}</div>`;
+                }).join('')
+                    + (rows.length > MAX_ROWS ? `<div class="ih-tip-meta">+${rows.length - MAX_ROWS} more</div>` : '')
+                    + '</div>';
+            }
+            tip.innerHTML = html;
+
+            document.querySelectorAll('#input-history-words .ih-word.is-tip').forEach(el => el.classList.remove('is-tip'));
+            wordEl.classList.add('is-tip');
+
+            // offsetLeft/Top ignore the hover scale, so the tip does not drift while the word grows.
+            const half = tip.offsetWidth / 2;
+            let left = wordEl.offsetLeft + wordEl.offsetWidth / 2;
+            left = Math.max(half + 6, Math.min(card.clientWidth - half - 6, left));
+            tip.style.left = `${left}px`;
+            tip.style.top = `${wordEl.offsetTop - wordsEl.scrollTop - 2}px`;
+            tip.classList.add('is-visible');
+        }
+
+        function setInputHistoryOpen(open, instant = false) {
+            const panel = document.getElementById('input-history-panel');
+            const toggle = document.getElementById('input-history-toggle');
+            const wordsEl = document.getElementById('input-history-words');
+            if (!panel || !toggle) return;
+
+            inputHistoryOpen = !!open;
+            clearTimeout(inputHistorySettleTimer);
+            hideInputHistoryTip();
+            setInputHistoryCopyMenu(false);
+            toggle.setAttribute('aria-expanded', inputHistoryOpen ? 'true' : 'false');
+            toggle.title = inputHistoryOpen ? 'Hide input history' : 'Show input history';
+            panel.setAttribute('aria-hidden', inputHistoryOpen ? 'false' : 'true');
+            panel.classList.remove('is-settled');
+            if ('inert' in panel) panel.inert = !inputHistoryOpen;
+
+            if (!inputHistoryOpen) {
+                if (instant) {
+                    panel.style.transition = 'none';
+                    panel.classList.remove('is-open');
+                    void panel.offsetHeight;
+                    panel.style.transition = '';
+                    if (wordsEl) wordsEl.classList.remove('is-animating');
+                } else {
+                    panel.classList.remove('is-open');
+                }
+                return;
+            }
+
+            if (!inputHistoryRendered) renderInputHistory();
+            if (wordsEl) {
+                wordsEl.scrollTop = 0;
+                wordsEl.classList.remove('is-animating');
+                void wordsEl.offsetWidth;
+                wordsEl.classList.add('is-animating');
+            }
+            panel.classList.add('is-open');
+
+            inputHistorySettleTimer = setTimeout(() => {
+                if (!inputHistoryOpen) return;
+                panel.classList.add('is-settled');
+                if (typeof updateScrollbar === 'function') updateScrollbar();
+                const rect = panel.getBoundingClientRect();
+                const overflow = rect.bottom + 24 - window.innerHeight;
+                if (overflow > 0) {
+                    window.scrollBy({ top: Math.min(overflow, Math.max(0, rect.top - 80)), behavior: 'smooth' });
+                }
+            }, 520);
+        }
+
+        function uniqueWords(list) {
+            const seen = new Set();
+            return list.filter((word) => {
+                if (!word || seen.has(word)) return false;
+                seen.add(word);
+                return true;
+            });
+        }
+
+        /** Slow = the two slowest heatmap bands (below the 35th percentile burst). */
+        function getInputHistoryCopyWords(kind) {
+            const words = inputHistoryWords || [];
+            if (kind === 'slow') {
+                const steps = getInputHistoryHeatSteps(words);
+                if (!steps) return [];
+                return uniqueWords(words.filter(w => w.burst != null && w.burst < steps[2]).map(w => w.target));
+            }
+            if (kind === 'errored') {
+                return uniqueWords(words.filter(w => w.error || (w.marks || []).some(m => m.type !== 'hesitation')).map(w => w.target));
+            }
+            return words.map(w => w.target);
+        }
+
+        function setInputHistoryCopyMenu(open) {
+            const menu = document.getElementById('input-history-copy-menu');
+            const btn = document.getElementById('input-history-copy-btn');
+            if (!menu || !btn) return;
+            if (open) {
+                menu.querySelectorAll('.ih-copy-option').forEach((opt) => {
+                    const count = getInputHistoryCopyWords(opt.dataset.copy).length;
+                    const countEl = opt.querySelector('.ih-copy-count');
+                    if (countEl) countEl.textContent = String(count);
+                    opt.disabled = count === 0;
+                });
+            }
+            menu.classList.toggle('is-open', !!open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', !!open);
+        }
+
+        function copyInputHistoryWords(kind) {
+            const btn = document.getElementById('input-history-copy-btn');
+            const text = getInputHistoryCopyWords(kind).join(' ');
+            setInputHistoryCopyMenu(false);
+            if (!text) return;
+            const label = kind === 'slow' ? 'Slow words' : (kind === 'errored' ? 'Words with errors' : 'Words');
+
+            const done = (ok) => {
+                if (window.usertypoNotifications && typeof window.usertypoNotifications.showToast === 'function') {
+                    window.usertypoNotifications.showToast(ok ? `${label} copied to clipboard` : 'Could not copy words', ok ? 'content_copy' : 'error');
+                }
+                if (!ok || !btn) return;
+                const icon = btn.querySelector('.material-symbols-outlined');
+                btn.classList.add('is-active');
+                if (icon) icon.textContent = 'check';
+                setTimeout(() => {
+                    btn.classList.remove('is-active');
+                    if (icon) icon.textContent = 'content_copy';
+                }, 1400);
+            };
+
+            const fallback = () => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    ta.remove();
+                    done(ok);
+                } catch (_) {
+                    done(false);
+                }
+            };
+
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(text).then(() => done(true), fallback);
+            } else {
+                fallback();
+            }
+        }
+
+        (function wireInputHistory() {
+            const toggle = document.getElementById('input-history-toggle');
+            const heatBtn = document.getElementById('input-history-heatmap-btn');
+            const copyBtn = document.getElementById('input-history-copy-btn');
+            const wordsEl = document.getElementById('input-history-words');
+            if (!toggle || !wordsEl) return;
+
+            toggle.addEventListener('click', () => setInputHistoryOpen(!inputHistoryOpen));
+            if (heatBtn) {
+                heatBtn.addEventListener('click', () => {
+                    inputHistoryHeatmap = !inputHistoryHeatmap;
+                    applyInputHistoryHeatmap();
+                });
+            }
+            const section = document.getElementById('input-history-section');
+            if (section) {
+                section.addEventListener('animationend', (e) => {
+                    if (e.target === section && e.animationName === 'fade-in-up') section.classList.add('ih-entered');
+                });
+            }
+
+            const copyMenu = document.getElementById('input-history-copy-menu');
+            if (copyBtn && copyMenu) {
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setInputHistoryCopyMenu(!copyMenu.classList.contains('is-open'));
+                });
+                copyMenu.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const opt = e.target.closest && e.target.closest('.ih-copy-option');
+                    if (opt && !opt.disabled) copyInputHistoryWords(opt.dataset.copy);
+                });
+                document.addEventListener('click', () => setInputHistoryCopyMenu(false));
+                window.addEventListener('keydown', (e) => {
+                    if (e.key !== 'Escape' || !copyMenu.classList.contains('is-open')) return;
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    setInputHistoryCopyMenu(false);
+                }, true);
+            }
+
+            const typesEl = document.getElementById('input-history-error-types');
+            if (typesEl) {
+                typesEl.addEventListener('click', (e) => {
+                    const chip = e.target.closest && e.target.closest('.ih-type-chip');
+                    if (!chip) return;
+                    inputHistoryFilter = inputHistoryFilter === chip.dataset.type ? null : chip.dataset.type;
+                    applyInputHistoryFilter();
+                });
+            }
+
+            wordsEl.addEventListener('mouseover', (e) => {
+                const wordEl = e.target.closest && e.target.closest('.ih-word');
+                if (wordEl && !wordEl.classList.contains('is-tip')) showInputHistoryTip(wordEl);
+            });
+            wordsEl.addEventListener('mouseleave', hideInputHistoryTip);
+            wordsEl.addEventListener('scroll', hideInputHistoryTip, { passive: true });
+            wordsEl.addEventListener('click', (e) => {
+                const wordEl = e.target.closest && e.target.closest('.ih-word');
+                if (wordEl) showInputHistoryTip(wordEl);
+                else hideInputHistoryTip();
+            });
+        })();
+
         async function captureIndexStatsScreenshot() {
             const captureArea = document.getElementById('stats-capture-area');
             const btn = document.getElementById('screenshot-btn');
@@ -5773,7 +6918,11 @@ window.setTimeout = function(handler, timeout) {
             await StatsScreenshot.capture({
                 captureArea,
                 button: btn,
-                hideSelectors: ['#stats-action-buttons'],
+                hideSelectors: [
+                    '#stats-action-buttons',
+                    inputHistoryOpen ? '#input-history-toggle-row' : '#input-history-section',
+                    '#input-history-tip',
+                ],
                 padding: 56,
                 injectLogo: true,
                 patchCloneRoot: (cloned) => {
