@@ -124,7 +124,7 @@
     }
 
     /**
-     * Presets, the live custom theme, and the site-wide background can share one uploaded object, so an
+     * Presets, the live custom theme, and built-in theme backgrounds can share one uploaded object, so an
      * upload must survive until nothing local points at it. Unknown state → in use.
      */
     function isUrlInUse(url, opts) {
@@ -139,6 +139,11 @@
         }
         if (!lf) return true;
         var refs = [{ bgImage: lf.bgImage }];
+        if (lf.themeBgImages && typeof lf.themeBgImages === 'object') {
+            Object.keys(lf.themeBgImages).forEach(function (name) {
+                refs.push({ bgImage: lf.themeBgImages[name] });
+            });
+        }
         if (!(opts && opts.ignoreLive)) refs.push(lf.customTheme);
         if (Array.isArray(lf.customPresets)) refs = refs.concat(lf.customPresets);
         return refs.some(function (theme) {

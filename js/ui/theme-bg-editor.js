@@ -72,10 +72,10 @@
         return name === 'custom' || (typeof name === 'string' && name.indexOf('custom:') === 0);
     }
 
-    /** 'custom' edits the custom theme's image; 'global' edits the site-wide one used by built-in themes. */
+    /** 'custom' edits the custom theme's image; 'builtin' edits the selected built-in theme's own image. */
     function resolveTarget(hint) {
-        if (hint === 'custom' || hint === 'global') return hint;
-        return isCustomThemeActive(loadSettings()) ? 'custom' : 'global';
+        if (hint === 'custom' || hint === 'builtin') return hint;
+        return isCustomThemeActive(loadSettings()) ? 'custom' : 'builtin';
     }
 
     function validBg(bg) {
@@ -87,14 +87,17 @@
         var settings = loadSettings();
         var lf = settings && settings.lookFeel;
         if (!lf) return null;
-        if (resolveTarget(t) === 'global') return validBg(lf.bgImage);
+        if (resolveTarget(t) === 'builtin') {
+            var api = window.usertypo_settingsApi;
+            return api && typeof api.getThemeBgImage === 'function' ? validBg(api.getThemeBgImage(settings)) : null;
+        }
         return validBg(lf.customTheme && lf.customTheme.bgImage);
     }
 
-    /** Image the target currently shows; with a built-in selected the custom editor mirrors the site-wide one. */
+    /** Image the target currently shows; with a built-in selected the custom editor mirrors that theme's image. */
     function currentBgImage(t) {
         var tgt = resolveTarget(t === undefined ? target : t);
-        if (tgt === 'custom' && !isCustomThemeActive(loadSettings())) return storedBgImage('global');
+        if (tgt === 'custom' && !isCustomThemeActive(loadSettings())) return storedBgImage('builtin');
         return storedBgImage(tgt);
     }
 
@@ -105,8 +108,8 @@
     function commitBgImage(t, bg) {
         var api = window.usertypo_settingsApi;
         if (!api) return;
-        if (resolveTarget(t) === 'global') {
-            if (typeof api.setGlobalBgImage === 'function') api.setGlobalBgImage(bg);
+        if (resolveTarget(t) === 'builtin') {
+            if (typeof api.setThemeBgImage === 'function') api.setThemeBgImage(bg);
         } else if (typeof api.commitCustomTheme === 'function') {
             api.commitCustomTheme({ bgImage: bg }, { force: true });
         }
@@ -889,8 +892,8 @@
     }
 
     function onRemove() {
-        // Remove what is on screen: a built-in theme shows the site-wide image.
-        var slot = target === 'custom' && !isCustomThemeActive(loadSettings()) ? 'global' : target;
+        // Remove what is on screen: a built-in theme shows its own image.
+        var slot = target === 'custom' && !isCustomThemeActive(loadSettings()) ? 'builtin' : target;
         var prev = storedBgImage(slot);
         commitBgImage(slot, null);
         deleteUnusedUpload(prev);
@@ -987,7 +990,7 @@
         });
     }
 
-    /** @param {'custom'|'global'|'active'} [hint] which background to edit; 'active' follows the selected theme. */
+    /** @param {'custom'|'builtin'|'active'} [hint] which background to edit; 'active' follows the selected theme. */
     function open(hint) {
         if (busy || mode === 'edit') return;
         ensureDom();
