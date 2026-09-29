@@ -100,7 +100,7 @@ const DEFAULTS = {
             bgImage: null,
         },
         customPresets: [],
-        bgImage: null,
+        themeBgImages: {},
     },
     systemData: {
         saveTestStats: true,
@@ -447,7 +447,16 @@ function loadSettings() {
             settings.lookFeel.randomizeTheme = 'Off';
         }
         settings.lookFeel.glowIntensity = normalizeGlowIntensity(settings.lookFeel.glowIntensity);
-        settings.lookFeel.bgImage = normalizeBgImageValue(settings.lookFeel.bgImage);
+        settings.lookFeel.themeBgImages = normalizeThemeBgImages(settings.lookFeel.themeBgImages);
+        // Legacy single site-wide background → the built-in theme it was showing on.
+        if (Object.prototype.hasOwnProperty.call(settings.lookFeel, 'bgImage')) {
+            const legacy = normalizeBgImageValue(settings.lookFeel.bgImage);
+            const name = settings.lookFeel.colorTheme;
+            if (legacy && THEME_PALETTES[name] && !settings.lookFeel.themeBgImages[name]) {
+                settings.lookFeel.themeBgImages[name] = legacy;
+            }
+            delete settings.lookFeel.bgImage;
+        }
     }
 
     // Cross-site custom themes (usertypo.com ↔ learn.usertypo.com via shared cookie)
@@ -986,9 +995,24 @@ function normalizeBgImageValue(raw) {
     return raw && typeof raw === 'object' && raw.url ? raw : null;
 }
 
-/** Site-wide background shown behind built-in themes (custom themes carry their own). */
-function getGlobalBgImage(settings) {
-    return normalizeBgImageValue(settings?.lookFeel?.bgImage);
+/** Built-in theme name → background image; custom themes carry their own bgImage. */
+function normalizeThemeBgImages(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach((name) => {
+        if (!THEME_PALETTES[name]) return;
+        const bg = normalizeBgImageValue(raw[name]);
+        if (bg) out[name] = bg;
+    });
+    return out;
+}
+
+/** Background for a built-in theme (defaults to the selected one); null for custom themes. */
+function getThemeBgImage(settings, themeName) {
+    const name = themeName || settings?.lookFeel?.colorTheme || getPreferredDefaultTheme();
+    if (isCustomThemeName(name)) return null;
+    const map = settings?.lookFeel?.themeBgImages;
+    return normalizeBgImageValue(map && map[name]);
 }
 
 /** A built-in palette expressed as Custom Theme editor values. */
@@ -1009,28 +1033,55 @@ function getBuiltInThemeConfig(themeName) {
 
 /**
  * Values the Custom Theme editor shows: the active custom theme, or the active
- * built-in's colors plus the site-wide background it is displayed with.
+ * built-in's colors plus that theme's background.
  */
 function getEditorThemeConfig(settings) {
     const name = settings?.lookFeel?.colorTheme || getPreferredDefaultTheme();
     if (!isCustomThemeName(name)) {
         const builtIn = getBuiltInThemeConfig(name);
-        if (builtIn) return { ...builtIn, bgImage: getGlobalBgImage(settings) };
+        if (builtIn) return { ...builtIn, bgImage: getThemeBgImage(settings, name) };
         return getCustomThemeConfig(settings, 'custom');
     }
     return getCustomThemeConfig(settings, name);
 }
 
-function setGlobalBgImage(bgImage) {
+/** Set or clear the background of the selected built-in theme. */
+function setThemeBgImage(bgImage) {
     const settings = loadSettings();
     if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
-    settings.lookFeel.bgImage = normalizeBgImageValue(bgImage);
-    saveSettings(settings);
     const themeName = settings.lookFeel.colorTheme || getPreferredDefaultTheme();
+    if (isCustomThemeName(themeName) || !THEME_PALETTES[themeName]) return null;
+    const map = normalizeThemeBgImages(settings.lookFeel.themeBgImages);
+    const bg = normalizeBgImageValue(bgImage);
+    if (bg) map[themeName] = bg;
+    else delete map[themeName];
+    settings.lookFeel.themeBgImages = map;
+    saveSettings(settings);
     applyThemeBackgroundImage(settings, themeName, resolveThemePalette(settings, themeName).bgMain);
     notifyLookFeelCloudSync();
     if (typeof window.triggerSave === 'function') window.triggerSave();
-    return settings.lookFeel.bgImage;
+    return bg;
+}
+
+/**
+ * Drop account-owned Look & Feel (custom themes, presets, backgrounds) from this
+ * device, e.g. on sign-out. A selected built-in theme is kept.
+ */
+function clearAccountLookFeel() {
+    const settings = loadSettings();
+    if (!settings.lookFeel) settings.lookFeel = structuredClone(DEFAULTS.lookFeel);
+    const lf = settings.lookFeel;
+    lf.customTheme = structuredClone(CUSTOM_THEME_DEFAULT);
+    lf.customPresets = [];
+    lf.themeBgImages = {};
+    delete lf.bgImage;
+    if (isCustomThemeName(lf.colorTheme)) lf.colorTheme = getPreferredDefaultTheme();
+    lf._lookFeelUpdatedAt = 0;
+    saveSettings(settings);
+    pushSharedCustomThemes(settings);
+    applyAllSettings(settings);
+    syncColorThemeSelectLabel(settings);
+    syncCustomThemeEditor(settings);
 }
 
 /**
@@ -2193,7 +2244,7 @@ function embedGlowIntensityInCss(css) {
 
 /**
  * Layer a theme background image over #app-backdrop (behind page content).
- * Custom themes use their own bgImage; built-in themes use the site-wide lookFeel.bgImage.
+ * Custom themes use their own bgImage; built-in themes use lookFeel.themeBgImages[name].
  */
 function applyThemeBackgroundImage(settings, themeName, bgMain) {
     let layer = document.getElementById('app-bg-image');
@@ -2212,7 +2263,7 @@ function applyThemeBackgroundImage(settings, themeName, bgMain) {
         : null;
     const bgImage = cfg
         ? (cfg.bgImage && cfg.bgImage.url ? cfg.bgImage : null)
-        : getGlobalBgImage(settings);
+        : getThemeBgImage(settings, name);
 
     if (!bgImage) {
         layer.classList.remove('is-active');
@@ -5721,7 +5772,8 @@ window.usertypo_settingsApi = {
     getEffectiveTapeMode,
     applyThemeBackgroundImage,
     whenThemeBackgroundReady,
-    getGlobalBgImage,
-    setGlobalBgImage,
+    getThemeBgImage,
+    setThemeBgImage,
     getEditorThemeConfig,
+    clearAccountLookFeel,
 };
