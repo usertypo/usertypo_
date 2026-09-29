@@ -764,16 +764,18 @@
 
         .ih-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 0.75rem;
             margin-bottom: 0.7rem;
         }
         .ih-title {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.4rem 0.6rem;
             min-width: 0;
+            min-height: 1.6rem;
         }
         .ih-title-label {
             font-size: 0.533rem;
@@ -911,6 +913,7 @@
             text-underline-offset: 4px;
             text-decoration-skip-ink: none;
         }
+        .ih-l.ih-paused { color: #ffaa44; }
         .ih-l.ih-incorrect { color: var(--theme-error, #ff4444); }
         .ih-l.ih-extra { color: var(--theme-error, #ff4444); opacity: 0.6; }
         .ih-l.ih-missed,
@@ -942,7 +945,6 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 0.35rem;
-            margin: -0.25rem 0 0.8rem;
         }
         .ih-error-types:empty {
             display: none;
@@ -1040,14 +1042,14 @@
             font-weight: 700;
         }
 
+        /* Lives on <body>: inside the card its blur could only sample the card itself. */
         #input-history-tip {
-            position: absolute;
-            z-index: 40;
+            position: fixed;
+            z-index: 100;
             left: 0;
             top: 0;
             padding: 0.5rem 0.8rem;
             border-radius: var(--theme-box-radius, 1.375rem);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             font-size: 0.56rem;
             font-weight: 700;
             line-height: 1.7;
@@ -1612,6 +1614,7 @@
                                                 <div class="ih-title">
                                                     <span class="ih-title-label">Input History</span>
                                                     <span id="input-history-summary" class="ih-summary"></span>
+                                                    <div id="input-history-error-types" class="ih-error-types" role="group" aria-label="Highlight words by error type"></div>
                                                 </div>
                                                 <div class="ih-actions">
                                                     <button type="button" id="input-history-heatmap-btn" class="ih-action-btn" aria-pressed="false" title="Toggle burst heatmap">
@@ -1630,9 +1633,7 @@
                                                 </div>
                                             </div>
                                             <div id="input-history-legend" class="ih-legend"></div>
-                                            <div id="input-history-error-types" class="ih-error-types" role="group" aria-label="Highlight words by error type"></div>
                                             <div id="input-history-words"></div>
-                                            <div id="input-history-tip" class="glass-panel" role="tooltip"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -6334,6 +6335,8 @@ window.setTimeout = function(handler, timeout) {
             const abs = wordsPrunedCount + wordIndex;
             const typedMap = typedCharsMap[wordIndex] || {};
             const correctedSet = index.corrected.get(abs);
+            const wordMarks = index.marks.get(abs) || [];
+            const pausedSet = new Set(wordMarks.filter(m => m.type === 'hesitation').map(m => m.i));
             const letters = [];
             let error = false;
             let typed = false;
@@ -6355,7 +6358,9 @@ window.setTimeout = function(handler, timeout) {
                     error = true;
                 }
                 if (s !== 'untyped') typed = true;
-                letters.push(t === undefined ? { c: target[i], s } : { c: target[i], s, t });
+                const letter = t === undefined ? { c: target[i], s } : { c: target[i], s, t };
+                if ((s === 'correct' || s === 'corrected') && pausedSet.has(i)) letter.p = true;
+                letters.push(letter);
             }
             wordEl.querySelectorAll('.char.extra').forEach((el) => {
                 letters.push({ c: el.textContent || '', s: 'extra' });
@@ -6370,7 +6375,7 @@ window.setTimeout = function(handler, timeout) {
                 burst = activeMs > 0 ? computeWordBurstWpm(correctCount, 0, activeMs) : 0;
             }
 
-            return { target, letters, error, typed, burst, marks: index.marks.get(abs) || [] };
+            return { target, letters, error, typed, burst, marks: wordMarks };
         }
 
         function collectInputHistory() {
@@ -6404,13 +6409,14 @@ window.setTimeout = function(handler, timeout) {
             let runState = null;
             let runText = '';
             const flush = () => {
-                if (runText) html += `<span class="ih-l ih-${runState}">${ihEscape(runText)}</span>`;
+                if (runText) html += `<span class="ih-l ${runState}">${ihEscape(runText)}</span>`;
                 runText = '';
             };
             letters.forEach((l) => {
-                if (l.s !== runState) {
+                const state = `ih-${l.s}${l.p ? ' ih-paused' : ''}`;
+                if (state !== runState) {
                     flush();
-                    runState = l.s;
+                    runState = state;
                 }
                 runText += ihDisplayChar(l.c);
             });
@@ -6545,6 +6551,7 @@ window.setTimeout = function(handler, timeout) {
                 + sample('incorrect', 'incorrect')
                 + sample('extra', 'extra')
                 + sample('missed', 'missed')
+                + sample('paused', 'paused on')
                 + '<span class="ih-legend-item" style="margin-left:auto;">hover a word to see how you typed it</span>';
         }
 
@@ -6638,11 +6645,8 @@ window.setTimeout = function(handler, timeout) {
             };
             const rows = [];
             (w.marks || []).forEach((m) => {
+                if (m.type === 'hesitation') return;
                 const typedCh = m.typed == null ? '' : String(m.typed);
-                if (m.type === 'hesitation') {
-                    rows.push({ type: m.type, detail: `before <code>${ihEscape(ihDisplayChar(m.expected || w.target[m.i] || ''))}</code>`, fixed: null });
-                    return;
-                }
                 if (m.type === 'missed' || m.type === 'extra') {
                     const fixed = m.type === 'missed' ? letterFixed(m.i) : (m.i - targetLen) >= finalExtraCount;
                     const ch = m.type === 'missed' ? (w.target[m.i] || m.expected || '') : typedCh;
@@ -6667,12 +6671,24 @@ window.setTimeout = function(handler, timeout) {
             return rows;
         }
 
+        function getInputHistoryTip() {
+            let tip = document.getElementById('input-history-tip');
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.id = 'input-history-tip';
+                // Same material classes as the stat tooltips on the about page.
+                tip.className = 'bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-lg';
+                tip.setAttribute('role', 'tooltip');
+                document.body.appendChild(tip);
+            }
+            return tip;
+        }
+
         function showInputHistoryTip(wordEl) {
-            const tip = document.getElementById('input-history-tip');
-            const card = tip && tip.parentElement;
-            const wordsEl = document.getElementById('input-history-words');
+            const tip = getInputHistoryTip();
+            const card = wordEl.offsetParent;
             const w = inputHistoryWords[Number(wordEl.dataset.ih)];
-            if (!tip || !card || !wordsEl || !w) return;
+            if (!card || !w) return;
 
             const replay = inputHistoryReplayHtml(w);
             let html = replay
@@ -6703,11 +6719,13 @@ window.setTimeout = function(handler, timeout) {
             wordEl.classList.add('is-tip');
 
             // offsetLeft/Top ignore the hover scale, so the tip does not drift while the word grows.
+            const cardRect = card.getBoundingClientRect();
+            const wordsEl = document.getElementById('input-history-words');
             const half = tip.offsetWidth / 2;
-            let left = wordEl.offsetLeft + wordEl.offsetWidth / 2;
-            left = Math.max(half + 6, Math.min(card.clientWidth - half - 6, left));
+            let left = cardRect.left + wordEl.offsetLeft + wordEl.offsetWidth / 2;
+            left = Math.max(half + 8, Math.min(window.innerWidth - half - 8, left));
             tip.style.left = `${left}px`;
-            tip.style.top = `${wordEl.offsetTop - wordsEl.scrollTop - 2}px`;
+            tip.style.top = `${cardRect.top + wordEl.offsetTop - (wordsEl ? wordsEl.scrollTop : 0) - 2}px`;
             tip.classList.add('is-visible');
         }
 
@@ -6903,6 +6921,12 @@ window.setTimeout = function(handler, timeout) {
             });
             wordsEl.addEventListener('mouseleave', hideInputHistoryTip);
             wordsEl.addEventListener('scroll', hideInputHistoryTip, { passive: true });
+            window.addEventListener('scroll', hideInputHistoryTip, { passive: true, capture: true });
+            window.addEventListener('resize', hideInputHistoryTip, { passive: true });
+            window.addEventListener('keydown', hideInputHistoryTip, true);
+            window.addEventListener('pointerdown', (e) => {
+                if (!(e.target.closest && e.target.closest('#input-history-words .ih-word'))) hideInputHistoryTip();
+            }, true);
             wordsEl.addEventListener('click', (e) => {
                 const wordEl = e.target.closest && e.target.closest('.ih-word');
                 if (wordEl) showInputHistoryTip(wordEl);
@@ -6921,7 +6945,6 @@ window.setTimeout = function(handler, timeout) {
                 hideSelectors: [
                     '#stats-action-buttons',
                     inputHistoryOpen ? '#input-history-toggle-row' : '#input-history-section',
-                    '#input-history-tip',
                 ],
                 padding: 56,
                 injectLogo: true,
