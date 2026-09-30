@@ -2642,10 +2642,13 @@ function applyThemeSettings(settings) {
         /* Graph / pot / friends tab pills */
         .graph-tab-pill button,
         .pot-tab-pill .pot-btn,
-        .friends-tab-pill .friends-tab-btn {
+        .friends-tab-pill .friends-tab-btn,
+        .ct-seg button {
             color: ${p.textMuted} !important;
         }
         .graph-tab-pill button.active,
+        .ct-seg button.is-active,
+        .ct-seg button:hover,
         .pot-tab-pill .pot-btn.is-active,
         .friends-tab-pill .friends-tab-btn.active {
             color: ${fgStrong} !important;
@@ -3028,6 +3031,9 @@ function applyThemeSettings(settings) {
         #contact-box,
         #system-confirm-box,
         #custom-prompt-box,
+        #custom-text-box,
+        .ct-field,
+        .ct-seg,
         #player-profile-box,
         #avatar-editor-box,
         #theme-bg-box,
@@ -3117,6 +3123,7 @@ function applyThemeSettings(settings) {
         #contact-box,
         #system-confirm-box,
         #custom-prompt-box,
+        #custom-text-box,
         #player-profile-box,
         #avatar-editor-box,
         #theme-bg-box,
@@ -3232,6 +3239,12 @@ function applyThemeSettings(settings) {
         .contact-pill-textarea,
         #contact-modal #contact-problem-btn,
         #custom-prompt-input,
+        #custom-text-box,
+        .ct-field,
+        .ct-seg,
+        .ct-chip-btn,
+        .ct-saved-item,
+        .ct-book-banner,
         #graph-tooltip,
         .pot-graph-tooltip,
         .custom-popover,

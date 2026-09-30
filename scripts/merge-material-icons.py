@@ -1,14 +1,21 @@
-"""Merge missing Material Symbols ligatures into the local subset TTF."""
+"""Merge missing Material Symbols ligatures into the local subset TTF.
+
+Usage: python scripts/merge-material-icons.py <source.ttf> <backup-tag> <icon> [<icon> ...]
+The source font is a Google Fonts subset fetched with ?text=<icon names>.
+"""
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables.otTables import Ligature
 import copy
 import os
 import shutil
+import sys
 
 MAIN_PATH = "css/fonts/material-symbols.ttf"
-SRC_PATH = "scripts/.font-cache/theme-bg-src.ttf"
-BACKUP = "scripts/.font-cache/material-symbols.before-theme-bg.ttf"
-WANTED = {"wallpaper", "upload", "opacity", "add_photo_alternate", "image"}
+if len(sys.argv) < 4:
+    raise SystemExit(__doc__)
+SRC_PATH = sys.argv[1]
+BACKUP = "scripts/.font-cache/material-symbols.before-%s.ttf" % sys.argv[2]
+WANTED = set(sys.argv[3:])
 
 
 def name_of(g):
@@ -125,6 +132,10 @@ def main():
         target_subtable.ligatures.setdefault(first, []).append(lig)
         added += 1
     print("added ligatures", added)
+
+    # Longest first: "edit" listed before "edit_note" would match and leave "_note" as text.
+    for ligs in target_subtable.ligatures.values():
+        ligs.sort(key=lambda lig: -len(lig.Component))
 
     order = list(main_font.getGlyphOrder())
     for g in copied:

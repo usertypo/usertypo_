@@ -436,6 +436,7 @@
             cpb.classList.add('scale-95', 'opacity-0');
             cpb.classList.remove('scale-100', 'opacity-100');
         }
+        if (window.usertypoCustomText) window.usertypoCustomText.close({ silent: true });
 
         document.querySelectorAll('script[data-spa-page-script]').forEach(function (s) {
             s.remove();
