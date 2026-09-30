@@ -422,6 +422,20 @@
             margin-bottom: 0.75rem !important; /* Tailwind mb-3 */
         }
 
+        #custom-text-section {
+            display: none;
+        }
+        #config-bar.is-custom-text #custom-text-section {
+            display: flex;
+        }
+        #config-bar.is-custom-text #modifiers-section,
+        #config-bar.is-custom-text #modifiers-divider,
+        #config-bar.is-custom-text #adapt-section,
+        #config-bar.is-custom-text #adapt-divider,
+        #config-bar.is-custom-text #amt-section {
+            display: none !important;
+        }
+
         /* Infinity amount icons — Material all_inclusive (rounder than unicode ∞) */
         .inf-amt-icon {
             font-family: 'Material Symbols Outlined', sans-serif;
@@ -1194,6 +1208,13 @@
                                     <span
                                         class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap drop-shadow-[0_0_5px_rgba(0,208,255,0.4)] group-hover/btn:drop-shadow-none duration-300 delay-75">words</span>
                                 </div>
+                                <div id="btn-custom"
+                                    class="mode-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                                    onclick="setTestMode('custom')">
+                                    <span class="material-symbols-outlined text-[0.959rem] shrink-0">edit_note</span>
+                                    <span
+                                        class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">custom text</span>
+                                </div>
                             </div>
 
                             <div class="w-full h-px bg-white/5 my-2 shrink-0 transition-all duration-500"
@@ -1244,6 +1265,16 @@
                                         class="material-symbols-outlined text-[0.959rem] shrink-0 amt-custom-icon">build</span>
                                     <span
                                         class="opt-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">custom</span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col w-full transition-all duration-500 shrink-0" id="custom-text-section">
+                                <div id="btn-custom-edit"
+                                    class="amt-btn flex items-center gap-4 text-xs font-mono text-slate-400 h-8 px-[0.373rem] rounded hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] cursor-pointer w-full shrink-0"
+                                    onclick="openCustomTextEditor()">
+                                    <span class="material-symbols-outlined text-[0.959rem] shrink-0">edit_square</span>
+                                    <span
+                                        class="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap duration-300 delay-75">edit text</span>
                                 </div>
                             </div>
                         </div>
@@ -1764,6 +1795,12 @@ window.setTimeout = function(handler, timeout) {
         let customAmount = null;
         let isInfiniteTest = false;
 
+        // Custom text mode: the plan drives testMode/testAmount while active; the
+        // regular time/words selection is stashed and restored when leaving.
+        let customTextActive = false;
+        let customTextRegular = null;
+        let customTextPlan = null;
+
         // Sliding word buffer for long / infinite tests (keeps the DOM light).
         const INFINITE_WORDS_THRESHOLD = 10000;
         const INFINITE_TIME_THRESHOLD = 7200;
@@ -1802,6 +1839,11 @@ window.setTimeout = function(handler, timeout) {
             const absIdx = wordsPrunedCount + generatedWords.length;
             if (absIdx < promptWordsArchive.length) {
                 return promptWordsArchive[absIdx];
+            }
+            if (customTextActive && customTextPlan) {
+                const customWord = customTextPlan.wordAt(absIdx);
+                if (customWord) promptWordsArchive.push(customWord);
+                return customWord || '';
             }
             const word = generateRandomWord();
             promptWordsArchive.push(word);
@@ -1958,16 +2000,20 @@ window.setTimeout = function(handler, timeout) {
         let updateInterval;
 
         function saveConfig() {
-            const savedCustom = (customAmount === 'inf' || customAmount == null) ? null : customAmount;
+            const regular = customTextActive && customTextRegular
+                ? customTextRegular
+                : { testMode, testAmount, activeAmtIndex, customAmount, isInfiniteTest };
+            const savedCustom = (regular.customAmount === 'inf' || regular.customAmount == null) ? null : regular.customAmount;
             localStorage.setItem('usertypo_config', JSON.stringify({
-                testMode,
-                activeAmtIndex: isInfiniteTest ? 'inf' : activeAmtIndex,
-                testAmount: isInfiniteTest ? null : testAmount,
+                testMode: regular.testMode,
+                activeAmtIndex: regular.isInfiniteTest ? 'inf' : regular.activeAmtIndex,
+                testAmount: regular.isInfiniteTest ? null : regular.testAmount,
                 customAmount: savedCustom,
-                isInfiniteTest: !!isInfiniteTest,
+                isInfiniteTest: !!regular.isInfiniteTest,
                 usePunctuation,
                 useNumbers,
-                useAdaptRefine
+                useAdaptRefine,
+                customText: customTextActive
             }));
         }
 
@@ -2294,9 +2340,14 @@ window.setTimeout = function(handler, timeout) {
 
             // Load saved configuration from localStorage
             const savedConfig = localStorage.getItem('usertypo_config');
+            let resumeCustomText = false;
+            customTextActive = false;
+            customTextRegular = null;
+            customTextPlan = null;
             if (savedConfig) {
                 try {
                     const config = JSON.parse(savedConfig);
+                    resumeCustomText = !!config.customText;
                     testMode = config.testMode || 'words';
                     activeAmtIndex = config.activeAmtIndex !== undefined ? config.activeAmtIndex : 0;
                     // Trust explicit infinity flags only — never sticky customAmount:'inf'
@@ -2331,7 +2382,13 @@ window.setTimeout = function(handler, timeout) {
                 configBar.classList.remove('is-open');
             }, 2000);
 
+            if (testMode !== 'time' && testMode !== 'words') testMode = 'words';
             setTestMode(testMode);
+            if (window.usertypoCustomText) {
+                window.usertypoCustomText.setHandlers({ onApply: onCustomTextApplied });
+                if (resumeCustomText && window.usertypoCustomText.hasConfig()) activateCustomText();
+            }
+            updateCustomTextUI();
             updateActiveConfigIconsDisplay();
             if (useAdaptRefine) {
                 isSignedInForAdaptRefine().then(function (signedIn) {
@@ -2557,6 +2614,21 @@ window.setTimeout = function(handler, timeout) {
 
             if (!elPunct || !elNum || !elModeIcon || !elModeAmt) return;
 
+            if (customTextActive) {
+                [elPunct, elNum, elAdapt].forEach(el => {
+                    if (!el) return;
+                    el.classList.add('max-w-0', 'opacity-0');
+                    el.classList.remove('max-w-[4.263rem]', 'opacity-100');
+                });
+                elModeIcon.innerText = 'edit_note';
+                if (isInfiniteTest || testAmount === Infinity) {
+                    elModeAmt.innerHTML = '<span class="material-symbols-outlined inf-amt-icon" aria-hidden="true">all_inclusive</span>';
+                } else {
+                    elModeAmt.textContent = testMode === 'time' ? `${testAmount}s` : String(testAmount);
+                }
+                return;
+            }
+
             if (usePunctuation) {
                 elPunct.classList.remove('max-w-0', 'opacity-0');
                 elPunct.classList.add('max-w-[4.263rem]', 'opacity-100');
@@ -2629,21 +2701,108 @@ window.setTimeout = function(handler, timeout) {
             }
         }
 
-        function setTestMode(mode) {
-            testMode = mode;
-
+        function highlightModeButton(id) {
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
                 btn.classList.add('text-slate-400');
                 btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
             });
 
-            const activeBtn = document.getElementById(`btn-${mode}`);
+            const activeBtn = document.getElementById(id);
             if (activeBtn) {
                 activeBtn.classList.remove('text-slate-400');
                 activeBtn.classList.add('is-active', 'text-primary', 'font-bold', 'group/btn');
                 activeBtn.querySelectorAll('span').forEach(s => s.classList.add('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
             }
+        }
+
+        // --- CUSTOM TEXT MODE ---
+        function updateCustomTextUI() {
+            const bar = document.getElementById('config-bar');
+            if (bar) bar.classList.toggle('is-custom-text', customTextActive);
+        }
+
+        function prepareCustomTextPlan() {
+            if (!customTextActive || !window.usertypoCustomText) return;
+            customTextPlan = window.usertypoCustomText.createPlan();
+            testMode = customTextPlan.mode;
+            isInfiniteTest = !!customTextPlan.infinite;
+            testAmount = customTextPlan.infinite ? Infinity : customTextPlan.amount;
+            updateActiveConfigIconsDisplay();
+            syncHomeTimerProgressChrome();
+        }
+
+        /** Long ("book") texts remember how far the user typed. */
+        function recordCustomBookProgress() {
+            if (!customTextActive || !customTextPlan || !customTextPlan.book || !startTime) return;
+            if (!window.usertypoCustomText) return;
+            const current = generatedWords[currentWordIndex] || '';
+            const lastWordDone = current.length > 0 && currentCharIndex >= current.length;
+            window.usertypoCustomText.recordBookProgress(customTextPlan, getAbsoluteWordIndex() + (lastWordDone ? 1 : 0));
+        }
+
+        function saveCustomBookProgressOnBail() {
+            if (isTyping && !testComplete) recordCustomBookProgress();
+        }
+
+        function activateCustomText() {
+            const api = window.usertypoCustomText;
+            if (!api) return;
+            if (customTextActive) {
+                api.open();
+                return;
+            }
+            // First visit: nothing to type yet, so start in the editor and switch on Apply.
+            if (!api.hasConfig()) {
+                api.open();
+                return;
+            }
+            customTextRegular = { testMode, testAmount, activeAmtIndex, customAmount, isInfiniteTest };
+            customTextActive = true;
+            highlightModeButton('btn-custom');
+            updateCustomTextUI();
+            saveConfig();
+            restartTest();
+        }
+
+        function deactivateCustomText() {
+            saveCustomBookProgressOnBail();
+            customTextActive = false;
+            customTextPlan = null;
+            if (customTextRegular) {
+                testMode = customTextRegular.testMode;
+                testAmount = customTextRegular.testAmount;
+                activeAmtIndex = customTextRegular.activeAmtIndex;
+                customAmount = customTextRegular.customAmount;
+                isInfiniteTest = customTextRegular.isInfiniteTest;
+            }
+            customTextRegular = null;
+            updateCustomTextUI();
+        }
+
+        function onCustomTextApplied() {
+            if (!customTextActive) {
+                activateCustomText();
+                return;
+            }
+            saveConfig();
+            const statsView = document.getElementById('stats-view');
+            if (statsView && !statsView.classList.contains('hidden')) showTestView(true);
+            else restartTest();
+        }
+
+        function openCustomTextEditor() {
+            if (window.usertypoCustomText) window.usertypoCustomText.open();
+        }
+
+        function setTestMode(mode) {
+            if (mode === 'custom') {
+                activateCustomText();
+                return;
+            }
+            if (customTextActive) deactivateCustomText();
+            testMode = mode;
+            highlightModeButton(`btn-${mode}`);
 
             if (typeof updateActiveConfigIconsDisplay === 'function') {
                 updateActiveConfigIconsDisplay();
@@ -2692,6 +2851,7 @@ window.setTimeout = function(handler, timeout) {
             }
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
+                if (btn.id === 'btn-custom-edit') return;
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
                 btn.classList.add('text-slate-400');
                 btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
@@ -2724,6 +2884,7 @@ window.setTimeout = function(handler, timeout) {
             if (customAmount === 'inf') customAmount = null;
 
             document.querySelectorAll('.amt-btn').forEach(btn => {
+                if (btn.id === 'btn-custom-edit') return;
                 btn.classList.remove('is-active', 'text-primary', 'font-bold', 'group/btn');
                 btn.classList.add('text-slate-400');
                 btn.querySelectorAll('span').forEach(s => s.classList.remove('drop-shadow-[0_0_5px_rgba(0,208,255,0.4)]', 'group-hover/btn:drop-shadow-none'));
@@ -2870,6 +3031,7 @@ window.setTimeout = function(handler, timeout) {
         function restartTest(options) {
             if (isRestarting) return;
             isRestarting = true;
+            saveCustomBookProgressOnBail();
             const opts = options && typeof options === 'object' ? options : {};
             // Default true for Tab/restart/config changes; settings sync passes false
             const shouldRandomizeTheme = opts.randomizeTheme !== false;
@@ -2972,6 +3134,7 @@ window.setTimeout = function(handler, timeout) {
                     progressBar.style.transition = '';
                 }
 
+                prepareCustomTextPlan();
                 if (testMode === 'time') {
                     wordProgressDisplay.innerHTML = (isInfiniteTest || !Number.isFinite(testAmount))
                         ? '0'
@@ -3394,6 +3557,7 @@ window.setTimeout = function(handler, timeout) {
             if (contactModal && !contactModal.classList.contains('opacity-0')) return;
             const systemConfirm = document.getElementById('system-confirm-modal');
             if (systemConfirm && !systemConfirm.classList.contains('opacity-0')) return;
+            if (window.usertypoCustomText && window.usertypoCustomText.isOpen()) return;
             const activeTypingEl = document.activeElement;
             if (activeTypingEl && (
                 activeTypingEl.tagName === 'INPUT'
@@ -3437,7 +3601,7 @@ window.setTimeout = function(handler, timeout) {
                 e.preventDefault();
                 if (
                     e.shiftKey
-                    && isInfiniteTest
+                    && (isInfiniteTest || !!(customTextActive && customTextPlan && customTextPlan.book))
                     && !testComplete
                     && startTime
                     && !(document.getElementById('stats-view') && !document.getElementById('stats-view').classList.contains('hidden'))
@@ -4080,6 +4244,7 @@ window.setTimeout = function(handler, timeout) {
             if (mode === 'last' || isPaceRepeat) return lastTestWpm;
 
             if (mode === 'average' || mode === 'pb' || mode === 'daily') {
+                if (customTextActive) return 0;
                 if (window.usertypoSessions && typeof window.usertypoSessions.getPaceCaretWpm === 'function') {
                     const wpm = Number(window.usertypoSessions.getPaceCaretWpm(mode, getCurrentPaceConfig()));
                     return isFinite(wpm) && wpm > 0 ? wpm : 0;
@@ -4091,7 +4256,7 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function recordLocalPaceResult(wpm, failed) {
-            if (failed || !wpm || wpm < 1) return;
+            if (failed || !wpm || wpm < 1 || customTextActive) return;
             if (!window.usertypoSessions || typeof window.usertypoSessions.recordPaceHistory !== 'function') return;
             window.usertypoSessions.recordPaceHistory(Object.assign(getCurrentPaceConfig(), {
                 wpm: wpm,
@@ -4162,7 +4327,7 @@ window.setTimeout = function(handler, timeout) {
          * Never guess from incomplete local history (that caused random false PBs).
          */
         function maybeRevealPersonalBestBadge(wpm, failedReason, accuracy) {
-            if (failedReason) return;
+            if (failedReason || customTextActive) return;
             if (!isSignedInForPersonalBest()) return;
             if (!isSaveTestStatsEnabled()) return;
             if (!window.usertypoSessions) return;
@@ -4610,6 +4775,7 @@ window.setTimeout = function(handler, timeout) {
             inputHistoryFilter = null;
             document.getElementById('input-history-section')?.classList.remove('ih-entered');
             setInputHistoryOpen(false, true);
+            recordCustomBookProgress();
 
             // Calculate final exact stats
             let validChars = prunedValidChars;
@@ -4780,16 +4946,20 @@ window.setTimeout = function(handler, timeout) {
             var statsTestConfigEl = document.getElementById('stats-test-config');
             if (statsTestConfigEl) {
                 var configParts = [];
-                if (isInfiniteTest || testAmount === Infinity) {
+                if (customTextActive) {
+                    configParts.push(window.usertypoCustomText ? window.usertypoCustomText.describe(customTextPlan) : 'custom text');
+                } else if (isInfiniteTest || testAmount === Infinity) {
                     configParts.push(testMode === 'time' ? '∞ seconds' : '∞ words');
                 } else if (testMode === 'time') {
                     configParts.push(String(testAmount) + ' seconds');
                 } else {
                     configParts.push(String(testAmount) + ' words');
                 }
-                if (usePunctuation) configParts.push('punctuation');
-                if (useNumbers) configParts.push('numbers');
-                if (useAdaptRefine) configParts.push('adapt & refine');
+                if (!customTextActive) {
+                    if (usePunctuation) configParts.push('punctuation');
+                    if (useNumbers) configParts.push('numbers');
+                    if (useAdaptRefine) configParts.push('adapt & refine');
+                }
                 statsTestConfigEl.textContent = configParts.join(' · ');
             }
 
@@ -4978,7 +5148,7 @@ window.setTimeout = function(handler, timeout) {
                     var st = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
                     myId = st && st.isSignedIn && st.user ? st.user.id : null;
                 } catch (e) { /* ignore */ }
-                if (!myId) {
+                if (!myId || customTextActive) {
                     rankEl.textContent = '—';
                     return;
                 }
@@ -5046,7 +5216,8 @@ window.setTimeout = function(handler, timeout) {
 
             // Persist completed test for signed-in users, then refresh global rank.
             // Guests: send basic aggregates to Cloudflare for the About page.
-            if (window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
+            // Custom text is practice only and never reaches stats or leaderboards.
+            if (!customTextActive && window.usertypoSessions && typeof window.usertypoSessions.saveSession === 'function') {
                 var diagnosticsSummary = null;
                 if (
                     !failedReason &&
@@ -5362,6 +5533,7 @@ window.setTimeout = function(handler, timeout) {
                 window.usertypoHeader._cancelXpTimer();
             }
 
+            if (shouldRestart) prepareCustomTextPlan();
             if (testMode === 'time') {
                 wordProgressDisplay.innerHTML = (isInfiniteTest || !Number.isFinite(testAmount))
                     ? '0'
@@ -7780,6 +7952,7 @@ window.setTimeout = function(handler, timeout) {
         window.toggleAdaptRefine = toggleAdaptRefine;
         window.setTestAmountValue = setTestAmountValue;
         window.openCustomPrompt = openCustomPrompt;
+        window.openCustomTextEditor = openCustomTextEditor;
         window.closeCustomPrompt = closeCustomPrompt;
         window.applyCustomPrompt = applyCustomPrompt;
         window.dismissFailAndRestart = dismissFailAndRestart;
@@ -7788,6 +7961,8 @@ window.setTimeout = function(handler, timeout) {
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {
+    if (typeof saveCustomBookProgressOnBail === 'function') saveCustomBookProgressOnBail();
+    if (window.usertypoCustomText) window.usertypoCustomText.close({ silent: true });
     __pageAbort.abort();
     __pageTimers.forEach(function(t) {
         if (t.kind === 'interval') __origClearInterval(t.id);
