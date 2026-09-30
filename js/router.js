@@ -877,6 +877,10 @@
 
             reinitializeSharedModules(path);
 
+            if (window.usertypoHomeTour && typeof window.usertypoHomeTour.sync === 'function') {
+                window.usertypoHomeTour.sync();
+            }
+
             if (path === '/') {
                 prepareHomeTypingView();
                 // Only restart on the FIRST visit to home.  Returning from
