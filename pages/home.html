@@ -295,22 +295,20 @@
             white-space: nowrap; 
         }
 
-        /* Newline marker word — ↵ char that forces a line break */
+        /* Newline marker word — ↵ char inline after last word, then break */
         .word.newline-word {
-            display: inline-flex;
-            align-items: center;
-            flex-basis: 100%;
-            width: 0;
-            overflow: visible;
+            margin-left: -0.6em; /* negate column-gap to sit flush against previous word */
         }
         .newline-char {
-            display: inline-flex;
-            align-items: center;
             opacity: 0.35;
             font-size: 0.75em;
         }
         .newline-char.text-primary {
             opacity: 0.85;
+        }
+        .newline-break {
+            flex-basis: 100%;
+            height: 0;
         }
 
         /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
@@ -3238,6 +3236,11 @@ window.setTimeout = function(handler, timeout) {
                 charEl.textContent = '↵';
                 wordEl.appendChild(charEl);
                 textContainer.appendChild(wordEl);
+                // Insert a zero-height break element to force next words onto a new line
+                const breakEl = document.createElement('div');
+                breakEl.className = 'newline-break';
+                breakEl.setAttribute('aria-hidden', 'true');
+                textContainer.appendChild(breakEl);
                 return;
             }
 
