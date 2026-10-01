@@ -295,6 +295,29 @@
             white-space: nowrap; 
         }
 
+        /* Newline marker word — enter icon that forces a line break */
+        .word.newline-word {
+            display: inline-flex;
+            align-items: center;
+            flex-basis: 100%;
+            width: 0;
+            overflow: visible;
+        }
+        .newline-char {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .newline-icon {
+            font-size: 1.15em;
+            line-height: 1;
+            opacity: 0.5;
+        }
+        .newline-char.text-primary .newline-icon {
+            color: var(--theme-primary, #fff);
+            opacity: 1;
+        }
+
         /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
         body.typing-rtl #text-container,
         body.typing-rtl #typing-area {
@@ -3210,6 +3233,19 @@ window.setTimeout = function(handler, timeout) {
             wordEl.className = 'word';
             wordEl.id = `word-${wIdx}`;
 
+            // Newline marker word → render as enter icon
+            const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+            if (nlWord && word === nlWord) {
+                wordEl.classList.add('newline-word');
+                const charEl = document.createElement('span');
+                charEl.id = `char-${wIdx}-0`;
+                charEl.className = 'char text-slate-500 newline-char';
+                charEl.innerHTML = '<span class="material-symbols-outlined newline-icon" aria-hidden="true">keyboard_return</span>';
+                wordEl.appendChild(charEl);
+                textContainer.appendChild(wordEl);
+                return;
+            }
+
             word.split('').forEach((char, cIdx) => {
                 const charEl = document.createElement('span');
                 charEl.innerText = char;
@@ -3599,6 +3635,64 @@ window.setTimeout = function(handler, timeout) {
             // â”€â”€ Stats View Enter to Next Test / Infinite submit â”€â”€
             if (e.key === 'Enter') {
                 e.preventDefault();
+
+                // When custom text uses 'enter' newline mode, Enter advances past newline words
+                const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+                if (nlWord && !testComplete && isTyping
+                    && generatedWords[currentWordIndex] === nlWord) {
+                    totalKeystrokes++;
+                    if (window.playKeystrokeSound) window.playKeystrokeSound('Enter');
+                    hideZenElements();
+                    const enterNow = Date.now();
+                    keystrokeTimes.push(enterNow);
+
+                    // Record word completion telemetry
+                    if (currentWordStartTime !== null) {
+                        wordTimestamps.push({
+                            wordIndex: currentWordIndex,
+                            word: nlWord,
+                            startTime: currentWordStartTime,
+                            endTime: enterNow,
+                            charTimes: [...currentWordCharTimes]
+                        });
+                    } else {
+                        const prevEnd = wordTimestamps.length > 0 ? wordTimestamps[wordTimestamps.length - 1].endTime : (startTime || enterNow);
+                        wordTimestamps.push({
+                            wordIndex: currentWordIndex,
+                            word: nlWord,
+                            startTime: prevEnd,
+                            endTime: enterNow,
+                            charTimes: []
+                        });
+                    }
+                    currentWordStartTime = null;
+                    currentWordCharTimes = [];
+                    if (lastKeystrokeTime) {
+                        const interval = enterNow - lastKeystrokeTime;
+                        avgInterKeyInterval = avgInterKeyInterval * 0.9 + interval * 0.1;
+                    }
+                    lastKeystrokeTime = enterNow;
+
+                    // Mark the newline char as correct
+                    const nlCharEl = document.getElementById(`char-${currentWordIndex}-0`);
+                    if (nlCharEl) nlCharEl.className = 'char text-primary newline-char';
+
+                    liveCompletedValidChars += 1; // count as 1 valid char (the enter)
+                    liveCurrentCorrectChars = 0;
+
+                    currentWordIndex++;
+                    currentCharIndex = 0;
+
+                    if (testMode === 'words' && Number.isFinite(testAmount) && getAbsoluteWordIndex() >= testAmount) {
+                        testComplete = true;
+                        setTimeout(() => { if (testComplete && !isRestarting) endTest(); });
+                        return;
+                    }
+                    ensureWordBuffer();
+                    refreshTypingChrome(false);
+                    return;
+                }
+
                 if (
                     e.shiftKey
                     && (isInfiniteTest || !!(customTextActive && customTextPlan && customTextPlan.book))
@@ -3804,6 +3898,12 @@ window.setTimeout = function(handler, timeout) {
                 totalKeystrokes++;
                 if (window.playKeystrokeSound) window.playKeystrokeSound(' ');
 
+                // Block space on newline words — only Enter advances past them
+                const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+                if (nlWord && generatedWords[currentWordIndex] === nlWord) {
+                    return;
+                }
+
                 // â”€â”€ Stop on Error: Word â”€â”€ block space if current word has errors
                 const stopOnErr = getTestRule('stopOnError');
                 if (stopOnErr === 'Word') {
@@ -3917,6 +4017,12 @@ window.setTimeout = function(handler, timeout) {
             else if (e.key.length === 1) {
                 e.preventDefault();
                 totalKeystrokes++;
+
+                // Newline words can only be advanced past with Enter, not regular chars
+                const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+                if (nlWord && generatedWords[currentWordIndex] === nlWord) {
+                    return;
+                }
 
                 // â”€â”€ Opposite Shift enforcement â”€â”€
                 const e_shiftKey_memo = e.shiftKey;

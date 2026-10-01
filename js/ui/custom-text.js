@@ -12,7 +12,8 @@
     var MODES = ['simple', 'repeat', 'shuffle', 'random'];
     var LIMIT_TYPES = ['words', 'time', 'sections'];
     var DELIMITERS = ['space', 'pipe'];
-    var NEWLINES = ['space', 'period'];
+    var NEWLINES = ['enter', 'space', 'period'];
+    var NEWLINE_WORD = '\n';
     var LIMIT_MAX = { words: 10000, time: 7200, sections: 10000 };
     var MAX_FILE_BYTES = 5 * 1024 * 1024;
     var MAX_GENERATED_WORDS = 1000;
@@ -67,7 +68,7 @@
             limitType: 'words',
             limitValue: null,
             delimiter: 'space',
-            newlines: 'space',
+            newlines: 'enter',
             book: null
         };
     }
@@ -194,6 +195,11 @@
 
     function applyNewlines(text, newlines) {
         var t = String(text || '').replace(/\r\n?/g, '\n').replace(/\t/g, ' ');
+        if (newlines === 'enter') {
+            // Preserve newlines as a special marker word so the typing engine
+            // can render an enter icon and require the Enter key to advance.
+            return t;
+        }
         if (newlines === 'period') {
             return t.split('\n').map(function (line) {
                 var trimmed = line.trim();
@@ -204,17 +210,28 @@
         return t.replace(/\n/g, ' ');
     }
 
-    function splitWords(text) {
+    function splitWords(text, keepNewlines) {
+        if (keepNewlines) {
+            // Split on whitespace but keep \n as its own token.
+            var parts = [];
+            text.split('\n').forEach(function (line, li) {
+                if (li > 0) parts.push(NEWLINE_WORD);
+                var words = line.split(/[ \t]+/).filter(Boolean);
+                for (var w = 0; w < words.length; w++) parts.push(words[w]);
+            });
+            return parts;
+        }
         return text.split(/\s+/).filter(Boolean);
     }
 
     /** Sections are arrays of words; with the space delimiter every word is its own section. */
     function parseSections(cfg, text) {
         var flat = applyNewlines(text, cfg.newlines);
+        var isEnter = cfg.newlines === 'enter';
         if (cfg.delimiter === 'pipe') {
-            return flat.split('|').map(splitWords).filter(function (s) { return s.length > 0; });
+            return flat.split('|').map(function (s) { return splitWords(s, isEnter); }).filter(function (s) { return s.length > 0; });
         }
-        return splitWords(flat).map(function (w) { return [w]; });
+        return splitWords(flat, isEnter).map(function (w) { return [w]; });
     }
 
     function countWords(cfg, text) {
@@ -527,7 +544,7 @@
             '          </div>',
             '          <div class="ct-row">',
             '            <div class="ct-label">line breaks become</div>',
-            '            ' + seg('newlines', [['space', 'a space'], ['period', 'a period + space']]),
+            '            ' + seg('newlines', [['enter', 'enter'], ['space', 'a space'], ['period', 'a period + space']]),
             '          </div>',
             '          <div class="ct-row">',
             '            <div class="ct-label">clean up</div>',
@@ -1156,6 +1173,7 @@
     }
 
     window.usertypoCustomText = {
+        NEWLINE_WORD: NEWLINE_WORD,
         hasConfig: hasConfig,
         getConfig: getConfig,
         createPlan: createPlan,
