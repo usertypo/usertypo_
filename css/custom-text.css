@@ -3,7 +3,10 @@
 
 #custom-text-modal {
     position: fixed;
-    inset: 0;
+    top: var(--shell-header-h, 3.5rem);
+    left: 0;
+    right: 0;
+    bottom: var(--shell-footer-h, 3rem);
     z-index: 250;
     display: flex;
     align-items: center;
@@ -25,7 +28,7 @@
 #custom-text-box {
     position: relative;
     width: min(54rem, 100%);
-    max-height: min(88vh, 46rem);
+    max-height: 100%;
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
@@ -33,7 +36,11 @@
     border-radius: var(--theme-box-radius, 1.375rem);
     color: var(--theme-text, #cbd5e1);
     transform: translateY(8px) scale(0.97);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#custom-text-box:not([data-view="main"]) {
+    width: min(34rem, 100%);
 }
 #custom-text-modal.is-open #custom-text-box {
     transform: none;
@@ -414,8 +421,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
-    max-width: 30rem;
-    margin: 0 auto;
     padding: 0.2rem 0 0.4rem;
 }
 .ct-sub-desc {
