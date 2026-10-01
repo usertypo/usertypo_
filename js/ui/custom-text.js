@@ -1117,6 +1117,11 @@
 
     function open() {
         ensureModal();
+        // Measure header/footer so the modal sits between them
+        var header = document.querySelector('header');
+        var footer = document.getElementById('spa-shell-footer');
+        if (header) modal.style.setProperty('--shell-header-h', header.offsetHeight + 'px');
+        if (footer && footer.offsetHeight > 0) modal.style.setProperty('--shell-footer-h', footer.offsetHeight + 'px');
         draft = getConfig();
         lastFocus = document.activeElement;
         showView('main');
