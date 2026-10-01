@@ -295,7 +295,7 @@
             white-space: nowrap; 
         }
 
-        /* Newline marker word — enter icon that forces a line break */
+        /* Newline marker word — ↵ char that forces a line break */
         .word.newline-word {
             display: inline-flex;
             align-items: center;
@@ -306,23 +306,10 @@
         .newline-char {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-        }
-        .newline-icon {
-            font-family: 'Material Symbols Outlined' !important;
-            font-size: 0.75em;
-            line-height: 1;
             opacity: 0.35;
-            font-weight: normal;
-            font-style: normal;
-            letter-spacing: normal;
-            text-transform: none;
-            white-space: nowrap;
-            word-wrap: normal;
-            -webkit-font-smoothing: antialiased;
+            font-size: 0.75em;
         }
-        .newline-char.text-primary .newline-icon {
-            color: var(--theme-primary, #fff);
+        .newline-char.text-primary {
             opacity: 0.85;
         }
 
@@ -3248,7 +3235,7 @@ window.setTimeout = function(handler, timeout) {
                 const charEl = document.createElement('span');
                 charEl.id = `char-${wIdx}-0`;
                 charEl.className = 'char text-slate-500 newline-char';
-                charEl.innerHTML = '<span class="material-symbols-outlined newline-icon" aria-hidden="true">keyboard_return</span>';
+                charEl.textContent = '↵';
                 wordEl.appendChild(charEl);
                 textContainer.appendChild(wordEl);
                 return;
