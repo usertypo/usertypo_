@@ -15,12 +15,12 @@
     var AUTH_FALLBACK_MS = 4000;
     var GAP = 12;
     var PAD = 8;
+    var RING = 6;
 
     /**
      * Guard flag — set to true while an activate() function is running so that
      * synthetic clicks (e.g. toggle.click() for the bubble menu) don't reach
-     * onDocumentClick and close the tour.  Because onDocumentClick is registered
-     * on the *capture* phase it fires before the target's own handler.
+     * onDocumentClick and close the tour.
      */
     var tourActivating = false;
 
@@ -61,11 +61,9 @@
                 var bubble = document.getElementById('expanding-bubble');
                 var toggle = document.getElementById('bubble-toggle');
                 if (bubble && toggle && !bubble.classList.contains('is-open')) {
-                    /* Set guard so the synthetic click doesn't close the tour */
                     tourActivating = true;
                     toggle.click();
                     tourActivating = false;
-                    /* Prevent mouseleave from closing the bubble during the tour */
                     bubble._tourNoAutoClose = true;
                     return function () {
                         bubble._tourNoAutoClose = false;
@@ -104,6 +102,7 @@
     var isOpen = false;
     var authResolved = false;
     var activeDeactivator = null;
+    var spotlightRafId = null;
 
     function getAuthState() {
         var auth = window.usertypoAuth;
@@ -246,7 +245,6 @@
         }
     }
 
-    /** Update slide text, dots, and buttons (no positioning or activation). */
     function renderSlideContent() {
         var slide = SLIDES[slideIndex];
         var last = slideIndex === SLIDES.length - 1;
@@ -270,6 +268,43 @@
         });
     }
 
+    /* ── Spotlight tracking ─────────────────────────────────────── */
+
+    /**
+     * Start a requestAnimationFrame loop that re-measures the target element
+     * every frame for `durationMs`, keeping the spotlight perfectly in sync
+     * with CSS transitions (config-bar expand, bubble open, etc.).
+     * The spotlight's own CSS transitions are suppressed during tracking.
+     */
+    function startTrackingSpotlight(durationMs) {
+        stopTrackingSpotlight();
+        if (spotlight) spotlight.style.transition = 'opacity 0.2s ease';
+
+        var startTime = performance.now();
+        function tick() {
+            if (!isOpen) { stopTrackingSpotlight(); return; }
+            positionSpotlight();
+            if (performance.now() - startTime < durationMs) {
+                spotlightRafId = requestAnimationFrame(tick);
+            } else {
+                /* Tracking done — restore CSS transitions and do a final position */
+                if (spotlight) spotlight.style.transition = '';
+                position();
+            }
+        }
+        spotlightRafId = requestAnimationFrame(tick);
+    }
+
+    function stopTrackingSpotlight() {
+        if (spotlightRafId) {
+            cancelAnimationFrame(spotlightRafId);
+            spotlightRafId = null;
+        }
+        if (spotlight) spotlight.style.transition = '';
+    }
+
+    /* ── End spotlight tracking ──────────────────────────────────── */
+
     function renderSlide(animate) {
         renderSlideContent();
 
@@ -282,11 +317,20 @@
 
         activateSlide();
 
-        /* Position after a brief delay so activation starts */
-        setTimeout(function () { position(); }, 60);
-        /* Re-position after activation CSS transitions finish
-           (config-bar uses duration-500 = 500ms, bubble uses 400ms) */
-        setTimeout(function () { position(); }, 550);
+        var slide = SLIDES[slideIndex];
+        if (typeof slide.activate === 'function') {
+            /*
+             * This slide activates (expands) a UI element.  Use rAF tracking
+             * so the spotlight expands in lock-step with the element.
+             * 600ms covers config-bar (500ms) and bubble (400ms) transitions.
+             */
+            startTrackingSpotlight(600);
+            /* Also update popover position after element finishes expanding */
+            setTimeout(function () { position(); }, 550);
+        } else {
+            /* Static target — use CSS transition for smooth spotlight glide */
+            position();
+        }
     }
 
     function goTo(index) {
@@ -314,6 +358,17 @@
         return rect;
     }
 
+    /**
+     * Find the first non-null element in the targets array.
+     */
+    function firstTarget(targets) {
+        if (!targets) return null;
+        for (var i = 0; i < targets.length; i++) {
+            if (targets[i]) return targets[i];
+        }
+        return null;
+    }
+
     function positionSpotlight() {
         if (!spotlight) return;
         var targets = isOpen ? SLIDES[slideIndex].targets() : null;
@@ -322,18 +377,32 @@
             spotlight.classList.remove('visible');
             return;
         }
-        var ring = 6;
-        spotlight.style.top = (rect.top - ring) + 'px';
-        spotlight.style.left = (rect.left - ring) + 'px';
-        spotlight.style.width = (rect.right - rect.left + ring * 2) + 'px';
-        spotlight.style.height = (rect.bottom - rect.top + ring * 2) + 'px';
+
+        /* Match the target element's border-radius so the highlight ring
+           follows the same corner curvature as the actual element */
+        var el = firstTarget(targets);
+        if (el) {
+            var cs = getComputedStyle(el);
+            var tl = parseFloat(cs.borderTopLeftRadius) || 0;
+            var tr = parseFloat(cs.borderTopRightRadius) || 0;
+            var br = parseFloat(cs.borderBottomRightRadius) || 0;
+            var bl = parseFloat(cs.borderBottomLeftRadius) || 0;
+            /* Add the ring offset to non-zero corners so the curve stays
+               concentric with the element's own corners */
+            spotlight.style.borderRadius =
+                (tl ? tl + RING : 0) + 'px ' +
+                (tr ? tr + RING : 0) + 'px ' +
+                (br ? br + RING : 0) + 'px ' +
+                (bl ? bl + RING : 0) + 'px';
+        }
+
+        spotlight.style.top = (rect.top - RING) + 'px';
+        spotlight.style.left = (rect.left - RING) + 'px';
+        spotlight.style.width = (rect.right - rect.left + RING * 2) + 'px';
+        spotlight.style.height = (rect.bottom - rect.top + RING * 2) + 'px';
         spotlight.classList.add('visible');
     }
 
-    /**
-     * Position the popover near the target element(s).
-     * The popover glides to wherever the current slide's targets are.
-     */
     function position() {
         if (!popover || !isOpen) return;
 
@@ -397,41 +466,38 @@
         trigger.setAttribute('aria-expanded', 'true');
         trigger.closest('[data-home-tour]').classList.add('is-open');
 
-        /* Populate slide content so the popover has its final size */
         renderSlideContent();
 
-        /*
-         * Position the popover at the correct location BEFORE making it visible.
-         * This prevents the "sliding in from top-left corner" effect.
-         * We suppress the CSS top/left transition for this initial placement.
-         */
+        /* Position before showing (suppress glide from 0,0) */
         popover.style.transition = 'none';
         if (spotlight) spotlight.style.transition = 'none';
         position();
-        void popover.offsetWidth;          /* flush layout */
+        void popover.offsetWidth;
 
-        /* Now reveal — opacity fades in, but top/left are already correct */
         popover.classList.add('visible');
         popover.setAttribute('aria-hidden', 'false');
 
-        /* Re-enable glide transitions for subsequent position changes */
         requestAnimationFrame(function () {
             if (popover) popover.style.transition = '';
             if (spotlight) spotlight.style.transition = '';
         });
 
-        /* Blur trigger so Enter key doesn't show focus ring */
         trigger.blur();
 
-        /* Activate the element for slide 0 then re-position with glide */
+        /* Activate element and track spotlight in sync via rAF */
         activateSlide();
-        setTimeout(function () { position(); }, 60);
-        setTimeout(function () { position(); }, 550);
+
+        var slide = SLIDES[slideIndex];
+        if (typeof slide.activate === 'function') {
+            startTrackingSpotlight(600);
+            setTimeout(function () { position(); }, 550);
+        }
     }
 
     function close() {
         if (!isOpen) return;
         isOpen = false;
+        stopTrackingSpotlight();
         deactivateSlide();
         if (popover) {
             popover.classList.remove('visible');
@@ -447,7 +513,6 @@
     }
 
     function onDocumentClick(e) {
-        /* Skip clicks generated by activate() (e.g. bubble toggle.click()) */
         if (tourActivating) return;
 
         var target = e.target instanceof Element ? e.target : null;
@@ -522,7 +587,6 @@
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
 
-        /* Patch expanding-bubble: suppress auto-close on mouseleave during tour */
         var bubble = document.getElementById('expanding-bubble');
         if (bubble) {
             bubble.addEventListener('mouseleave', function (e) {
