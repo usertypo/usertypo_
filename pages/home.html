@@ -295,20 +295,15 @@
             white-space: nowrap; 
         }
 
-        /* Newline marker word — ↵ char inline after last word, then break */
+        /* Newline marker — ↵ sits flush after previous word, then line breaks */
         .word.newline-word {
-            margin-left: -0.6em; /* negate column-gap to sit flush against previous word */
-        }
-        .newline-char {
-            opacity: 0.35;
-            font-size: 0.75em;
-        }
-        .newline-char.text-primary {
-            opacity: 0.85;
+            margin-left: -0.6em; /* negate #text-container column-gap */
         }
         .newline-break {
             flex-basis: 100%;
             height: 0;
+            overflow: hidden;
+            pointer-events: none;
         }
 
         /* RTL typing languages (Arabic, etc.) — words + caret flow right → left */
@@ -3232,7 +3227,7 @@ window.setTimeout = function(handler, timeout) {
                 wordEl.classList.add('newline-word');
                 const charEl = document.createElement('span');
                 charEl.id = `char-${wIdx}-0`;
-                charEl.className = 'char text-slate-500 newline-char';
+                charEl.className = 'char text-slate-500';
                 charEl.textContent = '↵';
                 wordEl.appendChild(charEl);
                 textContainer.appendChild(wordEl);
@@ -3673,13 +3668,88 @@ window.setTimeout = function(handler, timeout) {
 
                     // Mark the newline char as correct
                     const nlCharEl = document.getElementById(`char-${currentWordIndex}-0`);
-                    if (nlCharEl) nlCharEl.className = 'char text-primary newline-char';
+                    if (nlCharEl) nlCharEl.className = 'char text-primary';
 
                     liveCompletedValidChars += 1; // count as 1 valid char (the enter)
                     liveCurrentCorrectChars = 0;
 
                     currentWordIndex++;
                     currentCharIndex = 0;
+
+                    if (testMode === 'words' && Number.isFinite(testAmount) && getAbsoluteWordIndex() >= testAmount) {
+                        testComplete = true;
+                        setTimeout(() => { if (testComplete && !isRestarting) endTest(); });
+                        return;
+                    }
+                    ensureWordBuffer();
+                    refreshTypingChrome(false);
+                    return;
+                }
+
+                // Enter as delimiter: user finished typing a normal word, next word is ↵
+                if (nlWord && !testComplete && isTyping
+                    && generatedWords[currentWordIndex + 1] === nlWord
+                    && currentCharIndex > 0) {
+                    totalKeystrokes++;
+                    if (window.playKeystrokeSound) window.playKeystrokeSound('Enter');
+                    hideZenElements();
+                    const enterNow = Date.now();
+                    keystrokeTimes.push(enterNow);
+
+                    // Record telemetry for the just-finished normal word
+                    const finishedWord = generatedWords[currentWordIndex];
+                    if (currentWordStartTime !== null) {
+                        wordTimestamps.push({
+                            wordIndex: currentWordIndex,
+                            word: finishedWord,
+                            startTime: currentWordStartTime,
+                            endTime: enterNow,
+                            charTimes: [...currentWordCharTimes]
+                        });
+                    }
+
+                    // Mark skipped chars in current word as errors (if user pressed Enter early)
+                    if (currentCharIndex < finishedWord.length) {
+                        for (let ci = currentCharIndex; ci < finishedWord.length; ci++) {
+                            const skipEl = document.getElementById(`char-${currentWordIndex}-${ci}`);
+                            if (skipEl) {
+                                skipEl.classList.remove('text-primary');
+                                skipEl.classList.add('error-underline');
+                            }
+                        }
+                    }
+
+                    recomputeLiveValidCounters();
+
+                    // Advance past the normal word
+                    currentWordIndex++;
+                    currentCharIndex = 0;
+                    currentWordStartTime = null;
+                    currentWordCharTimes = [];
+
+                    // Now consume the ↵ token
+                    const nlCharEl = document.getElementById(`char-${currentWordIndex}-0`);
+                    if (nlCharEl) nlCharEl.className = 'char text-primary';
+                    liveCompletedValidChars += 1;
+                    liveCurrentCorrectChars = 0;
+
+                    // Record telemetry for the ↵ word
+                    wordTimestamps.push({
+                        wordIndex: currentWordIndex,
+                        word: nlWord,
+                        startTime: enterNow,
+                        endTime: enterNow,
+                        charTimes: []
+                    });
+
+                    currentWordIndex++;
+                    currentCharIndex = 0;
+
+                    if (lastKeystrokeTime) {
+                        const interval = enterNow - lastKeystrokeTime;
+                        avgInterKeyInterval = avgInterKeyInterval * 0.9 + interval * 0.1;
+                    }
+                    lastKeystrokeTime = enterNow;
 
                     if (testMode === 'words' && Number.isFinite(testAmount) && getAbsoluteWordIndex() >= testAmount) {
                         testComplete = true;
@@ -3896,9 +3966,12 @@ window.setTimeout = function(handler, timeout) {
                 totalKeystrokes++;
                 if (window.playKeystrokeSound) window.playKeystrokeSound(' ');
 
-                // Block space on newline words — only Enter advances past them
+                // Block space on/before newline words — Enter is the delimiter
                 const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
-                if (nlWord && generatedWords[currentWordIndex] === nlWord) {
+                if (nlWord && (
+                    generatedWords[currentWordIndex] === nlWord ||
+                    generatedWords[currentWordIndex + 1] === nlWord
+                )) {
                     return;
                 }
 
