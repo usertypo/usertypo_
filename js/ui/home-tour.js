@@ -16,6 +16,14 @@
     var GAP = 12;
     var PAD = 8;
 
+    /**
+     * Guard flag — set to true while an activate() function is running so that
+     * synthetic clicks (e.g. toggle.click() for the bubble menu) don't reach
+     * onDocumentClick and close the tour.  Because onDocumentClick is registered
+     * on the *capture* phase it fires before the target's own handler.
+     */
+    var tourActivating = false;
+
     var SLIDES = [
         {
             icon: 'tune',
@@ -53,13 +61,15 @@
                 var bubble = document.getElementById('expanding-bubble');
                 var toggle = document.getElementById('bubble-toggle');
                 if (bubble && toggle && !bubble.classList.contains('is-open')) {
-                    // Simulate a click to open the bubble using the wired-up handler
+                    /* Set guard so the synthetic click doesn't close the tour */
+                    tourActivating = true;
                     toggle.click();
-                    // Prevent mouseleave from closing it during the tour
+                    tourActivating = false;
+                    /* Prevent mouseleave from closing the bubble during the tour */
                     bubble._tourNoAutoClose = true;
                     return function () {
                         bubble._tourNoAutoClose = false;
-                        if (bubble.classList.contains('is-open') && typeof bubble.usertypoBubbleClose === 'function') {
+                        if (typeof bubble.usertypoBubbleClose === 'function') {
                             bubble.usertypoBubbleClose();
                         }
                     };
@@ -93,7 +103,7 @@
     var slideIndex = 0;
     var isOpen = false;
     var authResolved = false;
-    var activeDeactivator = null; // Cleanup fn for the currently active slide's activation
+    var activeDeactivator = null;
 
     function getAuthState() {
         var auth = window.usertypoAuth;
@@ -221,7 +231,6 @@
         return popover;
     }
 
-    /** Deactivate the previous slide's activated element */
     function deactivateSlide() {
         if (activeDeactivator) {
             try { activeDeactivator(); } catch (e) { /* ignore */ }
@@ -229,7 +238,6 @@
         }
     }
 
-    /** Activate the current slide's element (expand config bar, open menu, etc.) */
     function activateSlide() {
         deactivateSlide();
         var slide = SLIDES[slideIndex];
@@ -238,7 +246,8 @@
         }
     }
 
-    function renderSlide(animate) {
+    /** Update slide text, dots, and buttons (no positioning or activation). */
+    function renderSlideContent() {
         var slide = SLIDES[slideIndex];
         var last = slideIndex === SLIDES.length - 1;
 
@@ -259,6 +268,10 @@
             if (i === slideIndex) dot.setAttribute('aria-current', 'step');
             else dot.removeAttribute('aria-current');
         });
+    }
+
+    function renderSlide(animate) {
+        renderSlideContent();
 
         if (animate) {
             var content = popover.querySelector('.home-tour-slide');
@@ -267,13 +280,13 @@
             content.classList.add('is-entering');
         }
 
-        // Activate / deactivate elements for this slide
         activateSlide();
 
-        // Small delay so activated elements can render/expand before we measure
-        setTimeout(function () {
-            position();
-        }, 50);
+        /* Position after a brief delay so activation starts */
+        setTimeout(function () { position(); }, 60);
+        /* Re-position after activation CSS transitions finish
+           (config-bar uses duration-500 = 500ms, bubble uses 400ms) */
+        setTimeout(function () { position(); }, 550);
     }
 
     function goTo(index) {
@@ -318,7 +331,7 @@
     }
 
     /**
-     * Position the popover near the target element(s) instead of near the trigger icon.
+     * Position the popover near the target element(s).
      * The popover glides to wherever the current slide's targets are.
      */
     function position() {
@@ -327,7 +340,6 @@
         var targets = SLIDES[slideIndex].targets();
         var targetRect = unionRect(targets);
 
-        // Fallback: if no target rect, position near trigger icon
         if (!targetRect && activeTrigger) {
             targetRect = activeTrigger.getBoundingClientRect();
         }
@@ -341,34 +353,27 @@
         var targetCenterX = (targetRect.left + targetRect.right) / 2;
         var targetCenterY = (targetRect.top + targetRect.bottom) / 2;
 
-        // Try to place the popover to the left of the target first,
-        // then right, then above, then below — whichever fits best
         var top, left;
-        var placed = false;
 
         // Left of target
         if (targetRect.left - GAP - w > PAD) {
             left = targetRect.left - GAP - w;
             top = targetCenterY - h / 2;
-            placed = true;
         }
         // Right of target
         else if (targetRect.right + GAP + w < vw - PAD) {
             left = targetRect.right + GAP;
             top = targetCenterY - h / 2;
-            placed = true;
         }
         // Above target
         else if (targetRect.top - GAP - h > PAD) {
             top = targetRect.top - GAP - h;
             left = targetCenterX - w / 2;
-            placed = true;
         }
         // Below target
         else {
             top = targetRect.bottom + GAP;
             left = targetCenterX - w / 2;
-            placed = true;
         }
 
         // Clamp within viewport
@@ -388,11 +393,40 @@
         activeTrigger = trigger;
         slideIndex = 0;
         isOpen = true;
-        popover.classList.add('visible');
-        popover.setAttribute('aria-hidden', 'false');
+
         trigger.setAttribute('aria-expanded', 'true');
         trigger.closest('[data-home-tour]').classList.add('is-open');
-        renderSlide(false);
+
+        /* Populate slide content so the popover has its final size */
+        renderSlideContent();
+
+        /*
+         * Position the popover at the correct location BEFORE making it visible.
+         * This prevents the "sliding in from top-left corner" effect.
+         * We suppress the CSS top/left transition for this initial placement.
+         */
+        popover.style.transition = 'none';
+        if (spotlight) spotlight.style.transition = 'none';
+        position();
+        void popover.offsetWidth;          /* flush layout */
+
+        /* Now reveal — opacity fades in, but top/left are already correct */
+        popover.classList.add('visible');
+        popover.setAttribute('aria-hidden', 'false');
+
+        /* Re-enable glide transitions for subsequent position changes */
+        requestAnimationFrame(function () {
+            if (popover) popover.style.transition = '';
+            if (spotlight) spotlight.style.transition = '';
+        });
+
+        /* Blur trigger so Enter key doesn't show focus ring */
+        trigger.blur();
+
+        /* Activate the element for slide 0 then re-position with glide */
+        activateSlide();
+        setTimeout(function () { position(); }, 60);
+        setTimeout(function () { position(); }, 550);
     }
 
     function close() {
@@ -413,6 +447,9 @@
     }
 
     function onDocumentClick(e) {
+        /* Skip clicks generated by activate() (e.g. bubble toggle.click()) */
+        if (tourActivating) return;
+
         var target = e.target instanceof Element ? e.target : null;
         if (!target) return;
 
@@ -441,7 +478,6 @@
             e.preventDefault();
             e.stopImmediatePropagation();
             close();
-            if (activeTrigger) activeTrigger.focus();
             return;
         }
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -450,7 +486,6 @@
             goTo(slideIndex + (e.key === 'ArrowRight' ? 1 : -1));
             return;
         }
-        // Enter key advances to next slide or finishes the tour
         if (e.key === 'Enter') {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -465,7 +500,6 @@
         var focused = document.activeElement;
         var focusInTour = focused && ((popover && popover.contains(focused)) || focused === activeTrigger);
         if (focusInTour && (e.key === ' ' || e.key === 'Tab')) return;
-        // Any other key means the user started typing — get out of the way.
         close();
     }
 
@@ -488,8 +522,7 @@
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
 
-        // Patch expanding-bubble to suppress auto-close on mouseleave during tour
-        var origMouseLeave = null;
+        /* Patch expanding-bubble: suppress auto-close on mouseleave during tour */
         var bubble = document.getElementById('expanding-bubble');
         if (bubble) {
             bubble.addEventListener('mouseleave', function (e) {
