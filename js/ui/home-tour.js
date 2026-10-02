@@ -16,12 +16,8 @@
     var GAP = 12;
     var PAD = 8;
     var RING = 6;
+    var DEFAULT_RADIUS = 12; /* fallback radius for elements with no rounding */
 
-    /**
-     * Guard flag — set to true while an activate() function is running so that
-     * synthetic clicks (e.g. toggle.click() for the bubble menu) don't reach
-     * onDocumentClick and close the tour.
-     */
     var tourActivating = false;
 
     var SLIDES = [
@@ -31,6 +27,24 @@
             body: 'The slim bar on the right edge is your configuration box. Hover it to toggle punctuation and numbers, turn on adapt &amp; refine, switch between time and words, and pick a length &mdash; or go infinite / custom.',
             targets: function () {
                 return [document.querySelector('#config-bar > div')];
+            },
+            /**
+             * Pre-measure the config bar in its expanded state so the popover
+             * can be positioned at the correct final location from the start.
+             */
+            getExpandedTargetRect: function () {
+                var bar = document.getElementById('config-bar');
+                var target = document.querySelector('#config-bar > div');
+                if (!bar || !target) return null;
+                var st = target.style.transition;
+                target.style.transition = 'none';
+                bar.classList.add('is-open');
+                void target.offsetWidth;
+                var r = target.getBoundingClientRect();
+                bar.classList.remove('is-open');
+                target.style.transition = st;
+                void target.offsetWidth;
+                return { top: r.top, left: r.left, right: r.right, bottom: r.bottom };
             },
             activate: function () {
                 var bar = document.getElementById('config-bar');
@@ -56,6 +70,33 @@
             body: 'Open the menu at the top-left and choose <b>Multiplayer</b> to race friends or other typists in real time. Friends and Leaderboards live in the same menu.',
             targets: function () {
                 return [document.getElementById('expanding-bubble')];
+            },
+            /**
+             * Pre-measure the bubble in its expanded state.
+             */
+            getExpandedTargetRect: function () {
+                var bubble = document.getElementById('expanding-bubble');
+                if (!bubble) return null;
+                var sv = bubble.style.visibility;
+                var st = bubble.style.transition;
+                var sw = bubble.style.width;
+                var sh = bubble.style.height;
+                bubble.style.visibility = 'hidden';
+                bubble.style.transition = 'none';
+                bubble.classList.add('is-open', 'is-icon-open');
+                bubble.style.width = '13.854rem';
+                bubble.style.height = 'auto';
+                void bubble.offsetWidth;
+                bubble.style.height = bubble.scrollHeight + 'px';
+                void bubble.offsetWidth;
+                var r = bubble.getBoundingClientRect();
+                bubble.classList.remove('is-open', 'is-icon-open');
+                bubble.style.width = sw;
+                bubble.style.height = sh;
+                bubble.style.visibility = sv;
+                bubble.style.transition = st;
+                void bubble.offsetWidth;
+                return { top: r.top, left: r.left, right: r.right, bottom: r.bottom };
             },
             activate: function () {
                 var bubble = document.getElementById('expanding-bubble');
@@ -103,6 +144,8 @@
     var authResolved = false;
     var activeDeactivator = null;
     var spotlightRafId = null;
+    /** Pre-measured expanded rect for popover positioning (set before activation). */
+    var expandedTargetRect = null;
 
     function getAuthState() {
         var auth = window.usertypoAuth;
@@ -270,12 +313,6 @@
 
     /* ── Spotlight tracking ─────────────────────────────────────── */
 
-    /**
-     * Start a requestAnimationFrame loop that re-measures the target element
-     * every frame for `durationMs`, keeping the spotlight perfectly in sync
-     * with CSS transitions (config-bar expand, bubble open, etc.).
-     * The spotlight's own CSS transitions are suppressed during tracking.
-     */
     function startTrackingSpotlight(durationMs) {
         stopTrackingSpotlight();
         if (spotlight) spotlight.style.transition = 'opacity 0.2s ease';
@@ -287,9 +324,8 @@
             if (performance.now() - startTime < durationMs) {
                 spotlightRafId = requestAnimationFrame(tick);
             } else {
-                /* Tracking done — restore CSS transitions and do a final position */
                 if (spotlight) spotlight.style.transition = '';
-                position();
+                positionSpotlight();
             }
         }
         spotlightRafId = requestAnimationFrame(tick);
@@ -315,21 +351,24 @@
             content.classList.add('is-entering');
         }
 
+        var slide = SLIDES[slideIndex];
+
+        /* Pre-measure expanded rect BEFORE activation so the popover
+           can be placed at the final position from the very start. */
+        if (typeof slide.getExpandedTargetRect === 'function') {
+            expandedTargetRect = slide.getExpandedTargetRect();
+        } else {
+            expandedTargetRect = null;
+        }
+
+        /* Position the popover (uses expandedTargetRect when available) */
+        position();
+
+        /* Now activate the element (starts the CSS transition) */
         activateSlide();
 
-        var slide = SLIDES[slideIndex];
         if (typeof slide.activate === 'function') {
-            /*
-             * This slide activates (expands) a UI element.  Use rAF tracking
-             * so the spotlight expands in lock-step with the element.
-             * 600ms covers config-bar (500ms) and bubble (400ms) transitions.
-             */
             startTrackingSpotlight(600);
-            /* Also update popover position after element finishes expanding */
-            setTimeout(function () { position(); }, 550);
-        } else {
-            /* Static target — use CSS transition for smooth spotlight glide */
-            position();
         }
     }
 
@@ -358,9 +397,6 @@
         return rect;
     }
 
-    /**
-     * Find the first non-null element in the targets array.
-     */
     function firstTarget(targets) {
         if (!targets) return null;
         for (var i = 0; i < targets.length; i++) {
@@ -378,8 +414,7 @@
             return;
         }
 
-        /* Match the target element's border-radius so the highlight ring
-           follows the same corner curvature as the actual element */
+        /* Match corner radius from the target element */
         var el = firstTarget(targets);
         if (el) {
             var cs = getComputedStyle(el);
@@ -387,13 +422,20 @@
             var tr = parseFloat(cs.borderTopRightRadius) || 0;
             var br = parseFloat(cs.borderBottomRightRadius) || 0;
             var bl = parseFloat(cs.borderBottomLeftRadius) || 0;
-            /* Add the ring offset to non-zero corners so the curve stays
-               concentric with the element's own corners */
-            spotlight.style.borderRadius =
-                (tl ? tl + RING : 0) + 'px ' +
-                (tr ? tr + RING : 0) + 'px ' +
-                (br ? br + RING : 0) + 'px ' +
-                (bl ? bl + RING : 0) + 'px';
+            var maxCorner = Math.max(tl, tr, br, bl);
+
+            if (maxCorner < 4) {
+                /* Element is essentially rectangular — use a nice default radius */
+                spotlight.style.borderRadius = (DEFAULT_RADIUS + RING) + 'px';
+            } else {
+                /* Preserve the element's corner shape; add RING to non-zero corners
+                   so the highlight curve stays concentric */
+                spotlight.style.borderRadius =
+                    (tl ? tl + RING : 0) + 'px ' +
+                    (tr ? tr + RING : 0) + 'px ' +
+                    (br ? br + RING : 0) + 'px ' +
+                    (bl ? bl + RING : 0) + 'px';
+            }
         }
 
         spotlight.style.top = (rect.top - RING) + 'px';
@@ -403,11 +445,16 @@
         spotlight.classList.add('visible');
     }
 
+    /**
+     * Position the popover near the target.  For slides that expand an element,
+     * uses the pre-measured expandedTargetRect so the popover is placed at the
+     * correct final location from the start and never moves during expansion.
+     */
     function position() {
         if (!popover || !isOpen) return;
 
         var targets = SLIDES[slideIndex].targets();
-        var targetRect = unionRect(targets);
+        var targetRect = expandedTargetRect || unionRect(targets);
 
         if (!targetRect && activeTrigger) {
             targetRect = activeTrigger.getBoundingClientRect();
@@ -424,28 +471,20 @@
 
         var top, left;
 
-        // Left of target
         if (targetRect.left - GAP - w > PAD) {
             left = targetRect.left - GAP - w;
             top = targetCenterY - h / 2;
-        }
-        // Right of target
-        else if (targetRect.right + GAP + w < vw - PAD) {
+        } else if (targetRect.right + GAP + w < vw - PAD) {
             left = targetRect.right + GAP;
             top = targetCenterY - h / 2;
-        }
-        // Above target
-        else if (targetRect.top - GAP - h > PAD) {
+        } else if (targetRect.top - GAP - h > PAD) {
             top = targetRect.top - GAP - h;
             left = targetCenterX - w / 2;
-        }
-        // Below target
-        else {
+        } else {
             top = targetRect.bottom + GAP;
             left = targetCenterX - w / 2;
         }
 
-        // Clamp within viewport
         if (top < PAD) top = PAD;
         else if (top + h > vh - PAD) top = Math.max(PAD, vh - PAD - h);
         if (left < PAD) left = PAD;
@@ -468,15 +507,26 @@
 
         renderSlideContent();
 
-        /* Position before showing (suppress glide from 0,0) */
+        var slide = SLIDES[slideIndex];
+
+        /* Pre-measure expanded rect BEFORE activation */
+        if (typeof slide.getExpandedTargetRect === 'function') {
+            expandedTargetRect = slide.getExpandedTargetRect();
+        } else {
+            expandedTargetRect = null;
+        }
+
+        /* Position at the correct final location with transitions suppressed */
         popover.style.transition = 'none';
         if (spotlight) spotlight.style.transition = 'none';
         position();
         void popover.offsetWidth;
 
+        /* Reveal */
         popover.classList.add('visible');
         popover.setAttribute('aria-hidden', 'false');
 
+        /* Re-enable glide transitions for subsequent slide changes */
         requestAnimationFrame(function () {
             if (popover) popover.style.transition = '';
             if (spotlight) spotlight.style.transition = '';
@@ -484,19 +534,17 @@
 
         trigger.blur();
 
-        /* Activate element and track spotlight in sync via rAF */
+        /* Now activate the element and track the spotlight in sync */
         activateSlide();
-
-        var slide = SLIDES[slideIndex];
         if (typeof slide.activate === 'function') {
             startTrackingSpotlight(600);
-            setTimeout(function () { position(); }, 550);
         }
     }
 
     function close() {
         if (!isOpen) return;
         isOpen = false;
+        expandedTargetRect = null;
         stopTrackingSpotlight();
         deactivateSlide();
         if (popover) {
