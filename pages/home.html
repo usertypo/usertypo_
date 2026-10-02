@@ -3376,7 +3376,7 @@ window.setTimeout = function(handler, timeout) {
                     || (typeof currentLanguageFile !== 'undefined' ? currentLanguageFile : 'english')
                 );
             }
-            const wordsToRemove = textContainer.querySelectorAll('.word');
+            const wordsToRemove = textContainer.querySelectorAll('.word, .newline-break');
             wordsToRemove.forEach(w => w.remove());
 
             generatedWords.forEach((word, wIdx) => appendWordToDOM(word, wIdx));
