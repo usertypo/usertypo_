@@ -8,7 +8,7 @@
 
     var CONFIG_KEY = 'usertypo_custom_text';
     var SAVED_KEY = 'usertypo_custom_text_saved';
-    var DEFAULT_TEXT = 'The quick brown fox jumps over the lazy dog';
+    var DEFAULT_TEXT = 'Type your own text to practice and improve your speed';
     var MODES = ['simple', 'repeat', 'shuffle', 'random'];
     var LIMIT_TYPES = ['words', 'time', 'sections'];
     var DELIMITERS = ['space', 'pipe'];
