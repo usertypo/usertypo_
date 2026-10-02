@@ -13,7 +13,7 @@
     var LOCAL_PREFIX = 'usertypo_home_tour_dismissed:';
     var GUEST_SESSION_KEY = 'usertypo_home_tour_hidden';
     var AUTH_FALLBACK_MS = 4000;
-    var GAP = 10;
+    var GAP = 12;
     var PAD = 8;
 
     var SLIDES = [
@@ -23,6 +23,14 @@
             body: 'The slim bar on the right edge is your configuration box. Hover it to toggle punctuation and numbers, turn on adapt &amp; refine, switch between time and words, and pick a length &mdash; or go infinite / custom.',
             targets: function () {
                 return [document.querySelector('#config-bar > div')];
+            },
+            activate: function () {
+                var bar = document.getElementById('config-bar');
+                if (bar && !bar.classList.contains('is-open')) {
+                    bar.classList.add('is-open');
+                    return function () { bar.classList.remove('is-open'); };
+                }
+                return null;
             },
         },
         {
@@ -40,6 +48,23 @@
             body: 'Open the menu at the top-left and choose <b>Multiplayer</b> to race friends or other typists in real time. Friends and Leaderboards live in the same menu.',
             targets: function () {
                 return [document.getElementById('expanding-bubble')];
+            },
+            activate: function () {
+                var bubble = document.getElementById('expanding-bubble');
+                var toggle = document.getElementById('bubble-toggle');
+                if (bubble && toggle && !bubble.classList.contains('is-open')) {
+                    // Simulate a click to open the bubble using the wired-up handler
+                    toggle.click();
+                    // Prevent mouseleave from closing it during the tour
+                    bubble._tourNoAutoClose = true;
+                    return function () {
+                        bubble._tourNoAutoClose = false;
+                        if (bubble.classList.contains('is-open') && typeof bubble.usertypoBubbleClose === 'function') {
+                            bubble.usertypoBubbleClose();
+                        }
+                    };
+                }
+                return null;
             },
         },
         {
@@ -68,6 +93,7 @@
     var slideIndex = 0;
     var isOpen = false;
     var authResolved = false;
+    var activeDeactivator = null; // Cleanup fn for the currently active slide's activation
 
     function getAuthState() {
         var auth = window.usertypoAuth;
@@ -167,8 +193,9 @@
                     '<span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>' +
                 '</button>' +
                 '<div class="home-tour-dots" data-home-tour-dots></div>' +
-                '<button type="button" class="home-tour-nav-btn" data-home-tour-next aria-label="Next tip">' +
+                '<button type="button" class="home-tour-nav-btn home-tour-next-btn" data-home-tour-next aria-label="Next tip">' +
                     '<span class="material-symbols-outlined" data-home-tour-next-icon aria-hidden="true">chevron_right</span>' +
+                    '<kbd class="home-tour-enter-hint" aria-hidden="true">↵</kbd>' +
                 '</button>' +
             '</div>';
         document.body.appendChild(popover);
@@ -192,6 +219,23 @@
         });
 
         return popover;
+    }
+
+    /** Deactivate the previous slide's activated element */
+    function deactivateSlide() {
+        if (activeDeactivator) {
+            try { activeDeactivator(); } catch (e) { /* ignore */ }
+            activeDeactivator = null;
+        }
+    }
+
+    /** Activate the current slide's element (expand config bar, open menu, etc.) */
+    function activateSlide() {
+        deactivateSlide();
+        var slide = SLIDES[slideIndex];
+        if (slide && typeof slide.activate === 'function') {
+            activeDeactivator = slide.activate();
+        }
     }
 
     function renderSlide(animate) {
@@ -223,7 +267,13 @@
             content.classList.add('is-entering');
         }
 
-        position();
+        // Activate / deactivate elements for this slide
+        activateSlide();
+
+        // Small delay so activated elements can render/expand before we measure
+        setTimeout(function () {
+            position();
+        }, 50);
     }
 
     function goTo(index) {
@@ -253,7 +303,8 @@
 
     function positionSpotlight() {
         if (!spotlight) return;
-        var rect = isOpen ? unionRect(SLIDES[slideIndex].targets()) : null;
+        var targets = isOpen ? SLIDES[slideIndex].targets() : null;
+        var rect = targets ? unionRect(targets) : null;
         if (!rect) {
             spotlight.classList.remove('visible');
             return;
@@ -266,20 +317,63 @@
         spotlight.classList.add('visible');
     }
 
+    /**
+     * Position the popover near the target element(s) instead of near the trigger icon.
+     * The popover glides to wherever the current slide's targets are.
+     */
     function position() {
-        if (!popover || !activeTrigger || !isOpen) return;
+        if (!popover || !isOpen) return;
 
-        var iconRect = activeTrigger.getBoundingClientRect();
+        var targets = SLIDES[slideIndex].targets();
+        var targetRect = unionRect(targets);
+
+        // Fallback: if no target rect, position near trigger icon
+        if (!targetRect && activeTrigger) {
+            targetRect = activeTrigger.getBoundingClientRect();
+        }
+        if (!targetRect) return;
+
         var w = popover.offsetWidth;
         var h = popover.offsetHeight;
         var vw = window.innerWidth;
         var vh = window.innerHeight;
 
-        var top = iconRect.top - h - GAP;
-        if (top < PAD) top = iconRect.bottom + GAP;
-        if (top + h > vh - PAD) top = Math.max(PAD, vh - PAD - h);
+        var targetCenterX = (targetRect.left + targetRect.right) / 2;
+        var targetCenterY = (targetRect.top + targetRect.bottom) / 2;
 
-        var left = iconRect.left + iconRect.width / 2 - w / 2;
+        // Try to place the popover to the left of the target first,
+        // then right, then above, then below — whichever fits best
+        var top, left;
+        var placed = false;
+
+        // Left of target
+        if (targetRect.left - GAP - w > PAD) {
+            left = targetRect.left - GAP - w;
+            top = targetCenterY - h / 2;
+            placed = true;
+        }
+        // Right of target
+        else if (targetRect.right + GAP + w < vw - PAD) {
+            left = targetRect.right + GAP;
+            top = targetCenterY - h / 2;
+            placed = true;
+        }
+        // Above target
+        else if (targetRect.top - GAP - h > PAD) {
+            top = targetRect.top - GAP - h;
+            left = targetCenterX - w / 2;
+            placed = true;
+        }
+        // Below target
+        else {
+            top = targetRect.bottom + GAP;
+            left = targetCenterX - w / 2;
+            placed = true;
+        }
+
+        // Clamp within viewport
+        if (top < PAD) top = PAD;
+        else if (top + h > vh - PAD) top = Math.max(PAD, vh - PAD - h);
         if (left < PAD) left = PAD;
         else if (left + w > vw - PAD) left = vw - PAD - w;
 
@@ -304,6 +398,7 @@
     function close() {
         if (!isOpen) return;
         isOpen = false;
+        deactivateSlide();
         if (popover) {
             popover.classList.remove('visible');
             popover.setAttribute('aria-hidden', 'true');
@@ -355,10 +450,21 @@
             goTo(slideIndex + (e.key === 'ArrowRight' ? 1 : -1));
             return;
         }
+        // Enter key advances to next slide or finishes the tour
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (slideIndex >= SLIDES.length - 1) {
+                close();
+            } else {
+                goTo(slideIndex + 1);
+            }
+            return;
+        }
         if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
         var focused = document.activeElement;
         var focusInTour = focused && ((popover && popover.contains(focused)) || focused === activeTrigger);
-        if (focusInTour && (e.key === 'Enter' || e.key === ' ' || e.key === 'Tab')) return;
+        if (focusInTour && (e.key === ' ' || e.key === 'Tab')) return;
         // Any other key means the user started typing — get out of the way.
         close();
     }
@@ -381,6 +487,17 @@
         window.addEventListener('keydown', onKeyDown, true);
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
+
+        // Patch expanding-bubble to suppress auto-close on mouseleave during tour
+        var origMouseLeave = null;
+        var bubble = document.getElementById('expanding-bubble');
+        if (bubble) {
+            bubble.addEventListener('mouseleave', function (e) {
+                if (bubble._tourNoAutoClose) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
 
         var auth = window.usertypoAuth;
         if (auth && typeof auth.onChange === 'function') {

@@ -1480,10 +1480,11 @@ html {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.15rem;
-    height: 1.15rem;
-    margin-left: -1rem;
+    width: 1.3rem;
+    height: 1.3rem;
+    margin-left: 0.15rem;
     align-self: center;
+    vertical-align: middle;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .home-tour-wrap[hidden] {
@@ -1509,7 +1510,7 @@ html {
     transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .home-tour-trigger .material-symbols-outlined {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     line-height: 1;
 }
 .home-tour-wrap:hover .home-tour-trigger,
@@ -1524,10 +1525,43 @@ html {
     outline: 1px solid rgba(var(--theme-primary-rgb, 255, 255, 255), 0.6);
     outline-offset: 2px;
 }
+
+/* Styled hover tooltip replacing the native browser title */
+.home-tour-tooltip {
+    position: absolute;
+    bottom: calc(100% + 0.4rem);
+    left: 50%;
+    transform: translateX(-50%) scale(0.92);
+    padding: 0.2rem 0.5rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 0.5rem;
+    font-size: 0.586rem;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 100;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.home-tour-wrap:hover .home-tour-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+.home-tour-wrap.is-open .home-tour-tooltip {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .home-tour-dismiss {
     position: absolute;
-    top: -0.75rem;
-    right: -0.75rem;
+    top: -0.4rem;
+    right: -0.4rem;
     width: 0.8rem;
     height: 0.8rem;
     display: inline-flex;
@@ -1589,14 +1623,14 @@ html {
     pointer-events: none;
     visibility: hidden;
     transform: translateY(3px);
-    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s, top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 #home-tour-popover.visible {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
     transform: translateY(0);
-    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s;
+    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s, top 0.35s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 #home-tour-popover .home-tour-title {
     font-size: 0.5rem;
@@ -1664,6 +1698,29 @@ html {
 #home-tour-popover .home-tour-nav-btn.is-finish {
     color: var(--theme-primary, #fff);
 }
+/* Next button with enter hint */
+#home-tour-popover .home-tour-next-btn {
+    width: auto;
+    gap: 0.15rem;
+    padding: 0 0.2rem;
+    border-radius: 0.5rem;
+}
+#home-tour-popover .home-tour-enter-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(148, 163, 184, 0.55);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.2rem;
+    padding: 0.05rem 0.2rem;
+    min-width: 0.7rem;
+    text-align: center;
+}
 #home-tour-popover .home-tour-dots {
     display: flex;
     align-items: center;
@@ -1693,7 +1750,7 @@ html {
     border: 1.5px solid rgba(var(--theme-primary-rgb, 255, 255, 255), 0.85);
     box-shadow: 0 0 0 4px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.12), 0 0 18px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.35);
     opacity: 0;
-    transition: opacity 0.2s ease, top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+    transition: opacity 0.2s ease, top 0.3s cubic-bezier(0.16, 1, 0.3, 1), left 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 #home-tour-spotlight.visible {
     opacity: 1;
