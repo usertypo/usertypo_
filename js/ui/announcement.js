@@ -43,12 +43,11 @@
         if (inFlight) return inFlight;
         inFlight = (async function () {
             try {
-                if (!window.usertypoDb || typeof window.usertypoDb.getClient !== 'function') return;
-                var client = await window.usertypoDb.getClient();
-                var result = await client.rpc('get_site_announcement');
-                if (result.error) throw result.error;
-                var row = Array.isArray(result.data) ? result.data[0] : result.data;
-                current = row && row.id ? { id: String(row.id), message: String(row.message || '') } : null;
+                // Hardcoded announcement for database outage
+                current = { 
+                    id: "quota-issue-2026-10-09", 
+                    message: "⚠️ Service Notice: Stats & Leaderboard Temporarily Unavailable\nWe are currently experiencing unexpected downtime with our database provider due to exceeding traffic limits.\nYour account progress is completely safe! Levels and stats showing as 0 are just visual errors caused by the app being unable to reach the server. No user data has been wiped.\nWe are actively working on resolving this and will have full functionality restored shortly.\nThank you for your patience!" 
+                };
                 render();
             } catch (err) {
                 console.warn('[usertypo announcement] load failed', err);
