@@ -3479,7 +3479,9 @@ window.setTimeout = function(handler, timeout) {
             const firstWordEl = textContainer.querySelector('.word');
 
             if (targetEl && firstWordEl && lineHeight > 0) {
-                const yOffset = targetEl.offsetTop - firstWordEl.offsetTop;
+                const targetRect = targetEl.getBoundingClientRect();
+                const firstRect = firstWordEl.getBoundingClientRect();
+                const yOffset = targetRect.top - firstRect.top;
                 const caretLine = Math.round(yOffset / lineHeight);
                 const targetLine = Math.max(0, caretLine - 1);
                 const scrollOffset = targetLine * lineHeight;
