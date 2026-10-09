@@ -3546,8 +3546,7 @@ window.setTimeout = function(handler, timeout) {
             if (relayout) {
                 updateLineLayout();
                 lastScrollWordIndex = currentWordIndex;
-                const w = document.getElementById('word-' + currentWordIndex);
-                lastScrollLine = w ? (parseInt(w.dataset.line, 10) || 0) : 0;
+                lastScrollLine = 0; // Legacy variable, keeping to avoid undefined errors
             } else {
                 const tapeMode = document.body.dataset.tapeMode || 'off';
                 if (tapeMode === 'letter') {
@@ -3559,13 +3558,10 @@ window.setTimeout = function(handler, timeout) {
                         lastScrollWordIndex = currentWordIndex;
                     }
                 } else {
-                    const wordEl = document.getElementById('word-' + currentWordIndex);
-                    const line = wordEl ? (parseInt(wordEl.dataset.line, 10) || 0) : 0;
-                    if (currentWordIndex !== lastScrollWordIndex || line !== lastScrollLine) {
-                        handleScroll();
-                        lastScrollWordIndex = currentWordIndex;
-                        lastScrollLine = line;
-                    }
+                    // Unconditionally call handleScroll. 
+                    // handleScroll now dynamically calculates the caret's vertical offset.
+                    handleScroll();
+                    lastScrollWordIndex = currentWordIndex;
                 }
             }
             updateCaretPosition();
