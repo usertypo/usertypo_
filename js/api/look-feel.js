@@ -11,12 +11,53 @@
     var applyingFromCloud = false;
     var lastBoundUserId = null;
     var started = false;
+    var authResolved = false;
+    // Account whose custom themes / backgrounds are in local storage; cleared on sign-out.
+    var OWNER_KEY = 'usertypo_look_feel_owner';
+
+    function readOwner() {
+        try { return window.localStorage.getItem(OWNER_KEY) || null; } catch (e) { return null; }
+    }
+
+    function writeOwner(userId) {
+        try {
+            if (userId) window.localStorage.setItem(OWNER_KEY, userId);
+            else window.localStorage.setItem(OWNER_KEY, '');
+        } catch (e) { /* ignore */ }
+    }
+
+    // Browsers that predate the owner marker may still hold a signed-out account's themes.
+    function hasOwnerMarker() {
+        try { return window.localStorage.getItem(OWNER_KEY) !== null; } catch (e) { return true; }
+    }
+
+    function clearLocalAccountLookFeel() {
+        var api = window.usertypo_settingsApi;
+        if (!api || typeof api.clearAccountLookFeel !== 'function') return;
+        applyingFromCloud = true;
+        try {
+            api.clearAccountLookFeel();
+        } catch (e) {
+            console.warn('[usertypo look-feel] clear on sign-out failed', e);
+        } finally {
+            applyingFromCloud = false;
+        }
+    }
 
     function isSignedIn() {
         try {
             if (!window.usertypoAuth || typeof window.usertypoAuth.getState !== 'function') return false;
             var state = window.usertypoAuth.getState();
             return !!(state && state.isSignedIn && state.user && state.user.id);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function isAuthLoaded() {
+        try {
+            var state = window.usertypoAuth && window.usertypoAuth.getState && window.usertypoAuth.getState();
+            return !!(state && state.isLoaded);
         } catch (e) {
             return false;
         }
@@ -100,6 +141,24 @@
         return u.indexOf('data:') === 0 || u.indexOf('blob:') === 0;
     }
 
+    function isBuiltInThemeName(name) {
+        var palettes = window.usertypo_THEME_PALETTES;
+        return !!(palettes && name && palettes[name]);
+    }
+
+    /** Built-in theme name → background image. */
+    function normalizeThemeBgImages(raw, mapBg) {
+        var out = {};
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+        var palettes = window.usertypo_THEME_PALETTES;
+        Object.keys(raw).forEach(function (name) {
+            if (palettes && !palettes[name]) return;
+            var bg = (mapBg || normalizeBgImage)(raw[name]);
+            if (bg) out[name] = bg;
+        });
+        return out;
+    }
+
     function normalizeCustomTheme(raw) {
         if (!raw || typeof raw !== 'object') {
             return {
@@ -162,7 +221,7 @@
             glowIntensity: glowFrom(lf.glowIntensity),
             customTheme: customTheme,
             customPresets: presets,
-            bgImage: cloudSafeBgImage(lf.bgImage),
+            themeBgImages: normalizeThemeBgImages(lf.themeBgImages, cloudSafeBgImage),
         };
     }
 
@@ -170,6 +229,12 @@
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
         var updatedAt = Number(raw.updatedAt);
         if (!Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+        var themeBgImages = normalizeThemeBgImages(raw.themeBgImages);
+        // Legacy single site-wide background → the built-in theme it was showing on.
+        var legacyBg = normalizeBgImage(raw.bgImage);
+        if (legacyBg && isBuiltInThemeName(raw.colorTheme) && !themeBgImages[raw.colorTheme]) {
+            themeBgImages[raw.colorTheme] = legacyBg;
+        }
         return {
             v: LOOK_FEEL_VERSION,
             updatedAt: updatedAt,
@@ -179,7 +244,7 @@
             glowIntensity: glowFrom(raw.glowIntensity),
             customTheme: normalizeCustomTheme(raw.customTheme),
             customPresets: normalizePresets(raw.customPresets),
-            bgImage: normalizeBgImage(raw.bgImage),
+            themeBgImages: themeBgImages,
         };
     }
 
@@ -207,7 +272,8 @@
             settings.lookFeel.glowIntensity = payload.glowIntensity;
             settings.lookFeel.customTheme = payload.customTheme;
             settings.lookFeel.customPresets = payload.customPresets;
-            settings.lookFeel.bgImage = payload.bgImage;
+            settings.lookFeel.themeBgImages = payload.themeBgImages || {};
+            delete settings.lookFeel.bgImage;
             settings.lookFeel._lookFeelUpdatedAt = payload.updatedAt;
             saveLocalSettings(settings);
 
@@ -324,17 +390,20 @@
                     changed = true;
                 }
             }
-            var globalBg = settings.lookFeel.bgImage;
-            if (globalBg && globalBg.url) {
-                var nextGlobal = await window.usertypoThemeAssets.persistBgImage(globalBg, null);
-                if (nextGlobal && nextGlobal.url) {
-                    var normalizedGlobal = window.usertypoThemeAssets.normalizeDurableUrl
-                        ? window.usertypoThemeAssets.normalizeDurableUrl(nextGlobal.url)
-                        : nextGlobal.url;
-                    if (normalizedGlobal !== globalBg.url) {
-                        settings.lookFeel.bgImage = Object.assign({}, nextGlobal, { url: normalizedGlobal });
-                        changed = true;
-                    }
+            var themeBgs = Object.assign({}, settings.lookFeel.themeBgImages || {});
+            var themeNames = Object.keys(themeBgs);
+            for (var t = 0; t < themeNames.length; t++) {
+                var themeBg = themeBgs[themeNames[t]];
+                if (!themeBg || !themeBg.url) continue;
+                var nextThemeBg = await window.usertypoThemeAssets.persistBgImage(themeBg, null);
+                if (!nextThemeBg || !nextThemeBg.url) continue;
+                var normalizedThemeBg = window.usertypoThemeAssets.normalizeDurableUrl
+                    ? window.usertypoThemeAssets.normalizeDurableUrl(nextThemeBg.url)
+                    : nextThemeBg.url;
+                if (normalizedThemeBg !== themeBg.url) {
+                    themeBgs[themeNames[t]] = Object.assign({}, nextThemeBg, { url: normalizedThemeBg });
+                    settings.lookFeel.themeBgImages = themeBgs;
+                    changed = true;
                 }
             }
             if (changed) {
@@ -350,7 +419,11 @@
     function localHasEphemeralImages(settings) {
         if (!settings || !settings.lookFeel) return false;
         if (themeHasEphemeralImage(settings.lookFeel.customTheme)) return true;
-        if (themeHasEphemeralImage({ bgImage: settings.lookFeel.bgImage })) return true;
+        var themeBgs = settings.lookFeel.themeBgImages || {};
+        var names = Object.keys(themeBgs);
+        for (var t = 0; t < names.length; t++) {
+            if (themeHasEphemeralImage({ bgImage: themeBgs[names[t]] })) return true;
+        }
         var presets = Array.isArray(settings.lookFeel.customPresets)
             ? settings.lookFeel.customPresets
             : [];
@@ -404,6 +477,10 @@
         var userId = currentUserId();
         syncInFlight = (async function () {
             try {
+                // Another account's themes must never be shown or pushed to this one.
+                var owner = readOwner();
+                if (owner && owner !== userId) clearLocalAccountLookFeel();
+                writeOwner(userId);
                 // Wait briefly for profile row if we just signed up.
                 var cloud = null;
                 try {
@@ -496,6 +573,11 @@
                 clearTimeout(pushTimer);
                 pushTimer = null;
             }
+            // Signed out (only trust this once Clerk has actually loaded).
+            if (authResolved && isAuthLoaded() && (readOwner() || !hasOwnerMarker())) {
+                writeOwner(null);
+                clearLocalAccountLookFeel();
+            }
             return;
         }
         // Profile sync event usually follows; also reconcile after a short delay
@@ -516,7 +598,10 @@
         }
 
         if (window.usertypoAuth && typeof window.usertypoAuth.ready === 'function') {
-            window.usertypoAuth.ready().then(onAuthChange).catch(function () { /* ignore */ });
+            window.usertypoAuth.ready().then(function () {
+                authResolved = true;
+                onAuthChange();
+            }).catch(function () { /* ignore */ });
         } else {
             onAuthChange();
         }
