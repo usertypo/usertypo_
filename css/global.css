@@ -1779,3 +1779,24 @@ html {
     #home-tour-spotlight.visible,
     #home-tour-popover .home-tour-slide.is-entering { animation: none; }
 }
+
+/* Quick Restart shortcut tip interactive button */
+[data-shortcut-tip="tab"] {
+    display: inline-block;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transform-origin: center center;
+    transition: transform 0.35s ease;
+}
+
+[data-shortcut-tip="tab"]:hover {
+    transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-shortcut-tip="tab"] {
+        transition: none;
+    }
+}
+
