@@ -301,6 +301,47 @@
             word-break: break-all;
         }
 
+        /* Word spacer for inline-flow text (only shown when an overflowing word is present) */
+        .word-spacer {
+            display: none;
+        }
+
+        /* Seamless wrapping when any word exceeds the text area width:
+           In standard flexbox, a flex item cannot break across container lines and prevents subsequent
+           items from sharing its last line. When has-overflow-words is active, we use inline flow so
+           words that exceed the width do not wrap to a new line before starting, wrap naturally,
+           and allow subsequent words to continue immediately beside them on the same line. */
+        #text-container.has-overflow-words {
+            display: block;
+            line-height: 1.5;
+        }
+        #text-container.has-overflow-words .word {
+            display: inline;
+            white-space: nowrap;
+            max-width: none;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+        #text-container.has-overflow-words .word.is-overflow-word {
+            white-space: normal;
+            word-break: break-all;
+        }
+        #text-container.has-overflow-words .char {
+            display: inline;
+        }
+        #text-container.has-overflow-words .word-spacer {
+            display: inline;
+        }
+        #text-container.has-overflow-words .word.newline-word {
+            margin-left: 0;
+        }
+        #text-container.has-overflow-words .newline-break {
+            display: block;
+            width: 100%;
+            height: 0;
+            margin: 0;
+        }
+
         /* Newline marker — ↵ sits flush after previous word, then line breaks */
         .word.newline-word {
             margin-left: -0.6em; /* negate #text-container column-gap */
@@ -320,6 +361,10 @@
             direction: rtl;
         }
         body.typing-rtl #text-container .word {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+        }
+        body.typing-rtl #text-container.has-overflow-words .word {
             direction: rtl;
             unicode-bidi: bidi-override;
         }
@@ -2424,6 +2469,7 @@ window.setTimeout = function(handler, timeout) {
             }
 
             window.addEventListener('resize', () => {
+                if (typeof updateOverflowWordLayout === 'function') updateOverflowWordLayout();
                 updateLineLayout();
                 updateCaretPosition();
             });
@@ -3225,13 +3271,67 @@ window.setTimeout = function(handler, timeout) {
             }, 300);
         }
 
+        function isWordExceedingArea(word) {
+            if (!word || typeof word !== 'string') return false;
+            const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+            if (nlWord && word === nlWord) return false;
+
+            const containerWidth = (textContainer && textContainer.clientWidth)
+                || (typingArea && typingArea.clientWidth)
+                || 0;
+            if (containerWidth <= 0) return false;
+
+            let charWidth = 0;
+            const sampleChar = textContainer && textContainer.querySelector('.char');
+            if (sampleChar) {
+                charWidth = sampleChar.getBoundingClientRect().width;
+            }
+            if (!charWidth || charWidth <= 0) {
+                const targetArea = typingArea || document.getElementById('typing-area');
+                const computedFs = targetArea ? parseFloat(getComputedStyle(targetArea).fontSize) : 32;
+                charWidth = (computedFs || 32) * 0.6;
+            }
+
+            return (word.length * charWidth) > (containerWidth - 16);
+        }
+
+        function updateOverflowWordLayout() {
+            if (!textContainer) return;
+            const tapeMode = document.body.dataset.tapeMode || 'off';
+            if (tapeMode === 'word' || tapeMode === 'letter') {
+                textContainer.classList.remove('has-overflow-words');
+                return;
+            }
+            const hasOverflow = generatedWords.some(w => isWordExceedingArea(w));
+            textContainer.classList.toggle('has-overflow-words', hasOverflow);
+            const wordEls = textContainer.querySelectorAll('.word:not(.newline-word)');
+            wordEls.forEach(el => {
+                const idx = parseInt(el.id.replace('word-', ''), 10);
+                const w = generatedWords[idx];
+                el.classList.toggle('is-overflow-word', hasOverflow && isWordExceedingArea(w));
+            });
+        }
+
         function appendWordToDOM(word, wIdx) {
+            const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
+
+            // Spacers for inline flow when any word exceeds the text area width
+            if (textContainer && word !== nlWord) {
+                const lastEl = textContainer.lastElementChild;
+                if (lastEl && !lastEl.classList.contains('newline-break') && lastEl.id !== 'caret' && lastEl.id !== 'pace-caret') {
+                    const spacer = document.createElement('span');
+                    spacer.className = 'word-spacer';
+                    spacer.setAttribute('aria-hidden', 'true');
+                    spacer.textContent = ' ';
+                    textContainer.appendChild(spacer);
+                }
+            }
+
             const wordEl = document.createElement('div');
             wordEl.className = 'word';
             wordEl.id = `word-${wIdx}`;
 
             // Newline marker word → render as enter icon
-            const nlWord = window.usertypoCustomText && window.usertypoCustomText.NEWLINE_WORD;
             if (nlWord && word === nlWord) {
                 wordEl.classList.add('newline-word');
                 const charEl = document.createElement('span');
@@ -3246,6 +3346,10 @@ window.setTimeout = function(handler, timeout) {
                 breakEl.setAttribute('aria-hidden', 'true');
                 textContainer.appendChild(breakEl);
                 return;
+            }
+
+            if (textContainer && textContainer.classList.contains('has-overflow-words') && isWordExceedingArea(word)) {
+                wordEl.classList.add('is-overflow-word');
             }
 
             word.split('').forEach((char, cIdx) => {
@@ -3280,7 +3384,12 @@ window.setTimeout = function(handler, timeout) {
 
             for (let i = 0; i < removeCount; i++) {
                 const wordEl = document.getElementById('word-' + i);
-                if (wordEl) wordEl.remove();
+                if (wordEl) {
+                    if (wordEl.previousElementSibling && wordEl.previousElementSibling.classList.contains('word-spacer')) {
+                        wordEl.previousElementSibling.remove();
+                    }
+                    wordEl.remove();
+                }
             }
 
             generatedWords.splice(0, removeCount);
@@ -3357,6 +3466,9 @@ window.setTimeout = function(handler, timeout) {
                     if (!wordsStillNeeded()) break;
                     const newWord = takeNextWord();
                     generatedWords.push(newWord);
+                    if (isWordExceedingArea(newWord) && !textContainer.classList.contains('has-overflow-words')) {
+                        updateOverflowWordLayout();
+                    }
                     appendWordToDOM(newWord, generatedWords.length - 1);
                     changed = true;
                 }
@@ -3383,7 +3495,8 @@ window.setTimeout = function(handler, timeout) {
                     || (typeof currentLanguageFile !== 'undefined' ? currentLanguageFile : 'english')
                 );
             }
-            const wordsToRemove = textContainer.querySelectorAll('.word, .newline-break');
+            updateOverflowWordLayout();
+            const wordsToRemove = textContainer.querySelectorAll('.word, .newline-break, .word-spacer');
             wordsToRemove.forEach(w => w.remove());
 
             generatedWords.forEach((word, wIdx) => appendWordToDOM(word, wIdx));
@@ -3406,9 +3519,14 @@ window.setTimeout = function(handler, timeout) {
             } else {
                 charHeight = wordEls[0].offsetHeight;
             }
-            lineHeight = charHeight + parseFloat(getComputedStyle(textContainer).rowGap || 0);
-            if (lineHeight === charHeight) {
-                lineHeight = charHeight * 1.3;
+            if (textContainer.classList.contains('has-overflow-words')) {
+                const computedLh = parseFloat(getComputedStyle(textContainer).lineHeight);
+                lineHeight = (computedLh > 0) ? computedLh : (charHeight * 1.5);
+            } else {
+                lineHeight = charHeight + parseFloat(getComputedStyle(textContainer).rowGap || 0);
+                if (lineHeight === charHeight) {
+                    lineHeight = charHeight * 1.3;
+                }
             }
 
             if (tapeMode === 'word' || tapeMode === 'letter') {
