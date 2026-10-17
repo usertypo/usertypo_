@@ -76,6 +76,8 @@ for (const f of walk('.')) {
   'spa',
   // Custom theme background image editor
   'wallpaper', 'upload', 'opacity', 'add_photo_alternate', 'image',
+  // Custom text editor
+  'edit_note', 'upload_file', 'folder_open', 'menu_book', 'auto_fix_high', 'casino',
 ].forEach(addIcon);
 
 const list = [...icons].filter(Boolean).sort();
