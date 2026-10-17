@@ -1487,7 +1487,12 @@
 
                     <div id="test-shortcuts-indicator"
                         class="mt-6 flex justify-center gap-8 text-[0.533rem] font-bold uppercase tracking-widest text-[#708090] zen-element relative z-10">
-                        <span data-shortcut-tip="tab"><kbd
+                        <span data-shortcut-tip="tab"
+                            role="button"
+                            tabindex="-1"
+                            title="Restart test (Tab)"
+                            onclick="handleTabRestart(event)"
+                            onmousedown="event.preventDefault()"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-300">tab</kbd>
                             -
                             restart</span>
@@ -2351,6 +2356,22 @@ window.setTimeout = function(handler, timeout) {
             const overlay = document.getElementById('difficulty-fail-overlay');
             if (overlay) overlay.classList.add('hidden');
             restartTest();
+        }
+
+        function handleTabRestart(e) {
+            if (e) {
+                e.preventDefault();
+            }
+            if (typeof canSkipStats !== 'undefined' && !canSkipStats) return;
+            const statsView = document.getElementById('stats-view');
+            if (statsView && !statsView.classList.contains('hidden')) {
+                showTestView(true);
+            } else {
+                restartTest();
+            }
+            if (typeof focusMobileTypingInput === 'function') {
+                focusMobileTypingInput();
+            }
         }
 
         // Capslock warning
@@ -8243,6 +8264,7 @@ window.setTimeout = function(handler, timeout) {
         window.dismissFailAndRestart = dismissFailAndRestart;
         window.toggleGraphInfo = toggleGraphInfo;
         window.showTestView = showTestView;
+        window.handleTabRestart = handleTabRestart;
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {
