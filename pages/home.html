@@ -1515,9 +1515,21 @@
                         </span>
                     </div>
 
+                    <!-- Circular Multiplayer Button -->
+                    <div id="home-multiplayer-wrap" class="flex justify-center zen-element relative z-10" style="margin-top: 2.25rem !important; padding-top: 0.5rem;">
+                        <div class="home-multiplayer-container relative inline-flex items-center justify-center">
+                            <a href="/multiplayer" data-spa-link id="home-multiplayer-btn"
+                                class="home-multiplayer-btn glass-panel"
+                                aria-label="Multiplayer">
+                                <span class="material-symbols-outlined" aria-hidden="true">swords</span>
+                            </a>
+                            <span class="home-multiplayer-tooltip">Multiplayer</span>
+                        </div>
+                    </div>
+
                     <!-- Capslock Warning Indicator (Redesigned) -->
                     <div id="capslock-warning"
-                        class="opacity-0 transition-opacity duration-150 mt-10 text-center text-amber-400 font-mono text-[0.533rem] font-bold uppercase tracking-widest relative z-10 h-4">
+                        class="opacity-0 transition-opacity duration-150 mt-4 text-center text-amber-400 font-mono text-[0.533rem] font-bold uppercase tracking-widest relative z-10 h-4">
                         <span class="material-symbols-outlined text-[0.746rem] align-middle mb-0.5 mr-0.5">lock</span>Caps
                         Lock
                     </div>
@@ -2804,17 +2816,63 @@ window.setTimeout = function(handler, timeout) {
         }
 
         // --- CUSTOM TEXT MODE ---
+        let tapeModeSuspendedToastShown = false;
+
+        function checkTapeModeForEnters() {
+            const s = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : null) || {};
+            const savedTapeMode = String(s.cursor?.tapeMode || 'off').toLowerCase();
+            const hasTapeConfigured = (savedTapeMode === 'word' || savedTapeMode === 'letter');
+
+            const cfg = customTextPlan?.config;
+            const hasEnters = Boolean(
+                customTextActive &&
+                cfg &&
+                cfg.newlines === 'enter' &&
+                typeof cfg.text === 'string' &&
+                /[\r\n]/.test(cfg.text)
+            );
+
+            if (hasTapeConfigured && hasEnters) {
+                if (!window.__usertypo_tapeModeSuspended) {
+                    window.__usertypo_tapeModeSuspended = true;
+                    if (window.usertypo_settingsApi?.applyCursorSettings) {
+                        window.usertypo_settingsApi.applyCursorSettings();
+                    } else {
+                        document.body.setAttribute('data-tape-mode', 'off');
+                    }
+                }
+                if (!tapeModeSuspendedToastShown) {
+                    tapeModeSuspendedToastShown = true;
+                    notifyAdaptRefine('Tape mode was turned off due to enters in the test.', 'warning');
+                }
+            } else {
+                if (window.__usertypo_tapeModeSuspended) {
+                    window.__usertypo_tapeModeSuspended = false;
+                    tapeModeSuspendedToastShown = false;
+                    if (window.usertypo_settingsApi?.applyCursorSettings) {
+                        window.usertypo_settingsApi.applyCursorSettings();
+                    } else {
+                        document.body.setAttribute('data-tape-mode', savedTapeMode);
+                    }
+                }
+            }
+        }
+
         function updateCustomTextUI() {
             const bar = document.getElementById('config-bar');
             if (bar) bar.classList.toggle('is-custom-text', customTextActive);
         }
 
         function prepareCustomTextPlan() {
-            if (!customTextActive || !window.usertypoCustomText) return;
+            if (!customTextActive || !window.usertypoCustomText) {
+                checkTapeModeForEnters();
+                return;
+            }
             customTextPlan = window.usertypoCustomText.createPlan();
             testMode = customTextPlan.mode;
             isInfiniteTest = !!customTextPlan.infinite;
             testAmount = customTextPlan.infinite ? Infinity : customTextPlan.amount;
+            checkTapeModeForEnters();
             updateActiveConfigIconsDisplay();
             syncHomeTimerProgressChrome();
         }
@@ -2856,6 +2914,7 @@ window.setTimeout = function(handler, timeout) {
             saveCustomBookProgressOnBail();
             customTextActive = false;
             customTextPlan = null;
+            checkTapeModeForEnters();
             if (customTextRegular) {
                 testMode = customTextRegular.testMode;
                 testAmount = customTextRegular.testAmount;
@@ -2868,6 +2927,7 @@ window.setTimeout = function(handler, timeout) {
         }
 
         function onCustomTextApplied() {
+            tapeModeSuspendedToastShown = false;
             if (!customTextActive) {
                 activateCustomText();
                 return;
@@ -8268,6 +8328,10 @@ window.setTimeout = function(handler, timeout) {
 
 var __prevSpaCleanup = window.__spaPageCleanup;
 window.__spaPageCleanup = function() {
+    if (window.__usertypo_tapeModeSuspended) {
+        window.__usertypo_tapeModeSuspended = false;
+        try { window.usertypo_settingsApi?.applyCursorSettings?.(); } catch (e) {}
+    }
     if (typeof saveCustomBookProgressOnBail === 'function') saveCustomBookProgressOnBail();
     if (window.usertypoCustomText) window.usertypoCustomText.close({ silent: true });
     __pageAbort.abort();

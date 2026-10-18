@@ -4442,6 +4442,7 @@ function isDualPage() {
 }
 
 function getEffectiveTapeMode(settings) {
+    if (window.__usertypo_tapeModeSuspended) return 'off';
     const cursor = settings?.cursor || {};
     return String(cursor.tapeMode || 'off').toLowerCase();
 }
@@ -5744,6 +5745,7 @@ document.addEventListener('keydown', (e) => {
 window.usertypo_settingsApi = {
     loadSettings,
     saveSettings,
+    applyCursorSettings,
     setByPath,
     restoreUI,
     initSettingsPage,
