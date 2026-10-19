@@ -1535,10 +1535,9 @@ html {
 }
 
 /* Styled hover tooltip replacing the native browser title */
-.home-tour-tooltip,
-.home-multiplayer-tooltip {
+.home-tour-tooltip {
     position: absolute;
-    bottom: calc(100% + 0.45rem);
+    bottom: calc(100% + 0.4rem);
     left: 50%;
     transform: translateX(-50%) scale(0.92);
     padding: 0.2rem 0.5rem;
@@ -1558,11 +1557,9 @@ html {
     z-index: 100;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.home-tour-wrap:hover .home-tour-tooltip,
-.home-multiplayer-btn:hover ~ .home-multiplayer-tooltip,
-.home-multiplayer-btn:focus-visible ~ .home-multiplayer-tooltip {
-    opacity: 1 !important;
-    transform: translateX(-50%) scale(1) !important;
+.home-tour-wrap:hover .home-tour-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
 }
 .home-tour-wrap.is-open .home-tour-tooltip {
     opacity: 0;
@@ -1805,18 +1802,23 @@ html {
 
 /* Home Circular Multiplayer Button */
 #home-multiplayer-wrap {
-    margin-top: 2.25rem !important;
-    padding-top: 0.5rem;
+    margin-top: 1.75rem !important;
+    padding-top: 0.25rem;
+}
+
+.home-multiplayer-btn-group {
+    text-decoration: none !important;
+    outline: none;
 }
 
 .home-multiplayer-btn {
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 2.85rem;
+    height: 2.85rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 9999px !important;
-    padding: 0.5rem;
+    padding: 0.55rem;
     color: #7c8591;
     cursor: pointer;
     text-decoration: none;
@@ -1825,6 +1827,8 @@ html {
     transition: transform 0.26s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
+.home-multiplayer-btn-group:hover .home-multiplayer-btn,
+.home-multiplayer-btn-group:focus-visible .home-multiplayer-btn,
 .home-multiplayer-btn:hover {
     transform: scale(1.12);
     color: var(--theme-primary, #fff);
@@ -1832,13 +1836,32 @@ html {
     box-shadow: 0 0 12px rgba(var(--theme-primary-rgb, 255, 255, 255), 0.25) !important;
 }
 
+.home-multiplayer-btn-group:hover .home-multiplayer-label,
+.home-multiplayer-btn-group:focus-visible .home-multiplayer-label {
+    color: var(--theme-primary, #fff);
+    transform: scale(1.12);
+}
+
 .home-multiplayer-btn .material-symbols-outlined {
-    font-size: 1.15rem;
+    font-size: 1.4rem;
     line-height: 1;
 }
 
+.home-multiplayer-label {
+    display: inline-block;
+    font-size: 0.82rem;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #7c8591;
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform 0.26s ease, color 0.2s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .home-multiplayer-btn {
+    .home-multiplayer-btn,
+    .home-multiplayer-label {
         transition: none;
     }
 }
