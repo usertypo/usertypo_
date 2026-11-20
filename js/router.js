@@ -583,6 +583,26 @@
         syncBackToTopVisibility();
     }
 
+    // Smooth scroll to top for whichever element is scrolling (window or #app-body).
+    // Native smooth scrolling is used on both; nothing instant is applied afterwards,
+    // which was cancelling the animation before.
+    function smoothScrollToTop() {
+        var bodyEl = document.getElementById('app-body');
+        var bodyScrolls = !!(bodyEl && bodyEl.scrollTop > 0);
+        try {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+            window.scrollTo(0, 0);
+        }
+        if (bodyEl && (bodyScrolls || bodyEl.scrollHeight > bodyEl.clientHeight)) {
+            try {
+                bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err2) {
+                bodyEl.scrollTop = 0;
+            }
+        }
+    }
+
     function wireBackToTop() {
         var btn = document.getElementById('back-to-top-btn');
         if (!btn || btn.dataset.spaBackToTopWired === '1') return;
@@ -590,20 +610,7 @@
 
         btn.addEventListener('click', function (e) {
             e.preventDefault();
-            var bodyEl = document.getElementById('app-body');
-            try {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (err) {
-                window.scrollTo(0, 0);
-            }
-            if (bodyEl) {
-                try {
-                    bodyEl.scrollTo({ top: 0, behavior: 'smooth' });
-                } catch (err2) {
-                    bodyEl.scrollTop = 0;
-                }
-            }
-            document.documentElement.scrollTop = 0;
+            smoothScrollToTop();
         });
 
         var onScroll = function () { syncBackToTopVisibility(); };
@@ -849,6 +856,9 @@
             var parsed = parseFragment(html);
             injectPageStyles(parsed.styles, path);
             container.innerHTML = parsed.content;
+            // Home page scrolls freely (no typing-view scroll lock) — set before page scripts run
+            var appBodyForRoute = document.getElementById('app-body');
+            if (appBodyForRoute) appBodyForRoute.classList.toggle('home-free-scroll', path === '/');
             if (typeof window.usertypoRevealLogos === 'function') {
                 window.usertypoRevealLogos(container);
             }
@@ -988,6 +998,8 @@
 
     function lockTypingScroll() {
         var body = document.getElementById('app-body');
+        // Home page stays freely scrollable while typing
+        if (body && body.classList.contains('home-free-scroll')) return;
         var content = document.getElementById('spa-content');
         var pageRoot = document.getElementById('spa-page-root');
         var appViews = document.getElementById('app-views');

@@ -562,12 +562,6 @@
             line-height: 1;
         }
 
-        .score-distribution-x-axis span {
-            flex: 1 1 0;
-            min-width: 0;
-            text-align: center;
-            white-space: nowrap;
-        }
 
         .score-distribution-column {
             position: relative;
@@ -1758,7 +1752,16 @@ if ('scrollRestoration' in history) {
                 }
             }
 
+            var scoreDistributionState = { distribution: null, width: 0 };
+
             function renderScoreDistribution(distribution) {
+                scoreDistributionState.distribution = distribution;
+                drawScoreDistribution(1);
+            }
+
+            // factor 1 = 5 WPM buckets, factor 2 = 10 WPM buckets (only when labels don't fit)
+            function drawScoreDistribution(factor) {
+                var distribution = scoreDistributionState.distribution;
                 var layout = document.getElementById('score-distribution-layout');
                 var chart = document.getElementById('score-distribution-chart');
                 var xAxis = document.getElementById('score-distribution-x-axis');
@@ -1768,8 +1771,11 @@ if ('scrollRestoration' in history) {
                 if (!layout || !chart || !xAxis || !yAxis || !empty || !summary) return;
 
                 var bins = distribution && Array.isArray(distribution.bins)
-                    ? distribution.bins
+                    ? window.usertypoScoreAxis.mergeBins(distribution.bins, factor)
                     : [];
+                var maxCount = bins.reduce(function (max, bin) {
+                    return Math.max(max, Number(bin.count) || 0);
+                }, 0);
 
                 chart.replaceChildren();
                 xAxis.replaceChildren();
@@ -1792,7 +1798,7 @@ if ('scrollRestoration' in history) {
                     return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
                 }
 
-                var yAxisMax = Math.max(5, Math.ceil(distribution.maxCount / 5) * 5);
+                var yAxisMax = Math.max(5, Math.ceil(maxCount / 5) * 5);
                 for (var tick = 5; tick >= 0; tick--) {
                     var yLabel = document.createElement('span');
                     yLabel.textContent = String((yAxisMax / 5) * tick);
@@ -1804,8 +1810,8 @@ if ('scrollRestoration' in history) {
                     var heightRatio = yAxisMax > 0
                         ? bin.count / yAxisMax
                         : 0;
-                    var colorRatio = distribution.maxCount > 0
-                        ? bin.count / distribution.maxCount
+                    var colorRatio = maxCount > 0
+                        ? bin.count / maxCount
                         : 0;
                     var column = document.createElement('button');
                     column.type = 'button';
@@ -1828,16 +1834,35 @@ if ('scrollRestoration' in history) {
                     column.appendChild(bar);
                     chart.appendChild(column);
 
-                    var xLabel = document.createElement('span');
-                    xLabel.textContent = formatWpm(bin.start) + '-' + formatWpm(bin.end);
-                    xAxis.appendChild(xLabel);
+                    xAxis.appendChild(window.usertypoScoreAxis.makeLabel(
+                        formatWpm(bin.start) + '-' + formatWpm(bin.end)
+                    ));
                 });
+
+                // Labels that don't fit horizontally → switch to 10 WPM buckets once, then rotate as needed
+                var fit = window.usertypoScoreAxis.layoutLabels(xAxis);
+                if (factor === 1 && !fit.allFit) {
+                    drawScoreDistribution(2);
+                    return;
+                }
+                scoreDistributionState.width = chart.clientWidth;
 
                 summary.textContent =
                     distribution.total.toLocaleString() + ' completed test' +
                     (distribution.total === 1 ? '' : 's') +
                     ' · ' + formatWpm(distribution.average) + ' average WPM';
             }
+
+            // Redraw when the chart's width changes so bucket size and label angle adapt
+            (function observeScoreDistributionWidth() {
+                var chart = document.getElementById('score-distribution-chart');
+                if (!chart || !window.ResizeObserver) return;
+                var observer = new ResizeObserver(function () {
+                    if (!scoreDistributionState.distribution || chart.clientWidth === scoreDistributionState.width) return;
+                    drawScoreDistribution(1);
+                });
+                observer.observe(chart);
+            })();
 
             function buildHistoryRow(session) {
                 var tr = document.createElement('tr');

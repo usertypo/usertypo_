@@ -820,7 +820,7 @@ html {
                 }
             }
 
-/* ââ Cookie consent banner (same glass as header menu bubble) ââ */
+/* ─── Cookie consent: slide-up pill + choices panel ─── */
 .usertypo-cookie-banner {
     position: fixed;
     left: 0;
@@ -828,16 +828,96 @@ html {
     bottom: 0;
     z-index: 10050;
     padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
     pointer-events: none;
 }
 .usertypo-cookie-banner.is-hidden {
     display: none;
 }
-.usertypo-cookie-banner__inner {
+.usertypo-cookie-banner[data-mode="pill"] .usertypo-cookie-panel {
+    display: none;
+}
+.usertypo-cookie-banner[data-mode="panel"] .usertypo-cookie-pill {
+    display: none;
+}
+
+/* Pill */
+.usertypo-cookie-pill {
     pointer-events: auto;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 1rem 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 1.75rem;
+    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    animation: usertypo-cookie-slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.usertypo-cookie-pill.is-leaving {
+    animation: usertypo-cookie-slide-down 0.28s ease-in both;
+}
+.usertypo-cookie-pill__text {
+    margin: 0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    color: var(--theme-fg-strong, #fff);
+}
+.usertypo-cookie-pill__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+.usertypo-cookie-pill__essential {
+    appearance: none;
+    white-space: nowrap;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--theme-text, #ccc);
+    border: 1px solid color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 22%, transparent);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+.usertypo-cookie-pill__essential:hover {
+    border-color: color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 45%, transparent);
+    color: var(--theme-fg-strong, #fff);
+}
+.usertypo-cookie-pill__ok {
+    appearance: none;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--theme-primary, #fff);
+    color: var(--theme-on-primary, #000);
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+.usertypo-cookie-pill__ok:hover {
+    filter: brightness(1.08);
+    transform: scale(1.06);
+}
+.usertypo-cookie-pill__ok .material-symbols-outlined {
+    font-size: 1.25rem;
+}
+
+/* Choices panel */
+.usertypo-cookie-panel {
+    pointer-events: auto;
+    width: min(30rem, 100%);
+    padding: 1.1rem 1.2rem 1rem;
     border-radius: var(--theme-box-radius, 1.375rem);
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: var(--theme-menu-bg, rgba(68, 68, 68, 0.4)) !important;
@@ -845,107 +925,116 @@ html {
     -webkit-backdrop-filter: blur(4px) !important;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
     color: var(--theme-text, #ccc);
+    animation: usertypo-cookie-slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.usertypo-cookie-banner__title {
+.usertypo-cookie-panel__title {
+    margin: 0 0 0.6rem;
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--theme-fg-strong, #fff);
-    margin: 0 0 0.35rem;
 }
-.usertypo-cookie-banner__text {
-    margin: 0;
-    font-size: 0.8rem;
-    line-height: 1.45;
-    color: #9ca3af;
-}
-.usertypo-cookie-banner__text--tight {
-    margin-top: 0.5rem;
-}
-.usertypo-cookie-banner__link {
-    appearance: none;
-    background: none;
-    border: 0;
-    padding: 0;
-    margin: 0;
-    font: inherit;
-    color: var(--theme-primary, #fff);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
-}
-.usertypo-cookie-banner__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.9rem;
-    justify-content: flex-end;
-}
-.usertypo-cookie-btn {
-    appearance: none;
-    border-radius: var(--theme-box-radius, 1.375rem);
-    padding: 0.45rem 0.9rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.usertypo-cookie-btn--ghost {
-    background: transparent;
-    color: var(--theme-text, #ccc);
-    border: 1px solid color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 22%, transparent);
-}
-.usertypo-cookie-btn--ghost:hover {
-    border-color: color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 45%, transparent);
-    color: var(--theme-fg-strong, #fff);
-}
-.usertypo-cookie-btn--primary {
-    background: var(--theme-primary, #fff);
-    color: var(--theme-on-primary, #000);
-    border: 1px solid transparent;
-}
-.usertypo-cookie-btn--primary:hover {
-    filter: brightness(1.05);
-}
-.usertypo-cookie-banner__details {
-    margin-top: 0.85rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 12%, transparent);
-}
-.usertypo-cookie-row {
+.usertypo-cookie-panel__row {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.45rem 0;
+    padding: 0.5rem 0;
+    border-top: 1px solid color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 10%, transparent);
 }
-.usertypo-cookie-row__label {
+.usertypo-cookie-panel__copy {
+    min-width: 0;
+}
+.usertypo-cookie-panel__label {
     margin: 0;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--theme-fg-strong, #fff);
 }
-.usertypo-cookie-row__hint {
+.usertypo-cookie-panel__hint {
     margin: 0.15rem 0 0;
     font-size: 0.7rem;
+    line-height: 1.4;
     color: var(--theme-text-muted, #888);
 }
-.usertypo-cookie-locked {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--theme-text-muted, #888);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+.usertypo-cookie-panel__badge {
     flex-shrink: 0;
     padding-top: 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--theme-text-muted, #888);
+}
+.usertypo-cookie-panel__badge.is-on {
+    color: var(--theme-primary, #fff);
+}
+.usertypo-cookie-panel__more {
+    margin: 0.6rem 0 0;
+    font-size: 0.7rem;
+    color: var(--theme-text-muted, #888);
+}
+.usertypo-cookie-panel__more a {
+    color: var(--theme-primary, #fff);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.usertypo-cookie-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+}
+.usertypo-cookie-panel__btn {
+    appearance: none;
+    border-radius: 9999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+}
+.usertypo-cookie-panel__btn--ghost {
+    background: transparent;
+    color: var(--theme-text, #ccc);
+    border: 1px solid color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 22%, transparent);
+}
+.usertypo-cookie-panel__btn--ghost:hover {
+    border-color: color-mix(in srgb, rgb(var(--theme-primary-rgb, 255, 255, 255)) 45%, transparent);
+    color: var(--theme-fg-strong, #fff);
+}
+.usertypo-cookie-panel__btn--primary {
+    background: var(--theme-primary, #fff);
+    color: var(--theme-on-primary, #000);
+    border: 1px solid transparent;
+}
+.usertypo-cookie-panel__btn--primary:hover {
+    filter: brightness(1.05);
 }
 @media (max-width: 640px) {
-    .usertypo-cookie-banner__actions {
+    .usertypo-cookie-panel__actions {
         flex-direction: column;
     }
-    .usertypo-cookie-btn {
+    .usertypo-cookie-panel__btn {
         width: 100%;
         text-align: center;
+    }
+}
+
+@keyframes usertypo-cookie-slide-up {
+    from { opacity: 0; transform: translateY(calc(100% + 2rem)); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes usertypo-cookie-slide-down {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(calc(100% + 2rem)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .usertypo-cookie-pill,
+    .usertypo-cookie-pill.is-leaving,
+    .usertypo-cookie-panel {
+        animation: none;
     }
 }
 
@@ -1794,8 +1883,23 @@ html {
     transform: scale(1.12);
 }
 
+/* Quick Settings (Esc) shortcut tip — same clickable behaviour as the Tab restart tip */
+[data-shortcut-tip="esc"] {
+    display: inline-block;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transform-origin: center center;
+    transition: transform 0.26s ease;
+}
+
+[data-shortcut-tip="esc"]:hover {
+    transform: scale(1.12);
+}
+
 @media (prefers-reduced-motion: reduce) {
-    [data-shortcut-tip="tab"] {
+    [data-shortcut-tip="tab"],
+    [data-shortcut-tip="esc"] {
         transition: none;
     }
 }
@@ -1867,3 +1971,19 @@ html {
 }
 
 
+
+/* Score distribution x-axis labels (About + User stats) — each label sits under one bar */
+.score-axis-cell {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+}
+.score-axis-label {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    width: max-content;
+    line-height: 1;
+}

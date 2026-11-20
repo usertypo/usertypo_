@@ -3027,7 +3027,7 @@ function applyThemeSettings(settings) {
         #sidebar-menu,
         #expanding-bubble,
         .pot-filter-bubble,
-        #usertypo-cookie-banner .usertypo-cookie-banner__inner,
+        #usertypo-cookie-banner .usertypo-cookie-panel,
         #contact-box,
         #system-confirm-box,
         #custom-prompt-box,
@@ -3277,8 +3277,8 @@ function applyThemeSettings(settings) {
         .testActivity .yearSelectButton,
         .testActivity .yearSelectMenu,
         .testActivity .yearSelectOption,
-        .usertypo-cookie-banner__inner,
-        .usertypo-cookie-btn,
+        .usertypo-cookie-panel,
+        .usertypo-cookie-panel__btn,
         .coming-soon-setting[data-coming-soon]:hover::after,
         #lobby-chat-toggle-btn[data-coming-soon]:hover::after,
         #orbit-tooltip-portal,
@@ -3345,7 +3345,7 @@ function applyThemeSettings(settings) {
         a.rounded-full.px-4,
         a.rounded-full.px-5,
         a.rounded-full.px-6,
-        .usertypo-cookie-btn {
+        .usertypo-cookie-panel__btn {
             border-radius: var(--theme-box-radius, 1.375rem) !important;
         }
         /* Keymap keys keep the original smaller radius (pre–box-radius unify) */

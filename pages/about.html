@@ -117,12 +117,6 @@
             font-size: clamp(0.38rem, 0.55vw, 0.55rem);
             line-height: 1;
         }
-        .about-score-x span {
-            flex: 1 1 0;
-            min-width: 0;
-            text-align: center;
-            white-space: nowrap;
-        }
         .about-score-col {
             position: relative;
             flex: 1 1 0;
@@ -833,7 +827,16 @@ function initAboutCommunityStats() {
         });
     }
 
+    var scoreState = { distribution: null, width: 0 };
+
     function renderScoreDistribution(distribution) {
+        scoreState.distribution = distribution;
+        drawScoreDistribution(1);
+    }
+
+    // factor 1 = 5 WPM buckets, factor 2 = 10 WPM buckets (only when labels don't fit)
+    function drawScoreDistribution(factor) {
+        var distribution = scoreState.distribution;
         var layout = document.getElementById('about-score-layout');
         var chart = document.getElementById('about-score-chart');
         var xAxis = document.getElementById('about-score-x');
@@ -843,7 +846,9 @@ function initAboutCommunityStats() {
         if (!layout || !chart || !xAxis || !yAxis || !empty || !summary) return;
 
         // Keep buckets from 0–5 upward (do not trim leading empty bins).
-        var bins = Array.isArray(distribution && distribution.bins) ? distribution.bins.slice() : [];
+        var bins = Array.isArray(distribution && distribution.bins)
+            ? window.usertypoScoreAxis.mergeBins(distribution.bins, factor)
+            : [];
         chart.replaceChildren();
         xAxis.replaceChildren();
         yAxis.replaceChildren();
@@ -890,18 +895,38 @@ function initAboutCommunityStats() {
             column.appendChild(bar);
             chart.appendChild(column);
 
-            var xLabel = document.createElement('span');
-            xLabel.textContent = bin.start + '-' + bin.end;
-            xAxis.appendChild(xLabel);
+            xAxis.appendChild(window.usertypoScoreAxis.makeLabel(bin.start + '-' + bin.end));
 
             setTimeout(function () {
                 if (!__pageAbort.signal.aborted) bar.classList.add('is-animated');
             }, 80 + index * 28);
         });
 
+        // Labels that don't fit horizontally → switch to 10 WPM buckets once, then rotate as needed
+        var fit = window.usertypoScoreAxis.layoutLabels(xAxis);
+        if (factor === 1 && !fit.allFit) {
+            drawScoreDistribution(2);
+            return;
+        }
+        scoreState.width = chart.clientWidth;
+
         summary.textContent = distribution.total.toLocaleString() + ' tests · avg '
             + (distribution.average == null ? '—' : distribution.average) + ' WPM';
     }
+
+    // Redraw when the chart's width changes so the bucket size and label angle adapt
+    (function observeScoreWidth() {
+        var chart = document.getElementById('about-score-chart');
+        if (!chart || !window.ResizeObserver) return;
+        var observer = new ResizeObserver(function () {
+            if (!scoreState.distribution || chart.clientWidth === scoreState.width) return;
+            drawScoreDistribution(1);
+        });
+        observer.observe(chart);
+        if (typeof __pageAbort !== 'undefined' && __pageAbort) {
+            __pageAbort.signal.addEventListener('abort', function () { observer.disconnect(); });
+        }
+    })();
 
     function renderModes(modes) {
         var listEl = document.getElementById('about-modes-list');

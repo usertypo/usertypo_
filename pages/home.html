@@ -1490,14 +1490,17 @@
                         <span data-shortcut-tip="tab"
                             role="button"
                             tabindex="-1"
-                            title="Restart test (Tab)"
                             onclick="handleTabRestart(event)"
                             onmousedown="event.preventDefault()"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-300">tab</kbd>
                             -
                             restart</span>
 
-                        <span data-shortcut-tip="esc"><kbd
+                        <span data-shortcut-tip="esc"
+                            role="button"
+                            tabindex="-1"
+                            onclick="handleQuickSettings(event)"
+                            onmousedown="event.preventDefault()"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-300">esc</kbd>
                             -
                             quick settings</span>
@@ -2386,6 +2389,16 @@ window.setTimeout = function(handler, timeout) {
             }
         }
 
+        function handleQuickSettings(e) {
+            if (e) {
+                e.preventDefault();
+            }
+            if (window.usertypo_settingsSearch && typeof window.usertypo_settingsSearch.open === 'function') {
+                window.usertypo_settingsSearch.open();
+            }
+        }
+        window.handleQuickSettings = handleQuickSettings;
+
         // Capslock warning
         function updateCapslockWarning(e) {
             if (!getTestRule('capslockWarning')) return;
@@ -2475,10 +2488,16 @@ window.setTimeout = function(handler, timeout) {
             updateModifierUI();
             updateAdaptRefineUI();
 
+            // Opens briefly on load, and closes early if the user clicks outside it
             configBar.classList.add('is-open');
             setTimeout(() => {
                 configBar.classList.remove('is-open');
             }, 2000);
+            document.addEventListener('pointerdown', (e) => {
+                if (!configBar.classList.contains('is-open')) return;
+                if (configBar.contains(e.target)) return;
+                configBar.classList.remove('is-open');
+            }, true);
 
             if (testMode !== 'time' && testMode !== 'words') testMode = 'words';
             setTestMode(testMode);

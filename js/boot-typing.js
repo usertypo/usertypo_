@@ -243,6 +243,8 @@
         }
         overlayVisible = false;
         setBootChrome(false);
+        // Lets UI that waits for the loading screen (cookie pill, announcement) appear now.
+        window.dispatchEvent(new CustomEvent('usertypo:boot-overlay-hidden'));
     }
 
     window.usertypoDismissBootOverlay = function () {

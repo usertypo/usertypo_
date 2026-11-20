@@ -26,11 +26,17 @@
         box.style.top = Math.max(8, Math.round(top) + 8) + 'px';
     }
 
+    // The announcement waits until the loading screen (boot overlay) has gone.
+    function isSiteReady() {
+        var overlay = $('spa-boot-overlay');
+        return !overlay || overlay.hidden === true;
+    }
+
     function render() {
         var box = $('site-announcement');
         var text = $('site-announcement-text');
         if (!box || !text) return;
-        var show = !!(current && current.message && current.id !== dismissedId());
+        var show = !!(current && current.message && current.id !== dismissedId() && isSiteReady());
         if (show) {
             text.textContent = current.message;
             positionBox();
@@ -81,6 +87,7 @@
         window.addEventListener('resize', function () {
             if (current) positionBox();
         });
+        window.addEventListener('usertypo:boot-overlay-hidden', render);
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') refresh();
         });
