@@ -188,6 +188,7 @@
         if (isOpen && (!show || !activeTrigger || !document.body.contains(activeTrigger))) {
             close();
         }
+        refreshResetButtons();
     }
 
     function dismiss(wrap) {
@@ -216,6 +217,38 @@
         } else {
             sync();
         }
+    }
+
+    /** Clears the dismissal so the tour shows again (signed-in: account + this browser; guest: this session). */
+    function resetDismissal() {
+        var state = getAuthState();
+        if (state.isSignedIn && state.user) {
+            var user = state.user;
+            try { localStorage.removeItem(LOCAL_PREFIX + user.id); } catch (e) { /* ignore */ }
+            if (typeof user.update === 'function') {
+                var meta = Object.assign({}, user.unsafeMetadata || {});
+                meta[META_KEY] = false;
+                user.update({ unsafeMetadata: meta }).catch(function (err) {
+                    console.warn('[usertypo home tour] could not clear dismissal on account', err);
+                });
+            }
+        } else {
+            try { sessionStorage.removeItem(GUEST_SESSION_KEY); } catch (e) { /* ignore */ }
+        }
+        sync();
+    }
+
+    /** Settings "Show again" buttons are enabled only while the tour is dismissed. */
+    function refreshResetButtons() {
+        var dismissed = authResolved && isDismissed();
+        document.querySelectorAll('[data-home-tour-reset]').forEach(function (btn) {
+            btn.disabled = !dismissed;
+        });
+        document.querySelectorAll('[data-home-tour-reset-status]').forEach(function (el) {
+            el.textContent = dismissed
+                ? 'Hidden. Show it again to see the tour next to the Esc hint on the home page.'
+                : 'Showing on the home page. Dismiss it there to hide it.';
+        });
     }
 
     function ensurePopover() {
@@ -631,6 +664,12 @@
 
     function init() {
         document.addEventListener('click', onDocumentClick, true);
+        document.addEventListener('click', function (e) {
+            var btn = e.target && e.target.closest && e.target.closest('[data-home-tour-reset]');
+            if (!btn || btn.disabled) return;
+            e.preventDefault();
+            resetDismissal();
+        });
         window.addEventListener('keydown', onKeyDown, true);
         window.addEventListener('resize', onViewportChange);
         window.addEventListener('scroll', onViewportChange, true);
@@ -660,6 +699,8 @@
         sync: sync,
         close: close,
         dismiss: function () { dismiss(document.querySelector('[data-home-tour]')); },
+        isDismissed: function () { return authResolved && isDismissed(); },
+        reset: resetDismissal,
     };
 
     if (document.readyState === 'loading') {
