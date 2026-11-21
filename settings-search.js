@@ -107,6 +107,9 @@
                 outline: none !important;
             }
             #global-settings-search-overlay .search-input::placeholder { color: #475569; }
+            #global-settings-search-overlay .search-input { -webkit-appearance: none; appearance: none; }
+            #global-settings-search-overlay .search-input::-webkit-search-cancel-button,
+            #global-settings-search-overlay .search-input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
             #global-settings-search-overlay .search-clear-btn {
                 position: absolute;
                 right: 0.625rem;
@@ -493,7 +496,7 @@
                 <div class="search-area">
                     <div class="search-wrapper glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
                         <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;pointer-events:none;">search</span>
-                        <input id="global-settings-search-input" type="text" class="search-input" placeholder="Type / to navigate pages" autocomplete="off" />
+                        <input id="global-settings-search-input" type="search" name="quick-actions-search" class="search-input" placeholder="Type / to navigate pages" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" />
                         <button type="button" id="global-settings-search-clear" class="search-clear-btn" title="Clear search">
                             <span class="material-symbols-outlined text-[14px]">close</span>
                         </button>

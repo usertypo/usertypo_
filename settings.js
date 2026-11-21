@@ -1691,8 +1691,8 @@ let __colorPickerState = null;
 
 function ensureThemeColorPicker() {
     let root = document.getElementById('usertypo-color-picker');
-    // Rebuild if an older picker shell (with preview/hex row) is still in the DOM
-    if (root && (root.querySelector('[data-picker-meta]') || !root.dataset.pickerV)) {
+    // Rebuild if an older picker shell (preview/hex row, or no eyedropper) is still in the DOM
+    if (root && (root.querySelector('[data-picker-meta]') || root.dataset.pickerV !== '3')) {
         root.remove();
         root = null;
     }
@@ -1700,18 +1700,54 @@ function ensureThemeColorPicker() {
     root = document.createElement('div');
     root.id = 'usertypo-color-picker';
     root.className = 'theme-color-picker';
-    root.dataset.pickerV = '2';
+    root.dataset.pickerV = '3';
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'Color picker');
     root.innerHTML = `
         <div class="theme-color-picker-sv" data-picker-sv>
             <span class="theme-color-picker-sv-cursor" data-picker-sv-cursor></span>
         </div>
-        <div class="theme-color-picker-hue" data-picker-hue>
-            <span class="theme-color-picker-hue-thumb" data-picker-hue-thumb></span>
+        <div class="theme-color-picker-row">
+            <div class="theme-color-picker-hue" data-picker-hue>
+                <span class="theme-color-picker-hue-thumb" data-picker-hue-thumb></span>
+            </div>
+            <button type="button" class="theme-color-picker-eyedropper" data-picker-eyedropper
+                title="Pick a color from the screen" aria-label="Pick a color from the screen" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M14.5 4.5l5 5M17 2.5a2.12 2.12 0 0 1 3 3l-2 2-3-3 2-2zM15 7.5l-9.3 9.3a2 2 0 0 0-.52.9L4.5 20.5l2.8-.68a2 2 0 0 0 .9-.52L17.5 10"
+                        fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         </div>
     `;
     document.body.appendChild(root);
+
+    // Eyedropper: pick any on-screen color (Chromium EyeDropper API; hidden elsewhere).
+    const eyedropperBtn = root.querySelector('[data-picker-eyedropper]');
+    if (eyedropperBtn && typeof window.EyeDropper === 'function') {
+        eyedropperBtn.hidden = false;
+        eyedropperBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!__colorPickerState) return;
+            const target = __colorPickerState;
+            root.classList.add('is-eyedropping');
+            try {
+                const result = await new window.EyeDropper().open();
+                // Picker may have been closed / retargeted while the eyedropper was open.
+                if (__colorPickerState !== target || !result || !result.sRGBHex) return;
+                const hsv = hexToHsv(normalizeHexColor(result.sRGBHex, '#ffffff'));
+                target.h = hsv.h;
+                target.s = hsv.s;
+                target.v = hsv.v;
+                renderThemeColorPicker(true);
+            } catch (_) {
+                // Esc / cancelled — keep the current color.
+            } finally {
+                root.classList.remove('is-eyedropping');
+            }
+        });
+    }
 
     const sv = root.querySelector('[data-picker-sv]');
     const hue = root.querySelector('[data-picker-hue]');

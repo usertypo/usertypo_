@@ -17,6 +17,19 @@
             --settings-box-radius: 1.375rem;
         }
 
+        /* Settings search is type=search (keeps password managers away); hide the native
+           clear button / styling — the page has its own clear button. */
+        #settings-search {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        #settings-search::-webkit-search-cancel-button,
+        #settings-search::-webkit-search-decoration {
+            -webkit-appearance: none;
+            appearance: none;
+            display: none;
+        }
+
         #settings-nav-pill {
             position: absolute;
             left: 0;
@@ -888,7 +901,42 @@
             top: 0%;
             background: #fff;
         }
+        .theme-color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .theme-color-picker-eyedropper {
+            flex-shrink: 0;
+            width: 1.75rem;
+            height: 1.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--theme-text, #cbd5e1);
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+        .theme-color-picker-eyedropper[hidden] {
+            display: none;
+        }
+        .theme-color-picker-eyedropper:hover,
+        .theme-color-picker.is-eyedropping .theme-color-picker-eyedropper {
+            color: var(--theme-primary, #00d0ff);
+            border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45);
+            background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.12);
+        }
+        .theme-color-picker-eyedropper svg {
+            width: 0.95rem;
+            height: 0.95rem;
+            display: block;
+        }
         .theme-color-picker-hue {
+            flex: 1 1 auto;
+            min-width: 0;
             position: relative;
             height: 1.15rem;
             border-radius: var(--settings-box-radius, 1.375rem);
@@ -1173,7 +1221,11 @@
                 <div class="search-wrapper">
                     <span
                         class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[0.853rem] pointer-events-none z-10">search</span>
-                    <input id="settings-search" type="text" class="search-input" placeholder="Search" />
+                    <!-- type=search + autocomplete off: password managers must not treat this as the
+                         username field for the Account password inputs further down the page. -->
+                    <input id="settings-search" type="search" name="settings-search" class="search-input"
+                        placeholder="Search" autocomplete="off" autocapitalize="off" spellcheck="false"
+                        data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" />
                     <button id="search-clear-btn" class="search-clear-btn" title="Clear search">
                         <span class="material-symbols-outlined text-[0.746rem]">close</span>
                     </button>
@@ -3960,6 +4012,11 @@
                                                             class="display-mode flex-1 text-sm font-bold text-slate-200 tracking-widest">
                                                             ••••••••</div>
                                                         <div class="edit-mode hidden flex-1 flex flex-col gap-3">
+                                                            <!-- Username for the password manager (visually hidden, not display:none),
+                                                                 so Chrome fills it here instead of the settings search bar. -->
+                                                            <input id="account-password-username" type="text" name="username"
+                                                                autocomplete="username" tabindex="-1" aria-hidden="true" readonly
+                                                                style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;" />
                                                             <input id="account-password-current" type="password"
                                                                 class="search-input w-full"
                                                                 placeholder="Current password" autocomplete="current-password" />
@@ -4154,6 +4211,8 @@
                                         nameInput.placeholder = username === '—' ? 'Username' : username;
                                     }
                                     if (emailDisplay) emailDisplay.textContent = email;
+                                    var pwUsername = q(root, '#account-password-username');
+                                    if (pwUsername) pwUsername.value = email === '—' ? '' : email;
                                     if (emailInput) {
                                         emailInput.value = email === '—' ? '' : email;
                                         emailInput.placeholder = email === '—' ? 'you@example.com' : email;
@@ -4686,19 +4745,94 @@ window.__spaPageInit = function() {
                 // Wait for card stagger to settle, then lock min-height
                 setTimeout(syncSettingsNavHeight, 1200);
 
+                function setNavPillExpanded(expanded) {
+                    navPill.classList.toggle('is-expanded', expanded);
+                    navPill.classList.toggle('is-collapsed', !expanded);
+                }
+
+                // Width of the pill when collapsed, in px (CSS var on #settings-container).
+                function collapsedPillWidthPx() {
+                    const raw = String(getComputedStyle(settingsContainerEl || navPill)
+                        .getPropertyValue('--settings-pill-collapsed') || '').trim();
+                    const num = parseFloat(raw) || 2.75;
+                    if (/rem$/.test(raw) || !/px$/.test(raw)) {
+                        return num * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+                    }
+                    return num;
+                }
+
+                // Opening zone: from the window's left edge to the collapsed pill's right edge, over
+                // the pill's full height. Once open, the pill stays open while the cursor is anywhere
+                // over the expanded box, and collapses when it leaves both.
+                let lastPointer = null;
+                // After picking an option the pill collapses and stays shut until the cursor
+                // leaves the pill area, so it doesn't reopen right under the cursor.
+                let suppressUntilLeave = false;
+                function pointerInPillZone(x, y) {
+                    const rect = navPill.getBoundingClientRect();
+                    return x <= rect.left + collapsedPillWidthPx() && y >= rect.top && y <= rect.bottom;
+                }
+                function pointerOverPill(x, y) {
+                    const rect = navPill.getBoundingClientRect();
+                    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+                }
+                function pointerKeepsPillOpen(x, y) {
+                    if (pointerInPillZone(x, y)) return true;
+                    return navPill.classList.contains('is-expanded') && pointerOverPill(x, y);
+                }
+
+                let initialHold = true;
                 setTimeout(() => {
-                    navPill.classList.remove('is-expanded');
-                    navPill.classList.add('is-collapsed');
+                    initialHold = false;
+                    const inside = !!(lastPointer && pointerKeepsPillOpen(lastPointer.x, lastPointer.y));
+                    setNavPillExpanded(inside);
                     syncSettingsNavHeight();
                 }, 2000);
 
-                navPill.addEventListener('mouseenter', () => {
-                    navPill.classList.remove('is-collapsed');
-                    navPill.classList.add('is-expanded');
+                let zoneFrame = 0;
+                document.addEventListener('pointermove', (e) => {
+                    if (e.pointerType && e.pointerType !== 'mouse') return;
+                    lastPointer = { x: e.clientX, y: e.clientY };
+                    if (zoneFrame) return;
+                    zoneFrame = requestAnimationFrame(() => {
+                        zoneFrame = 0;
+                        if (!navPill.isConnected || !lastPointer) return;
+                        if (suppressUntilLeave) {
+                            if (pointerInPillZone(lastPointer.x, lastPointer.y)
+                                || pointerOverPill(lastPointer.x, lastPointer.y)) return;
+                            suppressUntilLeave = false;
+                        }
+                        const inside = pointerKeepsPillOpen(lastPointer.x, lastPointer.y);
+                        // Keep the on-load preview open for its first 2s unless the cursor is in the zone.
+                        if (initialHold && !inside) return;
+                        if (inside !== navPill.classList.contains('is-expanded')) setNavPillExpanded(inside);
+                    });
+                }, { passive: true });
+                // Was the pill already open when this press started? (A first tap on touch both
+                // opens it and clicks — that click must not collapse it again.)
+                let expandedAtPress = false;
+                navPill.addEventListener('pointerdown', () => {
+                    expandedAtPress = navPill.classList.contains('is-expanded');
+                }, true);
+                // Touch / pen: no hover, so a tap inside the zone opens and a tap outside closes.
+                document.addEventListener('pointerdown', (e) => {
+                    if (!e.pointerType || e.pointerType === 'mouse' || !navPill.isConnected) return;
+                    initialHold = false;
+                    setNavPillExpanded(pointerInPillZone(e.clientX, e.clientY) || navPill.contains(e.target));
+                }, { passive: true });
+                // Picking an option in the expanded pill collapses it.
+                navPill.addEventListener('click', (e) => {
+                    if (!navPill.classList.contains('is-expanded') || !expandedAtPress) return;
+                    if (!e.target.closest('.setting-card')) return;
+                    initialHold = false;
+                    suppressUntilLeave = true;
+                    setNavPillExpanded(false);
                 });
-                navPill.addEventListener('mouseleave', () => {
-                    navPill.classList.remove('is-expanded');
-                    navPill.classList.add('is-collapsed');
+                // Cursor left the window entirely.
+                document.addEventListener('mouseout', (e) => {
+                    if (e.relatedTarget || initialHold) return;
+                    lastPointer = null;
+                    setNavPillExpanded(false);
                 });
             }
 
@@ -4713,6 +4847,27 @@ window.__spaPageInit = function() {
             // â”€â”€ SEARCH FILTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const searchInput = document.getElementById('settings-search');
             const searchClearBtn = document.getElementById('search-clear-btn');
+            // Safety net: a browser/password-manager autofill can drop the account email into
+            // the search box before the user touches it. Clear anything filled in that way.
+            if (searchInput) {
+                let searchTouched = false;
+                const markSearchTouched = () => { searchTouched = true; };
+                searchInput.addEventListener('keydown', markSearchTouched);
+                searchInput.addEventListener('paste', markSearchTouched);
+                searchInput.addEventListener('drop', markSearchTouched);
+                const clearAutofilledSearch = () => {
+                    if (searchTouched || !searchInput.value) return;
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                };
+                [0, 300, 1000, 2500].forEach((ms) => setTimeout(clearAutofilledSearch, ms));
+                searchInput.addEventListener('input', (e) => {
+                    // Autofill sets the value without a keystroke (no inputType, or insertReplacementText).
+                    if (e.isTrusted && !searchTouched && (!e.inputType || e.inputType === 'insertReplacementText')) {
+                        clearAutofilledSearch();
+                    }
+                });
+            }
             const searchResultsContainer = document.getElementById('search-results');
             const settingsContainer = document.getElementById('settings-container');
 
