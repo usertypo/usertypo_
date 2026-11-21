@@ -50,22 +50,32 @@
         if (panelList) renderPanel();
     }
 
-    // Diagnostic: ?nofx=1 turns off blurs, filters, masks and animations (remembered;
-    // ?nofx=0 to undo). Tells us whether a crash is caused by visual effects.
+    // Diagnostic: ?nofx=1 (or a list: backdrop,filter,motion,mask,willchange) turns off
+    // visual effects; remembered on the device, ?nofx=0 to undo. Tells us whether — and
+    // which kind of — visual effect makes a page crash.
     var NOFX_KEY = 'usertypo_debug_nofx';
-    var nofx = false;
+    var NOFX_RULES = {
+        backdrop: 'backdrop-filter:none!important;-webkit-backdrop-filter:none!important;',
+        filter: 'filter:none!important;',
+        motion: 'animation:none!important;transition:none!important;',
+        mask: 'mask-image:none!important;-webkit-mask-image:none!important;',
+        willchange: 'will-change:auto!important;',
+    };
+    var nofxList = [];
     try {
         var fxParam = new URLSearchParams(global.location.search).get('nofx');
-        if (fxParam === '1' && ls) ls.setItem(NOFX_KEY, '1');
+        if (fxParam && fxParam !== '0' && ls) ls.setItem(NOFX_KEY, fxParam);
         if (fxParam === '0' && ls) ls.removeItem(NOFX_KEY);
-        nofx = !!(ls && ls.getItem(NOFX_KEY) === '1');
+        var fxSaved = String((ls && ls.getItem(NOFX_KEY)) || '');
+        nofxList = fxSaved === '1' || fxSaved === 'all'
+            ? Object.keys(NOFX_RULES)
+            : fxSaved.split(',').map(function (x) { return x.trim(); }).filter(function (x) { return NOFX_RULES[x]; });
     } catch (_) { /* ignore */ }
+    var nofx = nofxList.length > 0;
     if (nofx) {
         var fxStyle = document.createElement('style');
         fxStyle.id = 'usertypo-debug-nofx';
-        fxStyle.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;'
-            + 'filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;'
-            + 'mask-image:none!important;-webkit-mask-image:none!important;will-change:auto!important;}';
+        fxStyle.textContent = '*,*::before,*::after{' + nofxList.map(function (k) { return NOFX_RULES[k]; }).join('') + '}';
         (document.head || document.documentElement).appendChild(fxStyle);
     }
 
@@ -105,6 +115,12 @@
         (document.head || document.documentElement).appendChild(hideStyle);
     }
     if (nolock) {
+        // Undo the shell's viewport lock (router updateShellLayout: h-screen + overflow-hidden).
+        var lockStyle = document.createElement('style');
+        lockStyle.id = 'usertypo-debug-nolock';
+        lockStyle.textContent = '#app-body{height:auto!important;min-height:100vh!important;overflow-y:auto!important;}'
+            + '#spa-content,#spa-page-root{overflow:visible!important;}';
+        (document.head || document.documentElement).appendChild(lockStyle);
         // router.js assigns window.usertypo_lockTypingScroll later; keep it a no-op.
         try {
             Object.defineProperty(global, 'usertypo_lockTypingScroll', {
@@ -157,7 +173,7 @@
     });
     global.addEventListener('pageshow', function () { heartbeat(); });
 
-    add('page-load', (nofx ? '[nofx] ' : '') + (hideList.length ? '[hide=' + hideList.join(',') + '] ' : '')
+    add('page-load', (nofx ? '[nofx=' + nofxList.join(',') + '] ' : '') + (hideList.length ? '[hide=' + hideList.join(',') + '] ' : '')
         + (nolock ? '[nolock] ' : '') + '[' + global.innerWidth + 'x' + global.innerHeight + '] '
         + (navigator.userAgent || '').slice(0, 160));
 
