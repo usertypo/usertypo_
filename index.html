@@ -172,10 +172,25 @@
         "description": "Free online typing test. Measure WPM and accuracy, compete on leaderboards, and race friends in multiplayer."
     }
     </script>
+    <!-- Opt-in device debug log (?debug=1); loads first so it sees early errors -->
+    <script src="js/util/debug-log.js?v=1"></script>
     <script>
         (function installAssetRecovery() {
             const retryKey = 'usertypo_asset_retry_count';
+            // At most MAX_RELOADS automatic reloads per RETRY_WINDOW_MS. The count is NOT reset by
+            // a successful route load: a resource that fails on every visit (e.g. only on one
+            // device) used to reset → reload → fail forever, which iOS ends by crashing the tab.
+            const MAX_RELOADS = 2;
+            const RETRY_WINDOW_MS = 2 * 60 * 1000;
             let reloadScheduled = false;
+            function readRetry() {
+                try {
+                    const raw = sessionStorage.getItem(retryKey);
+                    const parsed = raw ? JSON.parse(raw) : null;
+                    if (parsed && typeof parsed.n === 'number' && typeof parsed.at === 'number') return parsed;
+                } catch (_) { /* ignore */ }
+                return { n: 0, at: 0 };
+            }
             const logoUrls = ['/logo-assets/typ_.png', '/logo-assets/user.png', '/logo-assets/o.png'];
             const logoReady = Promise.all(logoUrls.map((url) => new Promise((resolve, reject) => {
                 const image = new Image();
@@ -195,7 +210,11 @@
             };
 
             window.usertypoMarkAssetBootSuccessful = function () {
-                sessionStorage.removeItem(retryKey);
+                // Only forget past reloads once the window has passed (see readRetry above).
+                const state = readRetry();
+                if (state.n && Date.now() - state.at > RETRY_WINDOW_MS) {
+                    try { sessionStorage.removeItem(retryKey); } catch (_) { /* ignore */ }
+                }
             };
 
             window.addEventListener('error', function (event) {
@@ -213,10 +232,21 @@
                 const isLocal = url.origin === location.origin;
                 if (!isLocal || reloadScheduled) return;
 
-                const attempts = Number(sessionStorage.getItem(retryKey) || 0);
-                if (attempts >= 2) return;
+                let state = readRetry();
+                if (Date.now() - state.at > RETRY_WINDOW_MS) state = { n: 0, at: 0 };
+                if (state.n >= MAX_RELOADS) {
+                    if (window.usertypoDebugLog) window.usertypoDebugLog.add('reload-skipped', url.pathname + url.search);
+                    return;
+                }
                 reloadScheduled = true;
-                sessionStorage.setItem(retryKey, String(attempts + 1));
+                try {
+                    sessionStorage.setItem(retryKey, JSON.stringify({ n: state.n + 1, at: Date.now() }));
+                } catch (_) {
+                    // No sessionStorage (private mode / webview): never auto-reload, it could loop.
+                    reloadScheduled = false;
+                    return;
+                }
+                if (window.usertypoDebugLog) window.usertypoDebugLog.add('auto-reload', target.tagName + ' failed: ' + url.pathname + url.search);
                 setTimeout(() => location.reload(), 500);
             }, true);
         })();
