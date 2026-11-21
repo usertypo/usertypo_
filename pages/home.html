@@ -2537,6 +2537,7 @@ window.setTimeout = function(handler, timeout) {
             }
 
             window.addEventListener('resize', () => {
+                if (!isHomeViewMounted()) return;
                 if (typeof updateOverflowWordLayout === 'function') updateOverflowWordLayout();
                 updateLineLayout();
                 updateCaretPosition();
@@ -3210,7 +3211,23 @@ window.setTimeout = function(handler, timeout) {
         }
 
         // --- TYPING LOGIC ---
+        /**
+         * This page's script keeps running after the SPA navigates away (its window
+         * listeners and window.restartTest stay registered). Shared code (language load,
+         * settings re-apply) calls window.restartTest on /room and /dual too, which made
+         * the home test rebuild itself against a page that is gone — on iPhone the room
+         * tab then crashed. Only act while the home typing view is actually on screen.
+         */
+        function isHomeViewMounted() {
+            return !!(textContainer && textContainer.isConnected
+                && document.getElementById('dynamic-keymap-container'));
+        }
+
         function restartTest(options) {
+            if (!isHomeViewMounted()) {
+                if (window.usertypoDebugStep) window.usertypoDebugStep('home restartTest skipped (home not on screen)');
+                return;
+            }
             if (isRestarting) return;
             isRestarting = true;
             saveCustomBookProgressOnBail();
@@ -3349,6 +3366,11 @@ window.setTimeout = function(handler, timeout) {
                     const s = window.usertypo_settings || (typeof loadSettings === 'function' ? loadSettings() : {});
                     const kl = s.keyboardLayout || {};
                     const keymapContainer = document.getElementById('dynamic-keymap-container');
+                    if (!keymapContainer) {
+                        // Left the home page during the restart delay — nothing to show.
+                        isRestarting = false;
+                        return;
+                    }
                     if (kl.keymapMode && kl.keymapMode !== 'Off') {
                         keymapContainer.classList.remove('hidden');
                         setTimeout(() => keymapContainer.classList.remove('opacity-0'), 10);
