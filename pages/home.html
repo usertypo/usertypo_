@@ -4070,11 +4070,6 @@ window.setTimeout = function(handler, timeout) {
 
             if (testComplete) return;
 
-            if (e.key === '\\') {
-                e.preventDefault();
-                return;
-            }
-
             const isWordDelete = e.key === 'Backspace' && e.ctrlKey && !e.altKey && !e.metaKey
                 && window.usertypo_settingsApi?.isCtrlBackspaceEnabled?.() !== false;
             if (isWordDelete) e.preventDefault();
