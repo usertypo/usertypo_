@@ -32,13 +32,86 @@
         return !overlay || overlay.hidden === true;
     }
 
+    // ── Links in the message ──
+    // Recognises http(s)://…, www.… and bare domains like discord.gg/abc or usertypo.com/about.
+    var LINK_RE = /\b(?:https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.(?:com|net|org|gg|io|dev|app|co|me|xyz|in|uk|us|tv|ly|link|site|online)(?:\/[^\s<>"']*)?)/gi;
+    // Trailing punctuation usually belongs to the sentence, not the link.
+    var TRAILING_RE = /[.,!?;:'"\])}>]+$/;
+    var ARROW_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+        + '<path d="M3.5 8.5l5-5M4.5 3.5h4v4" fill="none" stroke="currentColor" stroke-width="1.6" '
+        + 'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    function toUrl(raw) {
+        var href = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+        try {
+            var url = new URL(href);
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+            return url;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function isSiteUrl(url) {
+        var host = url.hostname.replace(/^www\./, '');
+        var here = location.hostname.replace(/^www\./, '');
+        return host === here;
+    }
+
+    function buildLink(label, url) {
+        var a = document.createElement('a');
+        a.className = 'site-announcement__link';
+        a.href = url.href;
+        a.textContent = label;
+        if (isSiteUrl(url)) {
+            // Same site: use SPA navigation when the route is known.
+            a.addEventListener('click', function (e) {
+                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                if (typeof window.navigateTo !== 'function') return;
+                e.preventDefault();
+                window.navigateTo(url.pathname + url.search);
+            });
+        } else {
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+        }
+        var arrow = document.createElement('span');
+        arrow.className = 'site-announcement__link-arrow';
+        arrow.innerHTML = ARROW_SVG;
+        a.appendChild(arrow);
+        return a;
+    }
+
+    /** Fill `el` with the message, turning URLs into links (text stays text — no HTML parsing). */
+    function renderMessage(el, message) {
+        el.textContent = '';
+        var text = String(message || '');
+        var last = 0;
+        LINK_RE.lastIndex = 0;
+        var match;
+        while ((match = LINK_RE.exec(text))) {
+            var raw = match[0];
+            // Part of an email address (me@example.com) — leave as text.
+            if (match.index > 0 && text.charAt(match.index - 1) === '@') continue;
+            var trailing = raw.match(TRAILING_RE);
+            if (trailing) raw = raw.slice(0, raw.length - trailing[0].length);
+            var url = raw ? toUrl(raw) : null;
+            if (!url) continue;
+            if (match.index > last) el.appendChild(document.createTextNode(text.slice(last, match.index)));
+            el.appendChild(buildLink(raw, url));
+            last = match.index + raw.length;
+            LINK_RE.lastIndex = last;
+        }
+        if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+    }
+
     function render() {
         var box = $('site-announcement');
         var text = $('site-announcement-text');
         if (!box || !text) return;
         var show = !!(current && current.message && current.id !== dismissedId() && isSiteReady());
         if (show) {
-            text.textContent = current.message;
+            renderMessage(text, current.message);
             positionBox();
         }
         box.classList.toggle('hidden', !show);
