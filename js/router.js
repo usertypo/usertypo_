@@ -45,14 +45,14 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=74'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=75'));
         }
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
             if (dualParams.get('local') === 'bot') {
                 jobs.push(loadScriptOnce('js/multiplayer/local-prompt.js?v=4'));
             }
-            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=115'));
+            jobs.push(loadScriptOnce('js/pages/dual-race.js?v=116'));
         }
         if (path === '/userstats') {
             jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
@@ -276,7 +276,9 @@
             return false;
         }
         if (!window.usertypoMobile.isMultiplayerPath(path)) return false;
-        if (typeof window.usertypoMobile.isMobileClient === 'function' && !window.usertypoMobile.isMobileClient()) {
+        if (typeof window.usertypoMobile.isMultiplayerBlocked === 'function'
+            ? !window.usertypoMobile.isMultiplayerBlocked()
+            : (typeof window.usertypoMobile.isMobileClient === 'function' && !window.usertypoMobile.isMobileClient())) {
             return false;
         }
         if (typeof window.usertypoMobile.blockMultiplayerIfMobile === 'function') {
@@ -805,7 +807,7 @@
             return;
         }
 
-        // Phones/tablets: multiplayer rooms & duels are desktop-only.
+        // Phones/tablets: blocked only if usertypoMobile says multiplayer is desktop-only.
         if (guardMultiplayerMobile(path)) {
             if (normalizePath(window.location.pathname) !== '/') {
                 history.replaceState({ spa: true, path: '/', search: '' }, '', '/');

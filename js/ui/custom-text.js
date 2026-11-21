@@ -1124,7 +1124,7 @@
                 else close();
                 return;
             }
-            // Keep page-level shortcuts (restart, quick settings) from firing underneath.
+            // Keep page-level shortcuts (restart, quick actions) from firing underneath.
             if (e.key === 'Tab' && !box.contains(document.activeElement)) {
                 e.preventDefault();
                 q('[data-ct-text]').focus();

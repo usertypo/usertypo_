@@ -496,8 +496,7 @@ window.__spaPageInit = function() {
             const mpOpenRoomBtn = document.getElementById('mp-open-room-btn');
 
             function isMultiplayerUnavailable() {
-                if (window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
-                    && window.usertypoMobile.isMobileClient()) {
+                if (isMobileMultiplayerBlocked()) {
                     return true;
                 }
                 const status = window.usertypoMultiplayer?.getAvailability?.()?.status;
@@ -505,8 +504,8 @@ window.__spaPageInit = function() {
             }
 
             function isMobileMultiplayerBlocked() {
-                return !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
-                    && window.usertypoMobile.isMobileClient());
+                return !!(window.usertypoMobile && typeof window.usertypoMobile.isMultiplayerBlocked === 'function'
+                    && window.usertypoMobile.isMultiplayerBlocked());
             }
 
             function applyMultiplayerAvailability(detail) {
@@ -956,8 +955,13 @@ window.__spaPageInit = function() {
                 const info = document.createElement('div');
                 info.className = 'min-w-0 flex-1';
                 const name = document.createElement('div');
-                name.className = 'text-sm text-white font-bold truncate';
-                name.textContent = options.name || 'Player';
+                name.className = 'text-sm text-white font-bold flex items-center min-w-0';
+                const nameText = document.createElement('span');
+                nameText.className = 'truncate';
+                nameText.textContent = options.name || 'Player';
+                name.appendChild(nameText);
+                const deviceBadge = window.usertypoMobile?.createDeviceBadge?.(!!options.mobile);
+                if (deviceBadge) name.appendChild(deviceBadge);
                 const details = document.createElement('div');
                 details.className = 'text-xs text-slate-400 mt-1';
                 details.textContent = window.usertypoMultiplayer?.describeConfig(config) || (config.amount + ' seconds');
@@ -1003,6 +1007,7 @@ window.__spaPageInit = function() {
                     const config = decodeListingConfig(row);
                     appendDualListingRow({
                         name: row[1] || 'Player',
+                        mobile: row[4] === 1,
                         config: config,
                         onJoin: function () {
                             if (!window.usertypoMultiplayer || typeof window.usertypoMultiplayer.joinListing !== 'function') {

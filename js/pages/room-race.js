@@ -452,7 +452,7 @@
                 return '<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl ' + (isRoomHost ? 'bg-primary/5 border border-primary/10' : 'hover:bg-white/5 transition-colors') + '">' +
                     avatar +
                     '<div class="flex-1 min-w-0">' +
-                        '<span class="text-sm font-semibold text-on-surface">' + escapeHtml(player.name) + '</span>' +
+                        '<span class="text-sm font-semibold text-on-surface">' + escapeHtml(player.name) + deviceBadge(player) + '</span>' +
                         (isRoomHost ? '<span class="text-[9px] text-primary font-bold uppercase tracking-widest ml-2">Host</span>' : '') +
                         (player.isBot ? '<span class="text-[9px] text-slate-500 font-bold uppercase tracking-widest ml-2">Bot</span>' : '') +
                     '</div>' +
@@ -2083,6 +2083,7 @@
                     level: player.level,
                     percentToNext: player.percentToNext,
                     userId: player.userId,
+                    mobile: !!player.mobile,
                 });
             });
             if (room.bot) {
@@ -2130,6 +2131,13 @@
             rebuildLeaderboardPills(rows, firstRects);
         }
 
+        /** Small phone icon for players on a phone/tablet ('' for desktop). */
+        function deviceBadge(player) {
+            return (player && player.mobile && window.usertypoMobile && typeof window.usertypoMobile.deviceBadgeHtml === 'function')
+                ? window.usertypoMobile.deviceBadgeHtml(true)
+                : '';
+        }
+
         function rebuildLeaderboardPills(rows, firstRects) {
             if (!leaderboard) return;
             leaderboard.innerHTML = rows.map(function (row, index) {
@@ -2140,7 +2148,7 @@
                     '" data-player-index="' + row.index + '">' +
                     '<span class="lb-rank text-xs font-bold text-slate-500 shrink-0" data-lb-rank>' + (index + 1) + '</span>' +
                     avatar +
-                    '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) +
+                    '<span class="lb-name text-sm font-bold text-white truncate min-w-0">' + escapeHtml(row.name) + deviceBadge(row) +
                     (row.isBot ? ' <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot</span>' : '') +
                     '</span>' +
                     '<span class="lb-wpm text-sm font-mono text-primary shrink-0 ml-auto" data-lb-wpm>' +
@@ -2218,7 +2226,7 @@
                 + '<div class="relative z-10 flex items-center justify-center">' + avatarHtml + '</div>'
                 + '</div>'
                 + '<span class="dual-stats-name text-white font-bold tracking-wide text-center truncate">'
-                + escapeHtml(player.name) + '</span>'
+                + escapeHtml(player.name) + deviceBadge(player) + '</span>'
                 + '<div class="dual-stats-metrics grid grid-cols-3 items-end">'
                 + '<div class="text-center min-w-0">'
                 + '<span class="dual-metric-label font-bold text-slate-500 uppercase tracking-widest block mb-1">Acc</span>'
@@ -2251,7 +2259,7 @@
             return '<div class="room-rank-pill anim-card' + meClass + '" style="animation-delay:' + Math.min(500, 200 + rank * 40) + 'ms;">'
                 + '<span class="pill-rank">#' + rank + '</span>'
                 + '<span class="shrink-0 flex items-center">' + avatar + '</span>'
-                + '<span class="pill-name">' + escapeHtml(player.name) + nameExtra + '</span>'
+                + '<span class="pill-name">' + escapeHtml(player.name) + deviceBadge(player) + nameExtra + '</span>'
                 + statsHtml
                 + '</div>';
         }
@@ -2280,6 +2288,7 @@
                     level: profile.level,
                     percentToNext: profile.percentToNext,
                     isBot: isBot,
+                    mobile: !isBot && (!!profile.mobile || Number(row[15]) === 1),
                     wpm: Math.round(Number(row[3]) || 0),
                     acc: Math.round((Number(row[4]) || 0) * 10) / 10,
                     con: Math.round(Number(row[11]) || 0),

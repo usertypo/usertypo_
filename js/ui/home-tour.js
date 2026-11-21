@@ -1,5 +1,5 @@
 /**
- * Home page quick tour — icon beside "esc - quick settings" that opens a
+ * Home page quick tour — icon beside "esc - quick actions" that opens a
  * glass info box (same material as the settings "How it works" portal) with
  * slides that spotlight parts of the page.
  *

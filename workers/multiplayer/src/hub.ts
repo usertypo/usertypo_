@@ -26,6 +26,8 @@ interface Player {
   avatarUrl: string;
   level: number;
   percentToNext: number;
+  /** Player is on a phone/tablet (shown as a small icon next to their name). */
+  mobile?: boolean;
   joined: boolean;
   ready: boolean;
   status: string;
@@ -308,6 +310,15 @@ export class MultiplayerHub implements DurableObject {
     }
   }
 
+  private mobileUserIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const ws of this.ctx.getWebSockets()) {
+      const attachment = ws.deserializeAttachment() as { userId?: string; mobile?: boolean } | null;
+      if (attachment?.userId && attachment.mobile) ids.add(attachment.userId);
+    }
+    return ids;
+  }
+
   private attachSocket(ws: WebSocket, userId: string) {
     this.wsToUser.set(ws, userId);
     if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
@@ -480,6 +491,7 @@ export class MultiplayerHub implements DurableObject {
           level?: number;
           percentToNext?: number;
         };
+        mobile?: boolean;
       };
       const userId = String(body.userId || '').trim();
       if (!userId) return Response.json({ ok: false, error: 'invalid_user' }, { status: 400 });
@@ -511,6 +523,9 @@ export class MultiplayerHub implements DurableObject {
         }
         if (!room.allowedUserIds.includes(userId)) room.allowedUserIds.push(userId);
         room.players[userId] = this.createPlayer(userId, existing.index);
+      }
+      if (typeof body.mobile === 'boolean' && room.players[userId]) {
+        room.players[userId].mobile = body.mobile;
       }
       this.userToRoom.set(userId, room.id);
       this.emitRoomState(room);
@@ -629,7 +644,7 @@ export class MultiplayerHub implements DurableObject {
     }
     const type = String(parsed.t || '');
     if (type === 'auth') {
-      await this.handleAuth(ws, (parsed.p || {}) as { token?: string; guestId?: string });
+      await this.handleAuth(ws, (parsed.p || {}) as { token?: string; guestId?: string; mobile?: boolean });
       return;
     }
     let userId = this.wsToUser.get(ws);
@@ -667,7 +682,7 @@ export class MultiplayerHub implements DurableObject {
     }
   }
 
-  private async handleAuth(ws: WebSocket, auth: { token?: string; guestId?: string }) {
+  private async handleAuth(ws: WebSocket, auth: { token?: string; guestId?: string; mobile?: boolean }) {
     try {
       const session = await authenticateHandshake(this.env, auth);
       const userId = session.userId;
@@ -687,7 +702,8 @@ export class MultiplayerHub implements DurableObject {
         this.role = 'lobby';
       }
 
-      ws.serializeAttachment({ userId });
+      const mobile = auth.mobile === true;
+      ws.serializeAttachment({ userId, mobile });
       if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
       const sockets = this.userSockets.get(userId)!;
       if (sockets.size >= LIMITS.maxSocketsPerUser) {
@@ -706,6 +722,11 @@ export class MultiplayerHub implements DurableObject {
       if (this.role === 'race') {
         const room = this.rooms.get(this.boundRoomId)!;
         const player = room.players[userId];
+        if (player && !!player.mobile !== mobile) {
+          player.mobile = mobile;
+          if (room.type === 'custom' && room.state === 'waiting') this.emitRoomState(room);
+          void this.persist();
+        }
         let profile = this.profiles.get(userId);
         if (!profile) {
           profile = {
@@ -813,7 +834,8 @@ export class MultiplayerHub implements DurableObject {
     for (const uid of room.allowedUserIds) this.emitToUser(uid, event, payload);
   }
 
-  private serializeListings(): Array<[string, string, ReturnType<typeof serializeConfig>, number]> {
+  private serializeListings(): Array<[string, string, ReturnType<typeof serializeConfig>, number, number]> {
+    const mobileIds = this.mobileUserIds();
     return [...this.listings.values()]
       .filter((l) => l.status === 'waiting')
       .sort((a, b) => a.createdAt - b.createdAt)
@@ -827,6 +849,7 @@ export class MultiplayerHub implements DurableObject {
           ownerName,
           serializeConfig(listing.config),
           listing.createdAt,
+          mobileIds.has(listing.ownerUserId) ? 1 : 0,
         ];
       });
   }
@@ -864,6 +887,7 @@ export class MultiplayerHub implements DurableObject {
       avatarUrl: profile?.avatarUrl || '',
       level: profile?.level ?? 1,
       percentToNext: profile?.percentToNext ?? 0,
+      mobile: this.mobileUserIds().has(userId),
       joined: false,
       ready: false,
       status: 'waiting',
@@ -1098,6 +1122,7 @@ export class MultiplayerHub implements DurableObject {
         avatarUrl: p.avatarUrl,
         level: p.level,
         percentToNext: p.percentToNext,
+        mobile: !!p.mobile,
         index: p.index,
         joined: p.joined,
         ready: p.ready,
@@ -1133,6 +1158,7 @@ export class MultiplayerHub implements DurableObject {
         avatarUrl: p.avatarUrl,
         level: p.level ?? 1,
         percentToNext: p.percentToNext ?? 0,
+        mobile: !!p.mobile,
       })),
       bot: room.bot ? { index: room.bot.index, name: room.bot.name, isBot: true } : null,
     };
@@ -1567,6 +1593,7 @@ export class MultiplayerHub implements DurableObject {
       displaySeconds,
       errorsMade,
       extraChars,
+      player.mobile ? 1 : 0,
     ];
   }
 
@@ -2264,6 +2291,7 @@ export class MultiplayerHub implements DurableObject {
               level: profile.level,
               percentToNext: profile.percentToNext,
             },
+            mobile: this.mobileUserIds().has(userId),
           }),
         });
         const addBody = await addRes.json().catch(() => ({})) as { ok?: boolean; error?: string; roomId?: string };

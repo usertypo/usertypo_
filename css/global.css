@@ -1563,7 +1563,7 @@ html {
     .site-announcement__card { animation: none; }
 }
 
-/* ─── Home quick tour (icon beside "esc - quick settings") ─── */
+/* ─── Home quick tour (icon beside "esc - quick actions") ─── */
 .home-tour-wrap {
     position: relative;
     display: inline-flex;
@@ -1883,7 +1883,7 @@ html {
     transform: scale(1.12);
 }
 
-/* Quick Settings (Esc) shortcut tip — same clickable behaviour as the Tab restart tip */
+/* Quick Actions (Esc) shortcut tip — same clickable behaviour as the Tab restart tip */
 [data-shortcut-tip="esc"] {
     display: inline-block;
     cursor: pointer;
@@ -1904,10 +1904,22 @@ html {
     }
 }
 
-/* Home Circular Multiplayer Button */
+/* Home Circular Friends / Multiplayer / Leaderboards Buttons */
+/* Equal-width columns so the icon centres are equidistant regardless of label length */
 #home-multiplayer-wrap {
     margin-top: 1.75rem !important;
     padding-top: 0.25rem;
+    display: grid;
+    grid-template-columns: repeat(3, 9rem);
+    justify-content: center;
+    justify-items: center;
+}
+
+/* Narrow screens: share the available width equally so the row never overflows */
+@media (max-width: 30rem) {
+    #home-multiplayer-wrap {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .home-multiplayer-btn-group {
@@ -1986,4 +1998,24 @@ html {
     white-space: nowrap;
     width: max-content;
     line-height: 1;
+}
+
+/* Multiplayer: small phone icon beside players on a phone/tablet (js/util/mobile.js) */
+.mp-device-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 0.85em;
+    height: 0.85em;
+    margin-left: 0.3em;
+    vertical-align: -0.08em;
+    color: #94a3b8;
+    opacity: 0.85;
+}
+
+.mp-device-badge svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }

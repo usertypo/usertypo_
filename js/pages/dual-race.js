@@ -583,6 +583,7 @@
                 level: me.level,
                 percentToNext: me.percentToNext,
                 userId: me.userId,
+                mobile: !!me.mobile,
             });
             var liveOppWpm = Math.max(0, Math.round(Number(opponentTargetWpm || opponentDisplayWpm) || 0));
             var otherData = {
@@ -591,6 +592,7 @@
                 level: other.level,
                 percentToNext: other.percentToNext,
                 userId: other.userId,
+                mobile: !!other.mobile,
                 isBot: !!(bot && other.userId === 'bot') || !!(other.isBot),
                 wpm: liveOppWpm,
                 raw: liveOppWpm,
@@ -2745,7 +2747,15 @@
                 if (element) element.textContent = value;
             }
             var nameEl = document.getElementById(prefix + '-name');
-            if (nameEl) nameEl.textContent = data.name || '—';
+            if (nameEl) {
+                nameEl.textContent = data.name || '—';
+                // Small phone icon for players on a phone/tablet
+                var deviceBadge = !data.isBot && window.usertypoMobile
+                    && typeof window.usertypoMobile.createDeviceBadge === 'function'
+                    ? window.usertypoMobile.createDeviceBadge(!!data.mobile)
+                    : null;
+                if (deviceBadge) nameEl.appendChild(deviceBadge);
+            }
             var youEl = document.getElementById(prefix + '-you');
             if (youEl) {
                 var isYou = !!(data.userId && data.userId === selfUserId);
@@ -3362,12 +3372,15 @@
                 meData.avatarUrl = me.avatarUrl;
                 meData.level = me.level;
                 meData.percentToNext = me.percentToNext;
+                meData.mobile = !!me.mobile || (Array.isArray(meRow) && Number(meRow[15]) === 1);
                 otherData.name = other.name;
                 otherData.avatarUrl = other.avatarUrl;
                 otherData.level = other.level;
                 otherData.percentToNext = other.percentToNext;
                 otherData.userId = other.userId;
                 otherData.isBot = !!(bot && other.userId === 'bot') || !!(other.isBot);
+                otherData.mobile = !otherData.isBot
+                    && (!!other.mobile || (Array.isArray(otherRow) && Number(otherRow[15]) === 1));
                 meData.userId = me.userId;
                 // Server rows for unfinished leavers divide their chars by a ~0s clock.
                 var otherLeftUnfinished = !isBotMatch()

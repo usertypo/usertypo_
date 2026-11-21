@@ -638,7 +638,7 @@
                 if (window.Clerk && window.Clerk.session) {
                     try {
                         var token = await window.Clerk.session.getToken();
-                        if (token) return { token: token };
+                        if (token) return { token: token, mobile: isMobileDevice() };
                     } catch (_) { /* retry */ }
                 }
                 await new Promise(function (resolve) {
@@ -647,7 +647,12 @@
             }
             throw new Error('Could not obtain a sign-in token for multiplayer.');
         }
-        return { guestId: getOrCreateGuestId() };
+        return { guestId: getOrCreateGuestId(), mobile: isMobileDevice() };
+    }
+
+    /** Sent with auth so other players see a phone icon next to this player's name. */
+    function isMobileDevice() {
+        return !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function' && window.usertypoMobile.isMobileClient());
     }
 
     function authPayloadCallback(callback) {

@@ -1499,11 +1499,11 @@
                         <span data-shortcut-tip="esc"
                             role="button"
                             tabindex="-1"
-                            onclick="handleQuickSettings(event)"
+                            onclick="handleQuickActions(event)"
                             onmousedown="event.preventDefault()"><kbd
                                 class="bg-surface border border-white/20 px-1.5 py-0.5 rounded text-slate-300">esc</kbd>
                             -
-                            quick settings</span>
+                            quick actions</span>
 
                         <span class="home-tour-wrap" data-home-tour hidden>
                             <button type="button" class="home-tour-trigger glass-panel" data-home-tour-trigger
@@ -1518,8 +1518,16 @@
                         </span>
                     </div>
 
-                    <!-- Circular Multiplayer Button -->
-                    <div id="home-multiplayer-wrap" class="flex justify-center zen-element relative z-10" style="margin-top: 1.75rem !important; padding-top: 0.25rem;">
+                    <!-- Circular Friends / Multiplayer / Leaderboards Buttons -->
+                    <div id="home-multiplayer-wrap" class="zen-element relative z-10" style="margin-top: 1.75rem !important; padding-top: 0.25rem;">
+                        <a href="/friends" data-spa-link id="home-friends-btn"
+                            class="home-multiplayer-btn-group flex flex-col items-center gap-1.5 group cursor-pointer select-none"
+                            aria-label="Friends">
+                            <span class="home-multiplayer-btn glass-panel">
+                                <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                            </span>
+                            <span class="home-multiplayer-label font-mono text-[0.82rem] font-semibold tracking-wider text-slate-400">Friends</span>
+                        </a>
                         <a href="/multiplayer" data-spa-link id="home-multiplayer-btn"
                             class="home-multiplayer-btn-group flex flex-col items-center gap-1.5 group cursor-pointer select-none"
                             aria-label="Multiplayer">
@@ -1527,6 +1535,14 @@
                                 <span class="material-symbols-outlined" aria-hidden="true">swords</span>
                             </span>
                             <span class="home-multiplayer-label font-mono text-[0.82rem] font-semibold tracking-wider text-slate-400">Multiplayer</span>
+                        </a>
+                        <a href="/leaderboards" data-spa-link id="home-leaderboards-btn"
+                            class="home-multiplayer-btn-group flex flex-col items-center gap-1.5 group cursor-pointer select-none"
+                            aria-label="Leaderboards">
+                            <span class="home-multiplayer-btn glass-panel">
+                                <span class="material-symbols-outlined" aria-hidden="true">emoji_events</span>
+                            </span>
+                            <span class="home-multiplayer-label font-mono text-[0.82rem] font-semibold tracking-wider text-slate-400">Leaderboards</span>
                         </a>
                     </div>
 
@@ -2389,7 +2405,7 @@ window.setTimeout = function(handler, timeout) {
             }
         }
 
-        function handleQuickSettings(e) {
+        function handleQuickActions(e) {
             if (e) {
                 e.preventDefault();
             }
@@ -2397,7 +2413,7 @@ window.setTimeout = function(handler, timeout) {
                 window.usertypo_settingsSearch.open();
             }
         }
-        window.handleQuickSettings = handleQuickSettings;
+        window.handleQuickActions = handleQuickActions;
 
         // Capslock warning
         function updateCapslockWarning(e) {

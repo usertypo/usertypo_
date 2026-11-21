@@ -1,6 +1,8 @@
 /**
- * Global settings search overlay — opens on Escape from any page.
- * Reuses the settings page search bar styling and inline controls.
+ * Quick Actions overlay — opens on Escape from any page.
+ * Searches settings (reusing the settings page's inline controls), the home
+ * test config bar / leaderboard filters (on those pages), and pages ("/" prefix).
+ * The first result is selected; Enter runs its highlighted action.
  */
 (function () {
     'use strict';
@@ -15,6 +17,11 @@
     let resultsPanel = null;
     let resultsContainer = null;
     let indexPromise = null;
+    // Rendered results: [{ entry, el, target }]; target = element Enter will press
+    let currentEntries = [];
+    let selectedIndex = 0;
+    let selectedSub = 0;
+    let lastSearch = null; // promise of the in-flight search, so Enter acts on fresh results
 
     function injectStyles() {
         const existing = document.getElementById('global-settings-search-styles');
@@ -408,6 +415,52 @@
                 gap: 0.75rem;
                 width: 100%;
             }
+            #global-settings-search-overlay .search-result-item.qa-selected {
+                border-color: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.45) !important;
+                box-shadow: 0 0 0 1px rgba(var(--theme-primary-rgb, 0, 208, 255), 0.25), 0 0 14px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.18 * var(--glow-intensity, 1))) !important;
+            }
+            #global-settings-search-overlay .qa-enter-target:not(.search-result-item) {
+                outline: 2px solid var(--theme-primary, #00d0ff) !important;
+                outline-offset: 2px;
+                box-shadow: 0 0 10px rgba(var(--theme-primary-rgb, 0, 208, 255), calc(0.45 * var(--glow-intensity, 1))) !important;
+            }
+            #global-settings-search-overlay .qa-command {
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+            }
+            #global-settings-search-overlay .qa-command .search-result-name { margin-bottom: 0; }
+            #global-settings-search-overlay .qa-command-desc {
+                font-size: 0.6875rem;
+                color: #64748b;
+                margin-top: 0.125rem;
+            }
+            #global-settings-search-overlay .qa-badge {
+                flex-shrink: 0;
+                font-size: 0.5625rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                padding: 0.15rem 0.45rem;
+                border-radius: 9999px;
+                color: var(--theme-primary, #00d0ff);
+                background: rgba(var(--theme-primary-rgb, 0, 208, 255), 0.12);
+                border: 1px solid rgba(var(--theme-primary-rgb, 0, 208, 255), 0.3);
+            }
+            #global-settings-search-overlay .qa-enter-hint {
+                flex-shrink: 0;
+                font-size: 0.5625rem;
+                font-weight: 700;
+                color: #64748b;
+                font-family: 'Roboto Mono', monospace;
+                padding: 0.1rem 0.4rem;
+                border-radius: 0.375rem;
+                border: 1px solid rgba(255,255,255,0.12);
+                display: none;
+            }
+            #global-settings-search-overlay .search-result-item.qa-selected .qa-enter-hint { display: inline-block; }
             #global-settings-search-overlay .gss-empty {
                 text-align: center;
                 padding: 2rem 1rem;
@@ -440,7 +493,7 @@
                 <div class="search-area">
                     <div class="search-wrapper glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
                         <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px] pointer-events-none" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:16px;pointer-events:none;">search</span>
-                        <input id="global-settings-search-input" type="text" class="search-input" placeholder="Search" autocomplete="off" />
+                        <input id="global-settings-search-input" type="text" class="search-input" placeholder="Type / to navigate pages" autocomplete="off" />
                         <button type="button" id="global-settings-search-clear" class="search-clear-btn" title="Clear search">
                             <span class="material-symbols-outlined text-[14px]">close</span>
                         </button>
@@ -488,12 +541,26 @@
         overlayEl.addEventListener('keydown', (e) => {
             if (isOpen) e.stopPropagation();
         });
-        searchInput.addEventListener('input', onSearchInput);
+        searchInput.addEventListener('input', () => { lastSearch = onSearchInput(); });
         searchClearBtn.addEventListener('click', clearSearch);
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.stopPropagation();
                 closeOverlay();
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                if (!currentEntries.length) return;
+                e.preventDefault();
+                const dir = e.key === 'ArrowDown' ? 1 : -1;
+                const next = (selectedIndex + dir + currentEntries.length) % currentEntries.length;
+                setSelected(next, true);
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                e.stopPropagation();
+                Promise.resolve(lastSearch).then(() => stepOption(e.shiftKey ? -1 : 1));
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                Promise.resolve(lastSearch).then(activateSelected);
             }
         });
 
@@ -854,99 +921,423 @@
         });
     }
 
-    function highlightText(text, query) {
-        if (!query) return text;
-        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(${escaped})`, 'gi');
+    // ── Context commands (home config bar, leaderboard filters) and pages ──
+
+    function currentPath() {
+        let p = (location.pathname || '/').replace(/\/+$/, '').replace(/\.html$/, '') || '/';
+        if (p === '/index') p = '/';
+        return p;
+    }
+
+    function byId(id) { return document.getElementById(id); }
+    function clickId(id) { const el = byId(id); if (el) el.click(); }
+    function hasClass(id, cls) { const el = byId(id); return !!(el && el.classList.contains(cls)); }
+
+    function getHomeCommands() {
+        if (!byId('config-bar') || !byId('btn-time')) return [];
+        const cat = 'Test Config';
+        const customActive = () => hasClass('btn-custom', 'is-active');
+        const ensureMode = (mode) => {
+            if (!hasClass(`btn-${mode}`, 'is-active')) clickId(`btn-${mode}`);
+        };
+        const amountActive = (mode, slot) => () =>
+            !customActive() && hasClass(`btn-${mode}`, 'is-active') && hasClass(`btn-amt-${slot}`, 'is-active');
+        const cmds = [];
+        [['time', 'Time', [15, 30, 60, 120], 'seconds'], ['words', 'Words', [10, 25, 50, 100], 'words']]
+            .forEach(([mode, label, values, unit]) => {
+                values.forEach((v, i) => cmds.push({
+                    id: `home-${mode}-${v}`,
+                    label: `${label} ${v}`,
+                    category: cat,
+                    desc: `${v} ${unit}`,
+                    aliases: `${unit} mode`,
+                    isActive: amountActive(mode, i),
+                    run: () => {
+                        ensureMode(mode);
+                        if (typeof window.setTestAmountValue === 'function') window.setTestAmountValue(i);
+                        else clickId(`btn-amt-${i}`);
+                    },
+                }));
+                cmds.push({
+                    id: `home-${mode}-inf`,
+                    label: `${label} ∞`,
+                    category: cat,
+                    desc: `Infinite ${mode === 'time' ? 'time' : 'words'}`,
+                    aliases: 'infinite infinity inf unlimited',
+                    isActive: amountActive(mode, 'inf'),
+                    run: () => { ensureMode(mode); clickId('btn-amt-inf'); },
+                });
+                cmds.push({
+                    id: `home-${mode}-custom`,
+                    label: `${label} Custom`,
+                    category: cat,
+                    desc: `Custom ${unit} amount`,
+                    aliases: 'custom amount',
+                    isActive: amountActive(mode, 'custom'),
+                    run: () => { ensureMode(mode); clickId('btn-amt-custom'); },
+                });
+            });
+        cmds.push({
+            id: 'home-custom-text',
+            label: 'Custom Text',
+            category: cat,
+            desc: 'Type your own text',
+            aliases: 'mode',
+            isActive: customActive,
+            run: () => clickId('btn-custom'),
+        });
+        if (customActive()) {
+            cmds.push({
+                id: 'home-custom-edit',
+                label: 'Edit Custom Text',
+                category: cat,
+                desc: 'Open the custom text editor',
+                aliases: '',
+                isActive: () => false,
+                run: () => clickId('btn-custom-edit'),
+            });
+        } else {
+            cmds.push(
+                { id: 'home-punct', label: 'Punctuation', category: cat, desc: 'Toggle punctuation', aliases: 'toggle', isActive: () => hasClass('btn-punct', 'is-active'), run: () => clickId('btn-punct') },
+                { id: 'home-num', label: 'Numbers', category: cat, desc: 'Toggle numbers', aliases: 'toggle', isActive: () => hasClass('btn-num', 'is-active'), run: () => clickId('btn-num') },
+                { id: 'home-adapt', label: 'Adapt & Refine', category: cat, desc: 'Practise your weak keys', aliases: 'adapt refine weakness toggle', isActive: () => hasClass('btn-adapt-refine', 'is-active'), run: () => clickId('btn-adapt-refine') },
+            );
+        }
+        return cmds;
+    }
+
+    function getLeaderboardCommands() {
+        if (!byId('cfg-global')) return [];
+        const cat = 'Leaderboard';
+        const on = (id) => hasClass(id, 'text-primary');
+        const cmds = [
+            ['global', 'Global', 'Scope', 'world'],
+            ['country', 'Country', 'Scope', 'nation'],
+            ['friends', 'Friends', 'Scope', ''],
+        ].map(([v, label, group, aliases]) => ({
+            id: `lb-scope-${v}`, label, category: `${cat} › ${group}`, desc: `${label} leaderboard`, aliases,
+            isActive: () => on(`cfg-${v}`), run: () => clickId(`cfg-${v}`),
+        }));
+        [['alltime', 'All Time', 'ever'], ['weekly', 'Weekly', 'week'], ['daily', 'Daily', 'day today']]
+            .forEach(([v, label, aliases]) => cmds.push({
+                id: `lb-time-${v}`, label, category: `${cat} › Period`, desc: `${label} rankings`, aliases,
+                isActive: () => on(`cfg-${v}`), run: () => clickId(`cfg-${v}`),
+            }));
+        [['time', 'Time', [15, 30, 60], 'seconds'], ['words', 'Words', [10, 25, 50], 'words']]
+            .forEach(([mode, label, values, unit]) => {
+                values.forEach((v, i) => cmds.push({
+                    id: `lb-${mode}-${v}`,
+                    label: `${label} ${v}`,
+                    category: `${cat} › Mode`,
+                    desc: `${v} ${unit}`,
+                    aliases: `${unit} mode`,
+                    isActive: () => on(`cfg-mode-${mode}`) && on(`cfg-amt-${i}`),
+                    run: () => {
+                        if (!on(`cfg-mode-${mode}`)) clickId(`cfg-mode-${mode}`);
+                        clickId(`cfg-amt-${i}`);
+                    },
+                }));
+            });
+        return cmds;
+    }
+
+    function getContextCommands() {
+        const path = currentPath();
+        if (path === '/') return getHomeCommands();
+        if (path === '/leaderboards') return getLeaderboardCommands();
+        return [];
+    }
+
+    const PAGES = [
+        { path: '/', label: 'Typing Test', aliases: 'home test type' },
+        { path: '/friends', label: 'Friends', aliases: '' },
+        { path: '/multiplayer', label: 'Multiplayer', aliases: 'race room versus' },
+        { path: '/leaderboards', label: 'Leaderboards', aliases: 'leaderboard ranking' },
+        { action: 'notifications', label: 'Notifications', aliases: 'inbox bell alerts' },
+        { path: '/settings', label: 'Settings', aliases: 'preferences options' },
+        { path: '/userstats', label: 'Profile', aliases: 'user stats userstats account' },
+        { path: '/about', label: 'About', aliases: '' },
+        { path: '/how-it-works', label: 'How It Works', aliases: 'help' },
+        { path: '/privacy', label: 'Privacy', aliases: 'policy' },
+        { path: '/terms', label: 'Terms', aliases: 'service conditions' },
+        { path: '/security', label: 'Security', aliases: '' },
+    ];
+
+    function getPageCommands() {
+        const here = currentPath();
+        return PAGES.filter(p => !p.path || p.path !== here).map(p => ({
+            id: `page-${p.path || p.action}`,
+            label: p.label,
+            category: 'Pages',
+            desc: p.path ? p.path : 'Open the notifications box',
+            aliases: p.aliases + ' ' + (p.path || ''),
+            isActive: () => false,
+            run: () => {
+                if (p.action === 'notifications') {
+                    if (typeof window.openNotifications === 'function') window.openNotifications();
+                } else if (typeof window.navigateTo === 'function') {
+                    window.navigateTo(p.path);
+                } else {
+                    location.href = p.path;
+                }
+            },
+        }));
+    }
+
+    // ── Matching (case-insensitive, every token must match) ──
+
+    function tokenize(q) {
+        return norm(q).toLowerCase().split(' ').filter(Boolean);
+    }
+
+    // Returns null when some token doesn't match, otherwise a relevance score.
+    function scoreCommand(cmd, tokens) {
+        if (!tokens.length) return 0;
+        const label = cmd.label.toLowerCase();
+        const words = label.split(/\s+/);
+        const extra = `${cmd.aliases || ''} ${cmd.category || ''} ${cmd.desc || ''}`.toLowerCase();
+        let score = 0;
+        for (const t of tokens) {
+            if (words.includes(t)) score += 3;
+            else if (words.some(w => w.startsWith(t))) score += 2;
+            else if (label.includes(t)) score += 1;
+            else if (extra.includes(t)) score += 0.5;
+            else return null;
+        }
+        if (label.startsWith(tokens[0])) score += 0.5;
+        return score;
+    }
+
+    function rankCommands(cmds, tokens) {
+        return cmds
+            .map((cmd, i) => ({ cmd, i, s: scoreCommand(cmd, tokens) }))
+            .filter(x => x.s !== null)
+            .sort((a, b) => (b.s - a.s) || (a.i - b.i))
+            .map(x => ({ type: 'command', cmd: x.cmd }));
+    }
+
+    function settingMatches(item, tokens) {
+        const hay = `${item.name} ${item.keywords || ''}`.toLowerCase();
+        return tokens.every(t => hay.includes(t));
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function highlightText(text, tokens) {
+        if (!tokens || !tokens.length) return text;
+        const parts = tokens.slice().sort((a, b) => b.length - a.length)
+            .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regex = new RegExp(`(${parts.join('|')})`, 'gi');
         return text.replace(regex, '<span class="search-highlight text-primary">$1</span>');
     }
 
-    function renderResults(results, query) {
+    // ── Selection / Enter ──
+
+    // Every option Enter/Tab can land on inside a setting result, in visual order.
+    function findSettingTargets(controls) {
+        const visible = (el) => el.style.display !== 'none' && !el.closest('.custom-popover');
+        const opts = Array.from(controls.querySelectorAll('.opt-btn, .lang-btn, .font-btn, [data-lang]'))
+            .filter(el => visible(el) && !(el.closest('.custom-popover-wrapper')));
+        if (opts.length) return opts;
+        return Array.from(controls.querySelectorAll('.toggle-track')).slice(0, 1);
+    }
+
+    // Selection = result index + option index within that result (Tab steps options).
+    function setSelected(index, scroll, sub = 0) {
+        currentEntries.forEach((r, i) => {
+            const on = i === index;
+            r.el.classList.toggle('qa-selected', on);
+            r.targets.forEach((t, j) => t.classList.toggle('qa-enter-target', on && j === sub));
+        });
+        selectedIndex = index;
+        selectedSub = sub;
+        const r = currentEntries[index];
+        if (scroll && r) {
+            (r.targets[sub] && r.targets[sub] !== r.el ? r.targets[sub] : r.el).scrollIntoView({ block: 'nearest' });
+            requestAnimationFrame(syncCustomScrollbar);
+        }
+    }
+
+    // Tab / Shift+Tab: walk every option of every result one by one, wrapping around.
+    function stepOption(dir) {
+        if (!currentEntries.length) return;
+        const count = (i) => Math.max(1, currentEntries[i].targets.length);
+        let i = selectedIndex;
+        let j = selectedSub + dir;
+        if (j >= count(i)) {
+            i = (i + 1) % currentEntries.length;
+            j = 0;
+        } else if (j < 0) {
+            i = (i - 1 + currentEntries.length) % currentEntries.length;
+            j = count(i) - 1;
+        }
+        setSelected(i, true, j);
+    }
+
+    function runCommand(cmd) {
+        closeOverlay();
+        try { cmd.run(); } catch (err) { console.error('[quick actions] command failed', err); }
+    }
+
+    function activateSelected() {
+        const r = currentEntries[selectedIndex];
+        if (!r) return;
+        if (r.entry.type === 'command') {
+            runCommand(r.entry.cmd);
+            return;
+        }
+        const target = r.targets[selectedSub];
+        if (target) target.click();
+    }
+
+    const RESULT_CLASS = 'search-result-item glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]';
+
+    function renderCommandEntry(cmd, tokens) {
+        const el = document.createElement('div');
+        el.className = RESULT_CLASS + ' qa-command';
+        const active = cmd.isActive && cmd.isActive();
+        el.innerHTML = `
+            <div style="min-width:0">
+                <div class="search-result-category text-primary">${highlightText(escapeHtml(cmd.category), tokens)}</div>
+                <div class="search-result-name">${highlightText(escapeHtml(cmd.label), tokens)}</div>
+                ${cmd.desc ? `<div class="qa-command-desc">${escapeHtml(cmd.desc)}</div>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:0.4rem">
+                ${active ? '<span class="qa-badge">Active</span>' : ''}
+                <span class="qa-enter-hint">enter</span>
+            </div>
+        `;
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            runCommand(cmd);
+        });
+        return el;
+    }
+
+    function renderSettingEntry(item, tokens) {
+        const row = findRowElement(item);
+        const el = document.createElement('div');
+        el.className = RESULT_CLASS;
+
+        el.innerHTML = `
+            <div class="search-result-category text-primary">${highlightText(item.categoryName, tokens)}</div>
+            <div class="search-result-name">${highlightText(item.name, tokens)}</div>
+            ${item.desc ? `<div class="search-result-desc">${highlightText(item.desc, tokens)}</div>` : ''}
+        `;
+
+        let controls = null;
+        if (row) {
+            controls = extractControls(row);
+            // Custom popovers must stay closed until the user clicks Custom
+            controls.querySelectorAll('.custom-popover').forEach(p => {
+                p.classList.remove('is-open', 'is-portaled', 'opacity-100', 'pointer-events-auto');
+                p.classList.add('opacity-0', 'pointer-events-none');
+            });
+            if (tokens.length) {
+                const title = `${item.name} ${item.desc} ${item.categoryName}`.toLowerCase();
+                const optionTokens = tokens.filter(t => !title.includes(t));
+                if (optionTokens.length) {
+                    controls.querySelectorAll('.opt-btn, [data-lang], .lang-btn, .font-btn').forEach(btn => {
+                        if (btn.closest('.custom-popover')) return;
+                        const text = norm(btn.textContent).toLowerCase();
+                        if (!optionTokens.some(t => text.includes(t))) {
+                            btn.style.display = 'none';
+                        }
+                    });
+                }
+            }
+            wireControls(controls);
+            el.appendChild(controls);
+        }
+        return { el, controls };
+    }
+
+    function renderResults(entries, tokens) {
         if (typeof closeAllCustomPopovers === 'function') closeAllCustomPopovers();
+        tokens = tokens || [];
 
         const settingsApi = api();
-        if (!results.length) {
-            resultsPanel.classList.add('active');
-            resultsContainer.innerHTML = '<p class="gss-empty">No settings were found.</p>';
+        currentEntries = [];
+        selectedIndex = 0;
+        resultsPanel.classList.add('active');
+
+        if (!entries.length) {
+            resultsContainer.innerHTML = '<p class="gss-empty">No results found.</p>';
             requestAnimationFrame(syncCustomScrollbar);
             return;
         }
 
-        resultsPanel.classList.add('active');
         resultsContainer.innerHTML = '';
+        const settingRows = [];
 
-        results.forEach(item => {
-            const row = findRowElement(item);
-            const el = document.createElement('div');
-            el.className = 'search-result-item glass-panel bg-surface/85 !backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]';
-
-            el.innerHTML = `
-                <div class="search-result-category text-primary">${highlightText(item.categoryName, query)}</div>
-                <div class="search-result-name">${highlightText(item.name, query)}</div>
-                ${item.desc ? `<div class="search-result-desc">${highlightText(item.desc, query)}</div>` : ''}
-            `;
-
-            if (row) {
-                const controls = extractControls(row);
-                // Custom popovers must stay closed until the user clicks Custom
-                controls.querySelectorAll('.custom-popover').forEach(p => {
-                    p.classList.remove('is-open', 'is-portaled', 'opacity-100', 'pointer-events-auto');
-                    p.classList.add('opacity-0', 'pointer-events-none');
-                });
-                if (query) {
-                    const matchesTitle = item.name.toLowerCase().includes(query) ||
-                                         item.desc.toLowerCase().includes(query) ||
-                                         item.categoryName.toLowerCase().includes(query);
-                    if (!matchesTitle) {
-                        controls.querySelectorAll('.opt-btn, [data-lang], .lang-btn, .font-btn').forEach(btn => {
-                            if (btn.closest('.custom-popover')) return;
-                            if (!norm(btn.textContent).toLowerCase().includes(query)) {
-                                btn.style.display = 'none';
-                            }
-                        });
-                    }
-                }
-                wireControls(controls);
-                el.appendChild(controls);
+        entries.forEach(entry => {
+            if (entry.type === 'command') {
+                const el = renderCommandEntry(entry.cmd, tokens);
+                resultsContainer.appendChild(el);
+                currentEntries.push({ entry, el, targets: [el] });
+            } else {
+                const { el, controls } = renderSettingEntry(entry.item, tokens);
+                resultsContainer.appendChild(el);
+                const rec = { entry, el, targets: [] };
+                currentEntries.push(rec);
+                if (controls) settingRows.push({ rec, controls });
             }
-
-            resultsContainer.appendChild(el);
         });
 
         if (settingsApi) {
             settingsApi.restoreUI(settingsApi.loadSettings());
             resultsContainer.querySelectorAll('input[type="range"].custom-slider').forEach(updateSlider);
         }
+        // Resolve Enter targets after restoreUI so visibility/state is final
+        settingRows.forEach(({ rec, controls }) => { rec.targets = findSettingTargets(controls); });
+
+        setSelected(0, false);
         requestAnimationFrame(syncCustomScrollbar);
     }
 
     async function onSearchInput() {
-        const rawQ = searchInput.value.trim();
-        const q = norm(rawQ).toLowerCase();
-        searchClearBtn.classList.toggle('visible', q.length > 0);
+        const raw = norm(searchInput.value);
+        searchClearBtn.classList.toggle('visible', raw.length > 0);
 
-        if (!q.length) {
+        if (!raw.length) {
             resultsPanel.classList.remove('active');
             resultsContainer.innerHTML = '';
+            currentEntries = [];
             return;
         }
 
+        // "/" prefix → pages only
+        if (raw.startsWith('/')) {
+            const tokens = tokenize(raw.slice(1));
+            const pages = getPageCommands();
+            const entries = tokens.length
+                ? rankCommands(pages, tokens)
+                : pages.map(cmd => ({ type: 'command', cmd }));
+            renderResults(entries, tokens);
+            return;
+        }
+
+        const tokens = tokenize(raw);
+        const commandEntries = rankCommands(getContextCommands(), tokens);
         await ensureSearchIndex();
-        const results = searchIndex.filter(item =>
-            item.name.toLowerCase().includes(q) ||
-            (item.keywords && item.keywords.toLowerCase().includes(q))
-        );
-        renderResults(results, q);
+        // Input may have changed while the index loaded
+        if (norm(searchInput.value) !== raw) return;
+        const settingEntries = searchIndex
+            .filter(item => settingMatches(item, tokens))
+            .map(item => ({ type: 'setting', item }));
+        renderResults(commandEntries.concat(settingEntries), tokens);
     }
 
     async function showCategoryResults(categoryId, subSetting) {
         await ensureSearchIndex();
-        const results = searchIndex.filter(item => {
+        const entries = searchIndex.filter(item => {
             if (item.categoryId !== categoryId) return false;
             if (subSetting && item.subSetting !== subSetting) return false;
             return true;
-        });
-        renderResults(results, '');
+        }).map(item => ({ type: 'setting', item }));
+        renderResults(entries, []);
     }
 
     function clearSearch(shouldFocus = true) {
@@ -955,6 +1346,7 @@
         searchClearBtn.classList.remove('visible');
         resultsPanel.classList.remove('active', 'has-scroll');
         resultsContainer.innerHTML = '';
+        currentEntries = [];
         if (shouldFocus && isOpen) searchInput.focus({ preventScroll: true });
     }
 
@@ -1009,7 +1401,7 @@
         return false;
     }
 
-    function isQuickSettingsEnabled() {
+    function isQuickActionsEnabled() {
         try {
             const settings = window.usertypo_settingsApi?.loadSettings?.()
                 || JSON.parse(localStorage.getItem('usertypo_settings') || '{}');
@@ -1022,7 +1414,7 @@
 
     function openOverlay() {
         if (!isShortcutContextAllowed()) return;
-        if (!isQuickSettingsEnabled()) return;
+        if (!isQuickActionsEnabled()) return;
         injectOverlay();
         updateOverlayPosition();
         isOpen = true;
@@ -1090,7 +1482,7 @@
         if (active?.isContentEditable) return;
         if (isBlockedByOtherModal()) return;
         if (!isShortcutContextAllowed()) return;
-        if (!isQuickSettingsEnabled()) return;
+        if (!isQuickActionsEnabled()) return;
 
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -1105,4 +1497,5 @@
         toggle: toggleOverlay,
         isOpen: () => isOpen,
     };
+    window.usertypo_quickActions = window.usertypo_settingsSearch;
 })();

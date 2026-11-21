@@ -66,7 +66,7 @@ const DEFAULTS = {
         keyboardShortcuts: true, // master switch for app keyboard shortcuts
         quickRestart: true,      // Tab restarts the test when shortcuts are on
         quickRestartCustomKey: '',
-        quickSettings: true, // Esc opens quick settings search
+        quickSettings: true, // Esc opens quick actions
         ctrlBackspace: true, // Ctrl+Backspace deletes back to the start of the word
     },
     resultsAndGraphs: {
@@ -4791,7 +4791,7 @@ function isCtrlBackspaceEnabled(settings) {
 
 /**
  * When Keyboard Shortcuts is off, block Enter / \\ app shortcuts site-wide.
- * Tab quick-restart and Esc quick settings are controlled by their own toggles.
+ * Tab quick-restart and Esc quick actions are controlled by their own toggles.
  * Form fields and the contact dialog still need Enter for typing / submit.
  */
 document.addEventListener('keydown', (e) => {
@@ -5741,7 +5741,7 @@ document.addEventListener('keydown', (e) => {
 // On page load, restore custom values on buttons from saved settings
 // (handled inside initSettingsPage for SPA + standalone)
 
-// Public API for the global settings search overlay (settings-search.js)
+// Public API for the global Quick Actions overlay (settings-search.js)
 window.usertypo_settingsApi = {
     loadSettings,
     saveSettings,
