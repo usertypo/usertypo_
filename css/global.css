@@ -2019,3 +2019,11 @@ html {
     height: 100%;
     display: block;
 }
+
+/* Phones/tablets on /room and /dual (class set by js/router.js): no CSS filters.
+   Animated glows/drop-shadows crashed iPhone WebKit in portrait when a room opened. */
+html.mp-mobile-lite *,
+html.mp-mobile-lite *::before,
+html.mp-mobile-lite *::after {
+    filter: none !important;
+}

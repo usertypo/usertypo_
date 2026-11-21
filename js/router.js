@@ -817,6 +817,16 @@
 
         isNavigating = true;
 
+        // Phones/tablets on the race pages: switch off CSS filters (glows / drop-shadows).
+        // Animated filters there crashed iPhone Safari/WebKit in portrait as soon as a room
+        // opened; with filters off the pages ran fine (css/global.css: html.mp-mobile-lite).
+        try {
+            var liteRace = (path === '/room' || path === '/dual')
+                && !!(window.usertypoMobile && typeof window.usertypoMobile.isMobileClient === 'function'
+                    && window.usertypoMobile.isMobileClient());
+            document.documentElement.classList.toggle('mp-mobile-lite', liteRace);
+        } catch (_) { /* ignore */ }
+
         var routeConfig = routes[path];
         var container = getPageContainer();
         var spaContent = document.getElementById('spa-content');
