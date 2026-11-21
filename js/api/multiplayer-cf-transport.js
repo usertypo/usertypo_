@@ -128,7 +128,12 @@
                 var settled = false;
                 var connectTimer = null;
                 var localReady = false;
+                var kind = fromRace ? 'race' : 'lobby';
+                if (window.usertypoDebugStep) window.usertypoDebugStep('ws ' + kind + ': opening');
                 var socket = new WebSocket(url);
+                socket.addEventListener('open', function () { if (window.usertypoDebugStep) window.usertypoDebugStep('ws ' + kind + ': open'); });
+                socket.addEventListener('close', function (ev) { if (window.usertypoDebugStep) window.usertypoDebugStep('ws ' + kind + ': closed code=' + (ev && ev.code)); });
+                socket.addEventListener('error', function () { if (window.usertypoDebugStep) window.usertypoDebugStep('ws ' + kind + ': error'); });
 
                 function finish(err) {
                     if (settled) return;

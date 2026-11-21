@@ -51,28 +51,41 @@
     }
 
     global.usertypoDebugLog = { add: add, enabled: enabled };
+    /** Breadcrumb for locating where a page dies (no-op unless ?debug=1). */
+    global.usertypoDebugStep = function (msg) { if (enabled) add('step', msg); };
     if (!enabled) return;
 
     // ── Crash detection: the previous page never reached pagehide ──
+    var crashedLastTime = false;
     try {
         var alive = ls.getItem(ALIVE_KEY);
         if (alive) {
             var prev = JSON.parse(alive);
+            crashedLastTime = true;
             add('previous-page-ended-abruptly', 'last seen ' + prev.url + ' at ' + prev.t + ' with ' + prev.nodes + ' DOM nodes (likely a tab crash or forced reload)');
         }
     } catch (_) { /* ignore */ }
+    // Break crash loops while debugging: land on home instead of re-opening the page that
+    // just died, and open the log so it can be read / copied.
+    if (crashedLastTime && global.location.pathname !== '/') {
+        try {
+            add('debug-hold', 'opened home instead of ' + global.location.pathname + global.location.search);
+            history.replaceState(null, '', '/');
+            global.__usertypoBootPath = '/';
+        } catch (_) { /* ignore */ }
+    }
 
     function heartbeat() {
         try {
             ls.setItem(ALIVE_KEY, JSON.stringify({
                 url: global.location.pathname + global.location.search,
-                t: new Date().toISOString().slice(11, 19),
+                t: new Date().toISOString().slice(11, 23),
                 nodes: document.getElementsByTagName('*').length,
             }));
         } catch (_) { /* ignore */ }
     }
     heartbeat();
-    setInterval(heartbeat, 2000);
+    setInterval(heartbeat, 500);
     global.addEventListener('pagehide', function () {
         add('pagehide', '');
         try { ls.removeItem(ALIVE_KEY); } catch (_) { /* ignore */ }
@@ -163,6 +176,13 @@
         document.body.appendChild(toggle);
     }
 
-    if (document.body) buildUi();
-    else document.addEventListener('DOMContentLoaded', buildUi);
+    function start() {
+        buildUi();
+        if (crashedLastTime) {
+            panel.style.display = 'flex';
+            renderPanel();
+        }
+    }
+    if (document.body) start();
+    else document.addEventListener('DOMContentLoaded', start);
 })(typeof window !== 'undefined' ? window : globalThis);

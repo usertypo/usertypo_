@@ -45,7 +45,7 @@
     function ensureRouteScripts(path) {
         var jobs = [];
         if (path === '/room') {
-            jobs.push(loadScriptOnce('js/pages/room-race.js?v=76'));
+            jobs.push(loadScriptOnce('js/pages/room-race.js?v=77'));
         }
         if (path === '/dual') {
             var dualParams = new URLSearchParams(window.location.search);
@@ -839,8 +839,11 @@
                 : Promise.resolve();
             window.__usertypoBootAwaited = true;
 
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': start');
             var html = await htmlPromise;
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': html loaded');
             await ensureRouteScripts(path);
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': route scripts loaded');
 
             // Post-auth welcome (new / back) — overlay stays until page ready
             var welcomePhrase = null;
@@ -857,7 +860,9 @@
 
             var parsed = parseFragment(html);
             injectPageStyles(parsed.styles, path);
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': styles injected');
             container.innerHTML = parsed.content;
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': content injected');
             // Home page scrolls freely (no typing-view scroll lock) — set before page scripts run
             var appBodyForRoute = document.getElementById('app-body');
             if (appBodyForRoute) appBodyForRoute.classList.toggle('home-free-scroll', path === '/');
@@ -870,6 +875,7 @@
             if (parsed.scripts.length) {
                 await executeScripts(parsed.scripts, path);
             }
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': page scripts run');
 
             document.title = routeConfig.title;
             updateDocumentSeo(path, routeConfig);
@@ -883,6 +889,7 @@
             if (typeof window.__spaPageInit === 'function') {
                 try { await Promise.resolve(window.__spaPageInit()); } catch (e) { console.warn('__spaPageInit', e); }
             }
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': page init done');
 
             if (path === '/settings' && window.usertypo_settingsApi && typeof window.usertypo_settingsApi.initSettingsPage === 'function') {
                 try { window.usertypo_settingsApi.initSettingsPage(); } catch (e) { console.warn('initSettingsPage', e); }
@@ -917,6 +924,7 @@
             if (path === '/room') {
                 prepareRoomView();
             }
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': view prepared');
             if (typeof window.usertypoMarkAssetBootSuccessful === 'function') {
                 window.usertypoMarkAssetBootSuccessful();
             }
@@ -941,6 +949,7 @@
             if (typeof window.usertypoDismissBootOverlay === 'function') {
                 window.usertypoDismissBootOverlay();
             }
+            if (window.usertypoDebugStep) window.usertypoDebugStep('route ' + path + ': boot overlay dismissed');
         }
 
         isNavigating = false;
