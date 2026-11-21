@@ -50,6 +50,25 @@
         if (panelList) renderPanel();
     }
 
+    // Diagnostic: ?nofx=1 turns off blurs, filters, masks and animations (remembered;
+    // ?nofx=0 to undo). Tells us whether a crash is caused by visual effects.
+    var NOFX_KEY = 'usertypo_debug_nofx';
+    var nofx = false;
+    try {
+        var fxParam = new URLSearchParams(global.location.search).get('nofx');
+        if (fxParam === '1' && ls) ls.setItem(NOFX_KEY, '1');
+        if (fxParam === '0' && ls) ls.removeItem(NOFX_KEY);
+        nofx = !!(ls && ls.getItem(NOFX_KEY) === '1');
+    } catch (_) { /* ignore */ }
+    if (nofx) {
+        var fxStyle = document.createElement('style');
+        fxStyle.id = 'usertypo-debug-nofx';
+        fxStyle.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;'
+            + 'filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;'
+            + 'mask-image:none!important;-webkit-mask-image:none!important;will-change:auto!important;}';
+        (document.head || document.documentElement).appendChild(fxStyle);
+    }
+
     global.usertypoDebugLog = { add: add, enabled: enabled };
     /** Breadcrumb for locating where a page dies (no-op unless ?debug=1). */
     global.usertypoDebugStep = function (msg) { if (enabled) add('step', msg); };
@@ -92,7 +111,7 @@
     });
     global.addEventListener('pageshow', function () { heartbeat(); });
 
-    add('page-load', (navigator.userAgent || '').slice(0, 160));
+    add('page-load', (nofx ? '[nofx] ' : '') + (navigator.userAgent || '').slice(0, 160));
 
     // ── Errors ──
     global.addEventListener('error', function (event) {

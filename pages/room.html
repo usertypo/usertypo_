@@ -617,9 +617,11 @@
 
 <div id="orbit-tooltip-portal" aria-hidden="true"></div>
 
+<!-- Soft background glows. Radial gradients instead of filter: blur(120–150px): huge blur
+     filters on a fixed layer made iPhone Safari/WebKit crash as soon as the lobby painted. -->
 <div class="fixed inset-0 pointer-events-none -z-10">
-    <div class="absolute top-1/4 -left-20 w-96 h-96 bg-primary/5 blur-[120px] rounded-full"></div>
-    <div class="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-error/5 blur-[150px] rounded-full"></div>
+    <div class="absolute rounded-full" style="top:calc(25% - 120px);left:calc(-5rem - 120px);width:calc(24rem + 240px);height:calc(24rem + 240px);background:radial-gradient(closest-side, rgba(var(--theme-primary-rgb, 0, 208, 255), 0.05), rgba(var(--theme-primary-rgb, 0, 208, 255), 0.025) 45%, transparent);"></div>
+    <div class="absolute rounded-full" style="bottom:calc(25% - 150px);right:calc(-5rem - 150px);width:800px;height:800px;background:radial-gradient(closest-side, rgba(var(--theme-error-rgb, 255, 51, 51), 0.05), rgba(var(--theme-error-rgb, 255, 51, 51), 0.025) 45%, transparent);"></div>
 </div>
 
 <div id="app-views" class="flex-1 flex flex-col relative w-full min-h-0 h-full">
