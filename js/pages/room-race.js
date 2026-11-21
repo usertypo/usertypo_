@@ -1337,7 +1337,6 @@
         }
 
         function renderLobby(nextRoom) {
-            if (window.usertypoDebugStep) window.usertypoDebugStep('room: renderLobby players=' + ((nextRoom && nextRoom.players) || []).length);
             if (!nextRoom || nextRoom.roomId !== roomId) return;
             room = nextRoom;
             config = room.config;
@@ -2663,14 +2662,11 @@
             if (idEl) idEl.textContent = roomCode ? ('Room ID: ' + roomCode) : 'Connecting…';
             if (inviteIdEl && roomCode) inviteIdEl.textContent = roomCode;
             setFooterCompact(true);
-            if (window.usertypoDebugStep) window.usertypoDebugStep('room: binding UI');
             bindLobbyUI();
             bindEditConfigUI();
             bindEvents();
-            if (window.usertypoDebugStep) window.usertypoDebugStep('room: UI bound, connecting lobby');
             try {
                 await window.usertypoMultiplayer.connect();
-                if (window.usertypoDebugStep) window.usertypoDebugStep('room: lobby connected');
                 selfUserId = window.usertypoMultiplayer.getReadyState()?.userId || '';
                 if (!selfUserId) {
                     throw new Error('Could not connect to multiplayer. Refresh and try again.');
@@ -2686,14 +2682,11 @@
                 if (window.usertypoMultiplayer.ensureRaceConnected) {
                     window.usertypoMultiplayer.ensureRaceConnected(roomId).catch(function () { /* joinMatch retries */ });
                 }
-                if (window.usertypoDebugStep) window.usertypoDebugStep('room: joinMatch sent');
                 var response = await window.usertypoMultiplayer.joinMatch(roomId);
-                if (window.usertypoDebugStep) window.usertypoDebugStep('room: joinMatch answered ok=' + !!(response && response.ok !== false));
                 if (!response || response.ok === false) {
                     throw new Error((response && response.error) || 'Room not found. Check the Room ID and try again.');
                 }
                 applyJoinOrResumeState(response);
-                if (window.usertypoDebugStep) window.usertypoDebugStep('room: join state applied');
             } catch (error) {
                 var msg = String(error && error.message || 'Room not found');
                 if (/full/i.test(msg)) {

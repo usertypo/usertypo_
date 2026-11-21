@@ -3225,7 +3225,6 @@ window.setTimeout = function(handler, timeout) {
 
         function restartTest(options) {
             if (!isHomeViewMounted()) {
-                if (window.usertypoDebugStep) window.usertypoDebugStep('home restartTest skipped (home not on screen)');
                 return;
             }
             if (isRestarting) return;
