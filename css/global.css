@@ -2022,8 +2022,9 @@ html {
 
 /* Phones/tablets on /room and /dual (class set by js/router.js): no CSS filters.
    Animated glows/drop-shadows crashed iPhone WebKit in portrait when a room opened. */
-html.mp-mobile-lite *,
-html.mp-mobile-lite *::before,
-html.mp-mobile-lite *::after {
+/* :is(*, #id#id#id) lifts specificity above id-based !important rules (e.g. #caret glow). */
+html.mp-mobile-lite :is(*, #mp-lite#mp-lite#mp-lite),
+html.mp-mobile-lite :is(*, #mp-lite#mp-lite#mp-lite)::before,
+html.mp-mobile-lite :is(*, #mp-lite#mp-lite#mp-lite)::after {
     filter: none !important;
 }
