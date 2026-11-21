@@ -1252,6 +1252,7 @@
             renderText();
             renderLeaderboard();
             showTestChrome();
+            var softKeyboard = ensureSoftKeyboard();
 
             function unlockTyping() {
                 state = 'racing';
@@ -1270,6 +1271,8 @@
                 showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 document.addEventListener('keydown', handleKey, { signal: signal });
+                // Countdown over: bring up the soft keyboard on phones/tablets.
+                if (softKeyboard) softKeyboard.focus();
                 window.addEventListener('resize', function () {
                     updateLineLayout();
                     updateCaret();
@@ -1933,6 +1936,16 @@
             currentCharIndex -= 1;
             resetCharacter(currentCharIndex);
             return true;
+        }
+
+        /** Phones/tablets: hidden textarea over the text so the soft keyboard can type. */
+        function ensureSoftKeyboard() {
+            if (!window.usertypoMobileTyping || !typingArea) return null;
+            return window.usertypoMobileTyping.attach({
+                area: typingArea,
+                isActive: function () { return state === 'countdown' || state === 'racing'; },
+                signal: signal,
+            });
         }
 
         function handleKey(event) {

@@ -1960,6 +1960,16 @@
             updateCaret();
         }
 
+        /** Phones/tablets: hidden textarea over the text so the soft keyboard can type. */
+        function ensureSoftKeyboard() {
+            if (!window.usertypoMobileTyping || !typingArea) return null;
+            return window.usertypoMobileTyping.attach({
+                area: typingArea,
+                isActive: function () { return state === 'countdown' || state === 'racing'; },
+                signal: signal,
+            });
+        }
+
         function onKeyDown(event) {
             if (state !== 'racing') return;
             var wordDelete = event.key === 'Backspace' && event.ctrlKey && !event.altKey && !event.metaKey
@@ -2594,6 +2604,8 @@
                 return;
             }
 
+            var softKeyboard = ensureSoftKeyboard();
+
             function unlockTyping() {
                 if (token !== raceStartToken) return;
                 state = 'racing';
@@ -2609,6 +2621,8 @@
                 showTestChrome();
                 if (caret) caret.classList.remove('animate-breath');
                 bindRaceKeys();
+                // Countdown over: bring up the soft keyboard on phones/tablets.
+                if (softKeyboard) softKeyboard.focus();
                 clearInterval(updateTimer);
                 updateTimer = setInterval(updateLiveStats, 200);
                 updateLiveStats();
