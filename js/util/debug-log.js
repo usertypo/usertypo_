@@ -69,6 +69,52 @@
         (document.head || document.documentElement).appendChild(fxStyle);
     }
 
+    // Diagnostic: ?hide=orbit,cta,... hides parts of the room page; ?nolock=1 disables the
+    // full-height typing scroll lock (room/dual). Both remembered; ?hide= / ?nolock=0 clear.
+    var HIDE_KEY = 'usertypo_debug_hide';
+    var NOLOCK_KEY = 'usertypo_debug_nolock';
+    var HIDE_GROUPS = {
+        glow: '.room-bg-glow',
+        orbit: '#lobby-orbit-arena',
+        cta: '#lobby-view > .fixed.bottom-16',
+        invite: '#invite-menu-container',
+        chat: '#lobby-chat-container',
+        lobby: '#lobby-view',
+        header: 'header',
+        footer: 'footer',
+    };
+    var hideList = [];
+    var nolock = false;
+    try {
+        var qs = new URLSearchParams(global.location.search);
+        if (qs.has('hide') && ls) {
+            var hv = String(qs.get('hide') || '').trim();
+            if (hv) ls.setItem(HIDE_KEY, hv); else ls.removeItem(HIDE_KEY);
+        }
+        if (qs.get('nolock') === '1' && ls) ls.setItem(NOLOCK_KEY, '1');
+        if (qs.get('nolock') === '0' && ls) ls.removeItem(NOLOCK_KEY);
+        hideList = String((ls && ls.getItem(HIDE_KEY)) || '').split(',')
+            .map(function (x) { return x.trim(); })
+            .filter(function (x) { return HIDE_GROUPS[x]; });
+        nolock = !!(ls && ls.getItem(NOLOCK_KEY) === '1');
+    } catch (_) { /* ignore */ }
+    if (hideList.length) {
+        var hideStyle = document.createElement('style');
+        hideStyle.id = 'usertypo-debug-hide';
+        hideStyle.textContent = hideList.map(function (k) { return HIDE_GROUPS[k]; }).join(',') + '{display:none!important;}';
+        (document.head || document.documentElement).appendChild(hideStyle);
+    }
+    if (nolock) {
+        // router.js assigns window.usertypo_lockTypingScroll later; keep it a no-op.
+        try {
+            Object.defineProperty(global, 'usertypo_lockTypingScroll', {
+                configurable: true,
+                get: function () { return function () {}; },
+                set: function () { /* ignored while ?nolock=1 */ },
+            });
+        } catch (_) { /* ignore */ }
+    }
+
     global.usertypoDebugLog = { add: add, enabled: enabled };
     /** Breadcrumb for locating where a page dies (no-op unless ?debug=1). */
     global.usertypoDebugStep = function (msg) { if (enabled) add('step', msg); };
@@ -111,7 +157,9 @@
     });
     global.addEventListener('pageshow', function () { heartbeat(); });
 
-    add('page-load', (nofx ? '[nofx] ' : '') + (navigator.userAgent || '').slice(0, 160));
+    add('page-load', (nofx ? '[nofx] ' : '') + (hideList.length ? '[hide=' + hideList.join(',') + '] ' : '')
+        + (nolock ? '[nolock] ' : '') + '[' + global.innerWidth + 'x' + global.innerHeight + '] '
+        + (navigator.userAgent || '').slice(0, 160));
 
     // ── Errors ──
     global.addEventListener('error', function (event) {
