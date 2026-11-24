@@ -227,7 +227,49 @@ body > header {
 }
 
 html {
-    font-size: clamp(13px, 1.3032vw, 24px);
+    font-size: clamp(13px, 0.9774vw, 18px);
+}
+
+/* Page column widths: rem was rescaled to 75% (1.3032vw/24px -> 0.9774vw/18px)
+   to shrink the UI, but page columns should keep their old width and side
+   padding. Each value below is the old Tailwind value x 4/3. */
+#spa-page-root main.max-w-7xl { max-width: 106.667rem; }   /* was 80rem */
+#spa-page-root main.max-w-5xl,
+#spa-page-root main .max-w-5xl.mx-auto { max-width: 85.333rem; }  /* was 64rem */
+#spa-page-root main .max-w-4xl.mx-auto { max-width: 74.667rem; }  /* was 56rem */
+#spa-page-root main.max-w-7xl.px-6,
+#spa-page-root main.max-w-5xl.px-6 { padding-left: 2rem; padding-right: 2rem; }      /* was 1.5rem */
+#spa-page-root main.max-w-7xl.px-4 { padding-left: 1.333rem; padding-right: 1.333rem; } /* was 1rem */
+@media (min-width: 640px) {
+    #spa-page-root main.max-w-7xl.sm\:px-6 { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* Results graphs (home + duel stats views): inset a little from the column edges
+   so they don't run as wide as the stats above them. */
+@media (min-width: 768px) {
+    #stats-graph-card,
+    #dual-stats-graph-card {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+/* Page side gutters = header height (header: 1rem padding top+bottom + ~2.75rem
+   of content). From tablet width up, page columns fill the window between the
+   gutters instead of capping at a max width. Phones keep the padding above. */
+:root { --page-gutter: 4.75rem; }
+@media (min-width: 768px) {
+    #spa-page-root main.max-w-7xl,
+    #spa-page-root main.max-w-7xl.px-4,
+    #spa-page-root main.max-w-7xl.px-6,
+    #spa-page-root main.max-w-7xl.sm\:px-6 {
+        max-width: none;
+        padding-left: var(--page-gutter);
+        padding-right: var(--page-gutter);
+    }
+    /* Inner 5xl column (multiplayer landing): fill the gutters too. Reading pages
+       (about, how-it-works, terms, privacy, security) keep a readable line length. */
+    #spa-page-root main.max-w-7xl:not(.about-page):not(.hiw-page):not(.terms-page):not(.privacy-page):not(.security-page) > .max-w-5xl.mx-auto { max-width: none; }
 }
 
 /* Graph Custom Scrollbar */
@@ -249,8 +291,8 @@ html {
     background: rgba(0, 208, 255, 0.4);
 }
 
-/* Header Logo â rem so chrome tracks html { font-size: clamp(13px, 1.3032vw, 24px) }
-   Reference: ~1440px viewport (1rem â 18.77px). */
+/* Header Logo â rem so chrome tracks html { font-size: clamp(13px, 0.9774vw, 18px) }
+   Reference: ~1440px viewport (1rem ~ 14.07px; was 18.77px before the 75% rescale). */
 .header-logo-link {
     display: flex;
     align-items: center;

@@ -767,7 +767,7 @@
             max-width: none !important;
         }
         #typing-area {
-            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            font-size: clamp(24px, 1.8vw, 32.4px) !important;
             line-height: 1.5 !important;
         }
         /* Hide number input spinners for custom prompt */
@@ -1147,7 +1147,7 @@
             text-align: center;
         }
         .spa-boot-line {
-            font-size: clamp(24px, 2.4vw, 30px);
+            font-size: clamp(18px, 1.8vw, 22.5px);
             line-height: 1.5;
             position: relative;
         }
@@ -1980,7 +1980,9 @@
         }
 
         function runBubbleAnimation(open) {
-            if (!bubbleExpandedHeight) bubbleExpandedHeight = measureBubbleExpandedHeight();
+            // Always re-measure on open: contents are rem-sized (rem tracks viewport
+            // width and zoom), so a cached px height goes stale after a resize.
+            if (open || !bubbleExpandedHeight) bubbleExpandedHeight = measureBubbleExpandedHeight();
             const transition = 'width ' + BUBBLE_ANIM_MS + 'ms ' + BUBBLE_EASING + ', height ' + BUBBLE_ANIM_MS + 'ms ' + BUBBLE_EASING;
             if (open) {
                 bubbleOpen = true;
@@ -2018,6 +2020,23 @@
             runBubbleAnimation(!bubbleOpen);
         });
         expandingBubble.addEventListener('mouseleave', function() { if (bubbleOpen) runBubbleAnimation(false); });
+
+        // Window resized / zoomed while the menu is open: snap to the new content height.
+        let bubbleResizeRaf = 0;
+        window.addEventListener('resize', function () {
+            if (!bubbleOpen || bubbleResizeRaf) return;
+            bubbleResizeRaf = requestAnimationFrame(function () {
+                bubbleResizeRaf = 0;
+                if (!bubbleOpen) return;
+                const prevTransition = expandingBubble.style.transition;
+                expandingBubble.style.transition = 'none';
+                expandingBubble.style.height = 'auto';
+                bubbleExpandedHeight = expandingBubble.scrollHeight;
+                expandingBubble.style.height = bubbleExpandedHeight + 'px';
+                void expandingBubble.offsetWidth;
+                expandingBubble.style.transition = prevTransition;
+            });
+        });
 
         expandingBubble.usertypoBubbleRemeasure = function () {
             bubbleExpandedHeight = measureBubbleExpandedHeight() + 6;

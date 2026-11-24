@@ -386,6 +386,16 @@
             description.addEventListener('input', resizeDescription);
         }
 
+        // rem tracks viewport width / zoom, so the px line limits go stale on resize.
+        var resizeRaf = 0;
+        window.addEventListener('resize', function () {
+            if (resizeRaf || !isOpen()) return;
+            resizeRaf = window.requestAnimationFrame(function () {
+                resizeRaf = 0;
+                if (isOpen()) resizeDescription();
+            });
+        });
+
         document.addEventListener('click', function (e) {
             if (!isOpen()) return;
             var picker = $('contact-problem-picker');

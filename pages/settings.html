@@ -4745,6 +4745,21 @@ window.__spaPageInit = function() {
                 // Wait for card stagger to settle, then lock min-height
                 setTimeout(syncSettingsNavHeight, 1200);
 
+                // The pill is rem-sized (rem tracks window width + zoom), so re-lock the
+                // min-height on resize. Replace any listener left by a previous SPA visit.
+                if (window.__usertypoSettingsNavResize) {
+                    window.removeEventListener('resize', window.__usertypoSettingsNavResize);
+                }
+                let navResizeFrame = 0;
+                window.__usertypoSettingsNavResize = () => {
+                    if (navResizeFrame) return;
+                    navResizeFrame = requestAnimationFrame(() => {
+                        navResizeFrame = 0;
+                        if (navPill.isConnected) syncSettingsNavHeight();
+                    });
+                };
+                window.addEventListener('resize', window.__usertypoSettingsNavResize);
+
                 function setNavPillExpanded(expanded) {
                     navPill.classList.toggle('is-expanded', expanded);
                     navPill.classList.toggle('is-collapsed', !expanded);

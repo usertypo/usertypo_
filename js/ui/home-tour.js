@@ -649,8 +649,13 @@
         close();
     }
 
-    function onViewportChange() {
-        if (isOpen) position();
+    function onViewportChange(e) {
+        if (!isOpen) return;
+        // The pre-measured expanded rect is in px and goes stale once the window
+        // resizes (rem tracks width + zoom). By then the target has settled, so
+        // fall back to measuring it live.
+        if (e && e.type === 'resize') expandedTargetRect = null;
+        position();
     }
 
     function markAuthResolved() {

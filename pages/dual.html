@@ -1,6 +1,6 @@
 <style>
 #app-views {
-            font-size: clamp(13px, 1.3032vw, 24px);
+            font-size: clamp(13px, 0.9774vw, 18px);
         }
 
         /* --- USER CARET --- */
@@ -93,7 +93,7 @@
 
         /* Proportional desktop scaling for typing test (matches home page) */
         #typing-area {
-            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            font-size: clamp(24px, 1.8vw, 32.4px) !important;
             line-height: 1.5 !important;
             padding-left: 16px;
             padding-right: 16px;
@@ -117,7 +117,7 @@
         }
         #stats-view > main {
             width: 100%;
-            max-width: min(64rem, 100%);
+            max-width: min(85.333rem, 100%); /* was 64rem before the 75% rem rescale */
             min-height: auto;
             padding-left: clamp(1rem, 4vw, 2rem);
             padding-right: clamp(1rem, 4vw, 2rem);
@@ -358,15 +358,15 @@
                 <div id="test-box" class="w-full flex flex-col relative test-box-outer max-w-none shrink-0">
 
                     <!-- ABOVE: timer / progress only (absolute, does not shift centering) -->
-                    <div class="absolute left-0 right-0 bottom-full pb-[28px] flex flex-col items-center gap-4">
-                        <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[32px]">
-                            <div class="transition-opacity duration-300 text-white font-mono text-[24px] font-bold tracking-wider leading-none absolute left-0 bottom-0"
+                    <div class="absolute left-0 right-0 bottom-full pb-[1.492rem] flex flex-col items-center gap-4">
+                        <div id="timer-progress-wrapper" class="relative w-[80vw] max-w-none mx-auto h-[1.705rem]">
+                            <div class="transition-opacity duration-300 text-white font-mono text-[1.279rem] font-bold tracking-wider leading-none absolute left-0 bottom-0"
                                 id="word-progress"></div>
-                            <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[2px] bg-white/10 rounded-full overflow-hidden hidden"
+                            <div class="transition-opacity duration-300 absolute left-0 bottom-2 w-full h-[0.107rem] bg-white/10 rounded-full overflow-hidden hidden"
                                 id="word-progress-bar-container">
                                 <div id="word-progress-bar"
                                     class="h-full bg-primary transition-all duration-300 ease-linear"
-                                    style="width: 0%; box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), var(--gi-80, 0.8));"></div>
+                                    style="width: 0%; box-shadow: 0 0 0.533rem rgba(var(--theme-primary-rgb), var(--gi-80, 0.8));"></div>
                             </div>
                         </div>
                     </div>
@@ -381,35 +381,35 @@
                             </div>
                         </div>
 
-                        <div class="relative w-full h-[48px] mt-4">
+                        <div class="relative w-full h-[2.557rem] mt-4">
                             <div id="live-stats-container"
-                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[16px] flex items-center gap-[16px] pointer-events-auto">
-                                <div id="live-wpm-wrapper" class="flex items-baseline gap-[4px]">
-                                    <span id="wpm-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">wpm</span>
+                                class="typing-stat opacity-0 transition-opacity duration-300 absolute left-0 top-[0.852rem] flex items-center gap-[0.852rem] pointer-events-auto">
+                                <div id="live-wpm-wrapper" class="flex items-baseline gap-[0.213rem]">
+                                    <span id="wpm-display" class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">wpm</span>
                                 </div>
-                                <div id="live-wpm-divider" class="w-px h-[16px] bg-white/10"></div>
-                                <div id="live-raw-wrapper" class="flex items-baseline gap-[4px] hidden">
-                                    <span id="raw-wpm-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">raw</span>
+                                <div id="live-wpm-divider" class="w-px h-[0.852rem] bg-white/10"></div>
+                                <div id="live-raw-wrapper" class="flex items-baseline gap-[0.213rem] hidden">
+                                    <span id="raw-wpm-display" class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">raw</span>
                                 </div>
-                                <div id="live-raw-divider" class="w-px h-[16px] bg-white/10 hidden"></div>
-                                <div id="live-burst-wrapper" class="flex items-baseline gap-[4px] hidden">
-                                    <span id="burst-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">burst</span>
+                                <div id="live-raw-divider" class="w-px h-[0.852rem] bg-white/10 hidden"></div>
+                                <div id="live-burst-wrapper" class="flex items-baseline gap-[0.213rem] hidden">
+                                    <span id="burst-display" class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">burst</span>
                                 </div>
-                                <div id="live-burst-divider" class="w-px h-[16px] bg-white/10 hidden"></div>
-                                <div id="live-acc-wrapper" class="flex items-baseline gap-[4px]">
-                                    <span id="acc-display" class="text-[24px] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">acc</span>
+                                <div id="live-burst-divider" class="w-px h-[0.852rem] bg-white/10 hidden"></div>
+                                <div id="live-acc-wrapper" class="flex items-baseline gap-[0.213rem]">
+                                    <span id="acc-display" class="text-[1.279rem] font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">0%</span>
+                                    <span class="text-[0.533rem] font-bold text-slate-500 uppercase">acc</span>
                                 </div>
-                                <div id="dual-bot-divider" class="w-px h-[16px] bg-white/10"></div>
-                                <div id="dual-bot-stat" class="flex items-center gap-[6px]">
+                                <div id="dual-bot-divider" class="w-px h-[0.852rem] bg-white/10"></div>
+                                <div id="dual-bot-stat" class="flex items-center gap-[0.32rem]">
                                     <span id="bot-avatar"
                                         class="inline-flex items-center justify-center shrink-0"></span>
-                                    <span class="flex items-baseline gap-[4px]">
-                                        <span id="bot-wpm-display" class="text-[24px] font-bold text-white">0</span>
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase">wpm</span>
+                                    <span class="flex items-baseline gap-[0.213rem]">
+                                        <span id="bot-wpm-display" class="text-[1.279rem] font-bold text-white">0</span>
+                                        <span class="text-[0.533rem] font-bold text-slate-400 uppercase">wpm</span>
                                     </span>
                                 </div>
                             </div>

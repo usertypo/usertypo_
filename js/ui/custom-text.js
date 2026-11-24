@@ -1130,15 +1130,30 @@
                 q('[data-ct-text]').focus();
             }
         }, true);
+
+        // Header/footer heights are rem-based and change with viewport width / zoom.
+        var resizeRaf = 0;
+        window.addEventListener('resize', function () {
+            if (resizeRaf || !isOpen()) return;
+            resizeRaf = window.requestAnimationFrame(function () {
+                resizeRaf = 0;
+                if (isOpen()) measureShell();
+            });
+        });
     }
 
-    function open() {
-        ensureModal();
-        // Measure header/footer so the modal sits between them
+    // Measure header/footer so the modal sits between them
+    function measureShell() {
+        if (!modal) return;
         var header = document.querySelector('header');
         var footer = document.getElementById('spa-shell-footer');
         if (header) modal.style.setProperty('--shell-header-h', header.offsetHeight + 'px');
         if (footer && footer.offsetHeight > 0) modal.style.setProperty('--shell-footer-h', footer.offsetHeight + 'px');
+    }
+
+    function open() {
+        ensureModal();
+        measureShell();
         draft = getConfig();
         lastFocus = document.activeElement;
         showView('main');

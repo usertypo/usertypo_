@@ -639,6 +639,31 @@
         });
     }
 
+    // rem tracks viewport width + zoom, so px sizes measured above go stale on resize.
+    var viewportResizeBound = false;
+    var viewportResizeRaf = 0;
+    function onViewportResize() {
+        if (viewportResizeRaf) return;
+        viewportResizeRaf = requestAnimationFrame(function () {
+            viewportResizeRaf = 0;
+            if (!rootEl || !rootEl.isConnected) return;
+            updatePillIndicators();
+            var bubble = getBubbleEl();
+            if (!filtersPanelOpen || !bubble || !bubble.classList.contains('is-open') || bubbleAnimTimer) return;
+            var prevTransition = bubble.style.transition;
+            bubble.style.transition = 'none';
+            bubble.style.width = measureBubbleWidth() + 'px';
+            bubble.style.height = measureBubbleHeight(advancedOpen) + 'px';
+            void bubble.offsetWidth;
+            bubble.style.transition = prevTransition;
+        });
+    }
+    function bindViewportResize() {
+        if (viewportResizeBound) return;
+        viewportResizeBound = true;
+        window.addEventListener('resize', onViewportResize);
+    }
+
     function clearBubbleCloseTimer() {
         if (bubbleCloseTimer) {
             clearTimeout(bubbleCloseTimer);
@@ -1614,6 +1639,7 @@
         loadPersisted();
         bindUi();
         watchTheme();
+        bindViewportResize();
         renderPresetButtons();
         updateActive();
         requestAnimationFrame(function () {

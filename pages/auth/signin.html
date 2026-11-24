@@ -1382,6 +1382,16 @@ window.__spaPageInit = function() {
     observer.observe(authStage, { childList: true, subtree: true, attributes: true });
     __pageAbort.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
 
+    // Tab sizes are rem-based (rem tracks viewport width / zoom), so re-measure on resize.
+    let indicatorRaf = 0;
+    window.addEventListener('resize', () => {
+        if (indicatorRaf) return;
+        indicatorRaf = requestAnimationFrame(() => {
+            indicatorRaf = 0;
+            updateIndicator(document.querySelector('.tab-pill button.active'));
+        });
+    }, { signal: __pageSignal });
+
     const viewTrack = document.getElementById('view-scroll-track');
     const viewThumb = document.getElementById('view-scroll-thumb');
     const formSideWrapper = document.getElementById('form-side-wrapper');

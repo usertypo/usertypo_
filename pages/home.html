@@ -1,7 +1,7 @@
 <style>
 /* HIDE MAIN WINDOW SCROLLBAR PERMANENTLY (Native CSS) */
         html {
-            font-size: clamp(13px, 1.3032vw, 24px);
+            font-size: clamp(13px, 0.9774vw, 18px);
         }
 
         /* Personal Best Animation */
@@ -565,7 +565,7 @@
             max-width: none !important;
         }
         #typing-area {
-            font-size: clamp(32px, 2.4vw, 43.2px) !important;
+            font-size: clamp(24px, 1.8vw, 32.4px) !important;
             line-height: 1.5 !important;
             padding-left: 0.853rem;
             padding-right: 0.853rem;
@@ -6277,6 +6277,13 @@ window.setTimeout = function(handler, timeout) {
                 const statsView = document.getElementById('stats-view');
                 const container = document.getElementById('graph-container');
                 if (document.hidden || !testComplete || !statsView || statsView.classList.contains('hidden') || !container) return;
+                // Basic/Advanced pill highlight is px-positioned; keep it on the active button.
+                const pillIndicator = document.getElementById('graph-pill-indicator');
+                const activePillBtn = document.getElementById(graphMode === 'advanced' ? 'graph-btn-advanced' : 'graph-btn-basic');
+                if (pillIndicator && activePillBtn) {
+                    pillIndicator.style.left = activePillBtn.offsetLeft + 'px';
+                    pillIndicator.style.width = activePillBtn.offsetWidth + 'px';
+                }
                 const rect = container.getBoundingClientRect();
                 if (rect.width < 100 || rect.height < 100) return;
                 if (graphMode === 'advanced') renderAdvancedGraph(true);
@@ -7593,8 +7600,17 @@ window.setTimeout = function(handler, timeout) {
                 thumb.style.height = thumbH + 'px';
                 thumb.style.top = (pct * (trackH - thumbH)) + 'px';
             }
-            content.removeEventListener('scroll', updateThumb);
+            // Swap out the previous init's handler (a fresh closure each call), then also
+            // re-measure when the box resizes (window resize / zoom changes rem).
+            if (content._giUpdateThumb) content.removeEventListener('scroll', content._giUpdateThumb);
+            content._giUpdateThumb = updateThumb;
             content.addEventListener('scroll', updateThumb);
+            if (!content._giResizeObserver && typeof ResizeObserver === 'function') {
+                content._giResizeObserver = new ResizeObserver(() => {
+                    if (content._giUpdateThumb) content._giUpdateThumb();
+                });
+                content._giResizeObserver.observe(content);
+            }
             updateThumb();
 
             // Drag support

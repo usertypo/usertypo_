@@ -5636,6 +5636,31 @@ function closeAllCustomPopovers() {
     document.querySelectorAll('.custom-popover').forEach(restoreCustomPopoverHome);
 }
 
+function pinPortaledPopover(popover, rect) {
+    popover.style.setProperty('--popover-top', `${Math.round(rect.bottom + 6)}px`);
+    popover.style.setProperty('--popover-left', `${Math.round(rect.left)}px`);
+}
+
+// Portaled popovers use fixed px coords; keep them on their button when the
+// viewport (rem) changes or the results list scrolls.
+if (!window.__usertypoPortaledPopoverBound) {
+    window.__usertypoPortaledPopoverBound = true;
+    let portaledPopoverRaf = 0;
+    const repositionPortaledPopovers = () => {
+        if (portaledPopoverRaf) return;
+        if (!document.querySelector('.custom-popover.is-portaled.is-open')) return;
+        portaledPopoverRaf = requestAnimationFrame(() => {
+            portaledPopoverRaf = 0;
+            document.querySelectorAll('.custom-popover.is-portaled.is-open').forEach((popover) => {
+                const btn = popover._popoverTrigger;
+                if (btn && btn.isConnected) pinPortaledPopover(popover, btn.getBoundingClientRect());
+            });
+        });
+    };
+    window.addEventListener('resize', repositionPortaledPopovers);
+    document.addEventListener('scroll', repositionPortaledPopovers, { passive: true, capture: true });
+}
+
 function openCustomPopover(btn, popover) {
     popover._popoverTrigger = btn;
     popover._popoverHome = popover._popoverHome || popover.parentElement;
@@ -5653,8 +5678,7 @@ function openCustomPopover(btn, popover) {
 
         searchOverlay.appendChild(popover);
         popover.classList.add('is-portaled');
-        popover.style.setProperty('--popover-top', `${Math.round(rect.bottom + 6)}px`);
-        popover.style.setProperty('--popover-left', `${Math.round(rect.left)}px`);
+        pinPortaledPopover(popover, rect);
     } else {
         const item = popover.closest('.search-result-item');
         popover._popoverResultItem = item || null;
