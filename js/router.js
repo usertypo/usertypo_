@@ -55,7 +55,7 @@
             jobs.push(loadScriptOnce('js/pages/dual-race.js?v=117'));
         }
         if (path === '/userstats') {
-            jobs.push(loadScriptOnce('js/api/performance-chart.js?v=10'));
+            jobs.push(loadScriptOnce('js/api/performance-chart.js?v=11'));
             jobs.push(loadScriptOnce('js/ui/avatar-editor.js?v=3'));
         }
         if (path === '/settings') {
